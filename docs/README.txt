@@ -1,19 +1,16 @@
 JOUKOWSKY - RESEARCH & DESIGN DOCUMENTATION
 STATUS: DRAFT v0.1 - for review
 
-What this is
-------------
-joukowsky is a real-time transient-detection engine for water distribution
-networks. It listens to pressure at high frequency, recognises the physical
-signature of bursts (sudden pressure drops) and water hammer (sudden pressure
-spikes), locates them on the pipe network, and learns the network's behaviour
-over time.
+The problem we are solving
+--------------------------
+Water pipes burst and nobody knows until days later. Water is lost, and the
+pipes keep getting damaged by sudden pressure shocks ("water hammer") that
+nobody can see, because the pipes are not being watched closely enough.
 
-This is not a CRUD application. The core is physics (1-D unsteady pipe flow),
-signal processing (change detection at millisecond resolution), inverse
-problems (where did the wave come from?), and learning systems (models that
-improve with every event the network produces). Business models come later;
-this documentation is about solving the problem first.
+joukowsky watches the pressure in the pipes, very fast and all the time.
+When a pipe bursts, or a pressure shock hits, it notices within seconds,
+tells you where it happened, and warns you before more damage is done.
+Over time it learns how each network behaves, so it keeps getting better.
 
 Reading order
 -------------
