@@ -1,0 +1,62 @@
+OUTAGES, NATIONAL SCALE AND ERRORS
+STATUS: DRAFT v0.1 - for review
+
+1. Unplanned power outages (transformer failure, cable theft, trips)
+--------------------------------------------------------------------
+Load-shedding is scheduled; unplanned outages are not. The engine:
+  a) PREPARES: for every pump in a network, pre-computes a sudden
+     power-loss (pump trip) simulation. Stored result: minimum and
+     maximum heads per pipe, vacuum/cavitation zones, check-valve slam
+     pressure. Gives owners their weak points in advance and supports
+     recommendations for surge protection (slow-closing check valves,
+     air valves, surge vessels - installed by others).
+  b) RECOGNISES: pump trips have a distinct signature (deep down-surge,
+     possible vapour floor, slam). Classified as pump trip, not burst.
+  c) GUIDES RESTART: when power returns, simultaneous pump restarts
+     create a second surge. Engine recommends a staggered sequence
+     checked in simulation.
+  d) SENSOR LOSS: if an outage also takes sensors offline, the affected
+     zone is marked NOT MONITORED immediately. Silence is never treated
+     as "no events". Late-arriving buffered data is processed on arrival
+     (backfill) and events are reconstructed after the fact.
+
+2. National scale (all nine provinces)
+--------------------------------------
+- Each network is an independent unit: its own graph, parameters,
+  detectors and alerts. The system scales by adding networks, not by
+  enlarging one computation.
+- A shared learning layer (hierarchical priors, 05_) passes general
+  knowledge between networks (e.g. typical behaviour of old AC pipe).
+- Regional physics differs and is handled per network: altitude
+  (vapour floor on the highveld), pipe eras and materials, intermittent
+  supply and free air.
+- Load: e.g. 10,000 Tier 2 sensors x ~22 MB/day ~ 220 GB/day raw.
+  Heavy computation is event-driven; per-network tables (graph travel
+  times, precomputed responses) are cached.
+- Hosting in South African cloud regions keeps data in-country and
+  latency low.
+- Honest limit: coverage is bounded by where data exists. Tier 0 data
+  is widespread; Tier 2 is rare. The tier model (03_) keeps the engine
+  useful everywhere and strongest where fast sensors exist.
+- Rollout: one network -> one city -> one province -> national.
+
+3. Errors: false alarms and missed events
+-----------------------------------------
+Both will occur; sensitivity trades one for the other. Design rules:
+  E1  Confidence on every output; low-confidence events are logged,
+      not alerted.
+  E2  Explicit coverage map: dead sensors, bad clocks and data gaps are
+      shown as blind zones, never hidden.
+  E3  Layered detection: transient detection (seconds) backed by
+      flow-anomaly and night-flow methods (hours), so a burst without a
+      clean wave is still caught.
+  E4  Locations are credible regions ("90% within these 3 segments"),
+      not points.
+  E5  Every miss and false alarm is reviewed and fed back (05_);
+      repair-crew reports are primary labels.
+  E6  Humans approve actions; every recommended action is simulated
+      first (principle P4).
+  E7  Shadow mode on every new network before alerts go live; publish
+      our own measured detection, false-alarm and location-error rates.
+  E8  Software faults: physics tests, deterministic replay of any event,
+      versioned models with fast rollback.
