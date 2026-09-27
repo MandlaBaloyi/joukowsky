@@ -1,72 +1,232 @@
-OPEN QUESTIONS AND RESEARCH BACKLOG
-STATUS: DRAFT v0.1 - for review
-Owner review needed on every item marked [DECIDE].
+OPEN QUESTIONS - RESEARCHED ANSWERS
+STATUS: DRAFT v0.2 - for review
 
-Problem framing
----------------
-Q-P1  How often do municipal-side surges reach commercial sites, and at
-      what magnitude after passing the connection, meter, check valve and
-      PRV? (First thing a pilot should measure.)
-Q-P2  What pipe materials/ages dominate target sites (estates, campuses,
-      factories)? Drives wave speed priors and fatigue models.
-Q-P3  Is slow (non-transient) leakage in scope for v1? Transient methods
-      catch bursts; background leaks need flow balance / acoustic /
-      probing methods. [DECIDE]
-Q-P4  First target: private sites only, or also a municipal DMA pilot
-      partner? [DECIDE]
+SCOPE DECISION (owner, v0.2): joukowsky is SOFTWARE ONLY. We do not build
+or install physical devices. We consume data from sensors, loggers and
+SCADA systems made and installed by others, and we build the engine that
+turns that data into detection, location, understanding and learning.
+Every answer below is written with that in mind.
 
-Physics & models
-----------------
-Q-M1  Which unsteady friction and viscoelastic models give the best
-      fit-per-compute on plastic-pipe campus networks?
-Q-M2  How much free air is typically present in intermittently supplied
-      SA networks, and how does it change wave speed day to day?
-Q-M3  Differentiable MOC: JAX vs custom adjoint in Rust/C++? [DECIDE after
-      prototype]
+Each item: ANSWER (what research says) -> DECISION / NEXT STEP.
+[DECIDE] = still needs the owner.
 
-Sensing
--------
-Q-S1  Minimum sampling rate and clock accuracy that meet location
-      targets on realistic networks (study V-S1).
-Q-S2  GNSS reception from underground chambers: external antenna,
-      above-ground posts, or alternative sync (PTP over local wired
-      links, post-hoc alignment from known events)?
-Q-S3  Power budget for continuous kHz sampling on battery/solar through
-      extended load-shedding.
-Q-S4  Can existing site infrastructure (fire system pressure gauges,
-      booster pump controllers) provide extra sensing?
+========================================================================
+PROBLEM FRAMING
+========================================================================
+Q-P1  How often do municipal-side surges reach private sites, and how big
+      are they when they arrive?
+  ANSWER  No published measurements for South Africa were found. What the
+          literature does say:
+          - Utility-caused transients (pump shutdowns) are LARGE but occur
+            at few times and places; end-user transients (taps, valves,
+            appliances) are SMALL but very frequent (Meniconi et al. 2024,
+            real Italian network).
+          - On a real service line, user devices produced pressure swings
+            of -15 m to +65 m on the service line, but only a few metres
+            were transmitted into the main (WEL Perugia, 500 Hz field
+            study, 2023/2024). Plastic and oversized pipes attenuate waves.
+          - SA reporting links load-shedding pump restarts to water hammer
+            and bursts (news and industry sources; not measured data).
+  NEXT    We cannot measure this ourselves (software only). We answer it
+          by SIMULATION: model main -> connection -> meter -> check valve
+          / PRV -> site network in our own solver, and compute how much of
+          a municipal surge gets through for realistic configurations.
+          Confirm later with partner data.
 
-Algorithms
-----------
-Q-A1  Best detector per compute budget (CUSUM vs wavelet vs BOCPD) -
-      ROC study on rig + synthetic data.
-Q-A2  How well do synthetic-trained classifiers transfer to real networks
-      (sim-to-real gap)?
-Q-A3  Sensor placement algorithm and its guarantees.
-Q-A4  Safe proactive probing: design excitation (amplitude, waveform)
-      that is informative yet provably harmless.
+Q-P2  What pipe materials and ages dominate target sites?
+  ANSWER  No SA-wide breakdown exists ("the exact makeup of the pipelines
+          in the country is not known"). Install eras are known: cast
+          iron ~1870-1930, cement-lined CI ~1930-70, asbestos-cement
+          ~1950-70, ductile iron from ~1960, PVC from ~1970; much of the
+          municipal network dates from the 1950s-60s and AC is still in
+          service in many municipalities. Newer private sites are mostly
+          uPVC/HDPE.
+  NEXT    The engine must support ALL materials and must never trust the
+          asset register. Default wave-speed priors are chosen from
+          install decade + material when known, with wide uncertainty,
+          then learned from data (05_).
 
-Engineering
------------
-Q-E1  Core language and repo layout. [DECIDE]
-Q-E2  Edge hardware platform: MCU vs Linux SoC. [DECIDE after power study]
+Q-P3  Is slow (non-transient) leakage in v1?
+  ANSWER  Transient methods catch bursts and hammer; slow background leaks
+          need low-rate methods (minimum night flow, flow balance,
+          model-based pressure residuals, e.g. BattLeDIM approaches).
+          Important finding: most SA monitoring data that already exists
+          is LOW-RATE (15 min, some 1 min / 1 s). A software-only product
+          that ignores low-rate data ignores most of the data available.
+  RECOMMENDATION  v1 = transient core (our differentiator), but design
+          the data model for both rates from day one, and make the
+          low-rate module the second thing we build. [DECIDE]
 
-Research backlog
-----------------
-R-1   Obtain and read primary No Drop 2023 and 2025 reports; replace every
-      [VERIFY] statistic with a page-referenced value.
-R-2   Verify every [VERIFY] reference in references.txt.
-R-3   Search for open high-frequency transient datasets from real
-      distribution networks.
-R-4   Literature review: transient-based condition assessment field
-      results (wave speed as a health indicator).
-R-5   Literature review: GNNs / PINNs / neural operators for WDN
-      transients (state of the art 2023-2026).
-R-6   Typical SA municipal SCADA/logger sampling intervals (support the
-      "blind grid" claim with data).
-R-7   Commercial landscape: existing transient loggers and burst-detection
-      products; what they do and do not do (technical, not business,
-      comparison).
-R-8   Identify SA university water engineering groups for a lab-rig
-      partnership.
-R-9   Build a first MOC prototype and reproduce V-A1..V-A4.
+Q-P4  First target: private sites only, or municipalities too?
+  ANSWER  Software-only changes this question. Our first "sites" are
+          wherever high-rate data already exists or will be installed by
+          someone else. Software can be validated fully on simulated and
+          public data before any customer.
+  RECOMMENDATION  Build and prove on simulation + public datasets first;
+          keep the target open. [DECIDE later]
+
+========================================================================
+PHYSICS & MODELS
+========================================================================
+Q-M1  Best friction / viscoelastic models per compute?
+  ANSWER  Literature consensus: quasi-steady friction under-damps; the
+          Brunone/IAB unsteady model gives most of the improvement for
+          little cost; for PE/PVC pipes the viscoelastic (Kelvin-Voigt)
+          term is essential and often dominates. A 2024 PINN study found
+          models with unsteady friction fit water hammer data best.
+  DECISION  Implement quasi-steady -> IAB -> 1-3 Kelvin-Voigt elements.
+          Calibrate per pipe from data. Convolution friction later if
+          needed.
+
+Q-M2  How much free air is in intermittently supplied networks?
+  ANSWER  Not quantified for SA. Research confirms that entrapped air
+          (especially during refilling in intermittent supply) reduces
+          wave speed, causes dispersion and damping, and can produce
+          pressures HIGHER than classic water hammer theory predicts.
+  DECISION  Treat wave speed as a TIME-VARYING parameter per pipe, not a
+          constant. Track it after every event. Detect refilling events
+          as their own class.
+
+Q-M3  Differentiable solver: JAX or custom adjoint?
+  ANSWER  Open-source reference exists: TSNet (Python transient simulator
+          for networks) - useful to cross-check our solver.
+  DECISION  Prototype the solver in JAX (fast iteration, gradients for
+          free); production core in Rust; hand-written adjoint only if
+          profiling shows JAX is the bottleneck. Validate both against
+          analytical cases and TSNet.
+
+========================================================================
+SENSING / DATA (re-framed for software only)
+========================================================================
+Q-S1  Minimum sampling rate and clock accuracy?
+  ANSWER  The commercial high-rate loggers on the market sample at
+          128 samples/s (Badger Meter PIPEMINDER, formerly Syrinix;
+          SUEZ Inflowmatix InflowSense) and use accurate timing to
+          calculate wave onset times. SA Water (Australia) holds a large
+          128 Hz network dataset. So ~100-128 Hz, not 1-2 kHz, is the
+          realistic input.
+          At 128 Hz one sample = 7.8 ms -> ~4 m of wave travel at
+          a = 1000 m/s. With sub-sample onset picking, metre-level to
+          few-metre location on a pipe is realistic.
+  DECISION  The engine is designed for three data tiers:
+            Tier 2: >= 100 Hz, time-synchronised -> detect, classify,
+                    LOCATE transients.
+            Tier 1: ~1 s loggers (SA tenders already ask for loggers
+                    configurable down to 1 s) -> detect large events,
+                    rough classification, no precise location.
+            Tier 0: 1-15 min SCADA -> find stressed zones, slow leaks,
+                    baselines (Meniconi 2024 used 15-min data exactly
+                    this way before deploying high-rate sensors).
+
+Q-S2  GNSS in underground chambers?          CLOSED - hardware, not ours.
+Q-S3  Power budget through load-shedding?    CLOSED - hardware, not ours.
+Q-E2  Edge hardware platform?                CLOSED - hardware, not ours.
+      These become REQUIREMENTS we publish for data sources (see
+      03_sensing_and_signal/data_source_requirements.txt): sample rate,
+      timestamp accuracy stated per sample, metadata, gap reporting.
+
+Q-S4  Can existing site infrastructure provide data?
+  ANSWER  Yes, and for a software company this is key: SCADA historians,
+          pump controller / VSD logs (exact pump trip times = free
+          labelled events), smart meters, the load-shedding schedule
+          (known outage times = predicted pump trips).
+  DECISION  Build connectors for these; treat every one as a data
+          source with a known quality level.
+
+========================================================================
+ALGORITHMS
+========================================================================
+Q-A1  Best detector?
+  ANSWER  Real-time burst localisation with change-point detection is an
+          active area (e.g. arXiv:2407.09074). No published head-to-head
+          on SA-like data.
+  DECISION  Implement CUSUM (fast first pass), wavelet, and Bayesian
+          online change-point (confidence output); benchmark on
+          simulated data and public datasets; pick per data tier.
+
+Q-A2  Do simulation-trained models work on real networks?
+  ANSWER  Not directly. A 2025/26 study on transient-based leak detection
+          found a strong sim-to-real gap: direct-test accuracy 30%,
+          62.5% after transfer learning with real records. Other work
+          shows fine-tuning across pipe materials/diameters works well
+          (~96%) and domain adaptation helps across regions (+10%).
+  DECISION  (1) Physics-based localisation (arrival times on the graph)
+          stays primary - it needs no training data. (2) ML classifiers
+          use physical features + domain randomisation + real noise
+          injected into simulations. (3) Every model is fine-tuned per
+          network as real events arrive. (4) The engine abstains when
+          unsure.
+
+Q-A3  Sensor placement?
+  ANSWER  Iterative/greedy placement with physical simulation shows good
+          results with few sensors ("Just one more sensor is enough",
+          arXiv:2406.19900).
+  DECISION  Build a placement ADVISOR: we tell whoever installs sensors
+          where to put them. Pure software; valuable on its own.
+
+Q-A4  Safe proactive probing?
+  ANSWER  Deliberate probing needs actuators (hardware) - deferred.
+  DECISION  "Opportunistic probing" instead: use routine known events
+          (scheduled pump starts, valve operations, load-shedding
+          trips) as free probes to calibrate wave speeds and find
+          reflections. Pure software.
+
+========================================================================
+ENGINEERING
+========================================================================
+Q-E1  Core languages and repo layout?
+  RECOMMENDATION
+          Rust    - physics solver, signal processing, localisation,
+                    streaming event pipeline (speed + safety).
+          Python  - research, ML training (PyTorch / JAX), notebooks,
+                    bindings to the Rust core (PyO3).
+          JAX     - differentiable solver prototype, inverse problems.
+          SQL + time-series store - data; TypeScript - operator UI
+          (later).
+          Layout as in 06_engine_architecture/engine_overview.txt.
+          [DECIDE]
+
+========================================================================
+RESEARCH BACKLOG - STATUS
+========================================================================
+R-1  Primary No Drop PDFs - BLOCKED: the DWS server is not reachable from
+     the research environment. Needs a manual download.
+R-2  Verify [VERIFY] references - OPEN (ongoing).
+R-3  Open high-frequency datasets - FOUND:
+     - Zenodo 10.5281/zenodo.16416601: WDN files + transient pressure
+       data + processed dynamic pressure metrics.
+     - Mendeley Data tbrnp6vrnj: labelled lab testbed dataset
+       (280 signals; accelerometers, hydrophones, dynamic pressure).
+     - Field studies with 100 Hz data from 28 sensors (7-30 days) and
+       high-resolution transient datasets (J. Hydroinformatics 2025,
+       doi:10.2166/hydro.2025.004) - check availability.
+     - BattLeDIM (low-rate, for Tier 0 work).
+R-4  Condition assessment via wave speed - FOUND: lab + field validation
+     that transient wave speed indicates buried-pipe deterioration
+     (Alexander et al. 2023, Structural Health Monitoring).
+R-5  GNN / PINN state of the art - FOUND: PINNs for single-pipe water
+     hammer are well studied (2022-2026); network PINNs reach ~19 pipes;
+     physics-informed GNNs so far cover only steady hydraulics, NOT
+     transients. => A transient-capable graph model is an open gap and
+     a real research opportunity for us.
+R-6  SA logging intervals - FOUND: WRC guidance says 15-min logging for
+     general profiles, 1 min or 1 s where sudden pressure changes are
+     expected; Johannesburg Water tender (2026) specifies loggers
+     configurable from 1 s to 60 min. Confirms the "blind grid" claim.
+R-7  Commercial landscape - FOUND (technical view):
+     - Badger Meter PIPEMINDER (ex-Syrinix): 128 S/s sensors, burst
+       alerts, transient detection, onset-time based localisation.
+     - SUEZ Inflowmatix (InflowSense 128 S/s + InflowNet software).
+     - HWM high-frequency transient loggers.
+     - TransientDetect / SpiralData (Australia): SOFTWARE-ONLY ML
+       transient detection on utility data, trialled with Australian
+       utilities. The closest thing to us.
+     Implication: high-rate sensing exists and is sold; software that
+     does physics-based localisation + classification + per-pipe
+     learning + damage accounting, hardware-agnostic, built for
+     SA conditions (load-shedding, intermittent supply, mixed old
+     materials) is where we must be clearly better.
+R-8  SA universities - Stellenbosch (Water & Environmental Engineering;
+     H.E. Jacobs group works on SA distribution pressure), UCT, UP.
+     Relevant now as DATA and validation partners, not rig builders.
+R-9  First solver prototype - NEXT CODING TASK (pure software; start).

@@ -57,9 +57,11 @@ credible region drawn on the map.
 ----------------------------------------------------------
 Choose S sensor locations to maximise expected localisation performance
 over the distribution of possible bursts (weighted by pipe risk), subject
-to install constraints (existing chambers, power, GNSS sky view).
+to install constraints given by whoever installs them (existing
+chambers, power, GNSS sky view).
 Objective candidates: expected posterior entropy of x0; expected size of
 90% credible region; worst-case ambiguity. Greedy selection with
 submodularity arguments is a reasonable start; mixed-integer or
-evolutionary methods for refinement. Delivered as a tool used per site
-before installation.
+evolutionary methods for refinement. Delivered as a software placement
+advisor: we tell the installer (a partner, not us) where sensors should
+go.

@@ -3,16 +3,17 @@ STATUS: DRAFT v0.1 - for review (no technology decisions are final)
 
 Data flow
 ---------
- [pressure sensor + GNSS clock]
+ [third-party sensors / loggers / SCADA / pump logs / schedules]
+        |   (we build no hardware; see data_source_requirements.txt)
+ CONNECTORS ------------------------------------------------------------
+   vendor APIs, file drops, SCADA historians -> normalise units, clocks,
+   metadata; tag each stream with its data tier (0 / 1 / 2)
         |
- EDGE NODE -----------------------------------------------------------
-   acquire (kHz) -> filter -> baseline -> change detector (CUSUM/wavelet)
-   ring buffer (capture rate)  -> on alarm: onset picking, event packet
-   1 Hz summary stream; local store for outages; health telemetry
-        |  LTE-M / NB-IoT / LoRaWAN
  INGEST ---------------------------------------------------------------
-   authenticated device gateway -> time-series store (summaries)
-                                -> event store (raw windows, immutable)
+   time-series store (continuous / low-rate data)
+   event store (raw high-rate windows, immutable)
+   detection runs here on streams; the same detection library can be
+   deployed on a partner gateway next to the sensor where allowed
         |
  CORE (event pipeline) ------------------------------------------------
    1. fusion: group arrivals across sensors (graph-based coincidence gate)
@@ -39,7 +40,7 @@ Modules (candidate repository layout, to decide)
   locate/      graph travel times, Bayesian localisation, sensor placement
   infer/       inverse transient analysis, data assimilation
   learn/       classifiers, surrogates, risk models, registry
-  edge/        firmware-side detection (shares algorithms with signal/)
+  connect/     connectors for vendor APIs, SCADA historians, file imports
   sim/         scenario generator for synthetic datasets
   service/     ingest, event pipeline, APIs, alerting
   docs/        this documentation
@@ -48,7 +49,6 @@ Technology questions to decide (see 08_research/open_questions.txt)
 --------------------------------------------------------------------
   - Core numerics language: Rust vs C++ vs Julia vs JAX (differentiable);
     likely a compiled core + Python research layer.
-  - Edge platform: MCU (Cortex-M class, C/Rust) vs Linux SoC.
   - Stores: time-series DB for summaries; object store for raw windows.
   - Stream processing: simple queue + workers first; heavier frameworks
     only if scale requires.

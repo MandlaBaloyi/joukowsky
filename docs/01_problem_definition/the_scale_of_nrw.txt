@@ -82,6 +82,6 @@ RESEARCH NOTES (added during planning - for review)
      [TODO].
    - "before a municipal pressure surge destroys their internal piping" -
      needs field evidence: how often do surges originating on the municipal
-     side reach private networks, and with what magnitude? This is one of
-     the first things a pilot deployment should measure.
+     side reach private networks, and with what magnitude? No SA data
+     found; we answer it first by simulation, then with partner data.
      (08_research/open_questions.txt, Q-P1.)

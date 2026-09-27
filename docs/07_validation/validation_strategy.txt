@@ -25,17 +25,15 @@ Rung 3  Simulation studies.
   V-S2  Detection coverage vs sensor count per network archetype.
   V-S3  Classifier trained on synthetic data, tested on held-out
         networks (generalisation).
-Rung 4  Laboratory rig (to build).
-  Pipe loop tens-hundreds of metres, mixed materials (uPVC, HDPE, steel
-  section), fast valve, controllable "burst" (solenoid-actuated orifice),
-  pump with trip capability, 3-4 synchronised sensor nodes. Ground truth
-  for everything. Possible university partnership (e.g. UCT, Pretoria,
-  Stellenbosch water engineering groups) [explore].
-Rung 5  Field pilot.
-  One commercial site; start in listen-only mode; controlled test events
-  (opening a hydrant/bleed at known location and time) to measure real
-  localisation error; months of monitoring to measure false-alarm rate and
-  capture real events including municipal-side surges.
+Rung 4  Public and partner datasets (software only - we build no rig).
+  Published lab and field transient datasets (08_research/open_questions
+  R-3), plus recorded data shared by sensor vendors, utilities or
+  universities. Lab data gives ground truth; field data gives realism.
+Rung 5  Live partner data.
+  Run the engine in listen-only (shadow) mode on a live data feed from a
+  partner's sensors. Ask the partner to log known events (pump starts,
+  valve operations, opening a hydrant at a known place and time) to
+  measure real localisation error and false-alarm rate.
 
 Metrics
 -------
@@ -49,5 +47,5 @@ Metrics
                    the truth ~90% of the time?).
   Quantification:  burst flow estimate vs metered truth.
   Safety:          simulated max pressure of every recommended action.
-  Engineering:     edge power draw, data volume, uptime through
-                   load-shedding.
+  Engineering:     processing latency, throughput per stream, behaviour
+                   with gaps / late / out-of-order data.

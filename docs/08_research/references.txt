@@ -139,3 +139,54 @@ E6  Lambert, A., Hirner, W. (2000). Losses from water supply systems:
     | water balance definitions | [VERIFY]
 E7  ASTM E1049 - Standard practices for cycle counting in fatigue
     analysis (rainflow). | fatigue counting
+
+F. Added in v0.2 research (software-only scope, open questions)
+---------------------------------------------------------------
+F1  Meniconi, S. et al. (2024). Mapping pressure surge source in urban
+    water networks: integrating low- and high-frequency pressure data with
+    an illustrative real case study. Water Resources Research.
+    doi:10.1029/2023WR036773 | utility vs end-user transients; use of
+    15-min data to find stressed zones
+F2  Investigation of pressure transients induced on a real water service
+    line by user's activity. AQUA 72(12), 2331 (2023), IWA; and WEL
+    Perugia preliminary results, Eng. Proc. 2024, 69, 132.
+    | 500 Hz service-line data; -15/+65 m; few m reach the main
+F3  Field validation of a pressure transient source localization method
+    in a water distribution network. J. Hydroinformatics (2025).
+    doi:10.2166/hydro.2025.004 | field localisation; datasets
+F4  Zenodo 10.5281/zenodo.16416601 - WDN pressure transient metrics for
+    spatial interpolation (network files + transient data) | dataset
+F5  Mendeley Data tbrnp6vrnj - leak simulations in an experimental
+    testbed WDS (labelled; pressure, acoustic, acceleration) | dataset
+F6  TSNet: transient simulations in water distribution networks, Python
+    package. Advances in Engineering Software (2020). | reference solver
+F7  Real-time pipe burst localization in WDNs using change point
+    detection algorithms. arXiv:2407.09074 | detector benchmark
+F8  Explainable simulation-to-field transfer learning for transient-based
+    leak detection in WDNs (PubMed 42492208) | sim-to-real gap
+    (30% -> 62.5% accuracy after transfer learning)
+F9  Cross-regional leak detection in WDNs through domain transfer
+    (PubMed 41401765) | domain adaptation
+F10 Alexander, J., Li, Z., Lee, P., et al. (2023). Laboratory and field
+    experiment validations on the use of hydraulic transients for
+    estimating buried water pipeline deterioration. Structural Health
+    Monitoring. doi:10.1177/14759217221093666 | wave speed as health
+F11 Ashraf et al. (2024). Physics-informed graph neural networks for
+    water distribution systems. AAAI. | steady hydraulics only
+F12 Hybrid model coupling data and hydraulic transient laws for WDS.
+    Yan et al. (2025), Water Resources Research,
+    doi:10.1029/2023WR036641 | hybrid physics-ML transients
+F13 Air entrapment modelling in water supply networks during pipe
+    filling events. Urban Water Journal (2024),
+    doi:10.1080/1573062X.2024.2342785 | intermittent supply, air
+F14 WRC TT 737/17. Interpretation of logging results as a water network
+    problem-solving tool. | SA logging intervals (15 min / 1 min / 1 s)
+F15 Johannesburg Water RFQ JW0083SM2026 - Intelligent GSM telemetry data
+    loggers (eTenders). | loggers configurable 1 s - 60 min
+F16 Vendor/technical pages: Badger Meter PIPEMINDER (ex-Syrinix),
+    SUEZ Inflowmatix InflowSys, HWM transient loggers, TransientDetect /
+    SpiralData. | 128 S/s logging; commercial landscape
+F17 Strijdom, L., Speight, V., Jacobs, H.E. (2017). An assessment of
+    sub-standard water pressure in South African potable distribution
+    systems. J. Water, Sanitation and Hygiene for Development 7(4).
+    | SA pressure conditions

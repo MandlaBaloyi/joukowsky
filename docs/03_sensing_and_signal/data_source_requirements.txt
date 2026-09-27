@@ -1,0 +1,64 @@
+DATA SOURCE REQUIREMENTS
+STATUS: DRAFT v0.2 - for review
+
+joukowsky is software only. We do not build or install sensors. This file
+states what we need FROM the sensors, loggers and SCADA systems that others
+make and install, and how the engine behaves at each level of data quality.
+
+1. Data tiers (what the engine can do with what it gets)
+--------------------------------------------------------
+Tier 2  High-rate, time-synchronised pressure (>= 100 samples/s,
+        timestamps accurate to ~1 ms or better).
+        Commercial transient loggers already sample at 128 S/s.
+        -> detect, classify, LOCATE and quantify transients; fatigue and
+           surge accounting per pipe; wave speed learning.
+Tier 1  ~1 s pressure/flow loggers (SA tenders already specify loggers
+        configurable down to 1 s).
+        -> detect large events (bursts, pump trips), rough
+           classification, zone-level origin. No precise location.
+Tier 0  SCADA / loggers at 1-15 min.
+        -> baselines, stressed-zone mapping, slow-leak methods (night
+           flow, flow balance, model residuals). Transients invisible.
+The engine must run on any mix of tiers and state clearly which
+capabilities are available for each part of the network.
+
+2. What every data source must provide
+--------------------------------------
+  - Stable source ID and location (coordinates + which pipe/node it sits
+    on, and tapping details if known).
+  - Physical quantity and unit; sensor range; stated accuracy.
+  - Sample rate, and whether values are instantaneous or averaged
+    (an averaged 15-min value hides a surge completely).
+  - Timestamps per sample (not only per packet), with the time source
+    (GNSS, NTP, device clock) and its expected accuracy.
+  - Gaps, resets and clipping reported, not silently filled.
+  - Raw values kept; any on-device filtering described.
+If a source does not provide an item, the engine assumes the worst
+plausible value and widens its uncertainty accordingly (principle P3).
+
+3. Why these matter (link to physics)
+-------------------------------------
+  - Timestamp accuracy -> location error dx = a * dt / 2
+    (03_sensing_and_signal/time_synchronisation.txt).
+  - Sample rate -> onset precision; at 128 S/s one sample = 7.8 ms,
+    ~4 m of wave travel at a = 1000 m/s before sub-sample refinement.
+  - Range below 0 bar gauge -> seeing down-surges and cavitation; sensors
+    that clip at 0 hide the most dangerous part of a pump trip.
+  - Heavy on-device filtering -> smeared fronts, biased onset times.
+
+4. Other data we ingest (context, labels)
+-----------------------------------------
+  - Pump controller / VSD logs: exact start/stop/trip times = labelled
+    events for free.
+  - Valve operation logs, work orders, repair records (confirmed burst
+    locations = the most valuable labels we can get).
+  - Load-shedding schedules: predicted pump trips.
+  - Flow meters and smart meters.
+  - GIS / asset registers (treated as uncertain).
+
+5. Placement advice (software deliverable)
+------------------------------------------
+Where the installer is free to choose, the engine's placement advisor
+(04_detection_and_localisation/burst_localisation.txt, section 4)
+recommends locations that maximise detection coverage and location
+accuracy for a given number of sensors.

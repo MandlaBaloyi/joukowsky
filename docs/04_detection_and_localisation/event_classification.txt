@@ -24,7 +24,7 @@ external (muni)     arrives first  -                              order of
                     at boundary                                    arrival
 sensor fault        one sensor     no physically consistent       -
                     only           arrival elsewhere
-(Signatures to be confirmed and refined on rig and field data.)
+(Signatures to be confirmed and refined on public, partner and field data.)
 
 2. Feature vector per event
 ---------------------------

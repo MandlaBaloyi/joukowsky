@@ -9,10 +9,14 @@ act before damage cascades.
 
 Scope for now
 -------------
-Solve the technical problem first. The first target environments are
-commercially-owned internal networks (estates, factories, campuses, hospitals,
-mines) connected to South African municipal supply, because:
-  - they are small enough (km, not thousands of km) to instrument densely;
+Solve the technical problem first. joukowsky is SOFTWARE ONLY: we build the
+engine, not the sensors. It consumes data from loggers, sensors and SCADA
+that others make and install (03_sensing_and_signal/
+data_source_requirements.txt).
+The first target environments are commercially-owned internal networks
+(estates, factories, campuses, hospitals, mines) connected to South African
+municipal supply, because:
+  - they are small enough (km, not thousands of km) to monitor densely;
   - the owner controls the valves and can act on an alert;
   - they sit at the receiving end of an unstable municipal supply (pressure
     surges on reconnection, pump trips during load-shedding, intermittent
@@ -27,10 +31,11 @@ P1. Physics first. Every model has a physical interpretation. Learned
     classifiers on physical features); they do not replace them. A result
     that violates conservation of mass or momentum is a bug.
 
-P2. Measure what the physics requires, not what is cheap. Transients live
-    in the millisecond-to-second range. Sampling rates, clock accuracy and
-    sensor bandwidth are derived from wave speeds and pipe lengths (see
-    03_sensing_and_signal), not from what existing SCADA does.
+P2. Know what the data can and cannot show. Transients live in the
+    millisecond-to-second range. The engine states, for every part of the
+    network, which capabilities the available data supports (data tiers in
+    03_sensing_and_signal), and never claims to see what the sampling rate
+    makes invisible.
 
 P3. Uncertainty is a first-class output. Every detection carries a
     confidence; every location is a probability distribution over the
@@ -45,12 +50,14 @@ P5. Learn continuously, but auditably. Every model update is versioned and
     traceable to the data that caused it. We must be able to answer "why
     did the engine think this was a burst?" months later.
 
-P6. Fail safe at the edge. Networks lose power (load-shedding) and
-    connectivity. Edge devices must detect and buffer locally and survive
-    outages; the cloud is for fusion and learning, not for first detection.
+P6. Expect broken data. Networks lose power (load-shedding) and
+    connectivity; data arrives late, with gaps, out of order, or with bad
+    clocks. The engine handles this explicitly and never silently fills
+    gaps. Detection code is portable so it can also run next to the data
+    source (on a gateway) when a partner allows it.
 
 P7. Validate every claim. Each algorithm has a validation path: analytical
-    solution -> simulation -> laboratory rig -> field pilot
+    solution -> simulation -> public/partner datasets -> live partner data
     (see 07_validation).
 
 P8. Be honest about the data. Official statistics are cited with source and

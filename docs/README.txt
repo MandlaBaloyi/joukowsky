@@ -20,16 +20,17 @@ Reading order
 02_physics_of_transients/    The physics the engine is built on: Joukowsky's
                              equation, wave speed, the governing PDEs, MOC,
                              cavitation, friction, pressure-leakage laws.
-03_sensing_and_signal/       Why current SCADA cannot see transients, and the
-                             sensing, sampling and clock requirements that can.
+03_sensing_and_signal/       Why current SCADA cannot see transients, and what
+                             we need from the data sources we connect to (we
+                             build software, not sensors).
 04_detection_and_localisation/
                              Detecting events, classifying them, and locating
                              them on the network graph.
 05_learning_systems/         The digital twin and the models that learn over
                              time.
-06_engine_architecture/      How the pieces fit: edge -> core -> actions.
+06_engine_architecture/      How the pieces fit: data -> core -> actions.
 07_validation/               How we prove each claim, from textbook cases to
-                             field pilots.
+                             live partner data.
 08_research/                 References, open questions, and the research
                              backlog.
 

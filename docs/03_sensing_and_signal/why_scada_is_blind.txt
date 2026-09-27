@@ -44,19 +44,21 @@ act on them in real time. [VERIFY current commercial landscape -
     Target: combined timing error ~1 ms  ->  sampling ~1 kHz or better
     (with sub-sample arrival picking), AND clocks synchronised to well
     under 1 ms (time_synchronisation.txt).
-(c) Therefore: two modes.
-    SURVEILLANCE: ~100-250 Hz continuous, on-device detection.
-    CAPTURE:      ~1-2 kHz ring buffer, saved around each detected event
-                  (e.g. 10 s before, 60 s after).
-    [Rates to be confirmed by simulation study V-S1]
+(c) What exists in practice: commercial transient loggers sample at
+    128 S/s with accurate timing. That meets (a) and, with sub-sample
+    onset picking, gets close to (b). The engine is therefore designed
+    for >= 100 Hz input as its high-rate tier and gets better with
+    faster data if a source provides it. See data_source_requirements.txt
+    for the three data tiers (high-rate / 1 s / 1-15 min).
+    [Location accuracy vs rate to be confirmed by simulation study V-S1]
 
-4. Data volume and why edge processing is mandatory
----------------------------------------------------
-  1 kHz x 16 bit = 2 kB/s = ~173 MB/day per sensor.
-  Streaming that continuously over cellular from many sensors is costly
-  and power-hungry. Instead:
-    - continuous on-device detection at full rate,
-    - upload event windows (a few hundred kB per event, compressible),
-    - upload a continuous low-rate summary (e.g. 1 Hz min/mean/max/std)
-      so slow behaviour (demand, night pressure, drift) is still visible.
-  The detector on the edge must therefore be good; the cloud refines.
+4. Data volume (why the engine works on events, not raw streams)
+----------------------------------------------------------------
+  128 S/s x 16 bit = 256 B/s = ~22 MB/day per sensor; 1 kHz would be
+  ~173 MB/day. Vendors typically store high-rate data on the device and
+  send event windows plus summaries. The engine must therefore accept:
+    - event windows (raw high-rate data around each event),
+    - continuous low-rate summaries (e.g. 1 Hz min/mean/max),
+    - full raw streams where a source provides them.
+  Our detection library is written so that it can run either on our
+  servers or next to the sensor on a partner's gateway.

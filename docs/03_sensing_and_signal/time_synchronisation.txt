@@ -19,17 +19,20 @@ Options
   Post-hoc alignment from a
   common known event              ~ sample period       YES (calibration)
 
-Design
-------
-1. Primary: every node has a GNSS receiver; PPS disciplines the ADC clock,
-   so each SAMPLE has an absolute timestamp, not just each packet.
-2. Holdover: when GNSS is lost (chamber, interference), a TCXO holds time;
-   the node reports its estimated timing uncertainty, which the location
-   algorithm uses (P3: uncertainty as a first-class output).
+What we require from data sources (we build no hardware)
+--------------------------------------------------------
+1. Tier 2 sources should timestamp each SAMPLE from a GNSS-disciplined
+   (or PTP) clock, as commercial transient loggers do.
+2. Each source states its time source and expected accuracy; when a
+   device loses its time reference it should say so. The location
+   algorithm uses that uncertainty (P3).
+What the engine does in software
+--------------------------------
 3. Self-check: events seen by several sensors with a known source (e.g.
    scheduled pump start at a known location) give travel-time residuals;
    a persistent offset at one node indicates a clock problem, which the
-   engine estimates and corrects (05_learning_systems).
+   engine estimates and corrects (05_learning_systems). This lets the
+   engine partly repair poorly synchronised sources in software.
 4. Record, never discard, raw timestamps and clock-quality metadata.
 
 Single-sensor alternative
