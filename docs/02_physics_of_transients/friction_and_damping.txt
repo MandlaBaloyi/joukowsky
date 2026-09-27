@@ -1,0 +1,56 @@
+FRICTION, DAMPING AND DISPERSION
+STATUS: DRAFT v0.1 - for review
+
+Why it matters
+--------------
+How fast a wave decays and how much its front smears as it travels decide
+(a) how far from a burst a sensor can still detect it, and (b) how
+precisely we can pick its arrival time. Both set sensor spacing.
+
+1. Quasi-steady friction
+------------------------
+Darcy-Weisbach with the instantaneous flow: h_f = f L V|V| / (2 g D).
+It is what the basic MOC scheme uses. It is known to UNDER-predict the
+damping of transient oscillations - measured pressure oscillations die out
+significantly faster than quasi-steady models predict, because the
+velocity profile during a transient is not the steady profile (high shear
+near the wall).
+
+2. Unsteady friction models
+---------------------------
+  - Instantaneous-acceleration-based (IAB, Brunone et al. 1991; modified
+    by Vitkovsky et al.):
+        extra friction ~ k * ( dV/dt + a * sign(V) * |dV/dx| )
+    One empirical coefficient k (typically ~0.01-0.1 [VERIFY]). Cheap;
+    easy to add to MOC.
+  - Convolution-based (Zielke 1968 laminar; Vardy & Brown turbulent):
+    friction depends on the history of acceleration through a weighting
+    function. More physical; more expensive (approximated efficiently with
+    sums of exponentials).
+Decision: implement quasi-steady first (reference), then IAB, then
+convolution; choose per network by fit to calibration events.
+
+3. Viscoelastic pipe walls (PE, PVC)
+------------------------------------
+Plastic walls respond with an instantaneous elastic strain plus retarded
+creep. Modelled with one or more Kelvin-Voigt elements (creep compliance
+J_k, retardation time tau_k) added to the continuity equation (Covas et al.
+2004/2005). Effects:
+  - strong damping (often dominating friction),
+  - dispersion: the front's rise time increases with distance,
+  - apparent wave speed depends on frequency.
+The Kelvin-Voigt parameters are pipe-specific and must be calibrated from
+data - another parameter set for the learning system.
+
+4. Consequences for detection range (to quantify in simulation)
+----------------------------------------------------------------
+Attenuation sources, roughly in order of importance in a branched network:
+  (1) junction splitting (T = 2/3 per identical tee),
+  (2) viscoelastic damping in plastic pipes,
+  (3) unsteady friction,
+  (4) leaks and consumer connections (energy lost through outlets).
+A planned simulation study (07_validation, study V-S2): for representative
+estate/campus networks, compute the burst-wave amplitude at each candidate
+sensor location for bursts of 1, 2, 5 l/s at every pipe; derive the
+detection coverage map as a function of sensor count. This feeds sensor
+placement optimisation.

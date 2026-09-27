@@ -1,0 +1,62 @@
+WHY CONVENTIONAL SCADA / LOGGERS ARE BLIND TO TRANSIENTS
+STATUS: DRAFT v0.1 - for review
+
+1. Time scales that matter
+--------------------------
+  Burst / valve front rise time ............ ~1 ms to ~1 s
+  Wave travel between sensors (L/a) ........ ~0.1 s to a few s
+  Oscillation period (4L/a) ................ ~0.5 s to ~10 s
+  Decay of a surge in a distribution net ... ~seconds to ~a minute
+  Diurnal demand cycle ..................... 24 h
+Conventional monitoring was built for the LAST row only.
+
+2. Sampling arithmetic
+----------------------
+A logger recording one value (instantaneous or averaged) every T_log:
+  - Probability that an instantaneous sample falls inside a surge lasting
+    t_event: ~ t_event / T_log.
+      t_event = 5 s, T_log = 15 min (900 s): ~0.6%
+      t_event = 5 s, T_log = 1 min:          ~8%
+  - If the logger AVERAGES over T_log, a +10 bar, 5 s surge adds
+    10 * 5/900 ~ 0.06 bar to the 15-minute average - indistinguishable
+    from demand noise.
+  - Even if captured, one sample gives no peak, no shape, no arrival time.
+Conclusion: at conventional logging intervals transients are not
+under-sampled; they are invisible. No algorithm applied afterwards can
+recover them. The only fix is sensing at the physical time scale.
+
+Some commercial "transient loggers" exist (burst-mode recorders that
+switch to high rate when pressure changes fast). They show the problem
+is recognised, but typically operate standalone, unsynchronised, and are
+downloaded periodically - they record transients; they do not locate or
+act on them in real time. [VERIFY current commercial landscape -
+08_research backlog item R-7]
+
+3. What resolution is required? (derived, not guessed)
+------------------------------------------------------
+(a) To characterise the waveform (peak, rise time, period):
+    rise times down to ~10 ms, periods ~0.5 s ->
+    sampling >= ~100-200 Hz with an anti-alias filter below f_s/2.
+(b) To locate by time of arrival:
+    location error from timing error: dx = a * dt / 2
+      a = 1250 m/s: 1 ms -> 0.6 m ; 10 ms -> 6 m ; 100 ms -> 62 m
+      a =  370 m/s: 1 ms -> 0.2 m ; 10 ms -> 1.9 m
+    Target: combined timing error ~1 ms  ->  sampling ~1 kHz or better
+    (with sub-sample arrival picking), AND clocks synchronised to well
+    under 1 ms (time_synchronisation.txt).
+(c) Therefore: two modes.
+    SURVEILLANCE: ~100-250 Hz continuous, on-device detection.
+    CAPTURE:      ~1-2 kHz ring buffer, saved around each detected event
+                  (e.g. 10 s before, 60 s after).
+    [Rates to be confirmed by simulation study V-S1]
+
+4. Data volume and why edge processing is mandatory
+---------------------------------------------------
+  1 kHz x 16 bit = 2 kB/s = ~173 MB/day per sensor.
+  Streaming that continuously over cellular from many sensors is costly
+  and power-hungry. Instead:
+    - continuous on-device detection at full rate,
+    - upload event windows (a few hundred kB per event, compressible),
+    - upload a continuous low-rate summary (e.g. 1 Hz min/mean/max/std)
+      so slow behaviour (demand, night pressure, drift) is still visible.
+  The detector on the edge must therefore be good; the cloud refines.

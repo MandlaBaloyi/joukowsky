@@ -1,0 +1,87 @@
+GOVERNING EQUATIONS AND THE METHOD OF CHARACTERISTICS (MOC)
+STATUS: DRAFT v0.1 - for review
+
+1. The 1-D water hammer equations
+---------------------------------
+For a pipe with axial coordinate x, head H(x,t) and flow Q(x,t):
+
+  Continuity (mass + wall/fluid elasticity):
+      dH/dt + (a^2 / (g A)) * dQ/dx = 0
+
+  Momentum:
+      dQ/dt + g A * dH/dx + f Q|Q| / (2 D A) = 0
+
+(Partial derivatives. Convective terms V dV/dx, V dH/dx are dropped
+because V << a; slope term absorbed into H as piezometric head.)
+
+This is a hyperbolic system of two PDEs. Its characteristic speeds are
++a and -a: information travels along the pipe in both directions at the
+wave speed. That is the mathematical reason time-of-arrival localisation
+works.
+
+2. Method of characteristics
+----------------------------
+Along the lines dx/dt = +a (C+) and dx/dt = -a (C-) the PDEs reduce to
+ordinary differential equations. Discretise the pipe into N reaches of
+length dx and choose dt = dx / a (Courant number 1: exact for the
+frictionless part, no numerical diffusion). With
+      B = a / (g A)                  (characteristic impedance)
+      R = f dx / (2 g D A^2)         (friction coefficient per reach)
+for interior node P at the new time, with neighbours A (left) and B
+(right) at the old time:
+
+      C+ :  H_P = C_P - B Q_P,   C_P = H_A + B Q_A - R Q_A |Q_A|
+      C- :  H_P = C_M + B Q_P,   C_M = H_B - B Q_B + R Q_B |Q_B|
+
+      =>    H_P = (C_P + C_M) / 2
+            Q_P = (C_P - C_M) / (2 B)
+
+(Wylie & Streeter; Chaudhry.) Each boundary supplies one extra equation to
+close the one characteristic available there:
+  - reservoir:            H_P = H_res
+  - dead end:             Q_P = 0
+  - valve (orifice law):  Q_P = tau(t) * Q0 * sqrt(dH_valve / dH0)
+                          tau(t) = relative opening, from valve curve
+  - junction:             sum of Q = 0 and common H (with minor losses)
+  - pump:                 pump curve + rotor inertia (for trip/run-down)
+  - leak/burst:           Q_L = Cd A_L sqrt(2 g H) (or pressure-dependent
+                          leakage law, see pressure_leakage_and_fatigue.txt)
+  - air valve, surge tank, PRV: device-specific models.
+
+3. Networks
+-----------
+Real networks have pipes of different lengths; with one global dt, each
+pipe needs an integer number of reaches, so wave speeds are adjusted
+slightly (typically <= a few %) or interpolation is used. Wave speed
+adjustment is preferable (no numerical damping) but must be recorded as a
+known model error.
+
+4. Why the engine needs a fast MOC solver
+-----------------------------------------
+The solver is used in at least five places:
+  (1) Simulate "what would a burst at x look like at the sensors?" for the
+      location step (template/likelihood generation).
+  (2) Inverse transient analysis - thousands to millions of forward runs
+      inside an optimiser or sampler.
+  (3) Safe-action check: simulate a proposed valve closure before
+      recommending it.
+  (4) Generating synthetic training data for classifiers.
+  (5) Digital twin: running alongside the real network, fed with measured
+      boundary conditions, to compare predicted vs measured.
+Therefore it must be fast, deterministic and testable against analytical
+solutions. Candidate implementation: a compiled core (Rust or C++) with
+Python bindings for research; vectorised over many scenarios at once.
+[Decision pending - see 06_engine_architecture]
+
+5. Beyond classical MOC (research track)
+----------------------------------------
+- Frequency-domain / transfer-matrix models: represent each pipe as a
+  2x2 transfer matrix in frequency; fast for small-amplitude (linearised)
+  transients; basis of frequency-response leak detection.
+- Unsteady friction and viscoelastic extensions (friction_and_damping.txt).
+- Two-phase / cavity models (column_separation_and_intrusion.txt).
+- Adjoint of the MOC scheme: gives gradients of a data-misfit with respect
+  to all parameters in one backward pass -> gradient-based inverse
+  transient analysis at scale. Alternatively, write the solver in a
+  differentiable framework (JAX / PyTorch) so gradients come for free.
+  This is one of the more novel directions available to us.

@@ -1,0 +1,40 @@
+TIME SYNCHRONISATION: THE HIDDEN REQUIREMENT
+STATUS: DRAFT v0.1 - for review
+
+Principle
+---------
+Localisation from arrival times measures DIFFERENCES between clocks at
+different sensors. The engine can only be as precise as those clocks agree.
+    location error  dx = a * dt_clock / 2
+With a ~ 1000 m/s, every 1 ms of clock disagreement moves the estimated
+burst by ~0.5 m.
+
+Options
+-------
+  Method                          Typical sync error    Verdict
+  NTP over cellular               ~10-100 ms [VERIFY]   5-60 m error: NO
+  Cellular network time           ms-level, variable    not reliable
+  GNSS PPS disciplined clock      < 1 microsecond       YES (primary)
+  PTP (IEEE 1588) on wired LAN    sub-microsecond       YES where wired
+  Post-hoc alignment from a
+  common known event              ~ sample period       YES (calibration)
+
+Design
+------
+1. Primary: every node has a GNSS receiver; PPS disciplines the ADC clock,
+   so each SAMPLE has an absolute timestamp, not just each packet.
+2. Holdover: when GNSS is lost (chamber, interference), a TCXO holds time;
+   the node reports its estimated timing uncertainty, which the location
+   algorithm uses (P3: uncertainty as a first-class output).
+3. Self-check: events seen by several sensors with a known source (e.g.
+   scheduled pump start at a known location) give travel-time residuals;
+   a persistent offset at one node indicates a clock problem, which the
+   engine estimates and corrects (05_learning_systems).
+4. Record, never discard, raw timestamps and clock-quality metadata.
+
+Single-sensor alternative
+-------------------------
+Where two synchronised sensors are not available, the time between the
+direct arrival and reflections from known features (dead end, reservoir,
+closed valve) can bound location using ONE sensor's clock only. Less
+robust in branched networks; kept as a fallback method (04_).

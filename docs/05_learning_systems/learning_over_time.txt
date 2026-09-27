@@ -1,0 +1,62 @@
+MODELS THAT LEARN OVER TIME
+STATUS: DRAFT v0.1 - for review
+
+The engine gets better the longer it runs on a network. What exactly is
+learned, from what, and how we keep it honest:
+
+1. What is learned
+------------------
+L1  Network physics parameters (wave speeds, friction, viscoelasticity,
+    device behaviour) - Bayesian updating in the digital twin.
+L2  Sensor behaviour (noise floor, drift, clock offset) - per-sensor
+    statistical models; drives detection thresholds.
+L3  "Normal" for this network - the repertoire of routine transients
+    (pump cycles, daily valve operations, irrigation starts) as learned
+    templates/clusters. New events are compared to the repertoire;
+    novelty raises attention.
+L4  Event classifier - from rules -> synthetic-trained -> field fine-tuned
+    (04_/event_classification.txt).
+L5  Pipe health and risk - per-pipe features (fatigue damage, surge
+    exposure, intrusion exposure, wave speed trend, material, age,
+    past failures) -> failure probability model (survival analysis, e.g.
+    Cox / Weibull proportional hazards, or gradient-boosted survival
+    models once enough failures are observed).
+L6  Across networks - shared priors: what a 30-year-old uPVC pipe's wave
+    speed or failure rate looks like, learned across sites (hierarchical
+    Bayesian models; federated learning if client data must stay
+    separate).
+
+2. Candidate model families (research track, to evaluate)
+---------------------------------------------------------
+- Physics-informed neural networks (PINNs; Raissi et al. 2019) and neural
+  operators as fast surrogates of the transient equations.
+- Graph neural networks over the pipe graph: node/edge features from the
+  twin, message passing mirrors wave propagation. Promising for
+  localisation and virtual sensing (see recent WDN GNN literature).
+- Hybrid "grey-box" models: MOC + learned correction term, trained
+  end-to-end through a differentiable solver.
+- Sequence models on raw multi-sensor waveforms for classification.
+Rule: a learned model is adopted only if it beats the physics-only
+baseline on held-out events AND its outputs remain physically plausible.
+
+3. Learning loops
+-----------------
+- Online (seconds-minutes): baseline tracking, detector thresholds.
+- Event-driven (per event): parameter updates, repertoire updates.
+- Periodic (weekly/monthly): retrain classifiers, refit risk models,
+  re-optimise sensor placement suggestions.
+- Human-in-the-loop: operators confirm/reject alerts; repair crews report
+  what they found (location error in metres, failure type). These labels
+  are the most valuable data the system will ever receive - the product
+  must make giving them trivial.
+
+4. Keeping learning safe and auditable (principle P5)
+-----------------------------------------------------
+- Every model version is immutable and stored with training data
+  references, code version and evaluation results.
+- Shadow mode: a new model runs alongside the live one; it is promoted only
+  after it performs better on the same live events.
+- Drift monitoring: input distributions and performance tracked; automatic
+  rollback on degradation.
+- Guard rails: physics constraints checked on every output (e.g. a location
+  requiring a wave to travel faster than a_max is rejected).

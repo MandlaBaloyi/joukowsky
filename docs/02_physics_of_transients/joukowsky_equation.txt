@@ -1,0 +1,103 @@
+THE JOUKOWSKY EQUATION
+STATUS: DRAFT v0.1 - for review
+
+1. Statement
+------------
+A sudden change in velocity dV of a liquid column produces a pressure
+change
+        dp = - rho * a * dV            (in pressure)
+        dH = - (a / g) * dV            (in head)
+travelling away from the disturbance at the wave speed a. The sign depends
+on direction: for a valve at the downstream end, slowing the flow (dV < 0)
+raises pressure upstream of the valve and lowers it downstream.
+
+In terms of flow, with A the pipe cross-sectional area:
+        dH = - (a / (g A)) * dQ = - B * dQ,     B = a / (g A)
+B is the characteristic impedance of the pipe [s/m^2]. It appears again in
+the method of characteristics.
+
+2. Derivation sketch (momentum on the wave front)
+-------------------------------------------------
+Consider a valve closing instantaneously. In time dt the front moves a
+distance a*dt upstream. The fluid in that slice (mass rho*A*a*dt) is
+brought from V to V+dV. The pressure force needed is the momentum change
+per unit time:
+    (dp) * A = - rho * A * a * dV    =>    dp = - rho * a * dV
+(Neglects the small correction from the fluid moving at V relative to the
+front, i.e. assumes V << a, which holds: V ~ 1 m/s, a ~ 10^3 m/s.)
+
+3. Validity
+-----------
+Full Joukowsky pressure is reached only if the change is "rapid":
+    Tc <= 2L / a
+where Tc is the effective closure time and L the distance to the first
+significant reflecting boundary (reservoir, large main, open junction).
+For slower closures the reflected relief wave returns before closure ends.
+A useful first estimate for Tc > 2L/a (Michaud, linear flow decrease):
+    dH_max ~ 2 L V0 / (g Tc)
+Joukowsky is the upper bound for a single, clean velocity change - but NOT
+an absolute upper bound in real systems. It can be exceeded by:
+  - column separation and cavity collapse (see column_separation...)
+  - reflections superposing (dead ends double the wave: R = +1)
+  - line packing in long pipes (friction effect)
+  - trapped air pockets being compressed during refilling.
+
+4. Worked numbers
+-----------------
+(a) Valve closure, V0 = 1.0 m/s stopped instantaneously:
+      steel/DI/CI, a ~ 1250 m/s:  dH = 1250 * 1.0 / 9.81 ~ 127 m ~ 12.5 bar
+      AC,          a ~ 1000 m/s:  dH ~ 102 m ~ 10 bar
+      uPVC,        a ~  370 m/s:  dH ~  38 m ~ 3.7 bar
+      HDPE,        a ~  300 m/s:  dH ~  31 m ~ 3.0 bar
+    (wave speeds derived in wave_speed.txt)
+
+(b) Time scale of the event:
+      L = 200 m,  a = 1250 m/s:  2L/a = 0.32 s   period 4L/a = 0.64 s
+      L = 1000 m, a = 1250 m/s:  2L/a = 1.6 s    period 4L/a = 3.2 s
+      L = 200 m,  a = 370 m/s:   2L/a = 1.08 s   period 4L/a = 2.16 s
+    So a "rapid" closure in a campus-scale network means closing in well
+    under a second or two - achievable with solenoid valves, quarter-turn
+    ball/butterfly valves, and the last turns of a gate valve.
+
+5. The burst as an "inverse valve"
+----------------------------------
+A pipe bursting at an interior point suddenly withdraws flow Q_L. The burst
+point is a junction of two pipe halves, each of impedance B, so seen from
+the burst the network impedance is B/2 (two paths in parallel). A negative
+wave of magnitude
+        dH = - (B / 2) * Q_L = - a Q_L / (2 g A)
+radiates in BOTH directions. Inverting:
+        Q_L ~ 2 g A |dH| / a
+This is how the engine QUANTIFIES a burst from the measured step (P4).
+
+Example: DN150 AC main, A = pi * 0.075^2 = 0.01767 m^2, a = 1000 m/s,
+B = 1000 / (9.81 * 0.01767) ~ 5770 s/m^2.
+  Q_L = 2 l/s (0.002 m^3/s)  -> dH ~ 5770/2 * 0.002 ~ 5.8 m ~ 0.57 bar
+  Q_L = 10 l/s               -> dH ~ 29 m ~ 2.8 bar (upper bound: real
+                                bursts open over finite time and the leak
+                                flow falls as pressure falls)
+A 2 l/s burst loses ~173 m^3/day. Its wave is ~0.6 bar at the source -
+easily measurable with a 0.1%FS 16 bar transducer (resolution ~0.016 bar)
+if the sensor samples fast enough and the wave is not too attenuated.
+
+6. Waves at junctions and material changes
+------------------------------------------
+When a wave of amplitude F in pipe 1 reaches a junction of pipes
+1..n (impedances B_i = a_i / (g A_i)), the transmitted and reflected
+amplitudes are:
+        T = 2 (1/B_1) / sum_i (1/B_i)       transmitted into every pipe
+        R = T - 1                           reflected back into pipe 1
+Special cases:
+  - n identical pipes (tee: n = 3):  T = 2/3, R = -1/3
+  - closed/dead end:                  R = +1 (pressure doubles)
+  - large reservoir:                  R = -1 (wave inverts)
+  - PVC pipe joined to a steel pipe of equal bore: B_steel/B_PVC ~ 3.4;
+    a wave from steel into PVC: T = 2 (1/B_s) / (1/B_s + 1/B_p) ~ 0.46.
+Consequences for the engine:
+  - Each tee roughly divides the front by 1.5; waves decay quickly in
+    dense, branched networks. Sensor spacing must account for this.
+  - Reflections produce secondary fronts that arrive later; the location
+    algorithm uses the FIRST arrival and treats reflections as extra
+    information (or noise) rather than new events.
+  - Reflection timing is itself informative: it encodes distances to
+    features (dead ends, material changes, closed valves, existing leaks).

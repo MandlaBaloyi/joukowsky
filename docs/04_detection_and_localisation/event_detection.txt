@@ -1,0 +1,66 @@
+P1 - EVENT DETECTION
+STATUS: DRAFT v0.1 - for review
+
+1. Signal model
+---------------
+At sensor s:
+    p(t) = b(t) + sum_j w_j(t - t_j) + n(t)
+  b(t)  slow baseline: diurnal demand, reservoir level, PRV behaviour
+        (minutes-hours)
+  w_j   transient waveforms starting at unknown times t_j
+        (steps, spikes, damped oscillations; ms-s)
+  n(t)  noise: sensor/electrical noise + hydraulic "noise" from turbulence
+        and small demand changes (taps, toilets, irrigation valves)
+Detection = deciding online that some t_j has occurred, and estimating t_j
+precisely (the arrival time feeds localisation).
+
+2. A layered detector (edge -> cloud)
+-------------------------------------
+Layer 0  Pre-processing (edge)
+         Anti-alias filtering, decimation to surveillance rate, sensor
+         health checks (stuck value, saturation, spikes > physical limits).
+Layer 1  Baseline tracking (edge)
+         Robust estimate of b(t) (e.g. median / exponential smoothing /
+         small Kalman filter). Residual r(t) = p(t) - b_hat(t).
+Layer 2  Change detection on the residual (edge) - candidates:
+  (a) Two-sided CUSUM (Page 1954) on residual increments:
+          S+_k = max(0, S+_{k-1} + r'_k - nu)
+          S-_k = max(0, S-_{k-1} - r'_k - nu)
+          alarm if S+ or S- > h
+      nu (drift) and h (threshold) set the trade-off between detection
+      delay and false-alarm rate (average run length ARL0). Cheap; ideal
+      for an MCU.
+  (b) GLR test for a step of unknown size: maximise the likelihood ratio
+      over change time within a sliding window; more powerful, more
+      compute.
+  (c) Multi-scale wavelet detail energy (Haar/Daubechies): a step appears
+      as aligned large coefficients across scales; noise does not.
+      Used successfully for burst detection in instrumented networks
+      (e.g. WaterWiSe Singapore, Srirangarajan et al. 2013).
+  (d) Bayesian online change-point detection (Adams & MacKay 2007):
+      posterior over "time since last change"; natural confidence output.
+  Plan: implement (a), (c), (d) on recorded + simulated data; compare by
+  ROC curves at fixed detection delay (07_validation). Pick the best
+  performer that fits the edge compute budget; run heavier ones in cloud.
+Layer 3  Arrival-time refinement (edge on capture-rate data, or cloud)
+         Precise onset estimate: fit a local model (e.g. piecewise-linear
+         or AIC-based onset picker, borrowed from seismology) to the
+         full-rate buffer around the alarm; report onset time with
+         uncertainty sigma_t.
+Layer 4  Network-level fusion (cloud)
+         An event is confirmed when arrivals at multiple sensors are
+         physically consistent: time differences <= travel times along
+         the network (a coincidence gate derived from the graph and wave
+         speeds). Physically impossible combinations = separate events or
+         a sensor fault.
+
+3. False alarms are the real enemy
+----------------------------------
+A system that raises ten false bursts a week will be switched off. So:
+  - thresholds are set per sensor from its own noise statistics
+    (learned during a calibration period),
+  - known operational events (pump schedules, load-shedding times,
+    operator-logged valve work) are fed in as context and down-weighted
+    or auto-labelled,
+  - alerts go out only after Layer 4 fusion + classification (P2) with
+    confidence above a threshold; lower-confidence events are logged.

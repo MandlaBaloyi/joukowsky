@@ -1,0 +1,53 @@
+VALIDATION STRATEGY
+STATUS: DRAFT v0.1 - for review
+
+Ladder (every algorithm climbs every rung)
+------------------------------------------
+Rung 1  Analytical: results that must match closed-form physics.
+  V-A1  Instantaneous valve closure, reservoir-pipe-valve: peak = Joukowsky,
+        period = 4L/a, square wave (frictionless).
+  V-A2  Slow closure: compare with Michaud estimate and published
+        benchmark solutions.
+  V-A3  Junction transmission/reflection coefficients.
+  V-A4  Mass conservation to machine precision in network MOC.
+Rung 2  Published benchmarks and experiments.
+  V-B1  Classic laboratory data (e.g. Adelaide / Bergant-Simpson
+        reservoir-pipe-valve experiments) for friction and column
+        separation models [identify exact datasets].
+  V-B2  BattLeDIM (L-Town) for network-scale leak detection at SCADA
+        rates - useful for slow-leak methods and the digital twin, NOT for
+        transient methods (its data is not high-frequency).
+  V-B3  Search for open high-frequency network transient datasets
+        (research backlog R-3). If none exist, ours becomes a contribution.
+Rung 3  Simulation studies.
+  V-S1  Sampling-rate and clock-error study: localisation error vs f_s and
+        sigma_clock on synthetic networks. Confirms 03_ targets.
+  V-S2  Detection coverage vs sensor count per network archetype.
+  V-S3  Classifier trained on synthetic data, tested on held-out
+        networks (generalisation).
+Rung 4  Laboratory rig (to build).
+  Pipe loop tens-hundreds of metres, mixed materials (uPVC, HDPE, steel
+  section), fast valve, controllable "burst" (solenoid-actuated orifice),
+  pump with trip capability, 3-4 synchronised sensor nodes. Ground truth
+  for everything. Possible university partnership (e.g. UCT, Pretoria,
+  Stellenbosch water engineering groups) [explore].
+Rung 5  Field pilot.
+  One commercial site; start in listen-only mode; controlled test events
+  (opening a hydrant/bleed at known location and time) to measure real
+  localisation error; months of monitoring to measure false-alarm rate and
+  capture real events including municipal-side surges.
+
+Metrics
+-------
+  Detection:       probability of detection vs event amplitude (curve);
+                   detection delay distribution.
+  False alarms:    per sensor-day, after calibration period.
+  Classification:  per-class precision/recall, calibration error,
+                   abstention rate.
+  Localisation:    distance error [m] along pipe; top-k segment accuracy;
+                   credible-region coverage (does the 90% region contain
+                   the truth ~90% of the time?).
+  Quantification:  burst flow estimate vs metered truth.
+  Safety:          simulated max pressure of every recommended action.
+  Engineering:     edge power draw, data volume, uptime through
+                   load-shedding.

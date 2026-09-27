@@ -1,0 +1,55 @@
+WHY "JOUKOWSKY"
+STATUS: DRAFT v0.1 - for review
+
+The man
+-------
+Nikolai Yegorovich Zhukovsky (1847-1921; "Joukowsky" is the French
+transliteration used in his publications) is best known as a founder of
+aerodynamics - the Kutta-Joukowski lift theorem and the Joukowsky airfoil
+carry his name. Less well known is that he solved the water hammer problem.
+
+In 1897-1898 Moscow's water supply was suffering unexplained pipe failures.
+Joukowsky ran a programme of full-scale experiments on the city's mains -
+pipes of several diameters and lengths, one of them several kilometres long
+[VERIFY exact dimensions: commonly cited as 2", 4" and 6" pipes, 7620 m and
+305 m long] - closing valves at different speeds and measuring the pressure.
+His 1898 report (published 1900, translated into English by O. Simin in 1904)
+established three things that are still the foundation of the field:
+
+  1. A sudden change in flow velocity produces a pressure change
+         dp = rho * a * dV
+     which is independent of the pipe length and far larger than any
+     steady-state pressure calculation would suggest.
+
+  2. The pressure disturbance travels as a wave at a finite speed a, which
+     depends on the elasticity of both the water and the pipe wall.
+
+  3. A valve closure only produces the full pressure rise if it is
+     "rapid", i.e. faster than the round-trip time of the wave: Tc < 2L/a.
+     Slower closures let the relieving wave return from the far end in time
+     to cancel part of the rise.
+
+(Frizell in the US in 1898 and Allievi in Italy from 1902 reached related
+results. Allievi built the general theory; the fundamental relationship is
+still universally called the Joukowsky equation.)
+
+Why it is the right name for this project
+-----------------------------------------
+- Joukowsky's work was a response to exactly our problem: a city's water
+  network was breaking and nobody could see why. He answered it by
+  measuring - by instrumenting the network and reading the physics out of
+  the pressure signal. That is what this engine does, with 21st-century
+  sensors, clocks and computation.
+
+- The Joukowsky equation is the single most important relation in our
+  engine. It is used both forwards (predict how big a surge a valve or pump
+  event will create) and backwards (from a measured pressure step, infer
+  the change in flow that caused it - e.g. the size of a burst).
+
+- His third point - "a closure is safe only if slower than 2L/a" - becomes
+  a design rule for the engine's own actions. When joukowsky recommends or
+  commands a shut-off, it must never cause the very hammer it exists to
+  prevent.
+
+- The name signals intent: this is a physics-first system. Machine learning
+  sits on top of the physics, never in place of it.

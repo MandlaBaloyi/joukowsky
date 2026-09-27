@@ -1,0 +1,76 @@
+WAVE SPEED: THE PARAMETER EVERYTHING DEPENDS ON
+STATUS: DRAFT v0.1 - for review
+
+Why it matters
+--------------
+The wave speed a sets (1) the surge magnitude (dp = rho a dV), (2) the
+time scale of every event (2L/a), and (3) the conversion from arrival-time
+difference to distance in burst location (x = (L + a dt)/2). A 10% error in
+a is a 10% error in surge estimate and can put a burst tens of metres away
+from where it really is. Knowing a per pipe is central.
+
+Korteweg-Joukowsky formula (thin-walled elastic pipe)
+-----------------------------------------------------
+        a = sqrt( (K / rho) / (1 + c1 * K D / (E e)) )
+  K   = bulk modulus of water ~ 2.19 GPa (20 C)
+  rho = 998 kg/m^3
+  D   = internal diameter, e = wall thickness
+  E   = Young's modulus of the pipe wall
+  c1  = restraint factor (~1 for pipe with expansion joints;
+        1 - nu^2 for pipe anchored against axial movement; buried pipe
+        is somewhere in between). Poisson nu ~ 0.3 metals, ~0.45 plastics.
+Wave speed in unbounded water: sqrt(K/rho) = sqrt(2.19e9/998) ~ 1481 m/s.
+
+Worked examples (c1 = 1; our calculations - typical dimensions assumed)
+-------------------------------------------------------------------------
+Material        D [mm] e [mm] E [GPa]  K D/(E e)  a [m/s]
+Steel             300     8     200      0.41     ~1250
+Ductile iron      150     6     170      0.32     ~1290
+Cast iron         150    10     100      0.33     ~1285
+Asbestos-cement   150    12      24      1.14     ~1010
+uPVC              110   5.3     3.0     15.2      ~ 370
+HDPE PE100 SDR11  110    10     ~1.0*   24.1      ~ 295
+ * PE modulus is strongly time- and temperature-dependent (viscoelastic);
+   the short-term dynamic modulus relevant to fast transients is higher than
+   the long-term design modulus. Measured PE wave speeds often fall in
+   ~250-400 m/s. [VERIFY with literature values]
+Material E values are nominal textbook values [VERIFY per product standard].
+
+The things that change wave speed in the real world
+---------------------------------------------------
+1. Free air / gas. A tiny volume fraction of free air drastically lowers a
+   (Wood's equation for a bubbly mixture). ~0.1% free air by volume at a
+   few bar can halve the wave speed of a rigid pipe [VERIFY magnitude with
+   Wylie & Streeter]. Intermittent supply and refilling leave air in the
+   network - so a in SA networks may be lower and more variable than the
+   formula suggests. It also depends on pressure (air compresses), so a is
+   not a constant even within one pipe.
+
+2. Wall condition. Corrosion and wall thinning (lower e), graphitisation of
+   cast iron, and leaching/softening of AC reduce effective stiffness and
+   therefore a. This is an OPPORTUNITY: a measured drop in a for a pipe,
+   over months, is a non-invasive indicator of deterioration (transient-
+   based pipe condition assessment; see references: Stephens, Gong et al.).
+
+3. Restraint, soil and joints. Buried pipes, anchoring and flexible joints
+   change c1 and the effective stiffness.
+
+4. Temperature. K of water and E of plastics depend on temperature; plastic
+   pipe wave speeds vary noticeably between summer and winter.
+
+5. Viscoelasticity (PE, PVC). The wall keeps deforming after the pressure
+   changes (retarded strain). Effect: extra damping and dispersion - wave
+   fronts smear out as they travel. Pure elastic models over-predict the
+   later oscillations in plastic pipes. Commercial sites often have plastic
+   internal networks, so this matters for our first deployments.
+
+How the engine should handle wave speed
+---------------------------------------
+- Start: prior per pipe from material/diameter using Korteweg, with wide
+  uncertainty (e.g. +/- 20%) because asset records are unreliable.
+- Update: every event with a known source (scheduled valve operation,
+  pump start, deliberate test) gives travel times between sensors ->
+  Bayesian update of a per pipe (05_learning_systems).
+- Active calibration: deliberately generate small, safe transients (e.g. a
+  controlled quick opening of a small hydrant/test valve) to measure a.
+- Monitor: track a over time per pipe as a health indicator.

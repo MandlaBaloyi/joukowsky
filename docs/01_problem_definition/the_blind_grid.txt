@@ -1,0 +1,78 @@
+THE BLIND GRID: WHY REAL-TIME TELEMETRY IS REQUIRED
+STATUS: DRAFT v0.1 - for review
+
+The fundamental flaw in South African municipal water infrastructure is that
+it operates blindly. Because municipalities lack high-frequency telemetry at
+the "last mile" (the distribution network), they rely on reactive
+maintenance.
+
+Currently, if a municipal pipe bursts underground, it bleeds treated water
+for days or weeks before it is detected through physical inspection or
+customer complaints. When utilities attempt to solve issues - such as
+abruptly shutting valves to prevent reservoirs from running dry - they
+create severe secondary damage.
+
+Rapid valve closures or pump failures cause the water column to stop
+suddenly. The kinetic energy of the moving water is instantly converted into
+a violent pressure shockwave known as "water hammer". Because ageing
+municipal pipes are often brittle or weakened, these pressure spikes (which
+can exceed the maximum operating pressure) fracture the network. The goal of
+the joukowsky engine is to detect these transient waves in real time,
+instantly identifying sudden pressure drops (bursts) or spikes (hammer)
+before catastrophic failure cascades through the grid.
+
+
+------------------------------------------------------------------------
+RESEARCH NOTES (added during planning - for review)
+------------------------------------------------------------------------
+
+1. "Blind" is literal, not a metaphor: it is a sampling problem.
+   Where networks are monitored at all, pressure and flow loggers and SCADA
+   commonly record at intervals of minutes (typically 1-15 min) [VERIFY
+   typical SA municipal logging intervals]. A water hammer event in a
+   distribution pipe lasts from a fraction of a second to a few tens of
+   seconds, and its leading front rises in milliseconds. A logger sampling
+   once every 15 minutes will almost never capture it, and if it does,
+   will record one meaningless point. The transient is not "missed by a
+   poor algorithm" - it is physically absent from the data.
+   See 03_sensing_and_signal/why_scada_is_blind.txt for the numbers.
+
+2. How big is the spike? (Joukowsky: dp = rho * a * dV)
+   Stopping water flowing at 1 m/s instantaneously:
+     - steel / ductile iron / cast iron main (a ~ 1200-1300 m/s):
+           dp ~ 998 * 1250 * 1 ~ 1.25 MPa  ~ 12.5 bar  (~127 m head)
+     - asbestos-cement main (a ~ 1000 m/s):   ~ 10 bar
+     - uPVC (a ~ 350-450 m/s):                ~ 3.5-4.5 bar
+     - HDPE (a ~ 250-350 m/s):                ~ 2.5-3.5 bar
+   Typical distribution operating pressures are ~3-9 bar. A surge of
+   +10 bar on top of that on a 40+ year old cast iron or AC main is a
+   plausible fracture mechanism. Worked in 02_physics_of_transients.
+
+3. The surge has a twin: the down-surge.
+   The same event produces a negative wave on the other side of the valve
+   (or downstream of a tripped pump). If pressure falls to vapour pressure
+   the water column separates; when it rejoins, the collapse can produce
+   spikes larger than the Joukowsky value. Low/negative pressure also lets
+   contaminated groundwater be drawn in through leaks and joints - a public
+   health issue as well as a structural one.
+   See 02_physics_of_transients/column_separation_and_intrusion.txt.
+
+4. Bursts are transients too.
+   A pipe that ruptures suddenly opens a new outflow. That is the mirror
+   image of a valve closure: a negative pressure wave radiates from the
+   burst in both directions at speed a. Its arrival time at two or more
+   synchronised sensors reveals the burst's location. This is why the
+   engine needs high-frequency, time-synchronised sensing: it turns the
+   burst's own pressure wave into a locator beacon.
+
+5. Transients also cause slow damage.
+   Not every surge breaks a pipe. Repeated pressure cycling fatigues
+   plastic pipes and loosens joints, and each event may enlarge existing
+   leaks (leakage grows with pressure - see pressure_and_leakage.txt).
+   Counting and characterising every transient is therefore valuable even
+   when nothing breaks: it builds a fatigue history per pipe.
+
+6. South African operating conditions make this worse.
+   See the_operating_environment.txt (load-shedding pump trips,
+   intermittent supply and refilling, pressure variation at the
+   municipal/private boundary).

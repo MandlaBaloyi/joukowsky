@@ -1,0 +1,69 @@
+COLUMN SEPARATION, CAVITATION AND INTRUSION
+STATUS: DRAFT v0.1 - for review
+
+1. The down-surge
+-----------------
+Every transient has a low-pressure side: downstream of a closing valve,
+downstream of a tripped pump, and at the burst itself. If the absolute
+pressure falls to the vapour pressure of water, the liquid column
+separates and a vapour cavity forms.
+
+  Vapour pressure of water at 20 C: ~2.34 kPa (absolute).
+  The gauge-pressure floor therefore depends on atmospheric pressure,
+  i.e. on ALTITUDE:
+    - Coast (Durban, Cape Town), p_atm ~ 101 kPa:
+        floor ~ (2.3 - 101.3) kPa ~ -99 kPa  ~ -10.1 m head gauge
+    - Highveld (Johannesburg/Pretoria ~1400-1750 m), p_atm ~ 83-86 kPa:
+        floor ~ -81 to -84 kPa ~ -8.3 to -8.6 m head gauge
+  [VERIFY local atmospheric pressures; standard atmosphere gives
+  ~83 kPa at 1700 m]
+  => On the highveld, cavitation begins at a smaller down-surge than at
+  the coast. The engine must know site altitude.
+
+2. Cavity collapse
+------------------
+When the reflected wave returns, the cavity collapses and the two water
+columns collide. The resulting spike can EXCEED the Joukowsky pressure for
+the original velocity change, and several collapse cycles can follow.
+This is a known, major cause of pipe failure following pump trips.
+(Review: Bergant, Simpson & Tijsseling 2006.)
+
+Signature in measured data (useful for classification):
+  - pressure flat-lined at the vapour floor for a period (sensor reads its
+    minimum plateau),
+  - followed by a short, very sharp positive spike,
+  - repeated with decreasing amplitude, with timing that does NOT follow
+    the regular 4L/a period of an elastic oscillation.
+
+Models:
+  - DVCM (discrete vapour cavity model): cavities allowed at MOC nodes.
+    Simple, widely used; can produce unrealistic spikes.
+  - DGCM (discrete gas cavity model): small gas volume at nodes; more
+    stable and realistic for systems with dissolved/free air.
+The engine should start with DGCM for simulation of down-surges and
+flag any event where simulated or measured head reaches the floor.
+
+3. Negative pressure and contaminant intrusion
+----------------------------------------------
+A leak is a two-way orifice. During negative-pressure transients, water
+(and whatever it carries) outside the pipe can be drawn in through leaks,
+cracks and joints. Pipes in SA often run near sewers, and trench water is
+frequently contaminated. Field studies in the US measured negative
+pressure transients in distribution systems and associated them with
+intrusion risk (LeChevallier et al. 2003; Kirmeyer et al. 2001 [VERIFY]).
+
+Implications for the engine:
+  - Every event where any sensor (or the simulated field between sensors)
+    goes below ~0 bar gauge is a WATER QUALITY event, not just a
+    structural one. Log duration x depth ("negative pressure exposure").
+  - This is a strong value case for hospitals, food & beverage plants,
+    and any site where water quality is critical.
+
+4. Air valves and air pockets
+-----------------------------
+Air valves admit air at high points when pressure goes negative (limiting
+the down-surge) but then must expel it; rapid expulsion can slam the valve
+and create a secondary surge. Trapped air pockets, compressed by an
+arriving column during refilling, can produce very high pressures. Both
+are common in intermittently supplied networks. Model these as gas
+cavities with orifice in/out-flow laws.

@@ -1,0 +1,110 @@
+FORMAL PROBLEM STATEMENT
+STATUS: DRAFT v0.1 - for review
+
+One-sentence version
+--------------------
+Given a pipe network and a small number of high-frequency, time-synchronised
+pressure sensors, detect every hydraulically significant transient in real
+time, determine what caused it and where it originated, estimate the damage
+it does, and recommend actions that do not themselves cause harm - while
+continuously improving the model of the network from the events observed.
+
+The network
+-----------
+The network is a graph G = (N, E).
+  N : junctions, tanks/reservoirs, connections, dead ends.
+  E : pipes. Each pipe e has length L_e, diameter D_e, wall thickness e_e,
+      material, age, friction factor f_e and wave speed a_e.
+      Some of these are known, most are uncertain, some are wrong.
+  Devices: valves, pumps, check valves, PRVs, air valves, meters.
+
+Flow in each pipe is governed by the 1-D water hammer equations
+(02_physics_of_transients/governing_equations_and_moc.txt):
+    dH/dt + (a^2 / (g A)) dQ/dx = 0
+    dQ/dt + g A dH/dx + f Q|Q| / (2 D A) = 0
+with boundary conditions at every junction and device.
+
+The observations
+----------------
+S sensors at known positions x_1..x_S (typically S << |N|), each producing
+    p_s(t_k) = p_true(x_s, t_k + clock_error_s) + noise_s(t_k)
+at sampling rate f_s (hundreds of Hz to a few kHz), plus optional flow
+meters at lower rate, plus external context (pump schedules, load-shedding
+schedule, operator logs).
+
+The sub-problems
+----------------
+P1  DETECT
+    Decide, online and with bounded delay, that a transient event has
+    started at time t0. Control the false-alarm rate (e.g. no more than
+    one false alarm per sensor per N days) while detecting events above a
+    minimum amplitude (e.g. 0.2 bar) with high probability.
+
+P2  CLASSIFY
+    Assign each event to a class with a confidence:
+      burst / new leak | valve closure | valve opening | pump trip |
+      pump start | column separation | refilling | demand switch |
+      external (entered from municipal side) | sensor fault | unknown.
+
+P3  LOCATE
+    Estimate the origin x0 on the network (a point on an edge) as a
+    posterior distribution p(x0 | data), using arrival times and waveform
+    shape at multiple sensors. Report the smallest set of pipe segments
+    containing, e.g., 90% of the probability mass.
+
+P4  QUANTIFY
+    Estimate the magnitude of the cause: the step change in flow dQ
+    (from Joukowsky: dQ ~ g A dH / a), hence the burst flow rate or the
+    flow stopped by a valve; the peak and minimum pressures reached
+    elsewhere in the network (by simulation); whether vapour pressure was
+    reached.
+
+P5  ASSESS DAMAGE / RISK
+    Maintain, for each pipe, a history of pressure loading: count and
+    amplitude of cycles (fatigue), peak pressures versus rated pressure,
+    negative-pressure exposure (intrusion risk). Turn this into a risk
+    score that ranks pipes for inspection and replacement.
+
+P6  RECOMMEND / ACT SAFELY
+    For a detected burst: which valves to close to isolate it, and how
+    fast. The closure plan must be simulated; the peak pressure it causes
+    must stay below the pipe rating. (Rule of thumb: effective closure
+    time Tc > 2L/a with margin, staged closure for gate valves.)
+
+P7  LEARN
+    Update uncertain network parameters (wave speeds, friction, device
+    behaviour, sensor biases) from each event; update classifiers from
+    confirmed labels; detect drift (e.g. falling wave speed can indicate
+    wall thinning); keep all of this versioned and auditable.
+
+Constraints
+-----------
+C1  Latency: detection within seconds at the edge; location within tens
+    of seconds; recommendation within a minute.
+C2  Limited sensors: a few sensors per km of pipe at most. Sensor
+    placement is itself an optimisation problem (08_research).
+C3  Limited bandwidth and power: sensors may run on battery/solar and
+    cellular (LTE-M / NB-IoT); raw kHz data cannot be streamed
+    continuously. Edge processing is required.
+C4  Unreliable power and connectivity (load-shedding): edge devices must
+    buffer and survive outages.
+C5  Uncertain asset data: the network model is wrong in places; the
+    engine must be robust to that and correct it over time.
+
+Success criteria (targets to be refined in 07_validation)
+---------------------------------------------------------
+  Detection:    >= 95% of bursts producing >= 0.2 bar steps at a sensor
+  False alarms: <= 1 per sensor per 30 days after a calibration period
+  Location:     true burst pipe in the top-3 candidate segments >= 80%;
+                on a single instrumented pipe, error <= 2% of pipe length
+  Latency:      alert within 60 s of event onset
+  Safety:       zero engine-recommended actions that exceed pipe rating in
+                simulation
+
+What is explicitly out of scope (for now)
+-----------------------------------------
+- Apparent losses (billing, theft, meter error).
+- Slow background leakage that produces no transient. (Addressed later by
+  flow-balance / minimum-night-flow methods and by the learning system;
+  noted in 08_research/open_questions.txt.)
+- Water quality sensing (except as a consequence of negative pressure).

@@ -1,0 +1,59 @@
+PRESSURE, LEAKAGE AND FATIGUE: HOW TRANSIENTS BECOME WATER LOSS
+STATUS: DRAFT v0.1 - for review
+
+The causal chain the engine exists to break:
+   surges & pressure cycling -> fatigue, joint damage, crack growth
+   -> new leaks and bursts -> real losses (NRW)
+   -> higher pressure makes existing leaks leak more.
+
+1. Leakage grows with pressure (and faster than an orifice would suggest)
+-------------------------------------------------------------------------
+Fixed round hole (orifice):  Q = Cd A sqrt(2 g h)   -> Q ~ h^0.5
+Real leaks have areas that grow with pressure (cracks open, joints flex).
+
+  Power law (FAVAD concept; May 1994, Thornton & Lambert):
+      Q1 / Q0 = (h1 / h0)^N1
+  N1 ~ 0.5 for rigid round holes; ~1.0 as a typical network average;
+  up to ~1.5-2.5 for longitudinal cracks in plastic pipes [VERIFY ranges].
+
+  Modified orifice equation (van Zyl & Cassa 2014 - UCT, South Africa):
+      Q = Cd sqrt(2 g) * ( A0 h^0.5 + m h^1.5 )
+  where m is the "head-area slope": how much the leak area grows per metre
+  of head. Physically grounded: m follows from elastic deformation of the
+  leak opening. (van Zyl & Clayton 2007 on the effect of pressure on
+  leakage.)
+
+Engine relevance:
+  - Estimating leak flow from pressure needs this law, not a fixed orifice.
+  - The (A0, m) of an existing leak can in principle be inferred from how
+    its outflow varies across day/night pressure - a slow, non-transient
+    learning problem.
+  - Pressure management is itself a loss-reduction lever; the engine's
+    data supports PRV setpoint optimisation later.
+
+2. Fatigue from pressure cycling
+--------------------------------
+Plastic pipes (uPVC in particular) can fail under cyclic pressure well
+below their static rating. Metals fail at corrosion pits and joints under
+repeated loading. Every transient is a load cycle.
+
+Method the engine will use:
+  - Reconstruct the pressure history at each pipe (measured at sensors;
+    simulated between them).
+  - Rainflow counting (ASTM E1049) to extract cycles (range, mean).
+  - Miner's rule: damage D = sum_i n_i / N_i(range_i, mean_i),
+    with N from an S-N curve for the pipe material.
+  - Accumulated damage per pipe, per month -> risk score.
+S-N data for aged in-service pipes is poorly known; initially this gives a
+RELATIVE ranking ("pipe 17 has absorbed 12x more cyclic loading than the
+network median"), which is still actionable. [VERIFY available PVC/PE
+fatigue design data and standards]
+
+3. Peak and exposure metrics to record per event and per pipe
+-------------------------------------------------------------
+  - max head / rated pressure       (overpressure ratio)
+  - min head / vapour floor         (cavitation proximity)
+  - time below 0 bar gauge          (intrusion exposure)
+  - rainflow cycle spectrum         (fatigue)
+  - number of events per day        (operational stability)
+These are the core "health" features for the learning system.

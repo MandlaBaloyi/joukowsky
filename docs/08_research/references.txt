@@ -1,0 +1,141 @@
+REFERENCES
+STATUS: DRAFT v0.1 - for review
+Each entry: citation | what we use it for | verification status.
+[OK] = checked; [VERIFY] = recalled from the literature, details (pages,
+year, exact title) to be checked against the source before citing
+externally.
+
+A. South African water loss data
+--------------------------------
+A1  Department of Water and Sanitation (2023). No Drop Report 2023.
+    https://ws.dws.gov.za/iris/releases/ND_2023_Report.pdf
+    | NRW 47.4%, water losses 40.8%, SIV ~4.39e9 m^3, provincial NRW
+    | [VERIFY - figures taken from secondary reporting; DWS site was
+      unreachable from the research environment]
+A2  DWS (2026). No Drop Report 2025, released 31 March 2026.
+    | national NRW 47.3% | [VERIFY primary document]
+    Secondary: Engineering News, 1 Apr 2026, "Latest 'Drop' reports show
+    more deterioration ..."; SAHRC media statement (2026).
+A3  DWS (2023). No Drop Watch Report 2023.
+    https://ws.dws.gov.za/iris/releases/NDWR.pdf | [VERIFY]
+A4  Engineering News (25 Aug 2023). "South Africa's nonrevenue water
+    rising to worrying levels." | 37% (2014) -> 47% (2023), intl ~30%
+A5  Daily Maverick (5 Dec 2023). "Official reports reveal massive scale
+    of the waste, pollution and poorly treated water crisis."
+    | provincial NRW (KZN 60.5%, FS 59.5%, LP ~58%, WC ~27%)
+A6  Water Research Commission (2024). The Water Wheel, Nov/Dec 2024,
+    Non-Revenue Water cover feature. | context | [VERIFY]
+A7  McKenzie, R., Siqalaba, Z.N., Wegelin, W.A. (2012). The State of
+    Non-Revenue Water in South Africa. WRC Report TT 522/12.
+    | historical baseline | [VERIFY]
+
+B. Water hammer theory
+----------------------
+B1  Joukowsky, N. (1900). Uber den hydraulischen Stoss in
+    Wasserleitungsrohren. Memoires de l'Academie Imperiale des Sciences
+    de St.-Petersbourg, 9(5). English transl. Simin, O. (1904), Proc.
+    American Water Works Association, 24, 341-424. | origin | [VERIFY]
+B2  Wylie, E.B., Streeter, V.L. (1993). Fluid Transients in Systems.
+    Prentice Hall. | MOC formulation, boundary conditions, air content
+B3  Chaudhry, M.H. (2014). Applied Hydraulic Transients, 3rd ed.
+    Springer. | MOC, wave speed, cavitation
+B4  Ghidaoui, M.S., Zhao, M., McInnis, D.A., Axworthy, D.H. (2005).
+    A review of water hammer theory and practice. Applied Mechanics
+    Reviews, 58(1), 49-76. | overview, history (Joukowsky, Allievi)
+B5  Bergant, A., Simpson, A.R., Tijsseling, A.S. (2006). Water hammer
+    with column separation: a historical review. Journal of Fluids and
+    Structures, 22(2), 135-171. | cavitation models (DVCM, DGCM)
+B6  Brunone, B., Golia, U.M., Greco, M. (1991). Some remarks on the
+    momentum equation for fast transients. Proc. Int. Meeting on
+    Hydraulic Transients with Column Separation, IAHR. | IAB friction
+    | [VERIFY]
+B7  Vardy, A.E., Brown, J.M.B. (2003). Transient turbulent friction in
+    smooth pipe flows. Journal of Sound and Vibration, 259(5).
+    | convolution friction | [VERIFY]
+B8  Zielke, W. (1968). Frequency-dependent friction in transient pipe
+    flow. Journal of Basic Engineering, 90(1), 109-115. | [VERIFY]
+B9  Covas, D., Stoianov, I., Mano, J., Ramos, H., Graham, N.,
+    Maksimovic, C. (2004/2005). The dynamic effect of pipe-wall
+    viscoelasticity in hydraulic transients (Parts I & II). Journal of
+    Hydraulic Research. | viscoelastic PE | [VERIFY]
+
+C. Transient-based leak/burst detection and localisation
+--------------------------------------------------------
+C1  Liggett, J.A., Chen, L.-C. (1994). Inverse transient analysis in pipe
+    networks. Journal of Hydraulic Engineering, 120(8), 934-955. | ITA
+C2  Vitkovsky, J.P., Simpson, A.R., Lambert, M.F. (2000). Leak detection
+    and calibration using transients and genetic algorithms. Journal of
+    Water Resources Planning and Management, 126(4). | ITA | [VERIFY]
+C3  Brunone, B. (1999). Transient test-based technique for leak detection
+    in outfall pipes. J. Water Resources Planning and Management,
+    125(5), 302-306. | leak reflection method
+C4  Colombo, A.F., Lee, P., Karney, B.W. (2009). A selective literature
+    review of transient-based leak detection methods. Journal of
+    Hydro-environment Research, 2(4), 212-227. | survey
+C5  Lee, P.J., Vitkovsky, J.P., Lambert, M.F., Simpson, A.R., Liggett,
+    J.A. (2005). Frequency domain analysis for detecting pipeline leaks.
+    Journal of Hydraulic Engineering, 131(7). | FRF methods | [VERIFY]
+C6  Srirangarajan, S., Allen, M., Preis, A., Iqbal, M., Lim, H.B.,
+    Whittle, A.J. (2013). Wavelet-based burst event detection and
+    localization in water distribution systems. Journal of Signal
+    Processing Systems, 72, 1-16. | WaterWiSe Singapore; closest
+    real-world precedent | [VERIFY]
+C7  Stoianov, I., Nachman, L., Madden, S., Tokmouline, T. (2007).
+    PIPENET: a wireless sensor network for pipeline monitoring. IPSN.
+    | high-rate sensor networks | [VERIFY]
+C8  Gong, J., Simpson, A.R., Lambert, M.F., Zecchin, A.C., Kim, Y.,
+    Tijsseling, A.S. (2013). Detection of distributed deterioration in
+    single pipes using transient reflections. J. Pipeline Systems Eng.
+    and Practice. | condition assessment via wave speed | [VERIFY]
+C9  Stephens, M.L. et al. (2008-2013), transient-based condition
+    assessment field studies (Adelaide). | [VERIFY exact works]
+C10 Negative-pressure-wave localisation (pipelines): e.g. Han et al.
+    (2025) Bayesian detector for NPW arrival times, Structural Health
+    Monitoring, doi:10.1177/14759217241270936; AIP Advances 14(11)
+    115203 (2024) flow balance + NPW. | arrival picking, accuracy
+    of a few % reported in the literature
+
+D. Network-scale leak detection, benchmarks, learning
+-----------------------------------------------------
+D1  Vrachimis, S.G. et al. (2022). Battle of the Leakage Detection and
+    Isolation Methods (BattLeDIM). J. Water Resources Planning and
+    Management 148(12). Data: https://battledim.ucy.ac.cy/
+    | L-Town benchmark (782 nodes; SCADA-rate) | [VERIFY citation]
+D2  ASCE JWRPM Special Collection on BattLeDIM. | method comparisons
+D3  Raissi, M., Perdikaris, P., Karniadakis, G.E. (2019). Physics-
+    informed neural networks. Journal of Computational Physics, 378,
+    686-707. | PINNs
+D4  Algorithm-informed GNNs for leakage detection and localisation in
+    WDNs (arXiv:2408.02797). | GNN approach
+D5  Dual Unscented Kalman Filter for leak localisation (arXiv:2412.11687).
+    | data assimilation approach
+D6  "Verifiable abstention makes AI leak diagnosis accountable in urban
+    water distribution networks" (arXiv:2608.18836). | abstention, P3
+D7  "Just one more sensor is enough" - iterative leak localisation with
+    physical simulation (arXiv:2406.19900). | sensor placement
+D8  Adams, R.P., MacKay, D.J.C. (2007). Bayesian online changepoint
+    detection. arXiv:0710.3742. | detector (d)
+D9  Page, E.S. (1954). Continuous inspection schemes. Biometrika 41.
+    | CUSUM
+
+E. Pressure-leakage and intrusion
+---------------------------------
+E1  van Zyl, J.E., Clayton, C.R.I. (2007). The effect of pressure on
+    leakage in water distribution systems. Proc. ICE - Water Management,
+    160(2), 109-114. | [VERIFY]
+E2  van Zyl, J.E., Cassa, A.M. (2014). Modeling elastically deforming
+    leaks in water distribution pipes. Journal of Hydraulic Engineering,
+    140(2). | modified orifice equation | [VERIFY volume/issue]
+E3  May, J. (1994). Pressure dependent leakage. World Water and
+    Environmental Engineering. | FAVAD | [VERIFY]
+E4  Thornton, J., Lambert, A. (2005). Progress in practical prediction of
+    pressure: leakage, pressure: burst frequency and pressure:
+    consumption relationships. IWA Leakage 2005. | N1 values | [VERIFY]
+E5  LeChevallier, M.W. et al. (2003). The potential for health risks
+    from intrusion of contaminants into the distribution system from
+    pressure transients. Journal of Water and Health, 1(1), 3-14.
+E6  Lambert, A., Hirner, W. (2000). Losses from water supply systems:
+    standard terminology and recommended performance measures. IWA.
+    | water balance definitions | [VERIFY]
+E7  ASTM E1049 - Standard practices for cycle counting in fatigue
+    analysis (rainflow). | fatigue counting

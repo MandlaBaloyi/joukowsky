@@ -1,0 +1,87 @@
+THE SCALE OF NON-REVENUE WATER (NRW) IN SOUTH AFRICA
+STATUS: DRAFT v0.1 - for review
+
+The system is not failing slowly; it is actively haemorrhaging. The data
+validating the demand for a private-sector telemetry solution is staggering.
+
+According to the official No Drop report and current statistics:
+
+  * Approximately 47% of all treated municipal tap water in South Africa is
+    lost as Non-Revenue Water (NRW) before it can be billed.
+  * At least 20% of this total loss is due to direct physical leaks and
+    burst pipes. [SEE NOTE 3 - the evidence suggests the physical share is
+    considerably larger than this]
+  * The situation is deteriorating unevenly across provinces. For example,
+    KwaZulu-Natal loses roughly 60.5% of its water, while Limpopo loses
+    nearly 58%.
+
+The government cannot fund new infrastructure to replace the leaks. By
+targeting commercial clients (estates, factories, universities) who suffer
+from these localised failures, the joukowsky engine bypasses the broken
+municipal supply chain. It provides commercial clients the predictive
+intelligence necessary to isolate internal leaks and shut off systems before
+a municipal pressure surge destroys their internal piping.
+
+
+------------------------------------------------------------------------
+RESEARCH NOTES (added during planning - for review)
+------------------------------------------------------------------------
+
+1. Definitions (IWA standard water balance) - we must use these precisely.
+   System Input Volume (SIV)
+     = Authorised consumption + Water losses
+   Water losses
+     = Real losses (physical: leaks, bursts, reservoir overflows)
+     + Apparent losses (meter under-registration, theft/illegal
+       connections, data and billing errors)
+   Non-Revenue Water (NRW)
+     = Unbilled authorised consumption + Water losses
+   So NRW > water losses > real losses. joukowsky directly attacks REAL
+   losses (and, via surge monitoring, the damage that creates them).
+   It does not fix billing or theft.
+
+2. Headline numbers found so far (DWS No Drop reports):
+     National NRW, 2014 ........................ ~37%
+     National NRW, 2023 No Drop ................. 47.4%
+     National water losses, 2023 ................ 40.8% of SIV
+     System Input Volume, 2022/23 ............... ~4.39 billion m^3/yr
+     National NRW, 2025 No Drop (rel. 31 Mar 2026)  47.3%
+     International benchmark NRW (often quoted) . ~30%
+     Per-capita consumption (national avg) ...... ~218 l/c/d vs ~173 intl
+   Provincial NRW, 2023:
+     KwaZulu-Natal 60.5% | Free State 59.5% | Limpopo 57.7% |
+     Gauteng 49.2% | Western Cape 27.6% (lowest)
+   [VERIFY all against the primary PDFs: ND_2023_Report.pdf and the 2025
+   No Drop report - these were collected from secondary reporting because
+   the DWS server was not reachable from the research environment.]
+
+3. On "at least 20% physical".
+   The 2023 figure of 40.8% water losses includes apparent losses.
+   Secondary reporting puts physical leakage at roughly a third of SIV
+   (~32%), i.e. about two-thirds of NRW [VERIFY - source trail not yet
+   confirmed]. The "at least 20%" statement in the text above is therefore
+   conservative and defensible; if the ~32% figure is confirmed we should
+   use it instead, stating clearly whether it is % of SIV or % of NRW.
+
+4. What 47% means in physical terms (our working, to be checked):
+     4.39e9 m^3/yr * 0.408 water losses ~ 1.79e9 m^3/yr lost
+     ~ 4.9 million m^3 per day
+     ~ 57 m^3 every second, around the clock.
+   If real losses are ~32% of SIV: ~1.4e9 m^3/yr physically leaking.
+
+5. Trend matters more than level.
+   NRW went from ~37% (2014) to ~47% (2023) and did not improve by 2025.
+   This is consistent with ageing infrastructure, deferred maintenance and
+   operating practices that damage pipes (surges, intermittent supply) -
+   the failure mode this engine is designed to observe.
+
+6. Claims in the main text to review:
+   - "The government cannot fund new infrastructure" - true as a practical
+     statement about the backlog; we should cite a funding-gap figure
+     (e.g. DWS / National Treasury infrastructure backlog estimates)
+     [TODO].
+   - "before a municipal pressure surge destroys their internal piping" -
+     needs field evidence: how often do surges originating on the municipal
+     side reach private networks, and with what magnitude? This is one of
+     the first things a pilot deployment should measure.
+     (08_research/open_questions.txt, Q-P1.)

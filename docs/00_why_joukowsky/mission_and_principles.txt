@@ -1,0 +1,57 @@
+MISSION AND ENGINEERING PRINCIPLES
+STATUS: DRAFT v0.1 - for review
+
+Mission
+-------
+Give water networks a nervous system: see every significant hydraulic
+transient as it happens, know what caused it, know where it came from, and
+act before damage cascades.
+
+Scope for now
+-------------
+Solve the technical problem first. The first target environments are
+commercially-owned internal networks (estates, factories, campuses, hospitals,
+mines) connected to South African municipal supply, because:
+  - they are small enough (km, not thousands of km) to instrument densely;
+  - the owner controls the valves and can act on an alert;
+  - they sit at the receiving end of an unstable municipal supply (pressure
+    surges on reconnection, pump trips during load-shedding, intermittent
+    supply).
+The engine must, however, be designed so that nothing in it assumes small
+scale. Municipal district metered areas (DMAs) are the long-term target.
+
+Engineering principles
+----------------------
+P1. Physics first. Every model has a physical interpretation. Learned
+    components refine physical models (unknown parameters, residuals,
+    classifiers on physical features); they do not replace them. A result
+    that violates conservation of mass or momentum is a bug.
+
+P2. Measure what the physics requires, not what is cheap. Transients live
+    in the millisecond-to-second range. Sampling rates, clock accuracy and
+    sensor bandwidth are derived from wave speeds and pipe lengths (see
+    03_sensing_and_signal), not from what existing SCADA does.
+
+P3. Uncertainty is a first-class output. Every detection carries a
+    confidence; every location is a probability distribution over the
+    network, not a single point. The engine must be allowed to say
+    "I don't know" (abstain) rather than guess.
+
+P4. Do no harm. Any action the engine recommends (valve closure, pump
+    change) is checked against a transient simulation before it is issued.
+    Closure time must exceed 2L/a for the governing pipe, with margin.
+
+P5. Learn continuously, but auditably. Every model update is versioned and
+    traceable to the data that caused it. We must be able to answer "why
+    did the engine think this was a burst?" months later.
+
+P6. Fail safe at the edge. Networks lose power (load-shedding) and
+    connectivity. Edge devices must detect and buffer locally and survive
+    outages; the cloud is for fusion and learning, not for first detection.
+
+P7. Validate every claim. Each algorithm has a validation path: analytical
+    solution -> simulation -> laboratory rig -> field pilot
+    (see 07_validation).
+
+P8. Be honest about the data. Official statistics are cited with source and
+    date; derived numbers show their working; unverified numbers are marked.

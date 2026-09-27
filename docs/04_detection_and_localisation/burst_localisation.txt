@@ -1,0 +1,65 @@
+P3 - LOCATING THE SOURCE OF A TRANSIENT
+STATUS: DRAFT v0.1 - for review
+
+1. Single pipe, two sensors (the basic idea)
+--------------------------------------------
+Sensors at both ends of a pipe of length L; burst at distance x from
+sensor 1. The wave reaches sensor 1 after x/a and sensor 2 after (L-x)/a:
+      dt = t1 - t2 = (2x - L) / a      =>      x = (L + a * dt) / 2
+Error propagation:
+      dx = (1/2) * sqrt( (a * sigma_dt)^2 + (dt * sigma_a)^2 )
+  - timing error term: a*sigma_dt/2  (why clocks matter, 03_)
+  - wave speed error term: dt*sigma_a/2 (why learning a matters, 02_)
+    Zero when the burst is at the midpoint, largest near the sensors.
+Published negative-pressure-wave studies on pipelines report errors of a
+few % of sensor spacing [see references]; our target of <= 2% of pipe
+length on an instrumented pipe is consistent with that.
+
+2. Networks: arrival times on a graph
+-------------------------------------
+In a branched/looped network the first arrival travels along the
+fastest path. Define edge travel time tau_e = L_e / a_e. For each sensor
+s, run Dijkstra from s over the graph with weights tau_e, giving travel
+time T_s(n) to every node n. A candidate source is a point on edge
+(u,v) at fraction lambda in [0,1]; its travel time to s is:
+      T_s(u,v,lambda) = min( T_s(u) + lambda * tau_uv,
+                             T_s(v) + (1 - lambda) * tau_uv )
+Observed arrival times t_s = t0 + T_s(x0) + e_s, with e_s ~ N(0, sigma_s^2)
+(sigma_s includes clock uncertainty and onset-picking uncertainty).
+The unknown emission time t0 is eliminated analytically (it is the
+weighted mean of t_s - T_s(x0)). Then the posterior over the source:
+      p(x0 | t) ~ prior(x0) * exp( - sum_s (t_s - t0_hat - T_s(x0))^2
+                                     / (2 sigma_s^2) )
+evaluated on a fine grid along every edge. The prior encodes pipe
+failure likelihood (age, material, history) - this is where the risk
+model (P5) feeds back into localisation.
+Wave speed uncertainty is handled by marginalising over samples of the
+a_e posterior (Monte Carlo), which widens the location posterior honestly.
+
+Output: ranked list of pipe segments with probability mass; a 90%
+credible region drawn on the map.
+
+3. Beyond first arrivals
+------------------------
+- Amplitude: the first-arrival amplitude decays through junctions
+  (T = 2/3 per tee) and with damping; comparing amplitudes across sensors
+  adds information independent of timing.
+- Full waveform matching: simulate the event from each candidate location
+  with MOC and compare whole waveforms (the likelihood in section 2
+  becomes a waveform misfit). Expensive but far more informative in
+  networks with many reflections. Use a surrogate model or precomputed
+  Green's-function library (linearised response of each sensor to a unit
+  flow step at each candidate location) to make this fast.
+- Existing sensors of opportunity: bursts also show up as flow increases
+  at district/site meters; fuse with pressure data.
+
+4. Sensor placement (a design problem we must solve early)
+----------------------------------------------------------
+Choose S sensor locations to maximise expected localisation performance
+over the distribution of possible bursts (weighted by pipe risk), subject
+to install constraints (existing chambers, power, GNSS sky view).
+Objective candidates: expected posterior entropy of x0; expected size of
+90% credible region; worst-case ambiguity. Greedy selection with
+submodularity arguments is a reasonable start; mixed-integer or
+evolutionary methods for refinement. Delivered as a tool used per site
+before installation.

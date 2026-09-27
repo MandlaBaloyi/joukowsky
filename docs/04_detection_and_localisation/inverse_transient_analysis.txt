@@ -1,0 +1,54 @@
+INVERSE TRANSIENT ANALYSIS (ITA) AND PROACTIVE PROBING
+STATUS: DRAFT v0.1 - for review
+
+1. The idea
+-----------
+Forward problem: given network parameters theta (wave speeds, friction,
+leak locations and sizes, device states), the MOC model predicts the
+pressure response y(theta) at the sensors to a transient.
+Inverse problem: given measured y_obs, find theta.
+      theta_hat = argmin_theta  || y_obs - y(theta) ||^2_W  + regulariser
+(Liggett & Chen 1994 introduced ITA for leak detection and calibration in
+networks; Vitkovsky et al. 2000 with genetic algorithms.)
+
+2. Why it is hard
+-----------------
+- Ill-posed: many parameter combinations fit similar data; leaks, unknown
+  wave speeds, friction and device behaviour trade off against each other.
+- Non-convex: many local minima (reflections align in multiple ways).
+- Model error: unmodelled features (air pockets, unknown connections,
+  viscoelasticity) masquerade as leaks.
+- Cost: each objective evaluation is a full transient simulation.
+
+3. How we intend to make it tractable
+-------------------------------------
+- Bayesian formulation: posterior p(theta | y_obs), not a single best fit.
+  MCMC / sequential Monte Carlo over a reduced parameter set, reporting
+  credible regions (principle P3).
+- Gradients: differentiable MOC solver or adjoint method -> gradient-based
+  optimisation and Hamiltonian Monte Carlo instead of blind search.
+- Surrogates: neural or reduced-order surrogates of the forward model,
+  trained on simulations, used inside the sampler; verified against the
+  full MOC for final answers.
+- Sparsity: leaks are few; use sparsity-promoting priors (e.g. horseshoe /
+  L1) on leak sizes over candidate locations.
+- Staging: calibrate wave speeds and friction on events with KNOWN
+  sources first; only then search for unknown leaks.
+
+4. Proactive probing (active sensing)
+-------------------------------------
+Rather than waiting for accidental events, generate small, SAFE, known
+transients deliberately (e.g. a controlled fast-acting valve on a small
+bleed/hydrant, a few l/s for a fraction of a second, producing a surge of
+~0.1-0.5 bar - far below any damage threshold) and read the network's
+response - like sonar or seismic surveying.
+Uses:
+  - wave speed calibration per pipe,
+  - detection of existing leaks from their reflections,
+  - pipe condition assessment (wall thinning -> lower local wave speed;
+    blockages/partially closed valves -> reflections),
+  - locating unknown features (unrecorded valves, closed boundary valves).
+Frequency-domain variants (frequency response function from a pseudo-
+random binary excitation) give better signal-to-noise for the same small
+amplitude (Lee et al. 2005). This is a strong candidate for a signature
+capability of the engine. Safety checks per principle P4 apply.

@@ -1,0 +1,52 @@
+P2 - EVENT CLASSIFICATION
+STATUS: DRAFT v0.1 - for review
+
+Goal: turn "something happened" into "a burst happened" (or a pump trip,
+a valve closure, ...), with a confidence.
+
+1. Physical signatures (the features come from physics)
+-------------------------------------------------------
+Class               Initial front  After the front                Other cues
+burst / new leak    negative step  stays at a LOWER new level;    flow up at
+                                   oscillation decays around it    meters
+valve closure       + upstream,    oscillation at ~4L/a around    often
+                    - downstream   original level (flow stopped)   scheduled
+valve opening       mirror of      new level; oscillation         -
+                    closure
+pump trip           negative       deep down-surge, possible      power event
+                    (discharge)    cavitation, check-valve slam    at same time
+pump start          positive       settles at higher level        schedule
+column separation   -              flat floor at vapour limit,    see 02_
+                                   then sharp spikes, irregular
+refilling           large +        after period of ~0 pressure    supply
+                                                                   interruption
+external (muni)     arrives first  -                              order of
+                    at boundary                                    arrival
+sensor fault        one sensor     no physically consistent       -
+                    only           arrival elsewhere
+(Signatures to be confirmed and refined on rig and field data.)
+
+2. Feature vector per event
+---------------------------
+  sign and size of initial step (dH), rise time, residual offset after
+  settling (steady-state shift), dominant period(s) and damping ratio
+  (from Prony / matrix-pencil / spectral fit), minimum and maximum heads,
+  time at vapour floor, arrival order and time differences across
+  sensors, estimated source location (P3), coincidence with context
+  (schedules, load-shedding, power loss at a site, operator logs),
+  time of day, recent history at the location.
+
+3. Classifier strategy
+----------------------
+Stage A (day one, no labels): rule-based classifier on physical features,
+         thresholds from physics (above table). Transparent.
+Stage B (synthetic labels): train a model (gradient-boosted trees on
+         features; later a 1-D CNN / transformer on raw multi-sensor
+         windows) on large synthetic datasets generated with the MOC
+         simulator over randomised network parameters, noise and event
+         types (domain randomisation).
+Stage C (real labels): fine-tune with confirmed field events (operator
+         confirmations, repair records). Active learning: ask humans to
+         label the events the model is least sure about.
+Always: calibrated probabilities (e.g. temperature scaling / conformal
+prediction) and an "unknown" class - the engine must be able to abstain.

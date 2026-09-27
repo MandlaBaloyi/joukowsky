@@ -1,0 +1,72 @@
+OPEN QUESTIONS AND RESEARCH BACKLOG
+STATUS: DRAFT v0.1 - for review
+Owner review needed on every item marked [DECIDE].
+
+Problem framing
+---------------
+Q-P1  How often do municipal-side surges reach commercial sites, and at
+      what magnitude after passing the connection, meter, check valve and
+      PRV? (First thing a pilot should measure.)
+Q-P2  What pipe materials/ages dominate target sites (estates, campuses,
+      factories)? Drives wave speed priors and fatigue models.
+Q-P3  Is slow (non-transient) leakage in scope for v1? Transient methods
+      catch bursts; background leaks need flow balance / acoustic /
+      probing methods. [DECIDE]
+Q-P4  First target: private sites only, or also a municipal DMA pilot
+      partner? [DECIDE]
+
+Physics & models
+----------------
+Q-M1  Which unsteady friction and viscoelastic models give the best
+      fit-per-compute on plastic-pipe campus networks?
+Q-M2  How much free air is typically present in intermittently supplied
+      SA networks, and how does it change wave speed day to day?
+Q-M3  Differentiable MOC: JAX vs custom adjoint in Rust/C++? [DECIDE after
+      prototype]
+
+Sensing
+-------
+Q-S1  Minimum sampling rate and clock accuracy that meet location
+      targets on realistic networks (study V-S1).
+Q-S2  GNSS reception from underground chambers: external antenna,
+      above-ground posts, or alternative sync (PTP over local wired
+      links, post-hoc alignment from known events)?
+Q-S3  Power budget for continuous kHz sampling on battery/solar through
+      extended load-shedding.
+Q-S4  Can existing site infrastructure (fire system pressure gauges,
+      booster pump controllers) provide extra sensing?
+
+Algorithms
+----------
+Q-A1  Best detector per compute budget (CUSUM vs wavelet vs BOCPD) -
+      ROC study on rig + synthetic data.
+Q-A2  How well do synthetic-trained classifiers transfer to real networks
+      (sim-to-real gap)?
+Q-A3  Sensor placement algorithm and its guarantees.
+Q-A4  Safe proactive probing: design excitation (amplitude, waveform)
+      that is informative yet provably harmless.
+
+Engineering
+-----------
+Q-E1  Core language and repo layout. [DECIDE]
+Q-E2  Edge hardware platform: MCU vs Linux SoC. [DECIDE after power study]
+
+Research backlog
+----------------
+R-1   Obtain and read primary No Drop 2023 and 2025 reports; replace every
+      [VERIFY] statistic with a page-referenced value.
+R-2   Verify every [VERIFY] reference in references.txt.
+R-3   Search for open high-frequency transient datasets from real
+      distribution networks.
+R-4   Literature review: transient-based condition assessment field
+      results (wave speed as a health indicator).
+R-5   Literature review: GNNs / PINNs / neural operators for WDN
+      transients (state of the art 2023-2026).
+R-6   Typical SA municipal SCADA/logger sampling intervals (support the
+      "blind grid" claim with data).
+R-7   Commercial landscape: existing transient loggers and burst-detection
+      products; what they do and do not do (technical, not business,
+      comparison).
+R-8   Identify SA university water engineering groups for a lab-rig
+      partnership.
+R-9   Build a first MOC prototype and reproduce V-A1..V-A4.

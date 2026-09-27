@@ -1,0 +1,56 @@
+ENGINE ARCHITECTURE - FIRST SKETCH
+STATUS: DRAFT v0.1 - for review (no technology decisions are final)
+
+Data flow
+---------
+ [pressure sensor + GNSS clock]
+        |
+ EDGE NODE -----------------------------------------------------------
+   acquire (kHz) -> filter -> baseline -> change detector (CUSUM/wavelet)
+   ring buffer (capture rate)  -> on alarm: onset picking, event packet
+   1 Hz summary stream; local store for outages; health telemetry
+        |  LTE-M / NB-IoT / LoRaWAN
+ INGEST ---------------------------------------------------------------
+   authenticated device gateway -> time-series store (summaries)
+                                -> event store (raw windows, immutable)
+        |
+ CORE (event pipeline) ------------------------------------------------
+   1. fusion: group arrivals across sensors (graph-based coincidence gate)
+   2. classify (P2)            3. locate (P3, Bayesian on graph)
+   4. quantify (P4, Joukowsky + twin)
+   5. risk update (P5)         6. action plan + safety simulation (P6)
+        |
+ OUTPUTS --------------------------------------------------------------
+   alerts (SMS/app/email) with location map and confidence
+   operator console: event timeline, waveforms, map, pipe health
+   optional: actuation interface to motorised/solenoid valves
+             (human confirmation by default; auto-close only with
+              simulated-safe closure profile)
+        |
+ LEARNING PLANE -------------------------------------------------------
+   digital twin (parameters as distributions), data assimilation,
+   training pipelines, model registry, shadow evaluation (05_)
+
+Modules (candidate repository layout, to decide)
+------------------------------------------------
+  physics/     MOC solver, steady-state solver, cavity and friction models,
+               network graph, junction/device boundary conditions
+  signal/      filters, detectors, onset pickers, feature extraction
+  locate/      graph travel times, Bayesian localisation, sensor placement
+  infer/       inverse transient analysis, data assimilation
+  learn/       classifiers, surrogates, risk models, registry
+  edge/        firmware-side detection (shares algorithms with signal/)
+  sim/         scenario generator for synthetic datasets
+  service/     ingest, event pipeline, APIs, alerting
+  docs/        this documentation
+
+Technology questions to decide (see 08_research/open_questions.txt)
+--------------------------------------------------------------------
+  - Core numerics language: Rust vs C++ vs Julia vs JAX (differentiable);
+    likely a compiled core + Python research layer.
+  - Edge platform: MCU (Cortex-M class, C/Rust) vs Linux SoC.
+  - Stores: time-series DB for summaries; object store for raw windows.
+  - Stream processing: simple queue + workers first; heavier frameworks
+    only if scale requires.
+Principle: build the physics and signal cores as pure, deterministic,
+heavily-tested libraries first. Services are thin shells around them.

@@ -1,0 +1,47 @@
+THE DIGITAL TWIN
+STATUS: DRAFT v0.1 - for review
+
+Definition (for this project)
+-----------------------------
+A digital twin is a physics model of a specific network (graph + pipe
+parameters + devices) whose uncertain parameters are continuously
+estimated from that network's measurements, and which can be run forwards
+(prediction, "what if") and backwards (inference) on demand.
+Not a 3-D visualisation. A calibrated, uncertainty-aware simulator.
+
+Layers
+------
+1. Structure   graph, pipe geometry/material, device inventory.
+               Source: as-built drawings, GIS, site survey. Known to be
+               incomplete; versioned; corrections flow back from inference
+               (e.g. "this boundary valve must be closed").
+2. Parameters  per pipe: a_e, f_e, unsteady friction k_e, viscoelastic
+               (J_k, tau_k); per device: valve curves, pump curves,
+               check-valve closure behaviour; per sensor: offset, gain,
+               drift, clock offset. Each held as a probability distribution.
+3. State       slow hydraulic state (steady flows/heads, from demand model
+               + low-rate data) = initial condition for any transient run.
+4. Solvers     MOC transient solver (02_), steady-state solver (EPANET-
+               class) for initial conditions, surrogates for speed.
+
+Data assimilation
+-----------------
+- Slow state: Kalman-type filtering (ensemble Kalman filter) of steady
+  heads/flows from the 1 Hz summaries and meters.
+- Parameters: Bayesian update after each event with a known or confidently
+  inferred source. Parameters change slowly, so this is sequential
+  Bayesian estimation (e.g. sequential Monte Carlo, or Laplace/variational
+  approximations when cheap updates are needed).
+- Model discrepancy: keep an explicit term for "what the physics model
+  cannot explain" (Kennedy & O'Hagan-style discrepancy, or a learned
+  residual model). If discrepancy grows at one location, the structure is
+  probably wrong there (unknown connection, air pocket, closed valve).
+
+What the twin enables
+---------------------
+- Likelihoods for localisation (04_), without which location in a complex
+  network is guesswork.
+- Safe-action checks (P6): simulate every recommended valve operation.
+- Estimated pressures at un-instrumented pipes (virtual sensors) ->
+  fatigue and intrusion exposure for every pipe, not just sensor locations.
+- Synthetic training data that matches THIS network.

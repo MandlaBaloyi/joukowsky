@@ -1,0 +1,63 @@
+THE OPERATING ENVIRONMENT: WHY SOUTH AFRICAN NETWORKS SEE MORE TRANSIENTS
+STATUS: DRAFT v0.1 - for review
+
+A textbook network operates at steady state and experiences occasional,
+planned transients. South African networks do not. Several local conditions
+generate transients routinely. These are hypotheses to confirm with field
+data, but each is grounded in well-understood physics.
+
+1. Load-shedding and grid instability -> pump trips
+   When power to a pumping station is cut, pumps run down within seconds.
+   Flow on the discharge side decelerates abruptly, producing a down-surge
+   (negative pressure wave) that can reach vapour pressure on high points,
+   followed by an up-surge when the column rejoins or the check valve
+   slams. Power restoration and simultaneous pump restarts produce a
+   second set of transients. Scheduled outages occur at known times,
+   which is useful: they give the engine labelled, predictable events for
+   calibration (see 05_learning_systems).
+
+2. Intermittent supply and refilling
+   Many networks are deliberately or involuntarily run intermittently
+   (water shedding, reservoir drawdown, supply interruptions). When a
+   drained section is refilled, air pockets form and are compressed, and
+   the arriving water column strikes closed ends and air valves.
+   Refilling transients are known to be among the most violent in
+   distribution systems. Draining also creates negative pressure and
+   intrusion risk.
+
+3. Emergency valve operations
+   Operators close valves quickly to isolate bursts or protect reservoirs.
+   Manual gate valves close slowly in the first turns and very fast in the
+   last ~10-20% of travel, where most of the flow change happens - so an
+   apparently "slow" closure can still be hydraulically rapid.
+
+4. Ageing, mixed-material networks
+   Asbestos-cement, cast iron, steel, uPVC and HDPE coexist, often in the
+   same zone. Each has a different wave speed (1000-1300 m/s for rigid
+   pipes, 250-450 m/s for plastics), so waves partially reflect at every
+   material change. Rigid, old pipes see the largest surges and have the
+   least remaining strength.
+
+5. The municipal / private boundary
+   A commercial site's internal network is hydraulically connected to the
+   municipal main through its connection. Surges on the municipal side
+   propagate into the site (attenuated by the meter, check valves and
+   pressure reducing valves, if present), and the site's own operations
+   (fire-pump tests, booster pumps, solenoid valves, rapid-closing taps)
+   create internal transients. The engine must distinguish "came from
+   outside" from "originated inside" - which is a localisation problem
+   (sensor at the boundary sees it first => external).
+
+6. Poor asset records
+   Pipe material, diameter, age and even routing are often uncertain.
+   Wave speeds therefore cannot simply be looked up; they must be
+   estimated from measured events. This is one of the key reasons the
+   engine needs to learn.
+
+Implication for the engine
+--------------------------
+The engine cannot treat transients as rare anomalies. It must expect a
+high background rate of "normal" transients (pump starts, valve operations,
+demand switching) and classify them, isolating the rare dangerous ones
+(bursts, severe surges, column separation). Event classification is
+therefore as important as event detection.
