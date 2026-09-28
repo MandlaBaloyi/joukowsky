@@ -86,6 +86,17 @@ impl InitialCondition {
     ) -> Result<SteadyState, HydraulicsError> {
         let n_nodes = network.nodes().len();
         let bad = |why: String| Err(HydraulicsError::InconsistentInitialState(why));
+        if !matches!(self, Self::Steady(_))
+            && let Some(n) = network
+                .nodes()
+                .iter()
+                .position(|node| matches!(node, Node::Pump { .. }))
+        {
+            return bad(format!(
+                "node {n} is a running pump: its head gain is only known from a \
+                 steady solve - use InitialCondition::Steady"
+            ));
+        }
         match self {
             Self::AtRest { head } => {
                 let h = head.value();
@@ -166,7 +177,8 @@ fn from_pipe_flows(
         }
         let tol = FLOW_TOLERANCE * scale.max(1e-6);
         match node {
-            Node::Reservoir { .. } => {}
+            // A pump never gets here: it needs a steady solve (refused above).
+            Node::Reservoir { .. } | Node::Pump { .. } => {}
             Node::Junction { demand } => {
                 let imbalance = inflow - outflow - demand.value();
                 if imbalance.abs() > tol {

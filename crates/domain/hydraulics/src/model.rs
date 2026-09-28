@@ -9,6 +9,7 @@
 use jk_kernel::{Acceleration, Flow, Head, Time};
 
 use crate::boundary::junction::PipeEnd;
+use crate::boundary::pump::Pump;
 use crate::error::{finite, positive};
 use crate::{HydraulicsError, Pipe, ValveClosure};
 
@@ -66,6 +67,16 @@ pub enum Node {
     /// An ideal check valve joining exactly two pipes: one ending here
     /// (upstream side) and one starting here (downstream side).
     CheckValve,
+    /// A pump with a discharge non-return valve, joining exactly two pipes:
+    /// the suction pipe ends here, the discharge pipe starts here. Runs at
+    /// rated speed until `trip`, then runs down under its own inertia.
+    Pump {
+        /// The pump and its drive.
+        pump: Pump,
+        /// When the power fails (None: never). Must be after t = 0, since
+        /// the steady state assumes the pump is running.
+        trip: Option<Time>,
+    },
 }
 
 /// A pipe placed between two nodes. Positive flow runs `from` -> `to`.
@@ -299,6 +310,18 @@ impl Network {
                     if !(ending == 1 && starting == 1) {
                         return fail(
                             "a check valve must join one pipe ending and one starting here",
+                        );
+                    }
+                }
+                Node::Pump { pump, trip } => {
+                    pump.validate()?;
+                    if let Some(t) = trip {
+                        positive("pump trip time", t.value())?;
+                    }
+                    if !(ending == 1 && starting == 1) {
+                        return fail(
+                            "a pump must join its suction pipe (ending here) and its \
+                             discharge pipe (starting here)",
                         );
                     }
                 }

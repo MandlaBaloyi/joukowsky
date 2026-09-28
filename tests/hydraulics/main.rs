@@ -10,5 +10,5 @@
 //! Later: `cross_code` (against `TSNet`, rung 3).
 //! Run only these:  `.\tests\run-tests.ps1 -Only hydraulics`
 
-mod analytical;
+pub mod analytical;
 mod invariants;

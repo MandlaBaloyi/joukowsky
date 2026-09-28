@@ -61,6 +61,11 @@ pub struct SteadySolution {
     pub max_continuity_residual: Flow,
     /// Check valves that are shut in the steady state.
     pub closed_check_valves: Vec<NodeId>,
+    /// Pumps whose non-return valve is shut: they cannot overcome the head
+    /// against them, so they deliver nothing.
+    pub idle_pumps: Vec<NodeId>,
+    /// Head each pump adds (discharge minus suction head).
+    pub pump_lifts: Vec<(NodeId, Head)>,
 }
 
 impl Network {

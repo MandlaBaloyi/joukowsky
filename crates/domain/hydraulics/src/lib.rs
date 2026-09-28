@@ -24,6 +24,7 @@ pub mod pipe;
 pub mod steady;
 
 pub use boundary::closure::ValveClosure;
+pub use boundary::pump::{Pump, PumpCurve, thorley_inertia};
 pub use error::HydraulicsError;
 pub use moc::grid::Grid;
 pub use moc::network::{GridOptions, InitialCondition, NetworkGrid, NetworkRun, Probe};

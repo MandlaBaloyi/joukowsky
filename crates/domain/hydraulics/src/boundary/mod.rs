@@ -12,13 +12,15 @@
 //! these sit inside the solver's inner loop.
 //!
 //! Milestone S2. Done: reservoir, dead end, valve (+ closure curves),
-//! junction, leak/burst, ideal check valve. Next: pump (curve + run-down on
-//! power loss), PRV, air valve, surge vessel.
+//! junction, leak/burst, ideal check valve, pump with non-return valve
+//! (normal zone, run-down after a trip). Next: four-quadrant pump curves,
+//! dynamic valve slam, PRV, air valve, surge vessel.
 
 pub mod check_valve;
 pub mod closure;
 pub mod dead_end;
 pub mod junction;
 pub mod leak;
+pub mod pump;
 pub mod reservoir;
 pub mod valve;

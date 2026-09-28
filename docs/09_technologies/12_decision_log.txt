@@ -70,6 +70,19 @@ TD-016 | 2026-09-28 | Low-rate (Tier 0/1) module is the SECOND thing we
        rates from day one. | Claude (delegated) | most SA data that
        exists today is low-rate (08_research Q-P3). | resolves P-08
 
+TD-017 | 2026-09-28 | Pumps, version 1: normal operating zone only
+       (affinity laws on the 3-point datasheet curve, parabolic efficiency),
+       with an integral discharge non-return valve. Pumps without one, or
+       reverse flow / turbining / reverse rotation, need four-quadrant
+       (Suter) curves: version 2. The run-down is Newton's law for
+       rotation; inertia defaults to Thorley's regressions and is treated
+       as an uncertain prior (-50%/+100%), to be learned from real trips.
+       Leaving the normal zone during a simulated trip is detected and
+       reported, not hidden. | Claude (delegated) | covers the standard SA
+       pump-station layout; TSNet has no inertia-driven power-failure
+       model at all, so this is a capability, and complete-characteristic
+       data is rarely available for real pumps. |
+
 WORKING RULES FOR THE DEV MACHINE
 ------------------------------------------------------------------------
   Laptop: Intel Core i3-1125G4 (4 cores / 8 threads, 2.0 GHz), 16 GB RAM,

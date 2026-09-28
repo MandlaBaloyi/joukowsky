@@ -1,7 +1,7 @@
 joukowsky test run
-  when     2026-09-28 18:00:14
+  when     2026-09-28 18:17:48
   suite    quick
-  commit   fa859ba (with uncommitted changes)
+  commit   c5b700a (with uncommitted changes)
   rust     rustc 1.98.1 (48a229cea 2026-09-01)
   command  cargo test --workspace --no-fail-fast -- --nocapture --test-threads=1
 ==============================================================================
@@ -14,7 +14,7 @@ test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; fini
 
      Running unittests src\lib.rs (target\debug\deps\jk_hydraulics-c42e47dfc771fa13.exe)
 
-running 37 tests
+running 43 tests
 test boundary::check_valve::tests::open_valve_passes_forward_flow_like_a_plain_joint ... ok
 test boundary::check_valve::tests::reversing_flow_shuts_it_and_each_side_becomes_a_dead_end ... ok
 test boundary::check_valve::tests::stays_shut_until_upstream_pushes_harder_then_reopens ... ok
@@ -26,6 +26,12 @@ test boundary::junction::tests::flows_balance_and_every_pipe_satisfies_its_chara
 test boundary::leak::tests::a_zero_coefficient_is_no_leak ... ok
 test boundary::leak::tests::below_the_outside_head_water_is_drawn_in ... ok
 test boundary::leak::tests::outflow_obeys_the_orifice_law_and_continuity ... ok
+test boundary::pump::tests::curve_passes_through_its_three_points_and_scales_with_speed ... ok
+test boundary::pump::tests::non_return_valve_shuts_when_the_pump_cannot_push ... ok
+test boundary::pump::tests::rated_torque_is_power_over_speed ... ok
+test boundary::pump::tests::rejects_curves_that_rise_or_cross ... ok
+test boundary::pump::tests::step_satisfies_both_characteristics_and_the_pump_curve ... ok
+test boundary::pump::tests::thorley_rpm_form_matches_the_thousand_rpm_form ... ok
 test boundary::reservoir::tests::head_is_held_and_flow_satisfies_the_characteristic ... ok
 test boundary::valve::tests::a_shut_valve_passes_nothing_and_takes_the_full_characteristic_head ... ok
 test boundary::valve::tests::fully_open_valve_passes_its_steady_flow ... ok
@@ -53,7 +59,7 @@ test pipe::tests::timing_matches_docs_example ... ok
 test steady::dense::tests::reports_a_matrix_that_is_not_positive_definite ... ok
 test steady::dense::tests::solves_a_known_system ... ok
 
-test result: ok. 37 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s
+test result: ok. 43 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
 
      Running unittests src\lib.rs (target\debug\deps\jk_kernel-eccabcc9e10cd5d2.exe)
 
@@ -75,7 +81,7 @@ test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; fini
 
      Running hydraulics\main.rs (target\debug\deps\hydraulics-356f9c4fa69611d2.exe)
 
-running 29 tests
+running 35 tests
 test analytical::boundaries::burst::a_10mm_hole_at_60m_head ... DN150 AC main at 60 m head, 0.5 m/s; a 10 mm hole opens (Cd 0.6):
   water lost              1.555 l/s  (134 m^3 per day)
   head step at the burst  -4.486 m
@@ -157,6 +163,51 @@ Size from the step at S1:
   burst flow sized from the step [l/s]         got       1.553399   expected       1.554948   rel.err 1.0e-3
   S2 hears it later than S1 (closer to S1)     yes
   => estimated loss 134 m^3/day, located to within one 10 m reach.
+ok
+test analytical::pumps::inertia::inertia_of_the_station_pump ... Pump + motor for 79.5 kW at 1450 rpm:
+  estimated inertia 2.46 kg m^2
+  agrees with the 1000-rpm form [kg m^2]       got       2.456214   expected       2.462915   rel.err 2.7e-3
+  in the plausible range for ~80 kW (1-5 kg m^2) yes
+  NOTE: real values scatter -50% .. +100% around this estimate;
+  the engine treats it as a prior to learn from trip events, not a fact.
+ok
+test analytical::pumps::operating_point::a_pump_cannot_beat_a_lift_above_its_shut_off_head ... Lift 90 m against a pump whose shut-off head is 80 m:
+  the non-return valve holds it idle           yes
+  no flow [l/s]                                got       0.000000   expected       0.000000   rel.err 0.0e0
+ok
+test analytical::pumps::operating_point::pump_curve_meets_system_curve ... Sump 10 m -> pump -> 2000 m rising main -> reservoir 60 m:
+  flow: engine vs hand [l/s]                   got     104.560082   expected     104.560082   rel.err 8.2e-16
+  pump head = curve at that flow [m]           got      63.521317   expected      63.521317   rel.err 2.2e-16
+  static lift 50 m + friction 13.52 m
+  the pump is delivering                       yes
+ok
+test analytical::pumps::run_down::speed_follows_the_exact_run_down_curve ... Power fails at t = 0.50 s; k = 0.8643 /s; dt = 0.01 s
+  speed after 1 s: 0.5364 (exact 0.5364)
+  speed after 9 s: 0.1086
+  largest deviation from alpha = 1/(1 + k t): 5.6e-6
+  simulated run-down matches the exact curve (< 1e-5) yes
+  flow stays exactly zero [l/s]                got       0.000000   expected       0.000000   rel.err 0.0e0
+ok
+test analytical::pumps::trip::frictionless_down_surge_follows_the_joukowsky_characteristic ... Frictionless main, B = 1442.6 s/m^2, first 2L/a = 4 s after the trip:
+  largest gap between H_d - H_d0 and B (Q - Q0): 2.6e-10 m
+  discharge head follows the Joukowsky characteristic (< 1e-9 m) yes
+ok
+test analytical::pumps::trip::pump_trip_on_a_rising_main ... Before the trip: 104.6 l/s at a discharge head of 73.39 m
+  nothing moves before the trip (< 1e-9 m)     yes
+After the power fails at t = 1 s:
+  +0.5 s: speed 57%, flow 73.5 l/s
+  +1 s: speed 36%, flow 64.4 l/s
+  +2 s: speed 28%, flow 63.0 l/s
+  non-return valve shuts at t = 5.89 s
+  the non-return valve shuts                   yes
+  flow never reverses                          yes
+  speed never rises while the pump is pumping  yes
+  pump LEAVES its normal zone at t = 2.56 s (discharge below suction):
+  beyond this point its speed needs four-quadrant curves (version 2)
+Down-surge:
+  lowest head at the pump      9.9 m (steady 73.4 m)
+  lowest head mid-main         5.3 m
+  Joukowsky bound for stopping 104.6 l/s: B Q0 = 150.8 m
 ok
 test analytical::single_pipe::friction::friction_causes_line_packing_and_damping ... Friction f = 0.03, instant closure; Joukowsky dH = 101.972 m
   steady valve head            94.901 m
@@ -288,7 +339,7 @@ test invariants::steady_state::an_undisturbed_pipe_stays_steady ... Steady state
   valve holds steady                           yes
 ok
 
-test result: ok. 28 passed; 0 failed; 1 ignored; 0 measured; 0 filtered out; finished in 0.03s
+test result: ok. 34 passed; 0 failed; 1 ignored; 0 measured; 0 filtered out; finished in 0.07s
 
      Running kernel\main.rs (target\debug\deps\kernel-de7e7becf50a66a6.exe)
 
@@ -334,9 +385,9 @@ running 0 tests
 test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
 
 ==============================================================================
-  passed   76
+  passed   88
   failed   0
   skipped  1 slow test(s) not in this suite (run -Suite full)
   filtered 0 test(s) outside -Only/-Filter
-  time     1.0 s (including compile)
+  time     0.6 s (including compile)
   result   ALL PASSED

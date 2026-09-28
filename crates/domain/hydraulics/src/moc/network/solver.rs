@@ -5,7 +5,8 @@
 //!      (the same [`Characteristics`] code the single-pipe solver uses);
 //!   2. every node gathers the characteristic each of its pipes brings and
 //!      applies its boundary: reservoir, junction (with any active burst),
-//!      valve, or check valve;
+//!      valve, check valve, or pump (after a trip, its speed is advanced
+//!      with a predictor-corrector step of the run-down equation);
 //!   3. probes are recorded.
 //!
 //! All arithmetic is in a fixed order, so the same network and inputs give
@@ -16,7 +17,7 @@ use jk_kernel::Time;
 use crate::HydraulicsError;
 use crate::boundary::check_valve;
 use crate::boundary::junction::{self, Arrival, PipeEnd};
-use crate::boundary::{leak, valve};
+use crate::boundary::{leak, pump, valve};
 use crate::error::positive;
 use crate::moc::characteristics::Characteristics;
 use crate::moc::grid::MAX_STEPS;
@@ -31,7 +32,8 @@ pub enum Probe {
     /// A node: its head, and the flow LEAVING the network there (demand +
     /// burst outflow at a junction, the valve flow at a valve, the net flow
     /// into a reservoir, 0 at a check valve). At a check valve the head is
-    /// the upstream side's.
+    /// the upstream side's. At a pump: the DISCHARGE head (where the
+    /// down-surge after a trip is worst) and the flow through the pump.
     Node(NodeId),
     /// A point along a pipe (fraction 0 = its `from` end, 1 = its `to` end):
     /// head and pipe flow at the nearest grid node.
@@ -50,6 +52,8 @@ pub struct NetworkRun {
     pub grid: NetworkGrid,
     /// The recorded probes, in request order.
     pub trace: Trace,
+    /// Speed ratio N / `N_rated` of every pump, one sample per time step.
+    pub pump_speeds: Vec<(NodeId, Vec<f64>)>,
 }
 
 #[derive(Clone, Copy)]
@@ -126,9 +130,30 @@ impl Network {
                     })
                     .sum(),
                 Node::CheckValve => 0.0,
+                Node::Pump { .. } => pump_suction_flow(&topo[n], &steady.pipe_flows),
             })
             .collect();
         let mut check_states = steady.check_valves.clone();
+
+        // Pumps: speed ratio, flow, and the recorded speed history. A pump
+        // node reports its discharge head.
+        let mut pump_alpha = vec![1.0; self.nodes().len()];
+        let mut pump_flow = node_outflow.clone();
+        let mut pump_speeds: Vec<(NodeId, Vec<f64>)> = Vec::new();
+        for (n, node) in self.nodes().iter().enumerate() {
+            if matches!(node, Node::Pump { .. }) {
+                let discharge = topo[n]
+                    .iter()
+                    .find(|(_, e)| *e == PipeEnd::Upstream)
+                    .map(|(p, _)| p.0)
+                    .expect("topology checked: a pump has a discharge pipe");
+                node_head[n] = steady.pipe_end_heads[discharge].0;
+                let mut history = Vec::with_capacity(steps + 1);
+                history.push(1.0);
+                pump_speeds.push((NodeId(n), history));
+            }
+        }
+        let (g_si, dt_si) = (g.value(), dt.value());
 
         let mut trace = Trace::new(dt, probes.len(), steps + 1);
         record(&mut trace, &resolved, &node_head, &node_outflow, &h, &q);
@@ -235,6 +260,50 @@ impl Network {
                         node_outflow[n] = 0.0;
                         continue;
                     }
+                    Node::Pump { pump, trip } => {
+                        let pos = |e: PipeEnd| {
+                            arrivals
+                                .iter()
+                                .position(|a| a.end == e)
+                                .expect("topology checked: suction and discharge pipes")
+                        };
+                        let (i_in, i_out) = (pos(PipeEnd::Downstream), pos(PipeEnd::Upstream));
+                        let (a_in, a_out) = (arrivals[i_in], arrivals[i_out]);
+                        let solve = |alpha: f64| {
+                            pump::step(
+                                &pump.curve,
+                                alpha,
+                                a_in.characteristic,
+                                a_in.impedance,
+                                a_out.characteristic,
+                                a_out.impedance,
+                            )
+                        };
+                        let tripped = trip.is_some_and(|at| t > at);
+                        let alpha = if tripped {
+                            // Heun: predict with the old torque, correct with
+                            // the average of old and predicted.
+                            let a_old = pump_alpha[n];
+                            let dec_old = pump.deceleration(pump_flow[n], a_old, g_si);
+                            let a_pred = (a_old + dt_si * dec_old).max(0.0);
+                            let dec_pred = pump.deceleration(solve(a_pred).flow, a_pred, g_si);
+                            (a_old + 0.5 * dt_si * (dec_old + dec_pred)).max(0.0)
+                        } else {
+                            1.0
+                        };
+                        let s = solve(alpha);
+                        pump_alpha[n] = alpha;
+                        pump_flow[n] = s.flow;
+                        let (p_in, p_out) = (topo[n][i_in].0.0, topo[n][i_out].0.0);
+                        let last = h_new[p_in].len() - 1;
+                        h_new[p_in][last] = s.head_suction;
+                        q_new[p_in][last] = s.flow;
+                        h_new[p_out][0] = s.head_discharge;
+                        q_new[p_out][0] = s.flow;
+                        node_head[n] = s.head_discharge;
+                        node_outflow[n] = s.flow;
+                        continue;
+                    }
                 };
 
                 for (a, &(pid, end)) in arrivals.iter().zip(&topo[n]) {
@@ -252,9 +321,16 @@ impl Network {
             std::mem::swap(&mut h, &mut h_new);
             std::mem::swap(&mut q, &mut q_new);
             record(&mut trace, &resolved, &node_head, &node_outflow, &h, &q);
+            for (id, history) in &mut pump_speeds {
+                history.push(pump_alpha[id.0]);
+            }
         }
 
-        Ok(NetworkRun { grid, trace })
+        Ok(NetworkRun {
+            grid,
+            trace,
+            pump_speeds,
+        })
     }
 
     fn resolve_probes(
@@ -297,6 +373,14 @@ impl Network {
             })
             .collect()
     }
+}
+
+/// Flow in a pump's suction pipe (the pipe ending at the pump node).
+fn pump_suction_flow(touching: &[(PipeId, PipeEnd)], pipe_flows: &[f64]) -> f64 {
+    touching
+        .iter()
+        .find(|(_, e)| *e == PipeEnd::Downstream)
+        .map_or(0.0, |(p, _)| pipe_flows[p.0])
 }
 
 fn steps_for(duration: Time, dt: Time) -> Result<usize, HydraulicsError> {

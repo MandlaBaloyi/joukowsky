@@ -80,8 +80,17 @@ In build order:
       curves, junction (n-pipe + fixed outflow; minor losses not yet),
       leak/burst (two-way orifice incl. intrusion), ideal check valve.
       Validated in tests/hydraulics/analytical/boundaries (V-A3).
-      Next - pump (curve + run-down), dynamic check-valve slam, PRV, air
-      valve, surge vessel, FAVAD leak law.
+      2026-09-28 (later): pump with discharge non-return valve done -
+      curve from 3 datasheet points, affinity laws, parabolic efficiency,
+      run-down after a trip (Heun step of I w dw/dt = -T), Thorley inertia
+      estimate. In the steady solver (pump link; idle pumps detected) and
+      the network solver (pump speed history per run). Validated: operating
+      point vs hand quadratic; idle pump; run-down vs exact 1/(1+kt)
+      (5.6e-6); frictionless trip follows the Joukowsky characteristic
+      (2.6e-10 m); realistic trip story with zone warning.
+      Next - four-quadrant (Suter) pump curves for reverse flow/turbining,
+      dynamic check-valve slam, pump restart sequences, PRV, air valve,
+      surge vessel, FAVAD leak law.
   S3  Network MOC: global dt, integer reaches per pipe, wave-speed
       adjustment recorded as a known model error. Mass conservation to
       machine precision (V-A4).
@@ -105,8 +114,12 @@ In build order:
       settled by re-solving). Validated against closed-form answers,
       parallel pipes, the three-reservoir problem (independent
       bisection), and by starting the transient solver from the result:
-      head drift ~1e-12 m. Not yet: Hazen-Williams / Reynolds-dependent
-      friction, pumps, PRVs.
+      head drift ~1e-12 m. Pumps added later the same day (see S2).
+      Lesson recorded: the linearisation floor D_FLOOR (s/m^2) must not be
+      tiny - conductance 1/d amplifies head rounding into flow errors, and
+      a transient run releases them as a fake wave. Now 1e-2, and each
+      link is judged against its own rounding floor for convergence.
+      Not yet: Hazen-Williams / Reynolds-dependent friction, PRVs.
   S5  Unsteady friction: Brunone/IAB first, convolution (Vardy-Brown,
       sum-of-exponentials) later.
   S6  Viscoelastic walls: 1-3 Kelvin-Voigt elements for PE/PVC.

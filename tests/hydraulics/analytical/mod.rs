@@ -8,5 +8,6 @@
 mod boundaries;
 mod joukowsky;
 mod network;
+mod pumps;
 mod single_pipe;
-mod steady;
+pub mod steady;
