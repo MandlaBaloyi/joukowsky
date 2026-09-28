@@ -29,10 +29,19 @@ name = "jk-kernel"
 version = "0.1.0"
 
 [[package]]
+name = "jk-localisation"
+version = "0.1.0"
+dependencies = [
+ "jk-hydraulics",
+ "jk-kernel",
+]
+
+[[package]]
 name = "jk-tests"
 version = "0.1.0"
 dependencies = [
  "jk-detection",
  "jk-hydraulics",
  "jk-kernel",
+ "jk-localisation",
 ]

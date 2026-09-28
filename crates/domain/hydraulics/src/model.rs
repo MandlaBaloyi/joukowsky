@@ -248,6 +248,18 @@ impl Network {
         &self.pipes
     }
 
+    /// The id of the pipe at `index` in [`Self::pipes`], if it exists.
+    #[must_use]
+    pub fn pipe_id(&self, index: usize) -> Option<PipeId> {
+        (index < self.pipes.len()).then_some(PipeId(index))
+    }
+
+    /// The id of the node at `index` in [`Self::nodes`], if it exists.
+    #[must_use]
+    pub fn node_id(&self, index: usize) -> Option<NodeId> {
+        (index < self.nodes.len()).then_some(NodeId(index))
+    }
+
     /// All scheduled bursts.
     #[must_use]
     pub fn bursts(&self) -> &[Burst] {

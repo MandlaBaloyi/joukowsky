@@ -1,13 +1,11 @@
 joukowsky test run
-  when     2026-09-28 18:48:48
+  when     2026-09-28 18:58:46
   suite    quick
-  commit   6a143ba (with uncommitted changes)
+  commit   d3631b3 (with uncommitted changes)
   rust     rustc 1.98.1 (48a229cea 2026-09-01)
   command  cargo test --workspace --no-fail-fast -- --nocapture --test-threads=1
 ==============================================================================
-   Compiling jk-detection v0.1.0 (C:\Users\HP\Desktop\joukowsky\crates\domain\detection)
-   Compiling jk-tests v0.1.0 (C:\Users\HP\Desktop\joukowsky\tests)
-    Finished `test` profile [unoptimized + debuginfo] target(s) in 6.82s
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.03s
      Running unittests src\main.rs (target\debug\deps\jk-7274c5438ed9f47a.exe)
 
 running 0 tests
@@ -30,11 +28,11 @@ test onset::step_area::tests::a_ramp_front_is_placed_at_its_centre ... ok
 test onset::step_area::tests::declines_when_the_windows_do_not_fit ... ok
 test onset::step_area::tests::exact_for_a_sharp_step_at_any_phase ... ok
 
-test result: ok. 12 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+test result: ok. 12 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
 
      Running unittests src\lib.rs (target\debug\deps\jk_hydraulics-c42e47dfc771fa13.exe)
 
-running 43 tests
+running 41 tests
 test boundary::check_valve::tests::open_valve_passes_forward_flow_like_a_plain_joint ... ok
 test boundary::check_valve::tests::reversing_flow_shuts_it_and_each_side_becomes_a_dead_end ... ok
 test boundary::check_valve::tests::stays_shut_until_upstream_pushes_harder_then_reopens ... ok
@@ -76,14 +74,16 @@ test model::tests::rejects_broken_topologies ... ok
 test pipe::friction::quasi_steady::tests::matches_darcy_weisbach_in_velocity_form_and_is_odd_in_flow ... ok
 test pipe::tests::rejects_non_physical_values ... ok
 test pipe::tests::timing_matches_docs_example ... ok
-test steady::dense::tests::reports_a_matrix_that_is_not_positive_definite ... ok
-test steady::dense::tests::solves_a_known_system ... ok
 
-test result: ok. 43 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s
+test result: ok. 41 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s
 
      Running unittests src\lib.rs (target\debug\deps\jk_kernel-eccabcc9e10cd5d2.exe)
 
-running 6 tests
+running 10 tests
+test linalg::tests::reports_a_matrix_that_is_not_positive_definite ... ok
+test linalg::tests::solves_a_known_system ... ok
+test random::tests::normal_numbers_have_the_right_spread ... ok
+test random::tests::same_seed_same_numbers ... ok
 test units::tests::circle_area_dn150 ... ok
 test units::tests::display_carries_unit ... ok
 test units::tests::head_pressure_round_trip ... ok
@@ -91,17 +91,27 @@ test units::tests::same_type_arithmetic ... ok
 test units::tests::velocity_flow_area ... ok
 test units::tests::wave_travel_time_and_distance_round_trip ... ok
 
-test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+test result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
 
-     Running unittests common\lib.rs (target\debug\deps\jk_tests-21432e64899b3d9e.exe)
+     Running unittests src\lib.rs (target\debug\deps\jk_localisation-b57d917c3efe0d09.exe)
 
-running 2 tests
+running 5 tests
+test graph::travel_time::tests::fastest_path_and_no_passing_through_reservoirs ... ok
+test locate::tests::golden_section_finds_a_parabola_minimum ... ok
+test posterior::score::tests::a_perfect_candidate_scores_zero_misfit_and_recovers_t0 ... ok
+test posterior::score::tests::a_wrong_candidate_is_penalised ... ok
+test posterior::score::tests::with_independent_errors_the_correlated_score_matches_the_simple_one ... ok
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running unittests common\lib.rs (target\debug\deps\jk_tests-b72e4acf4d66fc1d.exe)
+
+running 1 test
 test sensor::tests::averaging_a_step_gives_the_covered_fraction ... ok
-test sensor::tests::normal_numbers_have_the_right_spread ... ok
 
-test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
 
-     Running detection\main.rs (target\debug\deps\detection-6c52b0918e4d398f.exe)
+     Running detection\main.rs (target\debug\deps\detection-4d1f3cb62783cdba.exe)
 
 running 9 tests
 test analytical::delay::delay_follows_the_cusum_formula ... Sharp drops at t = 3 s, noise-free signal with a 2 cm noise floor set:
@@ -151,9 +161,9 @@ Loggers: 128 S/s, integrating, random clock phase, 2 cm noise:
 ok
 test simulation::burst_location::vs1_location_error_versus_sampling_rate_and_noise ... ignored, full suite: 150 recorded sensor pairs across rates and noise levels
 
-test result: ok. 7 passed; 0 failed; 2 ignored; 0 measured; 0 filtered out; finished in 1.18s
+test result: ok. 7 passed; 0 failed; 2 ignored; 0 measured; 0 filtered out; finished in 1.26s
 
-     Running hydraulics\main.rs (target\debug\deps\hydraulics-c439236f6d736e51.exe)
+     Running hydraulics\main.rs (target\debug\deps\hydraulics-af40beb9273b12f8.exe)
 
 running 35 tests
 test analytical::boundaries::burst::a_10mm_hole_at_60m_head ... DN150 AC main at 60 m head, 0.5 m/s; a 10 mm hole opens (Cd 0.6):
@@ -415,7 +425,7 @@ ok
 
 test result: ok. 34 passed; 0 failed; 1 ignored; 0 measured; 0 filtered out; finished in 0.07s
 
-     Running kernel\main.rs (target\debug\deps\kernel-5524f584c44fc0a1.exe)
+     Running kernel\main.rs (target\debug\deps\kernel-70ffa4a37521f169.exe)
 
 running 5 tests
 test conversions::dn150_area ... Cross-section of a DN150 pipe:
@@ -440,6 +450,54 @@ ok
 
 test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
 
+     Running localisation\main.rs (target\debug\deps\localisation-0280bd146c9c240a.exe)
+
+running 5 tests
+test analytical::branched::two_sensors_see_a_whole_branch_three_sensors_see_the_point ... Sensors S1 and S2 only (burst 200 m along branch T-S3):
+  probability on branch T-S3: 100.0%
+  90% region: 540 m of pipe
+  the probability sits on the right branch     yes
+  but spreads along it - the engine does not pretend to know where (region > 400 m) yes
+Adding sensor S3 at the end of the branch:
+  most likely: branch T-S3 at 200.000 m from T; 90% region 4.0 m
+  the most likely pipe is the branch           yes
+  distance from T [m]                          got     200.000030   expected     200.000000   rel.err 1.5e-7
+  the region shrinks to a few metres           yes
+  => sensor PLACEMENT decides what the engine can see (docs: placement advisor).
+ok
+test analytical::straight_main::a_burst_on_a_straight_main_is_found_where_the_formula_says ... Arrivals 0.7 s and 1.3 s after the burst, +/- 0.15 ms each:
+  most likely: pipe 1 at 700.000 m
+  on the main between the sensors              yes
+  distance from S1 [m]                         got     700.000015   expected     700.000000   rel.err 2.2e-8
+  burst time recovered [s]                     got       2.000000   expected       2.000000   rel.err 2.2e-16
+  probability on that pipe                     got       1.000000   expected       1.000000   rel.err 0.0e0
+  90% region: 4.0 m of pipe (timing alone: sigma_x = a sigma / sqrt2 = 0.11 m; grid cells are 2 m)
+  the region contains the truth                yes
+  the region is at most two grid cells         yes
+  misfit of a perfect fit                      got       0.000000   expected       0.000000   rel.err 0.0e0
+ok
+test invariants::calibration::calibration_holds_over_many_trials ... ignored, full suite: 400 random localisations
+test invariants::calibration::the_90_percent_region_holds_the_truth_about_90_percent_of_the_time ... 60 random bursts; true wave speeds off by ~3%; timing noise 0.2 ms:
+  truth inside the 90% region: 88% of trials
+  average region length: 108 m
+  coverage between 75% and 99% (60 trials)     yes
+ok
+test simulation::estate_burst::a_burst_on_a_branch_is_found_from_raw_logger_data ...   S1: front at 2.49969 s (+/- 0.21 ms), step -2.97 m
+  S2: front at 2.69957 s (+/- 0.10 ms), step -5.98 m
+  S3: front at 2.39950 s (+/- 0.06 ms), step -8.96 m
+Localisation:
+  pipe 3 holds 100.0% of the probability
+  most likely: pipe 3 at 200.05 m from its start (true: branch T-S3, 200 m)
+  90% region: 2.0 m of pipe; timing misfit 0.35
+  burst emitted at 1.9995 s (true 2.0 s)
+  the right branch is the most likely pipe     yes
+  distance from T [m]                          got     200.049417   expected     200.000000   rel.err 2.5e-4
+  the 90% region contains the truth            yes
+  the arrivals fit one source (misfit < 3)     yes
+ok
+
+test result: ok. 4 passed; 0 failed; 1 ignored; 0 measured; 0 filtered out; finished in 0.57s
+
    Doc-tests jk_detection
 
 running 0 tests
@@ -458,6 +516,12 @@ running 0 tests
 
 test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
 
+   Doc-tests jk_localisation
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
    Doc-tests jk_tests
 
 running 0 tests
@@ -465,9 +529,9 @@ running 0 tests
 test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
 
 ==============================================================================
-  passed   109
+  passed   119
   failed   0
-  skipped  3 slow test(s) not in this suite (run -Suite full)
+  skipped  4 slow test(s) not in this suite (run -Suite full)
   filtered 0 test(s) outside -Only/-Filter
-  time     10.2 s (including compile)
+  time     2.9 s (including compile)
   result   ALL PASSED

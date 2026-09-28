@@ -4,6 +4,7 @@ members = [
     "crates/kernel",
     "crates/domain/hydraulics",
     "crates/domain/detection",
+    "crates/domain/localisation",
     "crates/interfaces/cli",
     "tests",
 ]
@@ -20,6 +21,7 @@ repository = "https://github.com/MandlaBaloyi/joukowsky"
 jk-kernel = { path = "crates/kernel" }
 jk-hydraulics = { path = "crates/domain/hydraulics" }
 jk-detection = { path = "crates/domain/detection" }
+jk-localisation = { path = "crates/domain/localisation" }
 
 [workspace.lints.rust]
 unsafe_code = "forbid"

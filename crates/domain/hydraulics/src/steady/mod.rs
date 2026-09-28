@@ -8,13 +8,13 @@
 //!
 //! Method: the Global Gradient Algorithm of Todini & Pilati (1988), the
 //! algorithm inside EPANET, solved with our own dense Cholesky factorisation
+//! ([`jk_kernel::linalg`])
 //! (decision TD-011: our own solver; EPANET-based tools are cross-checks
 //! only). See [`gga`] for the equations.
 //!
 //! Friction is the same quasi-steady Darcy-Weisbach model (constant f per
 //! pipe) the transient solver uses, so steady and transient runs agree.
 
-mod dense;
 pub mod gga;
 
 pub(crate) use gga::solve;

@@ -36,6 +36,23 @@ model (P5) feeds back into localisation.
 Wave speed uncertainty is handled by marginalising over samples of the
 a_e posterior (Monte Carlo), which widens the location posterior honestly.
 
+IMPLEMENTATION NOTE (2026-09-28, crates/domain/localisation): the Monte
+Carlo version was built and FAILED its calibration test - the 90% region
+held the truth in only 8% of trials. Cause: importance-sampling
+degeneracy. With 3+ sensors the data constrain the wave speeds, one
+sampled set fits far better than the rest, and the average collapses onto
+it. Replaced by an exact linearised treatment: each pipe's relative
+wave-speed error (sigma_a) becomes a travel-time error along every route
+that uses it, so the arrival errors are CORRELATED,
+    C_st = sigma_s^2 delta_st + sigma_a^2 sum_pipes w_sp w_tp
+(w_sp = travel time of sensor s's wave on pipe p), and each candidate is
+scored by generalised least squares with t0 marginalised, including the
+log det C term. Deterministic, no sampling. Calibration over 400 random
+bursts with 3% speed errors: 92.8% inside the 90% region.
+Also implemented: first arrivals never pass THROUGH a reservoir (it
+reflects, R = -1); a timing-misfit output flags arrivals that no single
+source explains (two events, a wrong wave speed, a bad clock).
+
 Output: ranked list of pipe segments with probability mass; a 90%
 credible region drawn on the map.
 

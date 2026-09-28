@@ -7,7 +7,13 @@
 //! The core of the kernel is [`units`]: SI quantities as distinct types, so
 //! that adding a head [m] to a flow [m^3/s] is a compile error rather than
 //! a silent physics bug.
+//!
+//! [`random`] holds the deterministic random-number generator every
+//! stochastic method uses, so results replay bit for bit (rule T3), and
+//! [`linalg`] the small dense solver (Cholesky) several contexts share.
 
+pub mod linalg;
+pub mod random;
 pub mod units;
 
 pub use units::{

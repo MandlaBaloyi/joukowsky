@@ -45,8 +45,8 @@ use crate::boundary::pump::PumpCurve;
 use crate::moc::network::initial::SteadyState;
 use crate::model::{Network, Node, NodeId, Topology};
 use crate::pipe::friction::quasi_steady;
-use crate::steady::dense::cholesky_solve;
 use crate::steady::{SteadyOptions, SteadySolution};
+use jk_kernel::linalg::cholesky_solve;
 use jk_kernel::{Flow, Head};
 
 /// Largest number of free-head nodes the dense solver accepts (cost grows
