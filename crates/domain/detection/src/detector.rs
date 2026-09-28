@@ -13,8 +13,8 @@
 use jk_kernel::{Head, Time};
 
 use crate::baseline::Baseline;
-pub use crate::cusum::Direction;
-use crate::cusum::{Cusum, CusumConfig};
+pub use crate::change::Direction;
+use crate::change::{Cusum, CusumConfig};
 use crate::error::{DetectionError, positive};
 use crate::noise::{median, sigma_from_differences};
 use crate::onset::{self, OnsetConfig};

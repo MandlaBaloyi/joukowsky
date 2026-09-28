@@ -1,11 +1,13 @@
 joukowsky test run
-  when     2026-09-28 18:39:43
+  when     2026-09-28 18:48:48
   suite    quick
-  commit   94a4b18 (with uncommitted changes)
+  commit   6a143ba (with uncommitted changes)
   rust     rustc 1.98.1 (48a229cea 2026-09-01)
   command  cargo test --workspace --no-fail-fast -- --nocapture --test-threads=1
 ==============================================================================
-    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.03s
+   Compiling jk-detection v0.1.0 (C:\Users\HP\Desktop\joukowsky\crates\domain\detection)
+   Compiling jk-tests v0.1.0 (C:\Users\HP\Desktop\joukowsky\tests)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 6.82s
      Running unittests src\main.rs (target\debug\deps\jk-7274c5438ed9f47a.exe)
 
 running 0 tests
@@ -15,20 +17,20 @@ test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; fini
      Running unittests src\lib.rs (target\debug\deps\jk_detection-ab885d9bb867d09a.exe)
 
 running 12 tests
-test baseline::tests::follows_a_steady_trend_without_lag ... ok
-test baseline::tests::shifting_keeps_the_trend ... ok
-test cusum::tests::a_clean_step_is_caught_and_its_start_found ... ok
-test cusum::tests::rejects_bad_settings ... ok
-test cusum::tests::shifts_below_the_drift_never_alarm ... ok
+test baseline::brown::tests::follows_a_steady_trend_without_lag ... ok
+test baseline::brown::tests::shifting_keeps_the_trend ... ok
+test change::cusum::tests::a_clean_step_is_caught_and_its_start_found ... ok
+test change::cusum::tests::rejects_bad_settings ... ok
+test change::cusum::tests::shifts_below_the_drift_never_alarm ... ok
 test detector::tests::finds_one_clean_drop_and_times_it ... ok
 test detector::tests::refuses_gaps_and_short_series ... ok
-test noise::tests::a_straight_ramp_has_no_noise ... ok
-test noise::tests::median_of_odd_and_even_counts ... ok
-test onset::tests::a_ramp_front_is_placed_at_its_centre ... ok
-test onset::tests::declines_when_the_windows_do_not_fit ... ok
-test onset::tests::exact_for_a_sharp_step_at_any_phase ... ok
+test noise::robust::tests::a_straight_ramp_has_no_noise ... ok
+test noise::robust::tests::median_of_odd_and_even_counts ... ok
+test onset::step_area::tests::a_ramp_front_is_placed_at_its_centre ... ok
+test onset::step_area::tests::declines_when_the_windows_do_not_fit ... ok
+test onset::step_area::tests::exact_for_a_sharp_step_at_any_phase ... ok
 
-test result: ok. 12 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+test result: ok. 12 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
 
      Running unittests src\lib.rs (target\debug\deps\jk_hydraulics-c42e47dfc771fa13.exe)
 
@@ -77,7 +79,7 @@ test pipe::tests::timing_matches_docs_example ... ok
 test steady::dense::tests::reports_a_matrix_that_is_not_positive_definite ... ok
 test steady::dense::tests::solves_a_known_system ... ok
 
-test result: ok. 43 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+test result: ok. 43 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s
 
      Running unittests src\lib.rs (target\debug\deps\jk_kernel-eccabcc9e10cd5d2.exe)
 
@@ -149,7 +151,7 @@ Loggers: 128 S/s, integrating, random clock phase, 2 cm noise:
 ok
 test simulation::burst_location::vs1_location_error_versus_sampling_rate_and_noise ... ignored, full suite: 150 recorded sensor pairs across rates and noise levels
 
-test result: ok. 7 passed; 0 failed; 2 ignored; 0 measured; 0 filtered out; finished in 1.13s
+test result: ok. 7 passed; 0 failed; 2 ignored; 0 measured; 0 filtered out; finished in 1.18s
 
      Running hydraulics\main.rs (target\debug\deps\hydraulics-c439236f6d736e51.exe)
 
@@ -467,5 +469,5 @@ test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; fini
   failed   0
   skipped  3 slow test(s) not in this suite (run -Suite full)
   filtered 0 test(s) outside -Only/-Filter
-  time     1.9 s (including compile)
+  time     10.2 s (including compile)
   result   ALL PASSED

@@ -83,6 +83,19 @@ TD-017 | 2026-09-28 | Pumps, version 1: normal operating zone only
        model at all, so this is a capability, and complete-characteristic
        data is rarely available for real pumps. |
 
+TD-018 | 2026-09-28 | OWN THE BRAIN, BORROW THE PLUMBING - how TD-005
+       (build over buy) is applied. OWN, always: physics, solvers,
+       detection, localisation, classification, learning - the engine's
+       value and moat; so far every crate uses only the Rust standard
+       library, including the test RNG. BORROW, carefully, where rewriting
+       adds risk and no value: async runtime (tokio), database driver,
+       serialisation (serde), field-protocol drivers (MQTT, Modbus), and
+       later possibly sparse linear algebra and an ML runtime. Every
+       borrowed crate gets its own entry here with a reason and an exit
+       plan, and must pass rule T1 (licence). | owner + Claude | control,
+       auditability (P5), no licence traps, no supply-chain risk, edge
+       portability. |
+
 WORKING RULES FOR THE DEV MACHINE
 ------------------------------------------------------------------------
   Laptop: Intel Core i3-1125G4 (4 cores / 8 threads, 2.0 GHz), 16 GB RAM,
