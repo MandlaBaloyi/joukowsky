@@ -42,12 +42,21 @@
 //! 90% regions are 60-100 m, not 2 m: calibrating wave speeds from known
 //! events (F9) is worth as much as another logger.
 //!
-//! Not yet: whether a small burst is DETECTABLE at the chosen sensors
-//! (study V-S2: wave amplitude after junctions and friction), and robust
-//! placement over a posterior of wave speeds rather than one doubt level.
+//! Would the burst even be FELT? ([`mod@detectability`]): a burst's first front
+//! shrinks at every junction on its way to a logger; only loggers it still
+//! reaches with at least 6 noise sigmas count. By default the advisor plans
+//! for a sudden 1 l/s burst, so a placement that cannot FEEL bursts on a
+//! pipe scores that pipe as blind - and the report names the smallest
+//! burst that can be located on each pipe.
+//!
+//! Not yet: robust placement over a posterior of wave speeds rather than
+//! one doubt level; damping by plastic pipe walls in the detectability
+//! model (S6).
 
 mod advise;
 mod coverage;
+pub mod detectability;
 
 pub use advise::{Advice, advise};
 pub use coverage::{Coverage, PipeCoverage, PlacementOptions, coverage};
+pub use detectability::{Detectability, PipeDetectability, detectability, first_fronts};

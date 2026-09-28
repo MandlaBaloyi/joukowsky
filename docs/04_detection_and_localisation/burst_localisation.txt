@@ -125,8 +125,14 @@ Findings:
      building ends: 77 m, 22% pinpointed. Branches with a logger at their
      end ~20 m; the ring 60-70 m; the unlogged 90 m branch and the
      municipal connection blind (named in the report).
-Not yet: detectability of small bursts at the chosen sensors (V-S2);
-robustness over a posterior of wave speeds (F10 proper); speed for large
+Detectability (added the same day): the advisor now plans for a sudden
+1 l/s burst by default - only loggers that FEEL a burst's first front (at
+>= 6 noise sigmas, after junction splitting) give arrivals; a burst felt
+by fewer than two is scored as "could be anywhere". The report names the
+smallest locatable burst per pipe (estate: 0.031 l/s everywhere, exact;
+campus: 0.04-0.09 l/s). Details: friction_and_damping.txt, V-S2 note.
+Not yet: plastic-wall damping in detectability (S6); robustness over a
+posterior of wave speeds (F10 proper); speed for large
 networks (cost grows with length squared: a 10 km network would take
 ~20x longer - options: coarser trial bursts far from sensors, parallel
 scoring, or an analytical score for the pair search).

@@ -5,7 +5,7 @@
 pub struct Score {
     /// log-likelihood, -chi^2 / 2 (without constant terms).
     pub log_likelihood: f64,
-    /// Best emission time t0 for this candidate [s].
+    /// Best emission time t0 for this candidate (s).
     pub emission: f64,
     /// chi^2: sum of squared standardised residuals.
     pub chi_squared: f64,

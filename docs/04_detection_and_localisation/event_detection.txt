@@ -114,6 +114,14 @@ the spans say so. A model that PREDICTS the echoes (subtract the
 simulated ringing, then detect on the residual) would remove most of this
 cost; it needs a calibrated network model (twin, 05_) - open.
 
+4b. Measured sensitivity (2026-09-28)
+------------------------------------
+tests/detection/analytical/sensitivity.rs: a sudden drop hidden in
+Gaussian noise at a random moment within a sample, 300 trials per size;
+"caught" = an event timed within 2 samples of the truth:
+  3 sigma 1.7%   4 sigma 61%   5 sigma 96%   6 sigma 100%   8+ 100%
+The placement advisor treats a front of >= 6 sigma as felt.
+
 5. Implementation note: live detection (2026-09-28)
 ---------------------------------------------------
 crates/domain/detection/src/detector/ {mod.rs, floor.rs, stream.rs}.

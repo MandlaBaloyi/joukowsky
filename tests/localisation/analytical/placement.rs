@@ -20,7 +20,7 @@
 //! the second test.
 
 use jk_hydraulics::{Network, NodeId};
-use jk_localisation::placement::{Coverage, PlacementOptions, advise, coverage};
+use jk_localisation::placement::{Coverage, PlacementOptions, advise, coverage, detectability};
 use jk_tests::check;
 
 use crate::estate;
@@ -271,6 +271,21 @@ fn campus_value_of_each_extra_logger() {
         );
     }
     println!("  (advice took {seconds:.0} s on this machine)");
+    let felt = detectability(&net, &advice.best.sensors, &PlacementOptions::default()).unwrap();
+    println!(
+        "Would a sudden 1 l/s burst be felt? By at least one logger on {:.0}% of the pipe, \
+         by two (so located) on {:.0}%. Smallest burst locatable anywhere on each pipe \
+         (upper bound: no plastic-wall damping yet):",
+        felt.felt * 100.0,
+        felt.locatable * 100.0
+    );
+    for p in &felt.pipes {
+        println!(
+            "    {:<16} {:>6.2} l/s",
+            pipe_names[p.pipe.index()],
+            p.smallest_locatable.value() * 1000.0
+        );
+    }
     check(
         "each extra logger helps",
         advice.steps.windows(2).all(|w| w[1].beats(&w[0])),

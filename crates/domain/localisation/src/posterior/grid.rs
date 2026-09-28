@@ -9,7 +9,7 @@ pub struct Cell {
     pub pipe: usize,
     /// Centre, as a fraction of the pipe from its `from` end.
     pub fraction: f64,
-    /// Length of pipe the cell covers [m].
+    /// Length of pipe the cell covers (m).
     pub length: f64,
 }
 

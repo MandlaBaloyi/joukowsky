@@ -97,8 +97,10 @@ F10 Sensor placement under uncertainty for partners
     STATUS 2026-09-28: first advisor built (placement/, greedy + swaps,
           objective = expected 90% region with a fixed 10% wave-speed
           doubt). Found: pinpointing needs wave speeds known to ~2%
-          (estate: 78% pinpointed at 1%, 0% at 5%). Open: optimise over
-          the wave-speed POSTERIOR per pipe, and detectability (V-S2).
+          (estate: 78% pinpointed at 1%, 0% at 5%). Detectability added
+          (V-S2 first build: lossless junction model, 0.05% vs MOC). Open:
+          optimise over the wave-speed POSTERIOR per pipe; plastic-wall
+          damping in detectability (S6).
           Details: burst_localisation.txt, placement note.
 
 This file grows as we learn. When an item is solved, it moves to the

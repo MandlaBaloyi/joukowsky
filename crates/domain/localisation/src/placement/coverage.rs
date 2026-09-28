@@ -1,11 +1,12 @@
 //! How well a set of sensors can locate a burst anywhere on the network.
 
 use jk_hydraulics::{Network, NodeId, PipeId};
-use jk_kernel::{Length, Time};
+use jk_kernel::{Flow, Head, Length, Time};
 
+use super::detectability::Fronts;
 use crate::error::{LocalisationError, positive};
 use crate::graph::TravelGraph;
-use crate::locate::{Arrival, LocaliseOptions, Localiser, localise};
+use crate::locate::{Arrival, LocaliseOptions, Localiser};
 
 /// How placements are scored.
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -26,6 +27,16 @@ pub struct PlacementOptions {
     /// A burst counts as PINPOINTED when its 90% region is no longer than
     /// this (about one excavation).
     pub pinpoint: Length,
+    /// The burst to plan for: only loggers that would FEEL a sudden burst
+    /// of this size count ([`mod@super::detectability`]). Default 1 l/s. None:
+    /// every logger feels every burst (geometry only).
+    pub burst: Option<Flow>,
+    /// Each logger's noise (one sigma). Default 2 cm.
+    pub noise: Head,
+    /// A logger feels a front of at least this many noise sigmas. Default
+    /// 6: measured as always caught and timed to 2 samples; 5 is caught
+    /// 96% of the time (tests/detection/analytical/sensitivity.rs).
+    pub detect_units: f64,
 }
 
 impl Default for PlacementOptions {
@@ -39,6 +50,9 @@ impl Default for PlacementOptions {
                 ..LocaliseOptions::default()
             },
             pinpoint: Length::new(20.0),
+            burst: Some(Flow::new(1e-3)),
+            noise: Head::new(0.02),
+            detect_units: 6.0,
         }
     }
 }
@@ -97,17 +111,9 @@ pub fn coverage(
     options: &PlacementOptions,
 ) -> Result<Coverage, LocalisationError> {
     validate(network, sensors, weights, options)?;
-    let graph = TravelGraph::new(network);
     let pipes = network.pipes();
-    let nominal: Vec<f64> = pipes.iter().map(|p| p.pipe.travel_time().value()).collect();
-    let total_length: f64 = pipes.iter().map(|p| p.pipe.length().value()).sum();
-    let times: Vec<Vec<f64>> = sensors
-        .iter()
-        .map(|s| graph.times_from(s.index(), &nominal))
-        .collect();
     let step = options.source_step.value();
-    // Prepared once for this placement, reused for every trial burst.
-    let localiser = Localiser::new(network, sensors, &options.localise).ok();
+    let mut trials = Trials::new(network, sensors, options);
 
     let (mut weighted_region, mut weighted_pinpointed, mut total_weight) = (0.0, 0.0, 0.0);
     let mut per_pipe = Vec::with_capacity(pipes.len());
@@ -121,39 +127,9 @@ pub fn coverage(
         // ceil of a positive ratio
         let n = ((length / step).ceil() as usize).max(1);
         let segment = length / to_f64(n);
-        let mut regions = Vec::with_capacity(n);
-        for i in 0..n {
-            let fraction = (to_f64(i) + 0.5) / to_f64(n);
-            let arrivals: Vec<Arrival> = sensors
-                .iter()
-                .zip(&times)
-                .filter_map(|(&s, t)| {
-                    let time = graph.point_time(
-                        s.index(),
-                        t,
-                        (link.from.index(), link.to.index()),
-                        fraction,
-                        nominal[p],
-                    );
-                    time.is_finite().then_some(Arrival {
-                        node: s,
-                        time: Time::new(time),
-                        uncertainty: options.timing,
-                    })
-                })
-                .collect();
-            // Fewer than two sensors reached, or no answer: the burst could
-            // be anywhere.
-            let region = match (&localiser, arrivals.len()) {
-                (_, 0 | 1) => None,
-                (Some(l), n) if n == sensors.len() => l.credible_length(&arrivals).ok(),
-                _ => localise(network, &arrivals, &options.localise)
-                    .ok()
-                    .map(|l| l.credible_length),
-            }
-            .map_or(total_length, Length::value);
-            regions.push(region);
-        }
+        let mut regions: Vec<f64> = (0..n)
+            .map(|i| trials.region(p, (to_f64(i) + 0.5) / to_f64(n)))
+            .collect();
         let pinpointed = regions
             .iter()
             .filter(|&&r| r <= options.pinpoint.value())
@@ -186,7 +162,104 @@ pub fn coverage(
     })
 }
 
-fn validate(
+/// Trial bursts on one placement: which loggers feel each, and how large
+/// its 90% region is.
+struct Trials<'a> {
+    network: &'a Network,
+    sensors: &'a [NodeId],
+    options: &'a PlacementOptions,
+    graph: TravelGraph,
+    ends: Vec<(usize, usize)>,
+    nominal: Vec<f64>,
+    /// Fastest travel times from each sensor to every node.
+    times: Vec<Vec<f64>>,
+    total_length: f64,
+    /// First-front heads, if a burst size is set.
+    fronts: Option<Fronts>,
+    /// One localiser per set of loggers that feel a burst, prepared once and
+    /// reused for every trial burst that set feels.
+    localisers: Vec<(Vec<NodeId>, Option<Localiser<'a>>)>,
+}
+
+impl<'a> Trials<'a> {
+    fn new(network: &'a Network, sensors: &'a [NodeId], options: &'a PlacementOptions) -> Self {
+        let graph = TravelGraph::new(network);
+        let pipes = network.pipes();
+        let nominal: Vec<f64> = pipes.iter().map(|p| p.pipe.travel_time().value()).collect();
+        let times = sensors
+            .iter()
+            .map(|s| graph.times_from(s.index(), &nominal))
+            .collect();
+        Self {
+            network,
+            sensors,
+            options,
+            graph,
+            ends: pipes
+                .iter()
+                .map(|p| (p.from.index(), p.to.index()))
+                .collect(),
+            nominal,
+            times,
+            total_length: pipes.iter().map(|p| p.pipe.length().value()).sum(),
+            fronts: options.burst.map(|_| Fronts::new(network, sensors)),
+            localisers: Vec::new(),
+        }
+    }
+
+    /// Size of the 90% region for a burst `fraction` along `pipe` [m]; the
+    /// whole network's length when fewer than two loggers feel it.
+    fn region(&mut self, pipe: usize, fraction: f64) -> f64 {
+        let threshold = self.options.detect_units * self.options.noise.value();
+        let felt: Vec<bool> = match (&self.fronts, self.options.burst) {
+            (Some(f), Some(q)) => f
+                .per_unit_flow(pipe, fraction)
+                .iter()
+                .map(|h| h * q.value() >= threshold)
+                .collect(),
+            _ => vec![true; self.sensors.len()],
+        };
+        let arrivals: Vec<Arrival> = self
+            .sensors
+            .iter()
+            .zip(&self.times)
+            .zip(&felt)
+            .filter(|(_, felt)| **felt)
+            .filter_map(|((&s, t), _)| {
+                let time = self.graph.point_time(
+                    s.index(),
+                    t,
+                    self.ends[pipe],
+                    fraction,
+                    self.nominal[pipe],
+                );
+                time.is_finite().then_some(Arrival {
+                    node: s,
+                    time: Time::new(time),
+                    uncertainty: self.options.timing,
+                })
+            })
+            .collect();
+        if arrivals.len() < 2 {
+            return self.total_length;
+        }
+        let set: Vec<NodeId> = arrivals.iter().map(|a| a.node).collect();
+        let k = if let Some(k) = self.localisers.iter().position(|(s, _)| *s == set) {
+            k
+        } else {
+            let l = Localiser::new(self.network, &set, &self.options.localise).ok();
+            self.localisers.push((set, l));
+            self.localisers.len() - 1
+        };
+        self.localisers[k]
+            .1
+            .as_ref()
+            .and_then(|l| l.credible_length(&arrivals).ok())
+            .map_or(self.total_length, Length::value)
+    }
+}
+
+pub(super) fn validate(
     network: &Network,
     sensors: &[NodeId],
     weights: Option<&[f64]>,
@@ -195,6 +268,11 @@ fn validate(
     positive("source_step", options.source_step.value())?;
     positive("timing", options.timing.value())?;
     positive("pinpoint", options.pinpoint.value())?;
+    positive("noise", options.noise.value())?;
+    positive("detect_units", options.detect_units)?;
+    if let Some(q) = options.burst {
+        positive("burst", q.value())?;
+    }
     if sensors.len() < 2 {
         return Err(LocalisationError::InvalidInput(
             "at least two sensors are needed to locate anything".into(),

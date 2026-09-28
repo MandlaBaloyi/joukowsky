@@ -2,5 +2,6 @@
 
 mod branched;
 mod clocks;
+mod detectability;
 mod placement;
 mod straight_main;

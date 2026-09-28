@@ -54,3 +54,27 @@ estate/campus networks, compute the burst-wave amplitude at each candidate
 sensor location for bursts of 1, 2, 5 l/s at every pipe; derive the
 detection coverage map as a function of sensor count. This feeds sensor
 placement optimisation.
+
+Implementation note: study V-S2, first build (2026-09-28)
+---------------------------------------------------------
+crates/domain/localisation/src/placement/detectability.rs. The first
+front of a sudden burst Q, at each logger: h0 = (B/2) Q at the hole, times
+the transmission coefficient T of every node on the fastest path (2/3 at
+an equal tee, 1 on a straight run, 2 at a dead end, 0 at a reservoir).
+A logger feels it at >= 6 noise sigmas (measured: 5 sigma caught and
+timed to 2 samples 96% of the time, 6 sigma 100%, 300 trials each;
+tests/detection/analytical/sensitivity.rs).
+  - Checked by hand on the estate (1 l/s, 150 mm, a = 1000 m/s:
+    h0 = 2.884 m; S3 2 h0, S1 2/3 h0, S2 4/3 h0, reservoir 0) and against
+    the full MOC simulation (8 mm hole, 1.009 l/s): every logger within
+    0.05% (tests/localisation/simulation/detectability.rs).
+  - Quasi-steady friction is left out on purpose: it shrinks a front by
+    exp(-f V x / (2 D a)), about 3% per km at f = 0.02, V = 0.5 m/s,
+    D = 0.15 m, a = 1000 m/s.
+  - Estate, 3 loggers, 2 cm noise: the smallest sudden burst locatable
+    anywhere is 0.031 l/s (= 12 cm over 4/3 x B/2, exact). Campus (2.3 km,
+    6 recommended loggers): 0.04-0.09 l/s per pipe.
+These are UPPER BOUNDS on what is felt: plastic-wall damping (item 2
+above, milestone S6), unsteady friction (S5) and bursts that open slowly
+all make real fronts smaller. The numbers must be re-measured once S6
+exists and on field data (rung 4/5).

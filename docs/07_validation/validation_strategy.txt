@@ -32,6 +32,9 @@ Rung 3  Simulation studies.
   V-S1  Sampling-rate and clock-error study: localisation error vs f_s and
         sigma_clock on synthetic networks. Confirms 03_ targets.
   V-S2  Detection coverage vs sensor count per network archetype.
+        STATUS 2026-09-28: first build - junction-by-junction front model,
+        within 0.05% of the MOC simulation on the estate; upper bound until
+        plastic-wall damping (S6). friction_and_damping.txt, note at end.
   V-S3  Classifier trained on synthetic data, tested on held-out
         networks (generalisation).
 Rung 4  Public and partner datasets (software only - we build no rig).
