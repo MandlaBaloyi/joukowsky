@@ -1,0 +1,34 @@
+TECHNOLOGY DECISION LOG
+STATUS: DRAFT v0.1 - for review
+
+Format: ID | date | decision | by | reason | supersedes
+
+DECIDED
+------------------------------------------------------------------------
+TD-001 | 2026-09-28 | Rust is the engine language; the MOC solver and
+       signal core are written in Rust from the start (no JAX
+       prototype). | owner | start with the hardest part, production
+       grade from day one. | supersedes 08_research Q-M3 ("prototype in
+       JAX") and the Q-E1 recommendation where they conflict.
+TD-002 | 2026-09-28 | Python enters later, via PyO3/maturin, for
+       research and ML training only. | owner |
+TD-003 | 2026-09-28 | Default branch of work is `main`. | owner |
+TD-004 | 2026-09-28 | Technology rules T1-T5 (09_technologies/
+       README.txt) apply to every dependency. | proposed with this
+       folder; owner to confirm |
+
+PENDING [DECIDE]
+------------------------------------------------------------------------
+  P-01 Steady-state solver: our own GGA on faer, or depend on epanet-rs
+       once mature? (recommendation: our own, epanet-rs as a test
+       cross-check)
+  P-02 Cloud provider and region for first deployment (09_ sect. 3).
+  P-03 Time-series store: TimescaleDB first (recommended) vs QuestDB.
+  P-04 Messaging: Postgres queue -> NATS JetStream (recommended) vs
+       Kafka/Redpanda.
+  P-05 ML serving: ort (ONNX Runtime) vs Burn.
+  P-06 DNP3: buy a commercial licence or write our own client - only
+       when a partner needs DNP3.
+  P-07 Raw high-rate stream retention period.
+  P-08 Low-rate (Tier 0) module timing: second thing we build?
+       (08_research Q-P3)

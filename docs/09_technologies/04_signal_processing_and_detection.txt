@@ -1,0 +1,63 @@
+SIGNAL PROCESSING AND DETECTION
+STATUS: DRAFT v0.1 - for review
+
+Context: 04_detection_and_localisation/event_detection.txt defines a
+layered detector (pre-processing, baseline, change detection, onset
+refinement, network fusion). This file says what each layer is built with.
+
+The finding: there is no mature Rust library for transient detection in
+pipes. The mathematics is well published; the implementation is ours.
+
+1. Building blocks
+------------------------------------------------------------------------
+Filters (anti-alias, decimation, baseline)                      [BUILD]
+  FIR/IIR design and application, robust medians, exponential smoothing,
+  small Kalman filters. Small, testable, deterministic; written in the
+  signal crate. The same code must compile for edge gateways (P6), so
+  it avoids heap allocation in the per-sample path.
+
+Change detection
+  CUSUM (two-sided, Page 1954)                                  [BUILD]
+    First-pass detector; cheapest; edge-friendly.
+  GLR step test over a sliding window                           [BUILD]
+  Multi-scale wavelet detail energy (Haar / Daubechies)         [BUILD]
+    Small discrete wavelet transform of our own; no dependency needed.
+  Bayesian online change-point (Adams & MacKay 2007)
+    changepoint crate (Redpoll)                                [ASSESS]
+    bocpd crate (log-space, bounded memory)                    [ASSESS]
+    Likely outcome: our own implementation, because we need a
+    predictive model specific to pressure residuals (heavy-tailed,
+    autocorrelated) and bounded, allocation-free edge execution. The
+    crates are useful as test oracles.
+
+Onset (arrival-time) picking                                    [BUILD]
+  AIC picker (from seismology), piecewise-linear onset fit, sub-sample
+  refinement. Output: onset time + uncertainty sigma_t. This number
+  drives localisation accuracy (dx = a * dt / 2), so it gets the
+  heaviest testing: synthetic fronts with known onset, varying noise,
+  rise time and sample rate (study V-S1).
+
+Modal / oscillation analysis                                    [BUILD]
+  Prony and matrix-pencil methods on faer SVD; gives dominant periods
+  (4L/a signatures) and damping ratios - key classification features.
+
+Spectral tools                                                  [TRIAL]
+  rustfft / realfft for spectra and frequency-response functions.
+
+2. Edge portability
+------------------------------------------------------------------------
+The detection library is split: a no_std-compatible core (per-sample
+math, fixed-size buffers) and a std layer (I/O, logging). That keeps the
+door open to partner gateways and microcontrollers without a rewrite.
+[VERIFY which partner gateway platforms exist: ARM Linux is assumed.]
+
+3. Benchmarks we owe ourselves (07_validation)
+------------------------------------------------------------------------
+  - ROC curves at fixed detection delay for CUSUM vs wavelet vs BOCPD,
+    on simulated events with real noise injected, then on D1-D4 (03_).
+  - Onset-picking error vs sample rate (128 S/s is the realistic input)
+    and noise level.
+  - Throughput per stream per CPU core; memory per stream.
+
+Sources checked 2026-09-28: crates.io changepoint; github
+OctopusTakopi/bocpd; Adams & MacKay 2007.

@@ -1,0 +1,80 @@
+NETWORKS, REFERENCE TOOLS AND OPEN DATASETS
+STATUS: DRAFT v0.1 - for review
+
+1. Network representation
+------------------------------------------------------------------------
+petgraph                                                         [ADOPT]
+  ROLE  The pipe network as a graph: nodes (junctions, tanks, devices),
+        edges (pipes). Dijkstra for first-arrival travel times per sensor
+        (04_detection_and_localisation/burst_localisation.txt, sect. 2),
+        connectivity checks, isolation-valve search for P6.
+  NOTE  Our own typed network model sits on top (pipe length, diameter,
+        material, wave-speed DISTRIBUTION, not a number). petgraph holds
+        topology only.
+
+EPANET .inp format                                               [ADOPT]
+  ROLE  The industry exchange format for network models. Utilities and
+        consultants have .inp files; we must read them.
+  PLAN  Our own parser in the connect crate, strict and loud about
+        anything it does not understand (never silently drops a
+        section). Transient-specific data (wave speeds, valve closure
+        curves, pump inertia) is NOT in .inp and lives in our own
+        versioned sidecar format.
+
+epanet-rs (Vitens)                                              [ASSESS]
+  ROLE  Candidate for steady-state initial conditions and .inp parsing.
+  STATE (2026-09-28) Early stage: MIT/Apache-2.0, ~36 GitHub stars.
+        Supports .inp parsing, pressure-dependent demand, parallel EPS.
+        NOT yet: emitters, leakage, rules, energy, water quality;
+        tanks/controls excluded from the parallel path.
+  USE   Cross-check for our steady-state solver (02_ S4); possibly a
+        dependency later if it matures. Backed by a Dutch utility,
+        which is a good sign for longevity [VERIFY].
+
+EPANET 2.2/2.3 C toolkit (OWA)                                  [ASSESS]
+  ROLE  The reference steady-state/EPS solver. Used in tests only (via
+        Python/WNTR or FFI), never linked into production.
+
+2. Reference simulators (for validation only, never in production)
+------------------------------------------------------------------------
+TSNet (UT Austin, Python, MOC)                                   [ADOPT
+                                                        as test oracle]
+  ROLE  Independent MOC implementation for networks: valve closure, pump
+        shut-off, leaks, bursts, surge tanks. We run identical scenarios
+        in TSNet and in our solver and compare (07_validation rung 1-3).
+  CAVEAT Version 0.2.2, "pre-release" research code - a second opinion,
+        not ground truth. Ground truth is analytics and lab data.
+
+WNTR (US EPA + Sandia, Python)                                   [TRIAL]
+  ROLE  EPANET-compatible steady/EPS hydraulics, network manipulation,
+        resilience scenarios. Reference for steady-state initial
+        conditions and for building test networks programmatically.
+
+Commercial transient packages (e.g. Bentley HAMMER, InfoSurge,
+Hytran) [ASSESS] - useful benchmarks if a partner has licences; we do not
+depend on them.
+
+3. Open datasets (for validation rungs 2 and 4)
+------------------------------------------------------------------------
+  D1 Zenodo 10.5281/zenodo.16416601 (CC-BY-4.0, 2025) - WDN files,
+     transient pressure examples, processed dynamic-pressure metrics
+     (Jara-Arriagada et al., Water Resources Research 2025). Code:
+     zenodo 16417235.
+  D2 Zenodo 22073372 (CC-BY-4.0, published 2026-08-24; Tongji Univ. +
+     Suzhou Water Supply) - a real burst between stations P07/P08:
+     historical low-rate pressure for detection AND high-frequency
+     pressure around the anomaly for localisation. Files access-
+     restricted; request access. Sampling rate not stated [VERIFY].
+     NEW - not yet in 08_research.
+  D3 Mendeley Data tbrnp6vrnj - labelled lab testbed, 280 signals.
+  D4 Field study, J. Hydroinformatics 2025 (doi:10.2166/hydro.2025.004)
+     - transient source localisation validated in a real network;
+     check data availability.
+  D5 BattLeDIM / L-Town - low-rate; for Tier 0 methods and the twin.
+  D6 Classic lab data (Adelaide, Bergant-Simpson reservoir-pipe-valve)
+     for friction and column separation - locate exact files [VERIFY].
+Every dataset gets: licence recorded, checksum, and a loader in the
+connect crate with its own tests.
+
+Sources checked 2026-09-28: github.com/vitens/epanet-rs; TSNet docs;
+USEPA/WNTR; zenodo.org records 16416601 and 22073372.

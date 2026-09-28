@@ -1,0 +1,62 @@
+CONNECTIVITY AND PROTOCOLS
+STATUS: DRAFT v0.1 - for review
+
+We build no hardware, so every byte we process arrives through someone
+else's protocol. Connectors (the connect crate) normalise units, clocks
+and metadata and tag each stream with its data tier.
+
+1. Field and SCADA protocols
+------------------------------------------------------------------------
+MQTT (rumqttc, pure-Rust async client)                          [TRIAL]
+  Most common IoT transport from loggers and gateways.
+Sparkplug B (on MQTT)                                           [ASSESS]
+  Industrial payload/state conventions (birth/death certificates) -
+  useful for knowing when a source goes offline (never treat silence
+  as "no events"). Rust crates exist (sparkplug-mqtt, sparkplug-rs) but
+  are young [VERIFY maturity].
+OPC UA (async-opcua)                                            [ASSESS]
+  Modern SCADA/historian interface, common at larger sites and plants.
+Modbus TCP/RTU (tokio-modbus, MIT OR Apache-2.0, v0.17)         [TRIAL]
+  Ubiquitous in pump controllers/VSDs: pump start/stop/trip times are
+  free labelled events (data_source_requirements.txt).
+DNP3                                                              [HOLD]
+  Used by utilities for telemetry. The leading Rust implementation
+  (Step Function I/O "dnp3"; same vendor's "rodbus" for Modbus) is
+  under a NON-COMMERCIAL licence; commercial use requires a paid
+  licence [VERIFY current terms]. Decide by decision record when a
+  partner needs DNP3: buy the licence, or write our own client.
+  (Licence rule T1.)
+
+2. Vendor platforms (where high-rate data already lives)        [ASSESS]
+------------------------------------------------------------------------
+  Badger Meter PIPEMINDER (ex-Syrinix), SUEZ Inflowmatix InflowSense /
+  InflowNet, HWM transient loggers. Most expose data via cloud APIs or
+  file exports, not raw streams. For each: what API, what sample rate
+  reaches us, per-sample timestamps or not, clock source stated or not,
+  licence terms for using the data [VERIFY each with the vendor].
+  File drops (CSV/Excel exports from SCADA historians) are a legitimate
+  first connector - many SA sites will start there.
+
+3. Internal messaging between our services
+------------------------------------------------------------------------
+NATS with JetStream                                             [TRIAL]
+  WHY   Small single binary, low latency, persistence and replay via
+        JetStream, built for IoT-style fan-out; async-nats Rust client.
+        Much less to operate than Kafka for a small team.
+Kafka / Redpanda                                                [ASSESS]
+  Only if national-scale throughput or a partner's ecosystem demands
+  Kafka compatibility (T5). Redpanda offers Kafka's API without the
+  JVM.
+Start simpler still: for the first single-network deployments, a
+Postgres-backed work queue may be enough. Measure first.
+
+4. Time metadata travels with the data                           [ADOPT]
+------------------------------------------------------------------------
+Every connector must carry: per-sample timestamps, the time source (GNSS,
+PTP, NTP, device clock), stated accuracy, and loss-of-sync flags
+(03_sensing_and_signal/time_synchronisation.txt). A connector that cannot
+supply them marks the stream with worst-case timing uncertainty (P3).
+
+Sources checked 2026-09-28: crates.io/lib.rs for rumqttc, sparkplug-mqtt,
+async-opcua, tokio-modbus, rodbus, dnp3; Step Function I/O; NATS/Kafka/
+Redpanda comparisons (2026).

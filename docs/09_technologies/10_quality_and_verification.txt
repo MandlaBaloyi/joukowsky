@@ -1,0 +1,59 @@
+QUALITY AND VERIFICATION
+STATUS: DRAFT v0.1 - for review
+
+A wrong answer from this engine can mean a missed burst, a false alarm
+that gets the system switched off, or a recommended valve closure that
+causes the hammer it was meant to prevent. Testing is therefore part of
+the engineering, not an afterthought.
+
+1. The test ladder for physics code (mirrors 07_validation)
+------------------------------------------------------------------------
+  L1 Analytical: Joukowsky peak, 2L/a and 4L/a timing, square wave in the
+     frictionless case, junction transmission/reflection coefficients.
+  L2 Invariants (property tests): mass conservation to machine precision,
+     energy never created in a frictionless closed system, symmetry
+     (mirror network -> mirror result), zero perturbation -> steady state
+     stays steady.
+  L3 Cross-code: identical scenarios vs TSNet (and WNTR for steady state).
+  L4 Data: lab datasets, then field datasets (03_ D1-D6).
+  L5 Golden replay: recorded events replayed bit-for-bit (02_ sect. 2).
+
+2. Tools
+------------------------------------------------------------------------
+cargo test + cargo-nextest (faster, isolated test runs)          [ADOPT]
+approx (floating-point comparisons with stated tolerances)       [ADOPT]
+proptest (property-based tests for L2 invariants)                [ADOPT]
+criterion (benchmarks; performance regressions fail CI)          [ADOPT]
+clippy (pedantic set, reviewed) + rustfmt                        [ADOPT]
+cargo-deny + cargo-audit (licences, advisories, duplicate deps)  [ADOPT]
+  Enforces rule T1 automatically: a copyleft or unknown licence fails
+  the build.
+cargo-llvm-cov (coverage)                                        [TRIAL]
+cargo-mutants (mutation testing; v27.x in 2026)                  [TRIAL]
+  Answers "would our tests notice if this line were wrong?" - essential
+  for numerical code, where a wrong sign can still pass weak tests.
+Miri (undefined-behaviour checks)                                [TRIAL]
+  Mainly for any crate that uses unsafe (ideally none in the physics).
+Kani (model checking, formal proofs of bounded properties)      [ASSESS]
+  Candidates: no panics on any input in parsers and the per-sample
+  detector path; index bounds in the MOC grid.
+Fuzzing (cargo-fuzz) for every parser (.inp, vendor files)       [TRIAL]
+
+3. CI (GitHub Actions)                                            [TRIAL]
+------------------------------------------------------------------------
+  Every push: fmt, clippy, tests (Linux x86_64), deny/audit.
+  Nightly: mutation testing, Miri, long property runs, benchmarks,
+  aarch64 cross-build and golden replay.
+
+4. Engineering practice
+------------------------------------------------------------------------
+  - Units: physical quantities as distinct Rust types (newtypes) in the
+    public API of the physics crate.
+  - Every algorithm has a doc section: equation, source (08_research/
+    references.txt), assumptions, validity range, test that proves it.
+  - Numbers that come from papers are cited in code comments where used.
+  - Reviews: any change to physics or safety logic (P4) is reviewed
+    against its tests before merge.
+
+Sources checked 2026-09-28: Kani (ASE '26 paper, model-checking/kani);
+cargo-mutants docs; nextest Miri integration docs.

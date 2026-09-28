@@ -1,0 +1,69 @@
+STATISTICS AND INFERENCE
+STATUS: DRAFT v0.1 - for review
+
+Principle P3 makes uncertainty a first-class output. That puts Bayesian
+inference at the centre of localisation, the digital twin and inverse
+transient analysis - not as an add-on.
+
+1. Samplers and inference engines
+------------------------------------------------------------------------
+nuts-rs (PyMC developers)                                        [TRIAL]
+  ROLE  No-U-Turn Hamiltonian Monte Carlo for posteriors over network
+        parameters (wave speeds, friction, leak sizes) in ITA and twin
+        calibration.
+  WHY   Rust-native, mature enough to be the engine behind nutpie
+        (PyMC's fast sampler). Needs the gradient of the log-density -
+        which our discrete adjoint (02_ S8) supplies.
+  EXIT  Our own HMC; the algorithm is well documented.
+
+Sequential Monte Carlo (particle filters, SMC samplers)          [BUILD]
+  ROLE  Event-by-event updating of per-pipe parameters (05_learning_
+        systems/digital_twin.txt); tempering for multi-modal ITA
+        posteriors where HMC gets stuck between modes.
+
+Ensemble Kalman filter                                           [BUILD]
+  ROLE  Slow hydraulic state assimilation from 1 Hz summaries.
+
+Grid posterior over the network                                  [BUILD]
+  ROLE  The localisation posterior p(x0 | arrival times) evaluated on a
+        fine grid along every edge, with t0 eliminated analytically and
+        wave-speed uncertainty marginalised by Monte Carlo. Exact, fast,
+        and explainable - the primary localiser before any ML.
+
+2. Calibration of uncertainty
+------------------------------------------------------------------------
+Conformal prediction                                             [BUILD]
+  ROLE  Distribution-free guarantees on classifier sets and location
+        regions ("the 90% region really contains the truth 90% of the
+        time"). Small algorithm; we implement it and test coverage.
+Temperature scaling / isotonic calibration                       [BUILD]
+Coverage testing                                                 [ADOPT
+                                                             as practice]
+  Every credible region the engine emits is checked for empirical
+  coverage on simulation and labelled events (07_ metrics).
+
+3. Damage and risk statistics
+------------------------------------------------------------------------
+Rainflow counting (ASTM E1049-85)                                [BUILD]
+  No established Rust crate found. The algorithm is short; we implement
+  it against the standard's worked examples and cross-check with a
+  Python reference (e.g. the rainflow package) [VERIFY package].
+Miner's-rule damage with S-N curves per material                 [BUILD]
+  S-N data for AGED in-service uPVC, AC and cast iron is poorly known
+  (11_). Start with relative rankings.
+Survival / hazard models for pipe failure (Cox, Weibull,
+gradient-boosted survival)                                      [ASSESS]
+  Train in Python (lifelines / scikit-survival) once failure records
+  exist; deploy coefficients or ONNX models into Rust (06_).
+Hierarchical Bayesian models across networks (L6)               [ASSESS]
+  Shared priors for wave speed and failure rates by material and era.
+
+4. Reproducibility rules
+------------------------------------------------------------------------
+  - Every stochastic run records its seed(s), sampler settings, model
+    version and data references.
+  - Convergence diagnostics (R-hat, effective sample size) are computed
+    and stored with every MCMC result; a result without them is not
+    reported.
+
+Sources checked 2026-09-28: nuts-rs docs (lib.rs, docs.rs); ASTM E1049.

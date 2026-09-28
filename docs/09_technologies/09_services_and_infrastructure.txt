@@ -1,0 +1,65 @@
+SERVICES AND INFRASTRUCTURE
+STATUS: DRAFT v0.1 - for review
+
+Principle (06_engine_architecture): the physics and signal cores are pure
+libraries; services are thin shells around them. Nothing in this file
+should contain physics.
+
+1. Service stack
+------------------------------------------------------------------------
+tokio (async runtime)                                            [ADOPT]
+  The de-facto Rust async runtime; required by most crates in 08_.
+axum (HTTP APIs)                                                 [TRIAL]
+tonic (gRPC between internal services)                          [ASSESS]
+serde (+ serde_json, rmp-serde / MessagePack)                    [ADOPT]
+  All config, scenario files and messages. Schemas versioned.
+tracing (+ tracing-subscriber)                                   [ADOPT]
+  Structured logs and spans from day one, including inside the solver
+  (at debug level), so any event's processing can be reconstructed.
+OpenTelemetry (metrics, traces export)                          [TRIAL]
+  Latency per pipeline stage against targets C1 (detect in seconds,
+  locate in tens of seconds, recommend within a minute).
+
+2. Deployment
+------------------------------------------------------------------------
+Containers (OCI images, minimal/distroless, static Rust binaries)[TRIAL]
+Kubernetes                                                        [HOLD]
+  Not until the number of networks makes it pay (T5). Start with a
+  small number of VMs or a managed container service.
+Infrastructure as code (OpenTofu / Terraform)                   [ASSESS]
+Edge (partner gateways)                                         [ASSESS]
+  Cross-compiled aarch64 Linux binaries of the detection library;
+  store-and-forward buffering through outages (C4, P6).
+
+3. Hosting in South Africa (data in-country, low latency)
+------------------------------------------------------------------------
+Regions available (checked 2026-09-28):
+  AWS          af-south-1, Cape Town (since 2020, 3 availability zones)
+  Azure        South Africa North, Johannesburg
+               (South Africa West, Cape Town: status unclear - [VERIFY])
+  Google Cloud africa-south1, Johannesburg (since 2024)
+Decision pending [DECIDE]. Criteria: managed Postgres availability,
+object storage, price in ZAR, multi-AZ in one SA region, and the
+ability to leave (object_store and plain Postgres keep us portable).
+Load-shedding note: cloud regions have their own generation; our risk is
+the SENSOR side going dark, handled in software (06_ outages file).
+
+4. Law and security
+------------------------------------------------------------------------
+POPIA (Protection of Personal Information Act)                  [ADOPT
+                                                             as practice]
+  Pressure data is mostly not personal information, but site addresses,
+  operator names, contact details for alerts and smart-meter data can
+  be. Keep data in SA regions, minimise personal fields, document
+  lawful basis. Get legal advice before the first partner [VERIFY].
+Critical-infrastructure security                                 [ADOPT
+                                                             as practice]
+  - Read-only by default: the engine does not actuate valves unless a
+    partner explicitly enables it, with human confirmation (E6, P4).
+  - TLS everywhere; per-source credentials; least privilege.
+  - Secrets never in the repo; a secrets manager per environment.
+  - Dependency audit (cargo-deny, cargo-audit) in CI (10_).
+  - Signed releases and an SBOM per build [ASSESS tooling].
+
+Sources checked 2026-09-28: AWS, Azure and Google Cloud SA region
+announcements; cloud-provider summaries (getdeploying.com).

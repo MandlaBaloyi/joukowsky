@@ -1,0 +1,77 @@
+MACHINE LEARNING AND AI
+STATUS: DRAFT v0.1 - for review
+
+Rule (from 05_learning_systems/learning_over_time.txt): a learned model is
+adopted only if it beats the physics-only baseline on held-out events AND
+its outputs remain physically plausible. ML refines physics; it never
+replaces it (P1).
+
+1. Split: train in Python, serve in Rust
+------------------------------------------------------------------------
+PyTorch (+ PyTorch Geometric for graph models)                   [TRIAL]
+  ROLE  Training classifiers, surrogates, graph models. Where the
+        research community is; fastest route from paper to experiment.
+ONNX as the model exchange format                                [TRIAL]
+ort (ONNX Runtime bindings for Rust)                             [TRIAL]
+  ROLE  Run trained models inside the Rust engine.
+  STATE 2.0.0-rc series in 2026; described by maintainers as production-
+        ready but not API-stable [VERIFY at adoption]. Wraps Microsoft's
+        ONNX Runtime (C++), so it adds a native dependency.
+Burn (Rust deep learning framework, v0.20, Jan 2026)            [ASSESS]
+  ROLE  Pure-Rust training AND inference; CPU SIMD and GPU backends via
+        CubeCL. Attractive long-term (one language, deterministic
+        builds, no native ONNX Runtime). Assess once models exist.
+Gradient-boosted trees for the Stage B classifier               [TRIAL]
+  Train in Python (LightGBM / XGBoost); export to ONNX or evaluate the
+  tree ensemble in a small Rust evaluator of our own (trees are simple
+  and fully auditable).
+
+2. Model families on our research track
+------------------------------------------------------------------------
+Physics-informed neural networks (PINNs)                        [ASSESS]
+  Well studied for single-pipe water hammer (2022-2026), including
+  unsteady-friction variants and transient reconstruction from sparse
+  sensors. Network-scale PINNs remain small (~19 pipes reported).
+Graph neural networks for water networks                        [ASSESS]
+  - Physics-informed GNN for STEADY hydraulics (Ashraf et al. 2024):
+    <1% error vs EPANET on L-Town, millisecond inference.
+  - Spatiotemporal GCN surrogate for WATER HAMMER under pipe ruptures
+    (Eng. Appl. Comput. Fluid Mech., Feb 2026): matches pressure
+    histories including peak timing at far lower cost than MOC.
+  => Update to 08_research R-5: transient graph surrogates are no longer
+     completely unexplored, but no published model yet gives calibrated
+     UNCERTAINTY, handles UNKNOWN wave speeds, or supports inversion
+     (localisation/ITA). That remains our gap (11_).
+Neural operators (FNO, DeepONet) as MOC surrogates              [ASSESS]
+Sequence models (1-D CNN / transformer) on raw multi-sensor
+windows for classification (Stage B/C)                          [ASSESS]
+Grey-box: MOC + learned correction trained through our adjoint  [BUILD]
+  Only possible because we own the solver and its gradients.
+
+3. Sim-to-real (the known failure mode)
+------------------------------------------------------------------------
+08_research Q-A2: direct sim-to-real accuracy was 30%, 62.5% after
+transfer learning. Our tooling therefore includes:
+  - domain randomisation in the scenario generator (sim crate),
+  - real noise and real sensor artefacts injected into simulations,
+  - per-network fine-tuning with versioned models and shadow mode,
+  - physics-based localisation as the primary method (needs no training).
+
+4. MLOps (auditable learning, P5)                               [ASSESS]
+------------------------------------------------------------------------
+  Model registry with immutable versions, training-data references,
+  code version and evaluation results. Candidates: MLflow, or a minimal
+  registry of our own on object storage + Postgres. Decide when the
+  first model is trained.
+
+5. Large language models                                          [HOLD]
+------------------------------------------------------------------------
+Possible later uses: plain-language event explanations for operators,
+summarising repair reports into labels, assisting analysts. Never in the
+detection, localisation or safety path - an LLM output is not physics
+and cannot be verified the way P1/P4 require.
+
+Sources checked 2026-09-28: ort docs and releases (pykeio/ort); Burn 0.20
+release (Phoronix); PINN review (Water Research 2026); STGCN water-hammer
+surrogate (tandfonline 10.1080/19942060.2026.2630557); PI-GNN
+(arXiv:2403.18570).

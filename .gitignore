@@ -1,0 +1,6 @@
+# Rust
+/target/
+
+# Personal Claude Code config (voice hook etc.)
+.claude/settings.local.json
+.claude/hooks/

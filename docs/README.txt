@@ -33,6 +33,8 @@ Reading order
                              live partner data.
 08_research/                 References, open questions, and the research
                              backlog.
+09_technologies/             What we build with (and why), what we must
+                             invent ourselves, and the decision log.
 
 Conventions
 -----------

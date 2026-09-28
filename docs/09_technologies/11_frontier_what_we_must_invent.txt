@@ -1,0 +1,95 @@
+THE FRONTIER: WHAT NO ONE HAS SOLVED, AND WHAT WE MUST INVENT
+STATUS: DRAFT v0.1 - for review
+
+These are the places where libraries, papers and products stop. They are
+also where the engine's defensible value lies: anyone can buy a 128 S/s
+logger; almost no one can turn its data into a calibrated, located,
+explained event on an old, mixed-material, intermittently supplied
+network. Each item: WHY UNSOLVED -> OUR APPROACH -> FIRST PROOF.
+
+F1  Localisation on real networks with UNKNOWN wave speeds
+    WHY   Arrival-time localisation is solved on a single pipe with known
+          a. On a branched network with wave speeds known only to
+          +/-20% (and changing with free air and temperature), errors
+          compound and the posterior becomes multi-modal.
+    OURS  Joint Bayesian posterior over (source location, per-pipe wave
+          speeds, clock offsets), using graph travel times, amplitude
+          decay through junctions, and later full-waveform likelihoods.
+          Opportunistic probes (known pump/valve events) tighten the
+          wave-speed priors continuously.
+    PROOF Credible-region coverage on simulated networks with deliberately
+          wrong priors; then field datasets D2/D4.
+
+F2  A differentiable transient solver in Rust
+    WHY   JAX/PyTorch MOC prototypes exist in research; a production,
+          deterministic, network-scale MOC with an exact discrete adjoint
+          in a compiled language is not publicly available [VERIFY].
+    OURS  Hand-derived discrete adjoint of our own MOC scheme (02_ S8),
+          verified against finite differences to tight tolerance.
+    PROOF Gradient check suite; ITA on synthetic networks recovers known
+          leaks and wave speeds.
+
+F3  Transient-capable graph surrogates WITH uncertainty and inversion
+    WHY   2024-2026 work: PI-GNNs for steady hydraulics; one STGCN
+          water-hammer surrogate (Feb 2026) reproduces pressure
+          histories. None gives calibrated uncertainty, generalises to
+          unknown wave speeds, or is used inside inversion.
+    OURS  Graph model trained on our own solver's output (domain-
+          randomised), with physics-residual losses via our adjoint,
+          conformal calibration, and use only as a proposal/accelerator
+          inside Bayesian inference - never as the final answer.
+    PROOF Beats the physics-only localiser on speed at equal coverage.
+
+F4  Sim-to-real transfer for event classification
+    WHY   Reported direct sim-to-real accuracy ~30% (08_research Q-A2).
+    OURS  Physical features first (rule-based Stage A needs no labels);
+          noise and artefact libraries learned from real quiet periods;
+          per-network fine-tuning; mandatory abstention.
+    PROOF Per-class precision/recall on held-out real networks.
+
+F5  Municipal-to-site surge transmission (08_research Q-P1)
+    WHY   No South African measurements exist.
+    OURS  Simulation study: main -> connection -> meter -> check valve /
+          PRV -> site network, across realistic configurations.
+    PROOF A published transmission table; later partner data.
+
+F6  Column separation and air in intermittently supplied networks
+    WHY   DVCM/DGCM are validated mostly on lab pipes; network-scale
+          refilling with entrained air is poorly modelled, and SA
+          networks refill daily in places.
+    OURS  DGCM + air-valve models in our solver; wave speed treated as
+          time-varying per pipe (Q-M2); refilling as its own event class.
+    PROOF Lab datasets (D6), then partner refilling events.
+
+F7  Fatigue of AGED South African pipes
+    WHY   S-N data exists for new uPVC/PE (standards SANS 966, SANS ISO
+          4427 cover design); not for 40-year-old AC or cast iron under
+          surge cycling.
+    OURS  Relative damage ranking first (rainflow + Miner), then a
+          survival model that learns failure hazard from observed
+          loading and repair records.
+    PROOF Ranking predicts later failures better than age/material alone.
+
+F8  Wave speed as a pipe-health signal at network scale
+    WHY   Demonstrated for individual buried pipes (Alexander et al.
+          2023); not as a continuous, fleet-wide monitoring product.
+    OURS  Per-pipe wave-speed time series from every opportunistic probe,
+          with drift detection separating deterioration from air and
+          temperature effects.
+
+F9  Repairing bad clocks in software
+    WHY   Many sources will have NTP-grade (10-100 ms) timing, which
+          destroys localisation (dx = a dt / 2).
+    OURS  Estimate per-sensor clock offset and drift as latent variables
+          from events with known sources (time_synchronisation.txt
+          item 3).
+    PROOF Localisation error before/after repair on degraded data.
+
+F10 Sensor placement under uncertainty for partners
+    WHY   Greedy placement is established; placement that is robust to
+          uncertain wave speeds and our own data tiers is not.
+    OURS  Placement advisor optimising expected credible-region size
+          over the wave-speed posterior.
+
+This file grows as we learn. When an item is solved, it moves to the
+relevant design doc with its proof, and stays listed here as SOLVED.

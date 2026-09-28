@@ -1,0 +1,77 @@
+LANGUAGE AND TOOLCHAIN
+STATUS: DRAFT v0.1 - for review
+
+1. Rust - the engine language                                    [ADOPT]
+------------------------------------------------------------------------
+Decision (owner, 2026-09-28): start with the hardest part, in Rust. The
+MOC solver, signal core, localisation and streaming pipeline are Rust from
+the first line. No JAX/Python prototype of the solver.
+
+Why Rust for this engine
+  - Speed of C/C++ without their memory-safety failure modes. The engine
+    runs unattended on infrastructure; a crash or silent memory corruption
+    is a missed burst.
+  - One codebase from cloud server to a partner's edge gateway (ARM
+    Linux). Principle P6 wants detection code portable to the edge.
+  - Strong types for physical meaning: head vs pressure vs flow can be
+    distinct types, so "added metres to Pascals" is a compile error.
+  - Fearless parallelism (rayon, tokio) for running thousands of
+    scenarios and many sensor streams.
+  - Mature tooling: cargo, clippy, rustfmt, built-in tests and benches.
+
+What Rust first costs us (stated honestly)
+  - No free gradients. JAX would have given derivatives of the solver
+    for inverse transient analysis and HMC. In Rust we will either
+    (a) hand-write the discrete adjoint of our MOC scheme (planned; the
+        scheme is simple enough that this is tractable and exact), or
+    (b) use std::autodiff (Enzyme) - nightly-only and experimental in
+        2026, with known cases of silently wrong gradients. HOLD.
+    Gradients are not needed for the first milestones (forward solver).
+  - Slower research iteration than notebooks. Mitigated later by Python
+    bindings (section 3) so researchers can drive the Rust core.
+  - Smaller scientific ecosystem than Python/Julia. We accept this;
+    see T2 in README - the physics is ours anyway.
+
+Conventions
+  - Edition 2024, stable toolchain, version pinned in
+    rust-toolchain.toml so every machine and CI builds identically.
+  - Cargo workspace, one crate per module in the architecture
+    (physics, signal, locate, infer, learn, connect, sim, service).
+  - f64 everywhere in physics. No f32 in the solver.
+  - #![forbid(unsafe_code)] in physics/signal/locate crates unless a
+    decision record allows a specific, reviewed exception.
+  - Errors are values (Result); no panics on bad data (P6). Panics are
+    reserved for violated internal invariants, and tested.
+
+2. Local setup (Windows, owner's machine)
+------------------------------------------------------------------------
+  - rustup (installs rustc, cargo, clippy, rustfmt).
+  - Microsoft C++ Build Tools (MSVC linker + Windows SDK) - required by
+    the default x86_64-pc-windows-msvc target.
+  - Production targets are Linux (x86_64 servers, aarch64 gateways);
+    CI builds and tests on Linux so Windows-only behaviour cannot hide.
+  STATUS (2026-09-28): not yet installed on the owner's machine.
+
+3. Python - research and ML layer, later                        [TRIAL]
+------------------------------------------------------------------------
+  - Role: notebooks, plotting, ML training (PyTorch), comparison with
+    reference tools (TSNet, WNTR - see 03_).
+  - Bridge: PyO3 + maturin. PyO3 0.27+ supports Python 3.14 (owner has
+    3.14 installed); 0.28 adds free-threaded 3.14 support.
+  - Rule: Python never becomes the only home of an algorithm the engine
+    depends on in production. Research code that proves itself is
+    re-implemented (or already lives) in Rust.
+
+4. Other languages
+------------------------------------------------------------------------
+  TypeScript  operator console (web UI), much later.            [ASSESS]
+  SQL         queries over the time-series and metadata stores. [ADOPT]
+  Julia       strong for scientific computing, but a second
+              compiled-ish language beside Rust doubles the
+              maintenance for little gain.                        [HOLD]
+  C/C++       only if we must wrap an existing library (e.g. the
+              EPANET toolkit) - via Rust FFI, isolated in one crate.
+                                                                 [HOLD]
+
+Sources checked 2026-09-28: Rust nightly docs (std::intrinsics::autodiff);
+PyO3 releases and discussion #5988; maturin docs.
