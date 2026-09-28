@@ -3,6 +3,17 @@
 version = 4
 
 [[package]]
+name = "jk-application"
+version = "0.1.0"
+dependencies = [
+ "jk-classification",
+ "jk-detection",
+ "jk-hydraulics",
+ "jk-kernel",
+ "jk-localisation",
+]
+
+[[package]]
 name = "jk-classification"
 version = "0.1.0"
 dependencies = [
@@ -48,6 +59,7 @@ dependencies = [
 name = "jk-tests"
 version = "0.1.0"
 dependencies = [
+ "jk-application",
  "jk-classification",
  "jk-detection",
  "jk-hydraulics",

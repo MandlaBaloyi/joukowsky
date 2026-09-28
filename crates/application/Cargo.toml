@@ -1,0 +1,21 @@
+[package]
+name = "jk-application"
+description = "Application layer: the event pipeline that turns sensor records into alerts"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+publish.workspace = true
+license.workspace = true
+
+[lib]
+name = "jk_application"
+
+[dependencies]
+jk-kernel.workspace = true
+jk-hydraulics.workspace = true
+jk-detection.workspace = true
+jk-localisation.workspace = true
+jk-classification.workspace = true
+
+[lints]
+workspace = true

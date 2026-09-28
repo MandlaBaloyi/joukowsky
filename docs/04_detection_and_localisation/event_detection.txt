@@ -64,3 +64,52 @@ A system that raises ten false bursts a week will be switched off. So:
     or auto-labelled,
   - alerts go out only after Layer 4 fusion + classification (P2) with
     confidence above a threshold; lower-confidence events are logged.
+
+4. Implementation note: after an event - echoes and ringing (2026-09-28)
+------------------------------------------------------------------------
+Built in crates/domain/detection/src/detector.rs; measured in
+tests/pipeline/simulation/scenarios.rs.
+
+Problem. After an event the network RINGS: the wave echoes off
+reservoirs, tees and dead ends, and at a sensor each echo is a real small
+pressure step. The first pipeline re-armed each detector after a fixed
+1 s hold-off; ONE simulated burst on the test estate then produced 12
+alerts, including a second, false Alarm.
+
+Tried and rejected: stay blind until the record is quiet again. It fixed
+the single burst, but a flowing network (quasi-steady friction) still
+rang at 0.3-0.9 m 27 s later, and a second burst at t = 30 s was missed.
+Silence while blind is not "no events" (P6).
+
+What is built:
+  a. After an event the sensor is blind for max(hold-off, settle window).
+     The pipeline sets the settle window to at least one echo round trip
+     of the network: 2 x (longest fastest travel time between any two
+     nodes).
+  b. It then listens at REDUCED sensitivity while the network rings: the
+     noise unit ("floor") becomes max(sigma, S / ring_units), S = largest
+     deviation from the median over the last settle window,
+     ring_units = 1 (so ringing sits at 1 unit, below the CUSUM drift
+     k = 3; a new event must be ~3x the ringing). The forecast is
+     re-centred on that median. The floor is re-measured every quarter
+     window and may fall by at most half per window (ringing beats).
+  c. A swing with no step behind it (CUSUM alarm, no onset found) raises
+     the floor and listening continues - no blind period.
+  d. Full sensitivity returns when the window looks like plain noise:
+     S <= 4 sigma. (Gaussian noise over n samples peaks near
+     sqrt(2 ln n) sigma = 3.4 sigma for n = 300.) A looser band (10 sigma
+     was tried) let residual echoes of 6-20 cm re-trigger the
+     full-sensitivity CUSUM: one false single-sensor alert.
+  e. Honesty (P2): every event records how its sensor re-armed
+     (Settled / Ringing{floor} / RecordEnded), and the detector reports
+     the spans when the sensor was blind or at reduced sensitivity. Only
+     outside those spans may a sensor's silence count as evidence that
+     nothing happened.
+
+Result on the estate (128 S/s, 2 cm noise): one burst -> exactly one
+Alarm; two bursts 27 s apart on a flowing network -> exactly two Alarms,
+each seen by all three sensors, located within 1 m.
+Cost: while ringing, events smaller than ~3x the ringing go unseen - and
+the spans say so. A model that PREDICTS the echoes (subtract the
+simulated ringing, then detect on the residual) would remove most of this
+cost; it needs a calibrated network model (twin, 05_) - open.

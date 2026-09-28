@@ -31,5 +31,5 @@ mod error;
 pub mod noise;
 pub mod onset;
 
-pub use detector::{Detection, Detector, DetectorConfig, Direction, Event, Series};
+pub use detector::{Detection, Detector, DetectorConfig, Direction, Event, Rearm, Series, Span};
 pub use error::DetectionError;

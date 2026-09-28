@@ -1,11 +1,24 @@
 joukowsky test run
-  when     2026-09-28 19:20:03
+  when     2026-09-28 19:40:27
   suite    quick
-  commit   bc406fb (with uncommitted changes)
+  commit   a4dc936 (with uncommitted changes)
   rust     rustc 1.98.1 (48a229cea 2026-09-01)
   command  cargo test --workspace --no-fail-fast -- --nocapture --test-threads=1
 ==============================================================================
-    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.03s
+   Compiling jk-detection v0.1.0 (C:\Users\HP\Desktop\joukowsky\crates\domain\detection)
+   Compiling jk-classification v0.1.0 (C:\Users\HP\Desktop\joukowsky\crates\domain\classification)
+   Compiling jk-application v0.1.0 (C:\Users\HP\Desktop\joukowsky\crates\application)
+   Compiling jk-tests v0.1.0 (C:\Users\HP\Desktop\joukowsky\tests)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 10.42s
+     Running unittests src\lib.rs (target\debug\deps\jk_application-66135842a37c86bf.exe)
+
+running 3 tests
+test pipeline::fusion::tests::arrivals_too_far_apart_for_the_pipes_are_not_one_event ... ok
+test pipeline::fusion::tests::one_event_seen_everywhere_is_one_group ... ok
+test pipeline::fusion::tests::two_events_far_apart_in_time_are_two_groups ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
      Running unittests src\lib.rs (target\debug\deps\jk_classification-ac838da961a672cc.exe)
 
 running 4 tests
@@ -85,7 +98,7 @@ test pipe::friction::quasi_steady::tests::matches_darcy_weisbach_in_velocity_for
 test pipe::tests::rejects_non_physical_values ... ok
 test pipe::tests::timing_matches_docs_example ... ok
 
-test result: ok. 41 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+test result: ok. 41 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s
 
      Running unittests src\lib.rs (target\debug\deps\jk_kernel-eccabcc9e10cd5d2.exe)
 
@@ -101,7 +114,7 @@ test units::tests::same_type_arithmetic ... ok
 test units::tests::velocity_flow_area ... ok
 test units::tests::wave_travel_time_and_distance_round_trip ... ok
 
-test result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+test result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
 
      Running unittests src\lib.rs (target\debug\deps\jk_localisation-b57d917c3efe0d09.exe)
 
@@ -114,14 +127,14 @@ test posterior::score::tests::with_independent_errors_the_correlated_score_match
 
 test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
 
-     Running unittests common\lib.rs (target\debug\deps\jk_tests-1378201a2f6af759.exe)
+     Running unittests common\lib.rs (target\debug\deps\jk_tests-3e0f6d6f27d15d3f.exe)
 
 running 1 test
 test sensor::tests::averaging_a_step_gives_the_covered_fraction ... ok
 
 test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
 
-     Running classification\main.rs (target\debug\deps\classification-7becaca80f69eb64.exe)
+     Running classification\main.rs (target\debug\deps\classification-1fe8dcb6fe65a4ba.exe)
 
 running 8 tests
 test simulation::scenarios::a_pump_trip_is_recognised_from_its_shape_alone ... Pump losing power, sensor at its discharge, power NOT monitored:
@@ -215,9 +228,9 @@ test simulation::scenarios::power_data_settles_the_slow_burst ... The same slow 
   burst                                        yes
 ok
 
-test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.13s
+test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.97s
 
-     Running detection\main.rs (target\debug\deps\detection-b43fe890879cbd4b.exe)
+     Running detection\main.rs (target\debug\deps\detection-22e23113576ab696.exe)
 
 running 9 tests
 test analytical::delay::delay_follows_the_cusum_formula ... Sharp drops at t = 3 s, noise-free signal with a 2 cm noise floor set:
@@ -267,9 +280,9 @@ Loggers: 128 S/s, integrating, random clock phase, 2 cm noise:
 ok
 test simulation::burst_location::vs1_location_error_versus_sampling_rate_and_noise ... ignored, full suite: 150 recorded sensor pairs across rates and noise levels
 
-test result: ok. 7 passed; 0 failed; 2 ignored; 0 measured; 0 filtered out; finished in 1.15s
+test result: ok. 7 passed; 0 failed; 2 ignored; 0 measured; 0 filtered out; finished in 1.02s
 
-     Running hydraulics\main.rs (target\debug\deps\hydraulics-1eb95420d90ab6ba.exe)
+     Running hydraulics\main.rs (target\debug\deps\hydraulics-6adf7756224c89af.exe)
 
 running 35 tests
 test analytical::boundaries::burst::a_10mm_hole_at_60m_head ... DN150 AC main at 60 m head, 0.5 m/s; a 10 mm hole opens (Cd 0.6):
@@ -531,7 +544,7 @@ ok
 
 test result: ok. 34 passed; 0 failed; 1 ignored; 0 measured; 0 filtered out; finished in 0.07s
 
-     Running kernel\main.rs (target\debug\deps\kernel-a96a393747361f88.exe)
+     Running kernel\main.rs (target\debug\deps\kernel-e7a09895fc76f918.exe)
 
 running 5 tests
 test conversions::dn150_area ... Cross-section of a DN150 pipe:
@@ -556,7 +569,7 @@ ok
 
 test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
 
-     Running localisation\main.rs (target\debug\deps\localisation-8d70fb7be3cbd193.exe)
+     Running localisation\main.rs (target\debug\deps\localisation-479c04082f54937f.exe)
 
 running 9 tests
 test analytical::branched::two_sensors_see_a_whole_branch_three_sensors_see_the_point ... Sensors S1 and S2 only (burst 200 m along branch T-S3):
@@ -641,7 +654,74 @@ Localisation:
   the arrivals fit one source (misfit < 3)     yes
 ok
 
-test result: ok. 8 passed; 0 failed; 1 ignored; 0 measured; 0 filtered out; finished in 2.13s
+test result: ok. 8 passed; 0 failed; 1 ignored; 0 measured; 0 filtered out; finished in 1.95s
+
+     Running pipeline\main.rs (target\debug\deps\pipeline-671771d9c6fffa76.exe)
+
+running 4 tests
+test simulation::scenarios::a_faulty_sensor_is_sent_for_review_not_raised_as_an_alarm ... No event in the pipes; S2's reading jumps 3 m at t = 6 s (sensor fault):
+1 alert(s):
+[Review] #1 VALVE CLOSURE (98% confident) at t = 5.999 s
+  where: not located (fewer than two sensors saw it)
+  seen by: S2 north block
+  because: pressure ROSE by 3.05 m: a closing valve raises pressure upstream of it; bursts and pump trips lower it
+  because: SHARP front (12 ms, 10-90%): a sudden change - a pipe splitting, a valve slamming - not a pump running down
+  because: pump power is not monitored: no outside evidence
+  because: seen by ONE sensor only: S1 gatehouse, S3 south block watched and felt nothing, though a pressure wave from anywhere in the network would have reached them - a fault in S2 north block, or an event too small or too local to travel
+  one alert                                    yes
+  sent for REVIEW, not an alarm                yes
+  not located (one sensor only)                yes
+  names the sensor                             yes
+ok
+test simulation::scenarios::a_quiet_network_raises_nothing ... 15 s of an undisturbed network, three noisy sensors:
+0 alert(s):
+  no alerts                                    yes
+ok
+test simulation::scenarios::one_burst_gives_exactly_one_alarm_on_the_right_pipe ... A 10 mm hole opens 200 m along the south branch at t = 3 s; 15 s recorded:
+1 alert(s):
+[Alarm] #1 BURST (98% confident) at t = 2.999 s
+  where: T-S3 south branch at 200.0 m from its start; 90% within 2 m of pipe
+    T-S3 south branch    100.0%
+  seen by: S3 south block, S1 gatehouse, S2 north block
+  because: pressure DROPPED by 9.01 m: a burst or a pump trip, not a closing valve (seen upstream)
+  because: SHARP front (11 ms, 10-90%): a sudden change - a pipe splitting, a valve slamming - not a pump running down
+  because: pump power is not monitored: no outside evidence
+  exactly one alert - no echo alerts           yes
+  it is an ALARM                               yes
+  for a burst                                  yes
+  on the south branch (pipe 3)                 yes
+  within 2 m of the truth                      yes
+  seen by all three sensors                    yes
+ok
+test simulation::scenarios::two_bursts_far_apart_give_two_alarms ... Consumers drawing 30 l/s; a hole opens on the south branch at t = 3 s,
+another on the north branch at t = 30 s:
+2 alert(s):
+[Alarm] #1 BURST (98% confident) at t = 2.999 s
+  where: T-S3 south branch at 199.3 m from its start; 90% within 2 m of pipe
+    T-S3 south branch    100.0%
+  seen by: S3 south block, S1 gatehouse, S2 north block
+  because: pressure DROPPED by 7.78 m: a burst or a pump trip, not a closing valve (seen upstream)
+  because: SHARP front (7 ms, 10-90%): a sudden change - a pipe splitting, a valve slamming - not a pump running down
+  because: pump power is not monitored: no outside evidence
+[Alarm] #2 BURST (98% confident) at t = 29.999 s
+  where: T-S2 north branch at 150.7 m from its start; 90% within 6 m of pipe
+    T-S2 north branch    100.0%
+  seen by: S2 north block, S1 gatehouse, S3 south block
+  because: pressure DROPPED by 7.96 m: a burst or a pump trip, not a closing valve (seen upstream)
+  because: SHARP front (8 ms, 10-90%): a sudden change - a pipe splitting, a valve slamming - not a pump running down
+  because: pump power is not monitored: no outside evidence
+  two alerts, both alarms - no echo alerts     yes
+  the first on the south branch, ~200 m        yes
+  the second on the north branch, ~150 m       yes
+ok
+
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 2.17s
+
+   Doc-tests jk_application
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
 
    Doc-tests jk_classification
 
@@ -680,9 +760,9 @@ running 0 tests
 test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
 
 ==============================================================================
-  passed   135
+  passed   142
   failed   0
   skipped  4 slow test(s) not in this suite (run -Suite full)
   filtered 0 test(s) outside -Only/-Filter
-  time     5.3 s (including compile)
+  time     19.3 s (including compile)
   result   ALL PASSED

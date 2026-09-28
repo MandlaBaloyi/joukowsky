@@ -66,6 +66,12 @@ than 128 S/s. Hypothesis (unproven): the 1 ms simulation step limits the
 truth at that rate. To test: rerun with a 0.1 ms simulation.
 Not yet: GLR, wavelet and Bayesian online change-point detectors
 (benchmarks by ROC curve), clock-error part of V-S1, heavy-tailed noise.
+UPDATE 2026-09-28 (event pipeline): re-arming after an event is now
+echo-aware - blind for one network round trip, then listening through the
+ringing at reduced sensitivity, back to full sensitivity when the record
+looks like plain noise; blind/reduced spans are reported. Measured: one
+burst went from 12 alerts to 1. Details and numbers:
+04_detection_and_localisation/event_detection.txt section 4.
 
 2. Edge portability
 ------------------------------------------------------------------------

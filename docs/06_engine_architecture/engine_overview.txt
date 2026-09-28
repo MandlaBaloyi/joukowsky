@@ -59,3 +59,34 @@ Technology questions to decide (see 08_research/open_questions.txt)
     only if scale requires.
 Principle: build the physics and signal cores as pure, deterministic,
 heavily-tested libraries first. Services are thin shells around them.
+
+Event pipeline - first build (2026-09-28)
+------------------------------------------
+crates/application (jk-application), use case `process`: one window of
+sensor records in, one alert per event out, through the AlertSink port
+(adapters - SMS, e-mail, dashboard - come later). Steps:
+  1. Detect at every sensor (jk-detection), echo-aware re-arming
+     (event_detection.txt section 4); correct each arrival with that
+     sensor's clock estimate, if any (time_synchronisation.txt, F9).
+  2. Fuse: detections at different sensors belong to one event when
+     |t_i - t_j| <= tau_ij (1 + speed margin) + k sigma_ij, tau_ij = the
+     fastest wave travel time between the sensors on the pipe graph
+     (event_detection.txt Layer 4). Defaults: margin 10%, k = 4.
+  3. Classify on the first sensor to see it (closest, clearest front).
+  4. Locate if 2+ sensors saw it; a misfit above 3 marks the location
+     untrusted (two events at once, a wrong wave speed or a bad clock).
+  5. Corroborate: an event seen by ONE sensor, while other sensors
+     watched at full sensitivity over the whole time a wave from anywhere
+     could have reached them, is not physical as seen - a sensor fault or
+     something too small/local to travel. It goes to Review, with the
+     names of the sensors that felt nothing.
+  6. Level: Alarm = burst, located with a fitting source, confidence
+     >= 0.9; Warning = pump trip; Info = valve closure; Review = anything
+     unsure or uncorroborated. Every alert carries its reasons.
+Measured (tests/pipeline, estate network, 128 S/s, 2 cm noise): one burst
+-> one Alarm on the right pipe within 2 m; quiet record -> nothing; two
+bursts 27 s apart -> two Alarms; a 3 m step in one sensor only -> one
+Review naming the two sensors that felt nothing.
+Not yet: streaming windows (events straddling window edges), alert
+de-duplication across windows, persistence, the Stage B classifier, and
+sensor-fault diagnosis beyond "uncorroborated".
