@@ -49,10 +49,10 @@ joukowsky/
     interfaces/
       api/                     what dashboards and mobile apps call
       cli/                     run scenarios, replay events (`jk`)
-  tests/                       validation tests (crate jk-tests), one
-                               numbered folder per topic, run-tests.ps1,
-                               logs/ (see tests/README.md). Later also
-                               TSNet cross-checks and golden events.
+  tests/                       validation tests (crate jk-tests), grouped
+                               context / rung / topic, one test program
+                               per context; run-tests.ps1 (quick | full
+                               suites), logs/ (see tests/README.md)
   research/                    Python notebooks (later)
   docs/
 
@@ -62,8 +62,9 @@ pipe/, boundary/ and moc/ now; fluid/, cavitation/, steady/, adjoint/ and
 frequency/ appear with their milestones (09_technologies/02_ S1-S9).
 
 Tests: small unit tests stay next to the code (#[cfg(test)], the Rust
-convention). Validation against physics lives in tests/, one numbered
-folder per topic, and every check prints measured vs expected.
+convention). Validation against physics lives in tests/, grouped by
+bounded context, then validation rung, then topic; every check prints
+measured vs expected.
 Package names carry the prefix `jk-` (e.g. jk-kernel, jk-hydraulics).
 
 Dependency rules (enforced in review, later by a CI check)

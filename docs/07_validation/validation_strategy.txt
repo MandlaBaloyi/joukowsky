@@ -1,6 +1,15 @@
 VALIDATION STRATEGY
 STATUS: DRAFT v0.1 - for review
 
+Where the tests live (added 2026-09-28)
+---------------------------------------
+tests/<context>/<rung>/<topic>/ in the repository (crate jk-tests; see
+tests/README.md). Rungs map to folders: 1 analytical/, invariants/ (laws
+that must hold in every run; property tests), 3 cross_code/, 4 datasets/,
+5 golden/. A test proving a case below starts with its ID (va1_, va2_,
+...). Slow or exhaustive tests are marked #[ignore] and run in the full
+suite: .\tests\run-tests.ps1 -Suite full.
+
 Ladder (every algorithm climbs every rung)
 ------------------------------------------
 Rung 1  Analytical: results that must match closed-form physics.

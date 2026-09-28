@@ -11,7 +11,7 @@ use jk_kernel::{Time, Velocity};
 use jk_tests::{V0, check, check_close, standard_system};
 
 #[test]
-fn frictionless_instant_closure_is_a_joukowsky_square_wave() {
+fn va1_frictionless_instant_closure_is_a_joukowsky_square_wave() {
     let s = standard_system(0.0, ValveClosure::Instantaneous, 20);
     let dh = joukowsky::head_change(Velocity::new(-V0), s.pipe.wave_speed(), s.gravity).value();
     let trace = s.simulate(Time::new(12.0), &[s.valve_node()]).unwrap();

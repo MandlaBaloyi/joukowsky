@@ -1,13 +1,12 @@
 joukowsky test run
-  when     2026-09-28 17:18:05
-  commit   8be799e (with uncommitted changes)
+  when     2026-09-28 17:26:31
+  suite    full
+  commit   2b3199e (with uncommitted changes)
   rust     rustc 1.98.1 (48a229cea 2026-09-01)
-  command  cargo test --workspace --no-fail-fast -- --nocapture --test-threads=1
+  command  cargo test --workspace --no-fail-fast -- --nocapture --test-threads=1 --include-ignored
 ==============================================================================
-   Compiling jk-hydraulics v0.1.0 (C:\Users\HP\Desktop\joukowsky\crates\domain\hydraulics)
    Compiling jk-tests v0.1.0 (C:\Users\HP\Desktop\joukowsky\tests)
-   Compiling jk-cli v0.1.0 (C:\Users\HP\Desktop\joukowsky\crates\interfaces\cli)
-    Finished `test` profile [unoptimized + debuginfo] target(s) in 3.13s
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 1.05s
      Running unittests src\main.rs (target\debug\deps\jk-7274c5438ed9f47a.exe)
 
 running 0 tests
@@ -53,32 +52,26 @@ running 0 tests
 
 test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
 
-     Running 02_joukowsky\main.rs (target\debug\deps\joukowsky-0f07abe685d53354.exe)
+     Running hydraulics\main.rs (target\debug\deps\hydraulics-356f9c4fa69611d2.exe)
 
-running 3 tests
-test burst_quantification::dn150_ac_main_2_litre_per_second_burst ... DN150 AC main, a = 1000 m/s:
+running 9 tests
+test analytical::joukowsky::burst_quantification::dn150_ac_main_2_litre_per_second_burst ... DN150 AC main, a = 1000 m/s:
   impedance B [s/m^2]                          got    5768.442835   expected    5770.000000   rel.err 2.7e-4
   step from a 2 l/s burst [m]                  got       5.768443   expected       5.800000   rel.err 5.4e-3
   burst flow back from the step [l/s]          got       2.000000   expected       2.000000   rel.err 0.0e0
   water lost per day [m^3]                     got     172.800000   expected     172.800000   rel.err 0.0e0
 ok
-test surge_by_material::head_rise_when_1_m_per_s_is_stopped ... dH = -(a / g) dV with dV = -1 m/s:
+test analytical::joukowsky::surge_by_material::head_rise_when_1_m_per_s_is_stopped ... dH = -(a / g) dV with dV = -1 m/s:
   steel / ductile iron / cast iron (a = 1250) [m] got     127.420999   expected     127.000000   rel.err 3.3e-3
   asbestos-cement (a = 1000) [m]               got     101.936799   expected     102.000000   rel.err 6.2e-4
   uPVC (a = 370) [m]                           got      37.716616   expected      38.000000   rel.err 7.5e-3
   HDPE (a = 300) [m]                           got      30.581040   expected      31.000000   rel.err 1.4e-2
 ok
-test surge_by_material::pressure_and_head_forms_agree ... rho a dV versus rho g (a/g dV), steel main:
+test analytical::joukowsky::surge_by_material::pressure_and_head_forms_agree ... rho a dV versus rho g (a/g dV), steel main:
   pressure rise [bar]                          got      12.475000   expected      12.475000   rel.err 0.0e0
   pressure rise vs docs ~12.5 bar              got      12.475000   expected      12.500000   rel.err 2.0e-3
 ok
-
-test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
-
-     Running 03_single_pipe\main.rs (target\debug\deps\single_pipe-d4bfc79638890c25.exe)
-
-running 5 tests
-test friction::friction_causes_line_packing_and_damping ... Friction f = 0.03, instant closure; Joukowsky dH = 101.972 m
+test analytical::single_pipe::friction::friction_causes_line_packing_and_damping ... Friction f = 0.03, instant closure; Joukowsky dH = 101.972 m
   steady valve head            94.901 m
   just after closure (step 1)  196.873 m
   just before relief (step 40) 201.716 m
@@ -88,27 +81,14 @@ test friction::friction_causes_line_packing_and_damping ... Friction f = 0.03, i
   peak in period 3             185.408 m
   oscillation decays                           yes
 ok
-test grid_independence::joukowsky_peak_is_the_same_on_every_grid ... 1 reach(es), dt = 1.0000 s:
-  peak head [m]                                got     201.971621   expected     201.971621   rel.err 1.4e-16
-  lowest head [m]                              got      -1.971621   expected      -1.971621   rel.err 1.4e-14
-7 reach(es), dt = 0.1429 s:
-  peak head [m]                                got     201.971621   expected     201.971621   rel.err 1.4e-16
-  lowest head [m]                              got      -1.971621   expected      -1.971621   rel.err 1.4e-14
-20 reach(es), dt = 0.0500 s:
-  peak head [m]                                got     201.971621   expected     201.971621   rel.err 1.4e-16
-  lowest head [m]                              got      -1.971621   expected      -1.971621   rel.err 1.4e-14
-64 reach(es), dt = 0.0156 s:
-  peak head [m]                                got     201.971621   expected     201.971621   rel.err 1.4e-16
-  lowest head [m]                              got      -1.971621   expected      -1.971621   rel.err 1.4e-14
-ok
-test slow_closure::slow_closure_surge_is_well_below_joukowsky ... Linear closure over 20 s (10 x 2L/a):
+test analytical::single_pipe::slow_closure::va2_slow_closure_surge_is_well_below_joukowsky ... Linear closure over 20 s (10 x 2L/a):
   Joukowsky (instant closure)  101.972 m
   Michaud estimate             10.197 m
   simulated surge              5.468 m
   surge is positive (above 5% of Joukowsky)    yes
   surge is below half of Joukowsky             yes
 ok
-test square_wave::frictionless_instant_closure_is_a_joukowsky_square_wave ... Grid and timing:
+test analytical::single_pipe::square_wave::va1_frictionless_instant_closure_is_a_joukowsky_square_wave ... Grid and timing:
   time step dt [s]                             got       0.050000   expected       0.050000   rel.err 0.0e0
   2L/a = 2 s = 40 steps; period 4L/a = 4 s = 80 steps.
   The valve shuts at step 1 (t = dt), so each front lands one step
@@ -122,7 +102,23 @@ Every one of the 241 samples on the square wave:
   all samples within 1e-9 m of the ideal       yes
   no flow through the shut valve               yes
 ok
-test steady_state::an_undisturbed_pipe_stays_steady ... Steady state with friction f = 0.02:
+test invariants::grid_independence::joukowsky_peak_is_exact_on_every_grid_and_material ...   1024 simulations; largest error in peak or trough: 2.84e-14 m
+  every case within 1e-9 m of Joukowsky        yes
+ok
+test invariants::grid_independence::joukowsky_peak_is_the_same_on_every_grid ... 1 reach(es), dt = 1.0000 s:
+  peak head [m]                                got     201.971621   expected     201.971621   rel.err 1.4e-16
+  lowest head [m]                              got      -1.971621   expected      -1.971621   rel.err 1.4e-14
+7 reach(es), dt = 0.1429 s:
+  peak head [m]                                got     201.971621   expected     201.971621   rel.err 1.4e-16
+  lowest head [m]                              got      -1.971621   expected      -1.971621   rel.err 1.4e-14
+20 reach(es), dt = 0.0500 s:
+  peak head [m]                                got     201.971621   expected     201.971621   rel.err 1.4e-16
+  lowest head [m]                              got      -1.971621   expected      -1.971621   rel.err 1.4e-14
+64 reach(es), dt = 0.0156 s:
+  peak head [m]                                got     201.971621   expected     201.971621   rel.err 1.4e-16
+  lowest head [m]                              got      -1.971621   expected      -1.971621   rel.err 1.4e-14
+ok
+test invariants::steady_state::an_undisturbed_pipe_stays_steady ... Steady state with friction f = 0.02:
   valve head: solver vs hand formula [m]       got      96.600946   expected      96.600946   rel.err 0.0e0
   reservoir end: largest head drift 0.0e0 m, flow drift 1.4e-17 m^3/s
   reservoir end holds steady                   yes
@@ -132,9 +128,9 @@ test steady_state::an_undisturbed_pipe_stays_steady ... Steady state with fricti
   valve holds steady                           yes
 ok
 
-test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+test result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 8.96s
 
-     Running 01_units\main.rs (target\debug\deps\units-e201bc1eb627babf.exe)
+     Running kernel\main.rs (target\debug\deps\kernel-de7e7becf50a66a6.exe)
 
 running 5 tests
 test conversions::dn150_area ... Cross-section of a DN150 pipe:
@@ -178,7 +174,9 @@ running 0 tests
 test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
 
 ==============================================================================
-  passed   34
+  passed   35
   failed   0
-  time     5.2 s (including compile)
+  skipped  0 slow test(s) not in this suite
+  filtered 0 test(s) outside -Only/-Filter
+  time     10.8 s (including compile)
   result   ALL PASSED

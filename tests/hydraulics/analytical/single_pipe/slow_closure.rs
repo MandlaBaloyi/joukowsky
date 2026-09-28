@@ -11,7 +11,7 @@ use jk_kernel::{Time, Velocity};
 use jk_tests::{V0, check, standard_system};
 
 #[test]
-fn slow_closure_surge_is_well_below_joukowsky() {
+fn va2_slow_closure_surge_is_well_below_joukowsky() {
     let s = standard_system(0.0, ValveClosure::linear(Time::new(20.0)), 20);
     let dh = joukowsky::head_change(Velocity::new(-V0), s.pipe.wave_speed(), s.gravity).value();
     let trace = s.simulate(Time::new(30.0), &[s.valve_node()]).unwrap();

@@ -1,6 +1,6 @@
 [package]
 name = "jk-tests"
-description = "Validation tests for the joukowsky engine, one folder per topic"
+description = "Validation tests for the joukowsky engine, grouped by bounded context"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
@@ -8,23 +8,22 @@ publish.workspace = true
 license.workspace = true
 autotests = false
 
-# Shared helpers used by every test folder.
+# Shared helpers used by every test program.
 [lib]
 name = "jk_tests"
 path = "common/lib.rs"
 
-# One test program per folder. Run one with:  cargo test -p jk-tests --test single_pipe
+# ONE test program per bounded context. Each is compiled and linked
+# separately, and linking is the slow part - so topics are folders
+# (modules) inside a context's program, never programs of their own.
+# Run one with:  .\tests\run-tests.ps1 -Only hydraulics
 [[test]]
-name = "units"
-path = "01_units/main.rs"
+name = "kernel"
+path = "kernel/main.rs"
 
 [[test]]
-name = "joukowsky"
-path = "02_joukowsky/main.rs"
-
-[[test]]
-name = "single_pipe"
-path = "03_single_pipe/main.rs"
+name = "hydraulics"
+path = "hydraulics/main.rs"
 
 [dependencies]
 jk-kernel.workspace = true
