@@ -38,9 +38,12 @@ Regions available (checked 2026-09-28):
   Azure        South Africa North, Johannesburg
                (South Africa West, Cape Town: status unclear - [VERIFY])
   Google Cloud africa-south1, Johannesburg (since 2024)
-Decision pending [DECIDE]. Criteria: managed Postgres availability,
-object storage, price in ZAR, multi-AZ in one SA region, and the
-ability to leave (object_store and plain Postgres keep us portable).
+DECIDED (TD-007): AWS af-south-1. Open the account only when the engine
+is ready for the cloud - the 2026 free plan runs 6 months or until the
+credits are spent, from account creation. Until then everything runs
+locally (Postgres 18 + local files through object_store's filesystem
+backend). Portability is kept: object_store and plain Postgres let us
+leave AWS if we must.
 Load-shedding note: cloud regions have their own generation; our risk is
 the SENSOR side going dark, handled in software (06_ outages file).
 

@@ -72,3 +72,8 @@ T3  Determinism. Same input + same model version = bit-identical output
 T4  Few dependencies, each one audited. Every crate is a supply-chain risk.
 T5  Nothing is chosen for fashion. A heavier technology (Kafka, Kubernetes,
     GPU) is adopted only when measured load requires it.
+T6  Build over buy (TD-005). Where we can own it, we build it. A licence
+    or a heavy dependency needs a decision record showing it is worth
+    the dependence.
+T7  Free first (TD-006). Free software and free tiers until the POC/MVP
+    is proven; paid services only after that.

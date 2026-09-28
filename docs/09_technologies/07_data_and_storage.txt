@@ -26,9 +26,12 @@ RULE  Raw samples, raw timestamps and clock-quality metadata are stored
 
 2. Low-rate time series
 ------------------------------------------------------------------------
-TimescaleDB (PostgreSQL extension)                              [TRIAL]
-  WHY   One Postgres for time series AND metadata; SQL; mature ops;
-        continuous aggregates for dashboards.
+PostgreSQL with native time partitioning                        [ADOPT]
+  DECISION TD-008. Dev on the owner's local PostgreSQL 18; production
+        on AWS (af-south-1). One database for time series AND metadata.
+TimescaleDB (PostgreSQL extension)                              [ASSESS]
+  WHY   Continuous aggregates, compression. Only if measured load
+        needs it.
   CHECK Licence: parts of TimescaleDB are under the Timescale License,
         not Apache-2.0 - acceptable for self-hosting but restricts
         offering it as a DB service [VERIFY terms at adoption].

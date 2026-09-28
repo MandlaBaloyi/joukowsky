@@ -45,12 +45,15 @@ Conventions
 
 2. Local setup (Windows, owner's machine)
 ------------------------------------------------------------------------
-  - rustup (installs rustc, cargo, clippy, rustfmt).
-  - Microsoft C++ Build Tools (MSVC linker + Windows SDK) - required by
-    the default x86_64-pc-windows-msvc target.
+  - rustup, stable toolchain, x86_64-pc-windows-gnu host, minimal
+    profile (TD-010). The GNU host ships its own linker, so the 5-7 GB
+    Microsoft C++ Build Tools are not needed.
+  - cargo capped at 4 parallel jobs in ~/.cargo/config.toml (i3 laptop).
+  - clippy and rustfmt are added as components when the workspace is
+    created (one install at a time).
   - Production targets are Linux (x86_64 servers, aarch64 gateways);
     CI builds and tests on Linux so Windows-only behaviour cannot hide.
-  STATUS (2026-09-28): not yet installed on the owner's machine.
+  STATUS (2026-09-28): rustc/cargo 1.98.1 installed and verified.
 
 3. Python - research and ML layer, later                        [TRIAL]
 ------------------------------------------------------------------------

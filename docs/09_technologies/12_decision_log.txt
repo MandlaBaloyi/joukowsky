@@ -1,5 +1,5 @@
 TECHNOLOGY DECISION LOG
-STATUS: DRAFT v0.1 - for review
+STATUS: DRAFT v0.2 - for review
 
 Format: ID | date | decision | by | reason | supersedes
 
@@ -13,22 +13,70 @@ TD-001 | 2026-09-28 | Rust is the engine language; the MOC solver and
 TD-002 | 2026-09-28 | Python enters later, via PyO3/maturin, for
        research and ML training only. | owner |
 TD-003 | 2026-09-28 | Default branch of work is `main`. | owner |
-TD-004 | 2026-09-28 | Technology rules T1-T5 (09_technologies/
-       README.txt) apply to every dependency. | proposed with this
-       folder; owner to confirm |
+TD-004 | 2026-09-28 | Technology rules T1-T7 (README.txt) apply to every
+       dependency. | owner |
+TD-005 | 2026-09-28 | BUILD OVER BUY. Prefer our own implementation to a
+       licensed or heavy dependency; license or depend only where it is
+       clearly worth it (decision record required). | owner |
+       dependence is a business risk. | strengthens T1/T4
+TD-006 | 2026-09-28 | FREE FIRST. Until the POC/MVP is proven, use free
+       software and free tiers only. Paid services and licences only
+       after the MVP is validated. | owner | limited capital. |
+TD-007 | 2026-09-28 | Cloud = AWS, region af-south-1 (Cape Town).
+       Do NOT open the AWS account until the engine is ready to run
+       in the cloud: the 2026 free plan lasts 6 months or until the
+       $100-200 credits run out, counted from account creation.
+       af-south-1 is an opt-in region (enable it explicitly) [VERIFY
+       whether free-plan credits apply there]. | owner (cloud), Claude
+       (timing) | resolves P-02 |
+TD-008 | 2026-09-28 | Database = PostgreSQL. Development uses the
+       owner's local PostgreSQL 18. Time series start in plain Postgres
+       (native partitioning by time); TimescaleDB only if measured load
+       requires it. | owner (Postgres), Claude (no extension yet) |
+       resolves P-03; TimescaleDB and QuestDB move to ASSESS |
+TD-009 | 2026-09-28 | GPU work (ML training, large surrogates) runs on
+       Google Colab, not the dev laptop. | owner | laptop has
+       integrated Intel graphics only. |
+TD-010 | 2026-09-28 | Dev toolchain = Rust stable, x86_64-pc-windows-gnu
+       host, minimal profile; cargo limited to 4 parallel jobs
+       (~/.cargo/config.toml). | Claude | avoids ~5-7 GB of MSVC Build
+       Tools on a modest laptop; production targets are Linux anyway.
+       Switch to MSVC only if a crate needs it (e.g. prebuilt ONNX
+       Runtime binaries). |
+TD-011 | 2026-09-28 | Steady-state solver: our own global gradient
+       algorithm on faer; epanet-rs and WNTR are test cross-checks
+       only. | Claude (delegated by owner) | TD-005; epanet-rs lacks
+       leakage/emitters. | resolves P-01
+TD-012 | 2026-09-28 | Messaging: a Postgres-backed work queue first;
+       NATS JetStream (Apache-2.0, free, self-hosted) when one queue is
+       not enough; no Kafka. | Claude (delegated) | TD-006, T5. |
+       resolves P-04
+TD-013 | 2026-09-28 | ML serving: tree ensembles evaluated by our own
+       small Rust evaluator; neural models via ONNX + ort (MIT, free)
+       at first; Burn re-assessed when the first neural model exists.
+       | Claude (delegated) | TD-005: trees are simple enough to own. |
+       resolves P-05
+TD-014 | 2026-09-28 | DNP3: no licence purchase. If a partner needs
+       DNP3, we write our own client for the subset we need. | Claude
+       (delegated) | TD-005, TD-006. | resolves P-06
+TD-015 | 2026-09-28 | Retention: raw event windows kept forever;
+       continuous raw high-rate streams (if sent) kept 30 days, then
+       summaries only. Revisit with partners and POPIA advice. |
+       Claude (delegated) | resolves P-07
+TD-016 | 2026-09-28 | Low-rate (Tier 0/1) module is the SECOND thing we
+       build, after the transient core. The data model supports both
+       rates from day one. | Claude (delegated) | most SA data that
+       exists today is low-rate (08_research Q-P3). | resolves P-08
 
-PENDING [DECIDE]
+WORKING RULES FOR THE DEV MACHINE
 ------------------------------------------------------------------------
-  P-01 Steady-state solver: our own GGA on faer, or depend on epanet-rs
-       once mature? (recommendation: our own, epanet-rs as a test
-       cross-check)
-  P-02 Cloud provider and region for first deployment (09_ sect. 3).
-  P-03 Time-series store: TimescaleDB first (recommended) vs QuestDB.
-  P-04 Messaging: Postgres queue -> NATS JetStream (recommended) vs
-       Kafka/Redpanda.
-  P-05 ML serving: ort (ONNX Runtime) vs Burn.
-  P-06 DNP3: buy a commercial licence or write our own client - only
-       when a partner needs DNP3.
-  P-07 Raw high-rate stream retention period.
-  P-08 Low-rate (Tier 0) module timing: second thing we build?
-       (08_research Q-P3)
+  Laptop: Intel Core i3-1125G4 (4 cores / 8 threads, 2.0 GHz), 16 GB RAM,
+  Intel UHD graphics, ~115 GB free disk (2026-09-28).
+  - Install one tool at a time, checking resources first. Never batch
+    installs.
+  - Heavy compute (large scenario sweeps, training) goes to Colab or,
+    later, AWS - not the laptop.
+
+PENDING
+------------------------------------------------------------------------
+  (none open)
