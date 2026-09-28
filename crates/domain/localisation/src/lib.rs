@@ -16,12 +16,16 @@
 //! - [`graph`]: the wave-travel graph and fastest travel times.
 //! - [`posterior`]: candidate grid, scores, credible region.
 //! - [`locate`]: the entry point, [`localise`].
+//! - [`clocks`]: sensor clock offsets, estimated from known-source events
+//!   and removed (software clock repair, frontier F9).
 
+pub mod clocks;
 mod error;
 pub mod graph;
 pub mod locate;
 pub mod posterior;
 
+pub use clocks::{CalibrationEvent, ClockEstimate, estimate_offsets};
 pub use error::LocalisationError;
 pub use locate::{Arrival, Localisation, LocaliseOptions, Point, localise};
 pub use posterior::{PipeProbability, Segment};

@@ -1,13 +1,13 @@
 joukowsky test run
-  when     2026-09-28 19:11:06
+  when     2026-09-28 19:19:26
   suite    full
-  commit   9cabe43 (with uncommitted changes)
+  commit   bc406fb (with uncommitted changes)
   rust     rustc 1.98.1 (48a229cea 2026-09-01)
   command  cargo test --workspace --no-fail-fast -- --nocapture --test-threads=1 --include-ignored
 ==============================================================================
-   Compiling jk-classification v0.1.0 (C:\Users\HP\Desktop\joukowsky\crates\domain\classification)
+   Compiling jk-localisation v0.1.0 (C:\Users\HP\Desktop\joukowsky\crates\domain\localisation)
    Compiling jk-tests v0.1.0 (C:\Users\HP\Desktop\joukowsky\tests)
-    Finished `test` profile [unoptimized + debuginfo] target(s) in 7.27s
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 5.61s
      Running unittests src\lib.rs (target\debug\deps\jk_classification-ac838da961a672cc.exe)
 
 running 4 tests
@@ -87,7 +87,7 @@ test pipe::friction::quasi_steady::tests::matches_darcy_weisbach_in_velocity_for
 test pipe::tests::rejects_non_physical_values ... ok
 test pipe::tests::timing_matches_docs_example ... ok
 
-test result: ok. 41 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+test result: ok. 41 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s
 
      Running unittests src\lib.rs (target\debug\deps\jk_kernel-eccabcc9e10cd5d2.exe)
 
@@ -217,7 +217,7 @@ test simulation::scenarios::power_data_settles_the_slow_burst ... The same slow 
   burst                                        yes
 ok
 
-test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.09s
+test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.07s
 
      Running detection\main.rs (target\debug\deps\detection-b43fe890879cbd4b.exe)
 
@@ -282,7 +282,7 @@ test simulation::burst_location::vs1_location_error_versus_sampling_rate_and_noi
   128 S/s with 2 cm noise locates to under 1 m RMS yes
 ok
 
-test result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 2.54s
+test result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 2.62s
 
      Running hydraulics\main.rs (target\debug\deps\hydraulics-1eb95420d90ab6ba.exe)
 
@@ -546,7 +546,7 @@ test invariants::steady_state::an_undisturbed_pipe_stays_steady ... Steady state
   valve holds steady                           yes
 ok
 
-test result: ok. 35 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 18.90s
+test result: ok. 35 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 18.32s
 
      Running kernel\main.rs (target\debug\deps\kernel-a96a393747361f88.exe)
 
@@ -575,7 +575,7 @@ test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; fini
 
      Running localisation\main.rs (target\debug\deps\localisation-8d70fb7be3cbd193.exe)
 
-running 5 tests
+running 9 tests
 test analytical::branched::two_sensors_see_a_whole_branch_three_sensors_see_the_point ... Sensors S1 and S2 only (burst 200 m along branch T-S3):
   probability on branch T-S3: 100.0%
   90% region: 540 m of pipe
@@ -587,6 +587,19 @@ Adding sensor S3 at the end of the branch:
   distance from T [m]                          got     200.000030   expected     200.000000   rel.err 1.5e-7
   the region shrinks to a few metres           yes
   => sensor PLACEMENT decides what the engine can see (docs: placement advisor).
+ok
+test analytical::clocks::a_clock_that_never_meets_the_others_is_refused_not_guessed ... S2 only ever sees an event alone: refused - invalid input: the clock of the sensor at node 3 cannot be separated from the event times: it must share events with the other sensors
+  the engine refuses                           yes
+ok
+test analytical::clocks::offsets_are_recovered_from_three_known_events ... Noise-free picks:
+    offset of node 1 [ms]                      got       0.000000   expected       0.000000   rel.err 0.0e0
+    offset of node 3 [ms]                      got      23.000000   expected      23.000000   rel.err 4.3e-13
+    offset of node 4 [ms]                      got     -41.000000   expected     -41.000000   rel.err 3.0e-13
+Picks with 0.2 ms noise:
+  node 3: +23.276 ms (true +23.0 ms), uncertainty 0.163 ms
+    within 3 reported sigma                    yes
+  node 4: -40.843 ms (true -41.0 ms), uncertainty 0.163 ms
+    within 3 reported sigma                    yes
 ok
 test analytical::straight_main::a_burst_on_a_straight_main_is_found_where_the_formula_says ... Arrivals 0.7 s and 1.3 s after the burst, +/- 0.15 ms each:
   most likely: pipe 1 at 700.000 m
@@ -609,6 +622,32 @@ test invariants::calibration::the_90_percent_region_holds_the_truth_about_90_per
   average region length: 108 m
   coverage between 75% and 99% (60 trials)     yes
 ok
+test simulation::clock_study::f9_software_clock_repair_restores_metre_level_location ... Burst 200 m along branch T-S3; S2 reads 23 ms late, S3 41 ms early.
+  WITHOUT repair: most likely pipe 3 at 220.6 m; 90% region 66 m of pipe
+  estimated offset of node 1: +0.00 ms (+/- 0.00 ms)
+  estimated offset of node 3: +22.94 ms (+/- 0.16 ms)
+  estimated offset of node 4: -41.03 ms (+/- 0.16 ms)
+  WITH repair: pipe 3 at 200.07 m (true 200 m); 90% region 2.0 m of pipe
+  repaired: the right branch                   yes
+  repaired: within 1 m                         yes
+  repair shrinks the 90% region at least tenfold yes
+ok
+test simulation::clock_study::vs1_location_error_grows_with_clock_error_as_theory_says ... Burst 700 m from S1; clocks off by sigma_c each; 100 trials per row:
+  clock           sigma_c    RMS error   theory a sigma_c/sqrt2   90% region holds truth
+  GNSS              0.1 ms       0.14 m           0.13 m              100%
+    RMS within 30% of theory                   yes
+    the 90% region stays honest (>= 80%)       yes
+  good NTP          1.0 ms       0.68 m           0.72 m              100%
+    RMS within 30% of theory                   yes
+    the 90% region stays honest (>= 80%)       yes
+  NTP cellular     10.0 ms       7.28 m           7.07 m               93%
+    RMS within 30% of theory                   yes
+    the 90% region stays honest (>= 80%)       yes
+  poor NTP         50.0 ms      36.79 m          35.36 m               90%
+    RMS within 30% of theory                   yes
+    the 90% region stays honest (>= 80%)       yes
+  => metre-level location needs clocks good to ~1 ms: GNSS, or repaired.
+ok
 test simulation::estate_burst::a_burst_on_a_branch_is_found_from_raw_logger_data ...   S1: front at 2.49969 s (+/- 0.21 ms), step -2.97 m
   S2: front at 2.69957 s (+/- 0.10 ms), step -5.98 m
   S3: front at 2.39950 s (+/- 0.06 ms), step -8.96 m
@@ -623,7 +662,7 @@ Localisation:
   the arrivals fit one source (misfit < 3)     yes
 ok
 
-test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 2.40s
+test result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 5.38s
 
    Doc-tests jk_classification
 
@@ -662,9 +701,9 @@ running 0 tests
 test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
 
 ==============================================================================
-  passed   135
+  passed   139
   failed   0
   skipped  0 slow test(s) not in this suite
   filtered 0 test(s) outside -Only/-Filter
-  time     35.6 s (including compile)
+  time     36.3 s (including compile)
   result   ALL PASSED

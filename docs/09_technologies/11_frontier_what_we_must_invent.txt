@@ -84,6 +84,10 @@ F9  Repairing bad clocks in software
           from events with known sources (time_synchronisation.txt
           item 3).
     PROOF Localisation error before/after repair on degraded data.
+    STATUS 2026-09-28: first proof done in simulation - offsets from 3
+          known-source events recovered to 0.16 ms; burst error 21 m ->
+          0.07 m. Next: clock DRIFT over time (offsets are not constant),
+          estimating clocks and wave speeds together, and field data.
 
 F10 Sensor placement under uncertainty for partners
     WHY   Greedy placement is established; placement that is robust to

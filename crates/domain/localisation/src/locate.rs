@@ -16,7 +16,8 @@ pub struct Arrival {
     pub node: NodeId,
     /// When the front arrived.
     pub time: Time,
-    /// One-standard-deviation timing uncertainty (onset picking + clock).
+    /// One-standard-deviation timing uncertainty: onset picking AND the
+    /// sensor's clock, combined in quadrature (see [`crate::clocks`]).
     pub uncertainty: Time,
 }
 

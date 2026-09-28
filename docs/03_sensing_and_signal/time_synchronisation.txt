@@ -41,3 +41,19 @@ Where two synchronised sensors are not available, the time between the
 direct arrival and reflections from known features (dead end, reservoir,
 closed valve) can bound location using ONE sensor's clock only. Less
 robust in branched networks; kept as a fallback method (04_).
+
+IMPLEMENTATION NOTE (2026-09-28, crates/domain/localisation/src/clocks)
+Measured (study V-S1 part 2, tests/localisation/simulation/clock_study):
+two sensors, burst 700 m from S1, clocks off by sigma_c each, 100 trials:
+    GNSS          0.1 ms  ->  0.14 m RMS   (theory a sigma_c/sqrt2: 0.13 m)
+    good NTP      1 ms    ->  0.68 m       (0.72 m)
+    NTP cellular  10 ms   ->  7.3 m        (7.1 m)
+    poor NTP      50 ms   ->  36.8 m       (35.4 m)
+with the 90% region still holding the truth 90-100% of the time when the
+clock uncertainty is declared. Item 3 above (software self-check) is
+implemented as least-squares clock-offset estimation from events with
+KNOWN sources, relative to one reference sensor: offsets recovered to
+~0.16 ms from three hydrant operations; a burst mislocated by 21 m with
+unrepaired NTP clocks is found again within 0.1 m after repair. A sensor
+that never shares an event with the others is refused, never guessed.
+
