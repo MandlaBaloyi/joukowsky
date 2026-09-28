@@ -3,6 +3,7 @@ resolver = "3"
 members = [
     "crates/kernel",
     "crates/domain/hydraulics",
+    "crates/domain/telemetry",
     "crates/domain/detection",
     "crates/domain/localisation",
     "crates/domain/classification",
@@ -22,6 +23,7 @@ repository = "https://github.com/MandlaBaloyi/joukowsky"
 [workspace.dependencies]
 jk-kernel = { path = "crates/kernel" }
 jk-hydraulics = { path = "crates/domain/hydraulics" }
+jk-telemetry = { path = "crates/domain/telemetry" }
 jk-detection = { path = "crates/domain/detection" }
 jk-localisation = { path = "crates/domain/localisation" }
 jk-classification = { path = "crates/domain/classification" }

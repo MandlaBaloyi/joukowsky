@@ -24,9 +24,9 @@
 pub struct Candidate {
     /// Index of the sensor.
     pub sensor: usize,
-    /// Arrival time on the site clock (clock offset removed) [s].
+    /// Arrival time on the site clock (clock offset removed) (s).
     pub time: f64,
-    /// One-sigma timing uncertainty [s].
+    /// One-sigma timing uncertainty (s).
     pub sigma: f64,
 }
 
@@ -43,11 +43,7 @@ pub fn group(
 ) -> Vec<Vec<usize>> {
     let mut order: Vec<usize> = (0..candidates.len()).collect();
     order.sort_by(|&a, &b| candidates[a].time.total_cmp(&candidates[b].time));
-    let consistent = |a: &Candidate, b: &Candidate| {
-        let tau = travel[a.sensor][b.sensor];
-        tau.is_finite()
-            && (a.time - b.time).abs() <= tau * (1.0 + margin) + sigmas * a.sigma.hypot(b.sigma)
-    };
+    let consistent = |a: &Candidate, b: &Candidate| consistent(a, b, travel, margin, sigmas);
     let mut groups: Vec<Vec<usize>> = Vec::new();
     for &i in &order {
         let c = &candidates[i];
@@ -61,6 +57,20 @@ pub fn group(
         }
     }
     groups
+}
+
+/// Whether two detections can come from one source (the gate above).
+#[must_use]
+pub fn consistent(
+    a: &Candidate,
+    b: &Candidate,
+    travel: &[Vec<f64>],
+    margin: f64,
+    sigmas: f64,
+) -> bool {
+    let tau = travel[a.sensor][b.sensor];
+    tau.is_finite()
+        && (a.time - b.time).abs() <= tau * (1.0 + margin) + sigmas * a.sigma.hypot(b.sigma)
 }
 
 #[cfg(test)]

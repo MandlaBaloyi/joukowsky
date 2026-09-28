@@ -5,14 +5,14 @@
 //! estimate WHEN it arrived precisely enough to locate its source
 //! (location error = a * timing error / 2).
 //!
-//! Pure domain code (rule R2): the input is a series of samples already in
-//! memory; streams, clocks, gaps and data tiers belong to the telemetry
-//! context. The per-sample path ([`change::Cusum::push`]) allocates nothing,
-//! so it can later run next to the sensor on a partner's gateway (P6).
+//! Pure domain code (rule R2): samples are already in memory; times are
+//! inputs. Continuity and gaps are the telemetry context's: a detector
+//! stream covers one continuous stretch. The per-sample path
+//! ([`change::Cusum::push`]) allocates nothing, so it can later run next to
+//! the sensor on a partner's gateway (P6).
 //!
-//! The pieces, one folder per layer of the docs' layered detector (folders
-//! for sensor health - Layer 0 -, classification features and the
-//! real-time streaming runtime appear when their work starts):
+//! The pieces, one folder per layer of the docs' layered detector (a
+//! folder for sensor health - Layer 0 - appears when its work starts):
 //! - [`noise`]: how much a quiet sensor wiggles (robust, from differences).
 //! - [`baseline`]: the drifting normal level (Brown's double smoothing),
 //!   Layer 1.
@@ -20,7 +20,8 @@
 //!   of the noise (Layer 2).
 //! - [`onset`]: the arrival time of a front, to a fraction of a sample
 //!   (Layer 3).
-//! - [`detector`]: the whole chain over a series of samples.
+//! - [`detector`]: the whole chain - live ([`DetectorStream`], pieces of
+//!   any size) or over a whole record ([`Detector::run`]), identically.
 //!
 //! Network-level fusion across sensors (Layer 4) belongs to localisation.
 
@@ -31,5 +32,8 @@ mod error;
 pub mod noise;
 pub mod onset;
 
-pub use detector::{Detection, Detector, DetectorConfig, Direction, Event, Rearm, Series, Span};
+pub use detector::{
+    Detection, Detector, DetectorConfig, DetectorStream, Direction, Event, Impairment, Series,
+    Span, StreamOutput,
+};
 pub use error::DetectionError;

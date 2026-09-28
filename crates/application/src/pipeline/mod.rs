@@ -1,11 +1,19 @@
-//! The event pipeline: records in, alerts out.
+//! The event pipeline: sensor data in, alerts out.
 //!
 //! - [`fusion`]: which detections at different sensors are one event.
-//! - [`process`](process()): the use case - detect, fuse, locate, classify, alert.
+//! - [`Monitor`]: the LIVE use case - chunks of data in as they arrive, each
+//!   alert out once, as soon as the data allows; revised if late data
+//!   changes it.
+//! - [`process`](process()): the same over a window of whole records.
+//! - `assess` (private): one event's alert - classify, locate,
+//!   corroborate, grade.
 
+mod assess;
 pub mod fusion;
+mod monitor;
 mod run;
 
+pub use monitor::Monitor;
 pub use run::process;
 
 use jk_classification::{ClassifierConfig, Context, FeatureConfig};
@@ -70,6 +78,10 @@ pub struct PipelineConfig {
     pub alarm_confidence: f64,
     /// Above this timing misfit the location is not trusted.
     pub max_misfit: f64,
+    /// Live only: how long (in data time, behind the sensor that has sent
+    /// the most) to wait for a lagging sensor's data before deciding an
+    /// event without it. Its late data then REVISES the alert.
+    pub max_wait: Time,
 }
 
 impl Default for PipelineConfig {
@@ -83,6 +95,7 @@ impl Default for PipelineConfig {
             gate_sigmas: 4.0,
             alarm_confidence: 0.9,
             max_misfit: 3.0,
+            max_wait: Time::new(10.0),
         }
     }
 }

@@ -60,3 +60,15 @@ Both will occur; sensitivity trades one for the other. Design rules:
       our own measured detection, false-alarm and location-error rates.
   E8  Software faults: physics tests, deterministic replay of any event,
       versioned models with fast rollback.
+
+Implementation status (2026-09-28)
+----------------------------------
+1(d) SENSOR LOSS - first build: telemetry turns missing and invalid data
+     into explicit gaps; a sensor back after a gap re-learns its level
+     (and listens at reduced sensitivity if the network still rings);
+     alerts name sensors whose silence means nothing; late data revises
+     alerts already sent (engine_overview.txt, "Live monitor").
+     Late data for an event not yet decided is simply decided on arrival.
+     Not yet: the NOT MONITORED zone on the network map.
+E2   Raw material exists (per-sensor impaired stretches: gaps,
+     calibrating, blind, ringing); the coverage map itself is not built.

@@ -13,6 +13,7 @@ name = "jk_application"
 [dependencies]
 jk-kernel.workspace = true
 jk-hydraulics.workspace = true
+jk-telemetry.workspace = true
 jk-detection.workspace = true
 jk-localisation.workspace = true
 jk-classification.workspace = true

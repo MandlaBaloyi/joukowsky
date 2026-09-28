@@ -123,6 +123,25 @@ impl Cusum {
         })
     }
 
+    /// The earliest sample at which a change that a FUTURE alarm reports
+    /// could begin: while evidence is building up, where it started;
+    /// otherwise the next sample. (Lets a stream say which of its past is
+    /// already final.)
+    #[must_use]
+    pub fn pending_start(&self) -> usize {
+        let rise = if self.rise > 0.0 {
+            self.rise_zero_at + 1
+        } else {
+            self.next
+        };
+        let drop = if self.drop > 0.0 {
+            self.drop_zero_at + 1
+        } else {
+            self.next
+        };
+        rise.min(drop)
+    }
+
     /// Clears the evidence; the next sample pushed has index `next`.
     pub fn reset_at(&mut self, next: usize) {
         self.rise = 0.0;

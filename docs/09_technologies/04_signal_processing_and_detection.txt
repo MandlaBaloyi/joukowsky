@@ -72,6 +72,10 @@ ringing at reduced sensitivity, back to full sensitivity when the record
 looks like plain noise; blind/reduced spans are reported. Measured: one
 burst went from 12 alerts to 1. Details and numbers:
 04_detection_and_localisation/event_detection.txt section 4.
+UPDATE 2026-09-28 (streaming): the detector runs live on pieces of any
+size, bit-identical to whole-record runs, memory bounded (60 s); gaps come
+from the new telemetry context. No external crates (TD-018). Details:
+event_detection.txt section 5; engine_overview.txt "Live monitor".
 
 2. Edge portability
 ------------------------------------------------------------------------

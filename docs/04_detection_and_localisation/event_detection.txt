@@ -113,3 +113,32 @@ Cost: while ringing, events smaller than ~3x the ringing go unseen - and
 the spans say so. A model that PREDICTS the echoes (subtract the
 simulated ringing, then detect on the residual) would remove most of this
 cost; it needs a calibrated network model (twin, 05_) - open.
+
+5. Implementation note: live detection (2026-09-28)
+---------------------------------------------------
+crates/domain/detection/src/detector/ {mod.rs, floor.rs, stream.rs}.
+
+The chain runs LIVE (DetectorStream: samples in pieces of any size) and
+the whole-record run is the live one fed everything at once. The same
+steps, written as a state machine - calibrating, watching, picking a
+front, blind - that pauses whenever it needs samples not yet received
+(picking needs `after` = 6 samples past the alarm; re-arming needs the
+settle window). Tested: pieces of 1, 7, 128 and random sizes give exactly
+the events and spans of the whole record; every number printed by the
+whole test suite was unchanged by the rewrite.
+
+  - Memory is bounded: only record a later step can still need is kept,
+    at most `memory` (60 s) plus a settle window. A change building up for
+    longer than `memory` is not picked as a front (a slow ramp is for the
+    hours-scale methods, rule E3).
+  - Watermark: the time before which no future event can have arrived
+    (while CUSUM evidence builds up it waits at where the change began).
+    Fusion uses it to know when a sensor's silence is final.
+  - Impaired stretches are typed: Calibrating, Blind (after its own
+    event), Ringing{floor} (reduced sensitivity, with the highest floor).
+  - One stream covers one continuous stretch. After a gap (telemetry
+    context) a new stream calibrates afresh. If its calibration window is
+    not quiet - the sensor came back while the network rang - it starts at
+    reduced sensitivity, exactly as after an event of its own. Found by a
+    test: without this, a sensor back from a 3.5 s power cut would take
+    every echo for an event.

@@ -16,7 +16,7 @@
 //! ringing), and returns to full sensitivity once its record looks like
 //! plain noise again. The first and third scenarios check the result.
 
-use jk_application::Level;
+use jk_application::{Level, Site};
 use jk_classification::{Context, EventClass};
 use jk_hydraulics::boundary::leak;
 use jk_hydraulics::{Burst, BurstOpening, InitialCondition, Network, Node, SteadyOptions};
@@ -27,7 +27,7 @@ use jk_tests::{check, pipe};
 use crate::{estate_site, run_pipeline, simulate};
 
 /// A 10 mm hole opening instantly at `node` at `start` seconds.
-fn hole(node: jk_hydraulics::NodeId, start: f64) -> Burst {
+pub fn hole(node: jk_hydraulics::NodeId, start: f64) -> Burst {
     Burst {
         node,
         coefficient: leak::coefficient(0.6, Area::of_circle(Length::new(0.010)), STANDARD_GRAVITY),
@@ -76,17 +76,21 @@ fn a_quiet_network_raises_nothing() {
     check("no alerts", alerts.is_empty());
 }
 
-#[test]
-fn two_bursts_far_apart_give_two_alarms() {
-    // A FLOWING network (consumers draw 15 l/s at S2 and S3): friction then
-    // damps the ringing between events, as it does in real pipes. (At rest
-    // the simulator's quasi-steady friction barely damps at all - a known
-    // model gap, docs 09 02 milestones S5/S6.)
+/// The estate with consumers drawing 15 l/s at S2 and S3, a hole opening
+/// on the south branch (200 m along) at 3 s and another on the north
+/// branch (150 m along) at 30 s; 40 s simulated. Returns the true heads at
+/// S1, S2, S3, the time step, and the site as the engine knows it (the
+/// same consumers, no holes).
+///
+/// A FLOWING network: friction then damps the ringing between events, as
+/// it does in real pipes. (At rest the simulator's quasi-steady friction
+/// barely damps at all - a known model gap, docs 09 02 milestones S5/S6.)
+pub fn flowing_two_bursts() -> (Vec<Vec<f64>>, f64, Site) {
     let main = |l| pipe(l, 0.15, A, 0.02);
-    let mut net = Network::new(STANDARD_GRAVITY);
     let j = |q| Node::Junction {
         demand: Flow::new(q),
     };
+    let mut net = Network::new(STANDARD_GRAVITY);
     let r = net.add_node(Node::Reservoir {
         head: Head::new(60.0),
     });
@@ -111,25 +115,26 @@ fn two_bursts_far_apart_give_two_alarms() {
         40.0,
     );
 
-    // The engine's map has the same consumers.
     let mut site = estate_site(Context::unknown());
-    let (mut e, _) = estate(None);
-    e.net = {
-        let mut m = Network::new(STANDARD_GRAVITY);
-        let r = m.add_node(Node::Reservoir {
-            head: Head::new(60.0),
-        });
-        let s1 = m.add_node(j(0.0));
-        let tee = m.add_node(j(0.0));
-        let s2 = m.add_node(j(0.015));
-        let s3 = m.add_node(j(0.015));
-        m.add_pipe(r, s1, main(400.0)).unwrap();
-        m.add_pipe(s1, tee, main(300.0)).unwrap();
-        m.add_pipe(tee, s2, main(500.0)).unwrap();
-        m.add_pipe(tee, s3, main(600.0)).unwrap();
-        m
-    };
-    site.network = e.net;
+    let mut m = Network::new(STANDARD_GRAVITY);
+    let r = m.add_node(Node::Reservoir {
+        head: Head::new(60.0),
+    });
+    let s1 = m.add_node(j(0.0));
+    let tee = m.add_node(j(0.0));
+    let s2 = m.add_node(j(0.015));
+    let s3 = m.add_node(j(0.015));
+    m.add_pipe(r, s1, main(400.0)).unwrap();
+    m.add_pipe(s1, tee, main(300.0)).unwrap();
+    m.add_pipe(tee, s2, main(500.0)).unwrap();
+    m.add_pipe(tee, s3, main(600.0)).unwrap();
+    site.network = m;
+    (truths, dt, site)
+}
+
+#[test]
+fn two_bursts_far_apart_give_two_alarms() {
+    let (truths, dt, site) = flowing_two_bursts();
 
     println!("Consumers drawing 30 l/s; a hole opens on the south branch at t = 3 s,");
     println!("another on the north branch at t = 30 s:");

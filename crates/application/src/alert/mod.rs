@@ -29,8 +29,11 @@ pub enum Level {
 /// One event, as reported.
 #[derive(Debug, Clone, PartialEq)]
 pub struct Alert {
-    /// Running number within the processed window.
+    /// Running number, the same across revisions of one event.
     pub id: u32,
+    /// 0 when first issued; raised each time late data changes the alert
+    /// (e.g. a sensor whose upload was delayed saw the event too).
+    pub revision: u32,
     /// How loudly to raise it.
     pub level: Level,
     /// What it was (`Unknown` if the classifier abstained).
@@ -58,8 +61,13 @@ impl Alert {
                 .cloned()
                 .unwrap_or_else(|| format!("pipe {i}"))
         };
+        let revision = if self.revision > 0 {
+            format!(" (revision {})", self.revision)
+        } else {
+            String::new()
+        };
         let mut out = format!(
-            "[{:?}] #{} {} ({:.0}% confident) at t = {:.3} s",
+            "[{:?}] #{}{revision} {} ({:.0}% confident) at t = {:.3} s",
             self.level,
             self.id,
             self.class.to_string().to_uppercase(),

@@ -90,3 +90,34 @@ Review naming the two sensors that felt nothing.
 Not yet: streaming windows (events straddling window edges), alert
 de-duplication across windows, persistence, the Stage B classifier, and
 sensor-fault diagnosis beyond "uncorroborated".
+
+Live monitor (2026-09-28)
+-------------------------
+crates/application/src/pipeline/monitor/ (Monitor) on top of
+crates/domain/telemetry (jk-telemetry). The window use case `process` is
+now the monitor fed whole records - one code path.
+  1. Telemetry: each sensor's chunks -> continuous stretches + explicit
+     GAPS (time jumps: NoData; NaN samples: Invalid). A chunk starting
+     within half a sample of where the last ended continues the stretch;
+     later is a gap; earlier (duplicate upload, clock jumped back) is
+     refused. Nothing is filled (P6).
+  2. Live detection per stretch (event_detection.txt section 5).
+  3. A detection is held until its event can be decided: the record 3 s
+     past the first front is in (classification), and every other sensor
+     j is final (watermark) past the latest time the wave could reach it,
+     min over members m of t_m + tau_mj (1 + margin) + k sigma_m.
+  4. A sensor lagging more than max_wait (10 s of data time) behind the
+     one furthest ahead is not waited for; the alert names it. If its data
+     then shows it saw the event, the alert is REVISED (same id,
+     revision + 1, located again).
+  5. Alerts say whose silence means nothing: a sensor with a gap,
+     calibrating, or ringing when the wave passed.
+Measured (tests/pipeline/simulation/live.rs, 1 s chunks, 128 S/s): live
+alerts identical to whole-record alerts; each alert out 4 s of data time
+after its burst (3 s classification look-ahead + one chunk); a sensor
+whose data arrives late -> alert without it, then revision 1 with it, still
+within 2 m; a 3.5 s power cut at one sensor during a burst -> one Alarm
+that names the blind sensor, no echo alerts when it returns.
+Not yet: an explicit coverage map (E2) built from the impaired stretches;
+persistence of monitor state across restarts; per-site max_wait from each
+logger's upload schedule; clock-quality checks on chunk stamps.
