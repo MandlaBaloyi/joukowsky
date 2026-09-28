@@ -1,4 +1,10 @@
-//! The hydraulic model of a network: nodes, pipes, bursts.
+//! The hydraulic model of a network: nodes, pipes, bursts - shared by the
+//! steady-state solver ([`crate::steady`]) and the transient solver
+//! ([`crate::moc::network`]).
+//!
+//! This is the HYDRAULIC model: what the solvers need, nothing more. The
+//! network bounded context (asset records, GIS, versions) will translate
+//! its richer model into this one.
 
 use jk_kernel::{Acceleration, Flow, Head, Time};
 
@@ -51,6 +57,11 @@ pub enum Node {
         downstream_head: Head,
         /// How the valve moves from t = 0.
         closure: ValveClosure,
+        /// Flow coefficient at the initial opening, Kv in
+        /// Q = Kv sqrt(H - `H_down`) [m^2.5/s]; 0 = shut. Needed by the
+        /// steady-state solver. With given pipe flows it may be left out
+        /// (None) - if given, the flows are checked against it.
+        flow_coefficient: Option<f64>,
     },
     /// An ideal check valve joining exactly two pipes: one ending here
     /// (upstream side) and one starting here (downstream side).
@@ -267,9 +278,19 @@ impl Network {
                 Node::Valve {
                     downstream_head,
                     closure,
+                    flow_coefficient,
                 } => {
                     finite("valve downstream_head", downstream_head.value())?;
                     closure.validate()?;
+                    if let Some(kv) = flow_coefficient
+                        && !(kv.is_finite() && *kv >= 0.0)
+                    {
+                        return Err(HydraulicsError::invalid(
+                            "valve flow_coefficient",
+                            *kv,
+                            "finite and >= 0",
+                        ));
+                    }
                     if !(ending == 1 && starting == 0) {
                         return fail("a valve must end exactly one pipe and start none");
                     }
@@ -314,6 +335,7 @@ mod tests {
         let v = net.add_node(Node::Valve {
             downstream_head: Head::ZERO,
             closure: ValveClosure::Open,
+            flow_coefficient: None,
         });
         net.add_pipe(v, r, pipe()).unwrap(); // valve STARTS a pipe: not allowed
         assert!(net.topology().is_err());

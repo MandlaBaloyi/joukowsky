@@ -30,6 +30,7 @@ fn network_valve_heads(
             net.add_node(Node::Valve {
                 downstream_head: Head::new(50.0),
                 closure,
+                flow_coefficient: None,
             })
         } else {
             net.add_node(Node::Junction { demand: Flow::ZERO })

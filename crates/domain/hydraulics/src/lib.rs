@@ -10,6 +10,8 @@
 //! - [`joukowsky`]: the closed-form surge relations.
 //! - [`pipe`]: one pipe's geometry, wave speed and friction.
 //! - [`boundary`]: devices at pipe ends (reservoir, valve, ...).
+//! - [`model`]: the hydraulic network model (nodes, pipes, bursts).
+//! - [`steady`]: the everyday flows and pressures (steady state).
 //! - [`moc`]: the method-of-characteristics solver engine and the solvers
 //!   built on it.
 
@@ -17,15 +19,16 @@ pub mod boundary;
 mod error;
 pub mod joukowsky;
 pub mod moc;
+pub mod model;
 pub mod pipe;
+pub mod steady;
 
 pub use boundary::closure::ValveClosure;
 pub use error::HydraulicsError;
 pub use moc::grid::Grid;
-pub use moc::network::{
-    Burst, BurstOpening, GridOptions, InitialCondition, Network, NetworkGrid, NetworkRun, Node,
-    NodeId, PipeId, Probe,
-};
+pub use moc::network::{GridOptions, InitialCondition, NetworkGrid, NetworkRun, Probe};
 pub use moc::single_pipe::ReservoirPipeValve;
 pub use moc::trace::Trace;
+pub use model::{Burst, BurstOpening, Network, NetworkPipe, Node, NodeId, PipeId};
 pub use pipe::Pipe;
+pub use steady::{SteadyOptions, SteadySolution};

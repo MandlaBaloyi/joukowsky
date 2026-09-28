@@ -1,7 +1,7 @@
 joukowsky test run
-  when     2026-09-28 17:48:22
+  when     2026-09-28 18:00:14
   suite    quick
-  commit   2b0e68b (with uncommitted changes)
+  commit   fa859ba (with uncommitted changes)
   rust     rustc 1.98.1 (48a229cea 2026-09-01)
   command  cargo test --workspace --no-fail-fast -- --nocapture --test-threads=1
 ==============================================================================
@@ -14,7 +14,7 @@ test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; fini
 
      Running unittests src\lib.rs (target\debug\deps\jk_hydraulics-c42e47dfc771fa13.exe)
 
-running 35 tests
+running 37 tests
 test boundary::check_valve::tests::open_valve_passes_forward_flow_like_a_plain_joint ... ok
 test boundary::check_valve::tests::reversing_flow_shuts_it_and_each_side_becomes_a_dead_end ... ok
 test boundary::check_valve::tests::stays_shut_until_upstream_pushes_harder_then_reopens ... ok
@@ -42,16 +42,18 @@ test moc::network::initial::tests::a_symmetric_loop_closes_and_heads_fall_with_f
 test moc::network::initial::tests::an_unbalanced_loop_is_rejected ... ok
 test moc::network::initial::tests::at_rest_needs_equal_reservoirs_and_no_demand ... ok
 test moc::network::initial::tests::flows_that_do_not_balance_are_rejected ... ok
-test moc::network::model::tests::burst_opening_schedules ... ok
-test moc::network::model::tests::bursts_only_at_junctions_and_one_per_node ... ok
-test moc::network::model::tests::rejects_broken_topologies ... ok
 test moc::single_pipe::tests::rejects_bad_setups ... ok
 test moc::trace::tests::keeps_samples_per_probe_in_order ... ok
+test model::tests::burst_opening_schedules ... ok
+test model::tests::bursts_only_at_junctions_and_one_per_node ... ok
+test model::tests::rejects_broken_topologies ... ok
 test pipe::friction::quasi_steady::tests::matches_darcy_weisbach_in_velocity_form_and_is_odd_in_flow ... ok
 test pipe::tests::rejects_non_physical_values ... ok
 test pipe::tests::timing_matches_docs_example ... ok
+test steady::dense::tests::reports_a_matrix_that_is_not_positive_definite ... ok
+test steady::dense::tests::solves_a_known_system ... ok
 
-test result: ok. 35 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s
+test result: ok. 37 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s
 
      Running unittests src\lib.rs (target\debug\deps\jk_kernel-eccabcc9e10cd5d2.exe)
 
@@ -73,7 +75,7 @@ test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; fini
 
      Running hydraulics\main.rs (target\debug\deps\hydraulics-356f9c4fa69611d2.exe)
 
-running 21 tests
+running 29 tests
 test analytical::boundaries::burst::a_10mm_hole_at_60m_head ... DN150 AC main at 60 m head, 0.5 m/s; a 10 mm hole opens (Cd 0.6):
   water lost              1.555 l/s  (134 m^3 per day)
   head step at the burst  -4.486 m
@@ -187,6 +189,42 @@ Every one of the 241 samples on the square wave:
   all samples within 1e-9 m of the ideal       yes
   no flow through the shut valve               yes
 ok
+test analytical::steady::check_valves::forward_head_opens_the_valve ... 80 m on the valve's upstream side, 50 m downstream:
+  valve is open                                yes
+  flow = sqrt(30 / 2R) [l/s]                   got      76.205416   expected      76.205416   rel.err 3.7e-16
+ok
+test analytical::steady::check_valves::reverse_head_shuts_the_valve ... 50 m upstream, 80 m downstream - water would run backwards:
+  valve is shut                                yes
+  flow [l/s]                                   got       0.000000   expected       0.000000   rel.err 0.0e0
+  upstream side keeps the 50 m head [m]        got      50.000000   expected      50.000000   rel.err 0.0e0
+ok
+test analytical::steady::closed_form::a_pipe_feeding_a_consumer ... 80 m reservoir -> 1000 m DN200 -> consumer drawing 30 l/s:
+  pipe flow [l/s]                              got      30.000000   expected      30.000000   rel.err 8.3e-16
+  consumer head = 80 - R Q^2 [m]               got      75.350652   expected      75.350652   rel.err 1.9e-16
+  solved in 2 Newton rounds
+ok
+test analytical::steady::closed_form::a_valve_discharging_to_air ... 80 m reservoir -> 500 m DN150 -> valve (Kv = 0.004) to air:
+  flow [l/s]                                   got      33.017369   expected      33.017369   rel.err 6.5e-16
+  head at the valve = Q^2 / Kv^2 [m]           got      68.134168   expected      68.134168   rel.err 4.2e-16
+ok
+test analytical::steady::closed_form::parallel_pipes_split_the_flow_by_resistance ... 50 l/s through two parallel pipes (DN200 800 m, DN150 1200 m):
+  flow in pipe 1 [l/s]                         got      36.879786   expected      36.879786   rel.err 7.7e-16
+  flow in pipe 2 [l/s]                         got      13.120214   expected      13.120214   rel.err 8.1e-16
+  both lose the same head [m]                  got       5.621036   expected       5.621036   rel.err 1.6e-16
+  residuals: energy 8.9e-16 m, continuity 3.5e-17 m^3/s
+ok
+test analytical::steady::closed_form::two_reservoirs_and_one_pipe ... 80 m and 50 m reservoirs joined by 2000 m of DN250:
+  flow = sqrt(30 / R) [l/s]                    got      99.225802   expected      99.225802   rel.err 0.0e0
+ok
+test analytical::steady::three_reservoirs::three_reservoirs_meeting_at_one_junction ... Reservoirs at 100, 80 and 40 m meeting at one junction:
+  junction head: engine vs bisection [m]       got      79.999507   expected      79.999507   rel.err 1.8e-16
+  flow from the 100 m reservoir [l/s]          got     140.000013   expected     140.000013   rel.err 4.1e-16
+  flow from the 80 m reservoir [l/s]           got       0.325597   expected       0.325597   rel.err 1.4e-11
+  flow from the 40 m reservoir [l/s]           got    -140.325610   expected    -140.325610   rel.err 2.0e-16
+  the 80 m reservoir is SUPPLYING the junction (0.33 l/s)
+  water balances at the junction               yes
+  solved in 9 Newton rounds
+ok
 test invariants::grid_independence::joukowsky_peak_is_exact_on_every_grid_and_material ... ignored, full suite: 1024 simulations (run-tests.ps1 -Suite full)
 test invariants::grid_independence::joukowsky_peak_is_the_same_on_every_grid ... 1 reach(es), dt = 1.0000 s:
   peak head [m]                                got     201.971621   expected     201.971621   rel.err 1.4e-16
@@ -222,6 +260,20 @@ test invariants::network::matches_single_pipe::splitting_a_pipe_at_a_junction_ch
   pieces [500.0, 500.0]: largest difference 5.7e-13 m
     junctions between identical pipes are invisible yes
 ok
+test invariants::network::steady_start::a_solved_steady_state_stays_steady_in_the_transient_solver ... Steady solve: 8 Newton rounds
+  residuals: energy 0.0e0 m, continuity 4.6e-16 m^3/s
+  head at A             88.547 m
+  head at B             87.181 m
+  head at C             85.569 m
+  head at outlet valve  75.105 m
+  loop pipe B->C carries 15.711 l/s; the outlet valve 34.665 l/s
+  energy equation satisfied (< 1e-9 m)         yes
+  continuity satisfied (< 1e-12 m^3/s)         yes
+Transient run from that state, nothing disturbed, 221 samples:
+  largest head drift 9.9e-13 m, flow drift 1.9e-16 m^3/s
+  no fake transient (head drift < 1e-6 m)      yes
+  flows hold (drift < 1e-9 m^3/s)              yes
+ok
 test invariants::network::symmetry::mirror_branches_give_bit_identical_results ...   samples compared bit by bit: 222
   peak head at valve A 206.637 m, at valve B 206.637 m
   every sample identical to the last bit       yes
@@ -236,7 +288,7 @@ test invariants::steady_state::an_undisturbed_pipe_stays_steady ... Steady state
   valve holds steady                           yes
 ok
 
-test result: ok. 20 passed; 0 failed; 1 ignored; 0 measured; 0 filtered out; finished in 0.03s
+test result: ok. 28 passed; 0 failed; 1 ignored; 0 measured; 0 filtered out; finished in 0.03s
 
      Running kernel\main.rs (target\debug\deps\kernel-de7e7becf50a66a6.exe)
 
@@ -282,9 +334,9 @@ running 0 tests
 test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
 
 ==============================================================================
-  passed   66
+  passed   76
   failed   0
   skipped  1 slow test(s) not in this suite (run -Suite full)
   filtered 0 test(s) outside -Only/-Filter
-  time     0.6 s (including compile)
+  time     1.0 s (including compile)
   result   ALL PASSED

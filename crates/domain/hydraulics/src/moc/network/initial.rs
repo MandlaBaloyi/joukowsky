@@ -2,8 +2,14 @@
 //!
 //! A transient simulation is only meaningful if it starts from a true
 //! steady state; otherwise the solver "releases" the error as a fake
-//! transient on the first step. Until the steady-state solver (milestone
-//! S4) exists, two ways are offered - and both are CHECKED, never trusted:
+//! transient on the first step. Three ways are offered:
+//!
+//! - [`InitialCondition::Steady`]: the steady-state solver ([`crate::steady`])
+//!   works out every flow and head from reservoir levels, demands and valve
+//!   coefficients. The normal choice.
+//!
+//! The other two are for tests and special cases, and are CHECKED, never
+//! trusted:
 //!
 //! - [`InitialCondition::AtRest`]: everything full, nothing flowing, one
 //!   head everywhere. Valid only if every reservoir has that head and no
@@ -21,7 +27,8 @@ use jk_kernel::{Flow, Head};
 use crate::HydraulicsError;
 use crate::boundary::check_valve::CheckValveState;
 use crate::boundary::junction::PipeEnd;
-use crate::moc::network::model::{Network, Node, Topology};
+use crate::model::{Network, Node, Topology};
+use crate::steady::{self, SteadyOptions};
 
 /// Largest head mismatch accepted when walking around a loop [m].
 const HEAD_TOLERANCE: f64 = 1e-6;
@@ -39,6 +46,8 @@ pub enum InitialCondition {
     /// The steady flow in each pipe (indexed like [`Network::pipes`]),
     /// positive from the pipe's `from` node to its `to` node.
     PipeFlows(Vec<Flow>),
+    /// Solve for the steady state (milestone S4).
+    Steady(SteadyOptions),
 }
 
 /// The resolved steady state, in solver units.
@@ -48,10 +57,24 @@ pub(crate) struct SteadyState {
     pub node_heads: Vec<f64>,
     /// Flow in every pipe [m^3/s].
     pub pipe_flows: Vec<f64>,
+    /// Head at each pipe's (from, to) end [m]. Equal to the node heads,
+    /// except across a shut check valve, whose two sides differ.
+    pub pipe_end_heads: Vec<(f64, f64)>,
     /// For valve nodes: steady flow and head drop at full opening.
     pub valve_steady: Vec<(f64, f64)>,
     /// For check-valve nodes: open or closed.
     pub check_valves: Vec<CheckValveState>,
+}
+
+impl SteadyState {
+    /// Pipe end heads taken straight from the node heads.
+    pub(crate) fn end_heads_from_nodes(network: &Network, node_heads: &[f64]) -> Vec<(f64, f64)> {
+        network
+            .pipes()
+            .iter()
+            .map(|p| (node_heads[p.from.0], node_heads[p.to.0]))
+            .collect()
+    }
 }
 
 impl InitialCondition {
@@ -78,11 +101,22 @@ impl InitialCondition {
                                 "node {i}: a demand of {demand} means water is flowing"
                             ));
                         }
+                        Node::Valve {
+                            downstream_head,
+                            flow_coefficient: Some(kv),
+                            ..
+                        } if *kv > 0.0 && (downstream_head.value() - h).abs() > HEAD_TOLERANCE => {
+                            return bad(format!(
+                                "node {i}: an open valve into {downstream_head} would pass flow"
+                            ));
+                        }
                         _ => {}
                     }
                 }
+                let node_heads = vec![h; n_nodes];
                 Ok(SteadyState {
-                    node_heads: vec![h; n_nodes],
+                    pipe_end_heads: SteadyState::end_heads_from_nodes(network, &node_heads),
+                    node_heads,
                     pipe_flows: vec![0.0; network.pipes().len()],
                     // A valve that passed no flow: its opening has no effect.
                     valve_steady: vec![(0.0, 1.0); n_nodes],
@@ -90,6 +124,10 @@ impl InitialCondition {
                 })
             }
             Self::PipeFlows(flows) => from_pipe_flows(network, topo, flows),
+            Self::Steady(options) => {
+                steady::validate(options)?;
+                steady::solve(network, topo, options).map(|(_, s)| s)
+            }
         }
     }
 }
@@ -138,7 +176,9 @@ fn from_pipe_flows(
                 }
             }
             Node::Valve {
-                downstream_head, ..
+                downstream_head,
+                flow_coefficient,
+                ..
             } => {
                 if inflow < 0.0 {
                     return bad(format!("node {i}: flow into the valve is negative"));
@@ -146,6 +186,14 @@ fn from_pipe_flows(
                 let drop = node_heads[i] - downstream_head.value();
                 if inflow > 0.0 && drop <= 0.0 {
                     return Err(HydraulicsError::NoHeadDropAtValve { head_drop: drop });
+                }
+                if let Some(kv) = flow_coefficient {
+                    let expected = kv * drop.max(0.0).sqrt();
+                    if (inflow - expected).abs() > 1e-6 * inflow.max(expected).max(1e-9) {
+                        return bad(format!(
+                            "node {i}: the valve's coefficient passes {expected:.6} m^3/s                              at this head, not the {inflow:.6} m^3/s given"
+                        ));
+                    }
                 }
                 valve_steady[i] = (inflow, if inflow > 0.0 { drop } else { 1.0 });
             }
@@ -163,6 +211,7 @@ fn from_pipe_flows(
     }
 
     Ok(SteadyState {
+        pipe_end_heads: SteadyState::end_heads_from_nodes(network, &node_heads),
         node_heads,
         pipe_flows: flows.iter().map(|q| q.value()).collect(),
         valve_steady,

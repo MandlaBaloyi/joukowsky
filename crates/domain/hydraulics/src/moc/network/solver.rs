@@ -22,8 +22,8 @@ use crate::moc::characteristics::Characteristics;
 use crate::moc::grid::MAX_STEPS;
 use crate::moc::network::grid::{GridOptions, NetworkGrid};
 use crate::moc::network::initial::InitialCondition;
-use crate::moc::network::model::{Burst, Network, Node, NodeId, PipeId};
 use crate::moc::trace::Trace;
+use crate::model::{Burst, Network, Node, NodeId, PipeId};
 
 /// A point to record - the simulation's equivalent of a sensor.
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -93,11 +93,11 @@ impl Network {
             let adjusted = np.pipe.with_wave_speed(grid.wave_speeds()[p])?;
             let c = Characteristics::new(&adjusted, np.pipe.length() / f64::from(r), g);
             let q0 = steady.pipe_flows[p];
-            let h_from = steady.node_heads[np.from.0];
+            let (h_from, h_to) = steady.pipe_end_heads[p];
             let mut hp: Vec<f64> = (0..=r)
                 .map(|i| h_from - f64::from(i) * c.reach_head_loss(q0))
                 .collect();
-            hp[r as usize] = steady.node_heads[np.to.0];
+            hp[r as usize] = h_to;
             h.push(hp);
             q.push(vec![q0; r as usize + 1]);
             chars.push(c);
@@ -195,6 +195,7 @@ impl Network {
                     Node::Valve {
                         downstream_head,
                         closure,
+                        ..
                     } => {
                         let a = arrivals[0];
                         let (q0, dh0) = steady.valve_steady[n];

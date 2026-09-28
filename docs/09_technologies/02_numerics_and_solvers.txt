@@ -96,6 +96,17 @@ In build order:
   S4  Steady-state solver (initial conditions): global gradient algorithm
       (Todini-Pilati, as in EPANET) on faer sparse LU. We may cross-check
       against or temporarily use epanet-rs (03_).
+      STATUS 2026-09-28: done (steady/). GGA with our OWN dense Cholesky
+      (no faer yet - build over buy; dense is exact and fast for site
+      networks), capped at 2000 free-head nodes with a clear error; a
+      sparse factorisation (own, or faer by decision) comes with
+      municipal networks. Devices: reservoirs, demands, valves with flow
+      coefficient Kv (pseudo-link R = 1/Kv^2), check valves (states
+      settled by re-solving). Validated against closed-form answers,
+      parallel pipes, the three-reservoir problem (independent
+      bisection), and by starting the transient solver from the result:
+      head drift ~1e-12 m. Not yet: Hazen-Williams / Reynolds-dependent
+      friction, pumps, PRVs.
   S5  Unsteady friction: Brunone/IAB first, convolution (Vardy-Brown,
       sum-of-exponentials) later.
   S6  Viscoelastic walls: 1-3 Kelvin-Voigt elements for PE/PVC.

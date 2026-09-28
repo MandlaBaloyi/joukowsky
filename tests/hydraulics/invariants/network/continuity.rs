@@ -28,10 +28,12 @@ fn flows_balance_at_the_junction_at_every_instant() {
     let v1 = net.add_node(Node::Valve {
         downstream_head: Head::ZERO,
         closure: ValveClosure::linear(Time::new(3.0)),
+        flow_coefficient: None,
     });
     let v2 = net.add_node(Node::Valve {
         downstream_head: Head::ZERO,
         closure: ValveClosure::Open,
+        flow_coefficient: None,
     });
     let p0 = net.add_pipe(r, j, pipe(600.0, 0.25, 1050.0, 0.02)).unwrap();
     let p1 = net.add_pipe(j, v1, pipe(400.0, 0.2, 1050.0, 0.02)).unwrap();

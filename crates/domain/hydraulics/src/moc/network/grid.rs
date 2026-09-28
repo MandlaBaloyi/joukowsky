@@ -20,7 +20,7 @@ use jk_kernel::{Time, WaveSpeed};
 
 use crate::HydraulicsError;
 use crate::error::positive;
-use crate::moc::network::model::Network;
+use crate::model::Network;
 
 /// Largest number of reaches tried for the shortest pipe.
 const MAX_SUBDIVISIONS: u32 = 10_000;
@@ -157,7 +157,7 @@ impl NetworkGrid {
 mod tests {
     use super::*;
     use crate::Pipe;
-    use crate::moc::network::model::Node;
+    use crate::model::Node;
     use jk_kernel::{Flow, Head, Length, STANDARD_GRAVITY};
 
     fn network(lengths: &[f64]) -> Network {

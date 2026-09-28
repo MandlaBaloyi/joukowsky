@@ -23,6 +23,7 @@ fn mirror_branches_give_bit_identical_results() {
     let valve = || Node::Valve {
         downstream_head: Head::ZERO,
         closure: ValveClosure::Instantaneous,
+        flow_coefficient: None,
     };
     let va = net.add_node(valve());
     let vb = net.add_node(valve());

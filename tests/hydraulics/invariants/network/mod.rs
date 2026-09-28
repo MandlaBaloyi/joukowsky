@@ -6,6 +6,7 @@
 
 mod continuity;
 mod matches_single_pipe;
+mod steady_start;
 mod symmetry;
 
 use jk_hydraulics::{GridOptions, ReservoirPipeValve, ValveClosure};
