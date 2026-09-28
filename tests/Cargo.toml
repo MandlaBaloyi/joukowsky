@@ -33,11 +33,16 @@ path = "detection/main.rs"
 name = "localisation"
 path = "localisation/main.rs"
 
+[[test]]
+name = "classification"
+path = "classification/main.rs"
+
 [dependencies]
 jk-kernel.workspace = true
 jk-hydraulics.workspace = true
 jk-detection.workspace = true
 jk-localisation.workspace = true
+jk-classification.workspace = true
 
 [lints]
 workspace = true

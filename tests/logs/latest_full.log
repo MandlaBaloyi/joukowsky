@@ -1,15 +1,23 @@
 joukowsky test run
-  when     2026-09-28 18:58:21
+  when     2026-09-28 19:11:06
   suite    full
-  commit   d3631b3 (with uncommitted changes)
+  commit   9cabe43 (with uncommitted changes)
   rust     rustc 1.98.1 (48a229cea 2026-09-01)
   command  cargo test --workspace --no-fail-fast -- --nocapture --test-threads=1 --include-ignored
 ==============================================================================
-   Compiling jk-localisation v0.1.0 (C:\Users\HP\Desktop\joukowsky\crates\domain\localisation)
-   Compiling jk-cli v0.1.0 (C:\Users\HP\Desktop\joukowsky\crates\interfaces\cli)
-   Compiling jk-detection v0.1.0 (C:\Users\HP\Desktop\joukowsky\crates\domain\detection)
+   Compiling jk-classification v0.1.0 (C:\Users\HP\Desktop\joukowsky\crates\domain\classification)
    Compiling jk-tests v0.1.0 (C:\Users\HP\Desktop\joukowsky\tests)
-    Finished `test` profile [unoptimized + debuginfo] target(s) in 6.77s
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 7.27s
+     Running unittests src\lib.rs (target\debug\deps\jk_classification-ac838da961a672cc.exe)
+
+running 4 tests
+test classes::context::tests::three_states_of_knowledge ... ok
+test features::after::tests::staying_down_is_one_and_symmetric_ringing_is_zero ... ok
+test features::front::tests::a_linear_ramp_rises_over_eighty_percent_of_its_length ... ok
+test features::front::tests::an_integrated_step_rises_in_one_point_six_samples ... ok
+
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
      Running unittests src\main.rs (target\debug\deps\jk-7274c5438ed9f47a.exe)
 
 running 0 tests
@@ -108,14 +116,110 @@ test posterior::score::tests::with_independent_errors_the_correlated_score_match
 
 test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
 
-     Running unittests common\lib.rs (target\debug\deps\jk_tests-b72e4acf4d66fc1d.exe)
+     Running unittests common\lib.rs (target\debug\deps\jk_tests-1378201a2f6af759.exe)
 
 running 1 test
 test sensor::tests::averaging_a_step_gives_the_covered_fraction ... ok
 
 test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
 
-     Running detection\main.rs (target\debug\deps\detection-4d1f3cb62783cdba.exe)
+     Running classification\main.rs (target\debug\deps\classification-7becaca80f69eb64.exe)
+
+running 8 tests
+test simulation::scenarios::a_pump_trip_is_recognised_from_its_shape_alone ... Pump losing power, sensor at its discharge, power NOT monitored:
+  verdict: pump trip (99% confident)
+    pump trip       98.9%
+    burst            1.1%
+    valve closure    0.0%
+    because: pressure DROPPED by 59.32 m: a burst or a pump trip, not a closing valve (seen upstream)
+    because: DRAWN-OUT front (684 ms, 10-90%): a gradual change - a pump running down, a valve closing slowly, or a burst opening slowly
+    because: DEEP drop: 81% of the pressure - a stopping pump collapses the head
+    because: pump power is not monitored: no outside evidence
+  pump trip                                    yes
+ok
+test simulation::scenarios::a_recorded_power_loss_makes_a_pump_trip_certain ... Pump losing power, sensor at its discharge, power loss RECORDED:
+  verdict: pump trip (100% confident)
+    pump trip      100.0%
+    burst            0.0%
+    valve closure    0.0%
+    because: pressure DROPPED by 59.35 m: a burst or a pump trip, not a closing valve (seen upstream)
+    because: DRAWN-OUT front (683 ms, 10-90%): a gradual change - a pump running down, a valve closing slowly, or a burst opening slowly
+    because: DEEP drop: 81% of the pressure - a stopping pump collapses the head
+    because: pump power was LOST just before the front arrived
+  pump trip                                    yes
+  at least 99% confident                       yes
+ok
+test simulation::scenarios::a_sharp_burst_is_called_a_burst ... 10 mm hole opening instantly, 700 m from the sensor, power not monitored:
+  verdict: burst (100% confident)
+    burst           99.7%
+    pump trip        0.2%
+    valve closure    0.0%
+    because: pressure DROPPED by 4.53 m: a burst or a pump trip, not a closing valve (seen upstream)
+    because: SHARP front (7 ms, 10-90%): a sudden change - a pipe splitting, a valve slamming - not a pump running down
+    because: SHALLOW drop: 8% of the pressure - a hole lets out a little water
+    because: pump power is not monitored: no outside evidence
+  burst                                        yes
+ok
+test simulation::scenarios::a_sharp_burst_with_stable_power_is_a_confident_burst ... Instant burst, power monitored and stable:
+  verdict: burst (100% confident)
+    burst          100.0%
+    valve closure    0.0%
+    pump trip        0.0%
+    because: pressure DROPPED by 4.53 m: a burst or a pump trip, not a closing valve (seen upstream)
+    because: SHARP front (9 ms, 10-90%): a sudden change - a pipe splitting, a valve slamming - not a pump running down
+    because: SHALLOW drop: 8% of the pressure - a hole lets out a little water
+    because: pump power is monitored and did NOT fail: not a pump trip
+  burst                                        yes
+  at least 99% confident                       yes
+ok
+test simulation::scenarios::a_slow_burst_without_power_data_is_honestly_unknown ... Hole opening over 0.5 s, power NOT monitored - shape alone cannot
+tell a slowly opening burst from a pump running down:
+  verdict: unknown (50% confident) - ABSTAINS
+    burst           50.0%
+    pump trip       50.0%
+    valve closure    0.1%
+    because: pressure DROPPED by 4.53 m: a burst or a pump trip, not a closing valve (seen upstream)
+    because: DRAWN-OUT front (402 ms, 10-90%): a gradual change - a pump running down, a valve closing slowly, or a burst opening slowly
+    because: SHALLOW drop: 8% of the pressure - a hole lets out a little water
+    because: pump power is not monitored: no outside evidence
+  the classifier abstains                      yes
+  and burst is among its top two candidates    yes
+ok
+test simulation::scenarios::a_slow_valve_closure_is_still_a_valve_closure ... Valve shutting over 3 s, sensor mid-pipe upstream of it:
+  verdict: valve closure (99% confident)
+    valve closure   98.8%
+    pump trip        1.1%
+    burst            0.1%
+    because: pressure ROSE by 27.44 m: a closing valve raises pressure upstream of it; bursts and pump trips lower it
+    because: DRAWN-OUT front (799 ms, 10-90%): a gradual change - a pump running down, a valve closing slowly, or a burst opening slowly
+    because: pump power is not monitored: no outside evidence
+  valve closure                                yes
+ok
+test simulation::scenarios::an_instant_valve_closure_is_called_a_valve_closure ... Valve shutting instantly, sensor mid-pipe upstream of it:
+  verdict: valve closure (98% confident)
+    valve closure   98.2%
+    burst            1.8%
+    pump trip        0.0%
+    because: pressure ROSE by 114.00 m: a closing valve raises pressure upstream of it; bursts and pump trips lower it
+    because: SHARP front (12 ms, 10-90%): a sudden change - a pipe splitting, a valve slamming - not a pump running down
+    because: pump power is not monitored: no outside evidence
+  valve closure                                yes
+ok
+test simulation::scenarios::power_data_settles_the_slow_burst ... The same slow burst, power monitored and STABLE:
+  verdict: burst (98% confident)
+    burst           98.1%
+    pump trip        1.8%
+    valve closure    0.1%
+    because: pressure DROPPED by 4.55 m: a burst or a pump trip, not a closing valve (seen upstream)
+    because: DRAWN-OUT front (406 ms, 10-90%): a gradual change - a pump running down, a valve closing slowly, or a burst opening slowly
+    because: SHALLOW drop: 8% of the pressure - a hole lets out a little water
+    because: pump power is monitored and did NOT fail: not a pump trip
+  burst                                        yes
+ok
+
+test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.09s
+
+     Running detection\main.rs (target\debug\deps\detection-b43fe890879cbd4b.exe)
 
 running 9 tests
 test analytical::delay::delay_follows_the_cusum_formula ... Sharp drops at t = 3 s, noise-free signal with a 2 cm noise floor set:
@@ -178,9 +282,9 @@ test simulation::burst_location::vs1_location_error_versus_sampling_rate_and_noi
   128 S/s with 2 cm noise locates to under 1 m RMS yes
 ok
 
-test result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 2.61s
+test result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 2.54s
 
-     Running hydraulics\main.rs (target\debug\deps\hydraulics-af40beb9273b12f8.exe)
+     Running hydraulics\main.rs (target\debug\deps\hydraulics-1eb95420d90ab6ba.exe)
 
 running 35 tests
 test analytical::boundaries::burst::a_10mm_hole_at_60m_head ... DN150 AC main at 60 m head, 0.5 m/s; a 10 mm hole opens (Cd 0.6):
@@ -442,9 +546,9 @@ test invariants::steady_state::an_undisturbed_pipe_stays_steady ... Steady state
   valve holds steady                           yes
 ok
 
-test result: ok. 35 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 8.67s
+test result: ok. 35 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 18.90s
 
-     Running kernel\main.rs (target\debug\deps\kernel-70ffa4a37521f169.exe)
+     Running kernel\main.rs (target\debug\deps\kernel-a96a393747361f88.exe)
 
 running 5 tests
 test conversions::dn150_area ... Cross-section of a DN150 pipe:
@@ -469,7 +573,7 @@ ok
 
 test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
 
-     Running localisation\main.rs (target\debug\deps\localisation-0280bd146c9c240a.exe)
+     Running localisation\main.rs (target\debug\deps\localisation-8d70fb7be3cbd193.exe)
 
 running 5 tests
 test analytical::branched::two_sensors_see_a_whole_branch_three_sensors_see_the_point ... Sensors S1 and S2 only (burst 200 m along branch T-S3):
@@ -519,7 +623,13 @@ Localisation:
   the arrivals fit one source (misfit < 3)     yes
 ok
 
-test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 2.51s
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 2.40s
+
+   Doc-tests jk_classification
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
 
    Doc-tests jk_detection
 
@@ -552,9 +662,9 @@ running 0 tests
 test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
 
 ==============================================================================
-  passed   123
+  passed   135
   failed   0
   skipped  0 slow test(s) not in this suite
   filtered 0 test(s) outside -Only/-Filter
-  time     24.0 s (including compile)
+  time     35.6 s (including compile)
   result   ALL PASSED

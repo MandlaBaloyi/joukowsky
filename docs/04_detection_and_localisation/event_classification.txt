@@ -50,3 +50,22 @@ Stage C (real labels): fine-tune with confirmed field events (operator
          label the events the model is least sure about.
 Always: calibrated probabilities (e.g. temperature scaling / conformal
 prediction) and an "unknown" class - the engine must be able to abstain.
+
+IMPLEMENTATION NOTE (2026-09-28, crates/domain/classification)
+Stage A built: features (direction, swing, 10-90% rise time, persistence)
++ context (pump power: lost / monitored-stable / not monitored, kept as
+three distinct states) + evidence rules in log-odds with a written reason
+each, softmax, and abstention below 70% confidence. Version 1 classes:
+burst, valve closure, pump trip - only what the simulator can generate,
+so every rule is validated (tests/classification: 8 scenarios through the
+full chain physics -> 128 S/s logger -> detection -> features -> verdict).
+The weights are chosen so the case physics cannot separate - a burst
+opening over ~0.5 s versus a pump trip, power not monitored - ABSTAINS
+(50/50); recorded power data then settles it.
+Stated blind spot: a sensor DOWNSTREAM of a closing valve sees a drop;
+multi-sensor sign/arrival patterns (localisation) must resolve it.
+Persistence is measured but not used yet (depends on nearby reservoirs;
+Stage B learns its meaning per network). Next classes: column separation
+and refilling (need cavitation, S7), pump start and valve opening (need
+those simulator events), sensor fault (needs the health layer).
+
