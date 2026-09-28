@@ -76,6 +76,12 @@ In build order:
       leak/burst (orifice and modified-orifice / FAVAD laws), pump
       (curve + inertia run-down), check valve, PRV, air valve, surge
       vessel.
+      STATUS 2026-09-28: done - reservoir, dead end, valve + closure
+      curves, junction (n-pipe + fixed outflow; minor losses not yet),
+      leak/burst (two-way orifice incl. intrusion), ideal check valve.
+      Validated in tests/hydraulics/analytical/boundaries (V-A3).
+      Next - pump (curve + run-down), dynamic check-valve slam, PRV, air
+      valve, surge vessel, FAVAD leak law.
   S3  Network MOC: global dt, integer reaches per pipe, wave-speed
       adjustment recorded as a known model error. Mass conservation to
       machine precision (V-A4).

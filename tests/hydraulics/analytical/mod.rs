@@ -5,5 +5,6 @@
 //! `docs/07_validation/validation_strategy.txt` where one exists (va1_,
 //! va2_, ...), so a log line traces straight back to the claim it proves.
 
+mod boundaries;
 mod joukowsky;
 mod single_pipe;

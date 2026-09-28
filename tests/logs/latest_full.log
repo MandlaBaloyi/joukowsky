@@ -1,7 +1,7 @@
 joukowsky test run
-  when     2026-09-28 17:29:17
+  when     2026-09-28 17:37:14
   suite    full
-  commit   67e4153 (with uncommitted changes)
+  commit   11c6fce (with uncommitted changes)
   rust     rustc 1.98.1 (48a229cea 2026-09-01)
   command  cargo test --workspace --no-fail-fast -- --nocapture --test-threads=1 --include-ignored
 ==============================================================================
@@ -14,9 +14,18 @@ test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; fini
 
      Running unittests src\lib.rs (target\debug\deps\jk_hydraulics-c42e47dfc771fa13.exe)
 
-running 15 tests
+running 24 tests
+test boundary::check_valve::tests::open_valve_passes_forward_flow_like_a_plain_joint ... ok
+test boundary::check_valve::tests::reversing_flow_shuts_it_and_each_side_becomes_a_dead_end ... ok
+test boundary::check_valve::tests::stays_shut_until_upstream_pushes_harder_then_reopens ... ok
 test boundary::closure::tests::openings ... ok
 test boundary::closure::tests::rejects_bad_power_closures ... ok
+test boundary::dead_end::tests::no_flow_and_head_from_the_characteristic ... ok
+test boundary::junction::tests::a_single_pipe_without_outflow_is_a_dead_end ... ok
+test boundary::junction::tests::flows_balance_and_every_pipe_satisfies_its_characteristic ... ok
+test boundary::leak::tests::a_zero_coefficient_is_no_leak ... ok
+test boundary::leak::tests::below_the_outside_head_water_is_drawn_in ... ok
+test boundary::leak::tests::outflow_obeys_the_orifice_law_and_continuity ... ok
 test boundary::reservoir::tests::head_is_held_and_flow_satisfies_the_characteristic ... ok
 test boundary::valve::tests::a_shut_valve_passes_nothing_and_takes_the_full_characteristic_head ... ok
 test boundary::valve::tests::fully_open_valve_passes_its_steady_flow ... ok
@@ -31,7 +40,7 @@ test pipe::friction::quasi_steady::tests::matches_darcy_weisbach_in_velocity_for
 test pipe::tests::rejects_non_physical_values ... ok
 test pipe::tests::timing_matches_docs_example ... ok
 
-test result: ok. 15 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+test result: ok. 24 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
 
      Running unittests src\lib.rs (target\debug\deps\jk_kernel-eccabcc9e10cd5d2.exe)
 
@@ -53,7 +62,58 @@ test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; fini
 
      Running hydraulics\main.rs (target\debug\deps\hydraulics-356f9c4fa69611d2.exe)
 
-running 9 tests
+running 16 tests
+test analytical::boundaries::burst::a_10mm_hole_at_60m_head ... DN150 AC main at 60 m head, 0.5 m/s; a 10 mm hole opens (Cd 0.6):
+  water lost              1.555 l/s  (134 m^3 per day)
+  head step at the burst  -4.486 m
+  step = -(B/2) Q_L [m]                        got      -4.486351   expected      -4.486351   rel.err 3.4e-15
+  orifice law at the new head [l/s]            got       1.554950   expected       1.554950   rel.err 0.0e0
+  engine sizes the burst from the step [l/s]   got       1.554950   expected       1.554950   rel.err 3.6e-15
+ok
+test analytical::boundaries::burst::a_down_surge_turns_the_hole_into_an_intake ... Pump trip pulls the main to -3 m while trench water stands at +0.5 m:
+  head at the hole        -2.040 m
+  flow through the hole   -0.3326 l/s (negative = drawn IN)
+  water flows into the pipe (intrusion)        yes
+  orifice law, reversed [l/s]                  got       0.332628   expected       0.332628   rel.err 0.0e0
+  => every such event is logged as a water-quality event (docs: P5 exposure).
+ok
+test analytical::boundaries::check_valve::the_door_opens_one_way_only ... 1. Normal operation: forward flow 0.03 m^3/s at 60 m on both sides.
+  valve open                                   yes
+  flow passes unchanged [m^3/s]                got       0.030000   expected       0.030000   rel.err 0.0e0
+2. Pump trips: upstream pressure collapses, flow tries to run back.
+  valve shuts                                  yes
+  no flow through                              got       0.000000   expected       0.000000   rel.err 0.0e0
+  upstream side 30.0 m, downstream side 65.0 m: each is now a dead end
+3. Downstream still higher: the valve holds.
+  valve stays shut                             yes
+4. Pump restarts and upstream pushes harder: the valve reopens.
+  valve reopens                                yes
+  flow is forward                              yes
+ok
+test analytical::boundaries::reflections::dead_end_doubles_the_wave ... Wave of 10 m reaching a closed end:
+  head rise at the dead end [m]                got      20.000000   expected      20.000000   rel.err 0.0e0
+  reflection R (docs: +1)                      got       1.000000   expected       1.000000   rel.err 0.0e0
+  flow at the dead end                         got       0.000000   expected       0.000000   rel.err 0.0e0
+  junction formula with one pipe gives R       got       1.000000   expected       1.000000   rel.err 0.0e0
+ok
+test analytical::boundaries::reflections::reservoir_inverts_the_wave ... Wave of 10 m reaching a large reservoir:
+  head at the reservoir [m]                    got     100.000000   expected     100.000000   rel.err 0.0e0
+  reflection R (docs: -1)                      got      -1.000000   expected      -1.000000   rel.err 0.0e0
+  flow into the reservoir doubles: 0.003466 m^3/s
+  flow = 2F / B [m^3/s]                        got       0.003466   expected       0.003466   rel.err 0.0e0
+ok
+test analytical::boundaries::reflections::va3_steel_into_pvc_transmits_less_than_half ... Wave travelling from a steel pipe into a uPVC pipe of the same bore:
+  B_steel / B_PVC = 3.38 (docs: ~3.4)
+  transmitted T (docs: ~0.46)                  got       0.456790   expected       0.460000   rel.err 7.0e-3
+  matches the closed-form formula              got       0.456790   expected       0.456790   rel.err 7.3e-16
+  => material changes partly reflect waves - a feature localisation can use.
+ok
+test analytical::boundaries::reflections::va3_tee_of_identical_pipes_transmits_two_thirds ... Wave of 10 m reaching a tee of three identical DN150 pipes:
+  transmitted T (docs: 2/3)                    got       0.666667   expected       0.666667   rel.err 8.3e-16
+  reflected R (docs: -1/3)                     got      -0.333333   expected      -0.333333   rel.err 1.5e-15
+  matches the closed-form formula              got       0.666667   expected       0.666667   rel.err 8.3e-16
+  => each tee cuts the front by a third: waves fade fast in branched networks.
+ok
 test analytical::joukowsky::burst_quantification::dn150_ac_main_2_litre_per_second_burst ... DN150 AC main, a = 1000 m/s:
   impedance B [s/m^2]                          got    5768.442835   expected    5770.000000   rel.err 2.7e-4
   step from a 2 l/s burst [m]                  got       5.768443   expected       5.800000   rel.err 5.4e-3
@@ -127,7 +187,7 @@ test invariants::steady_state::an_undisturbed_pipe_stays_steady ... Steady state
   valve holds steady                           yes
 ok
 
-test result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 19.11s
+test result: ok. 16 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 18.98s
 
      Running kernel\main.rs (target\debug\deps\kernel-de7e7becf50a66a6.exe)
 
@@ -173,9 +233,9 @@ running 0 tests
 test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
 
 ==============================================================================
-  passed   35
+  passed   51
   failed   0
   skipped  0 slow test(s) not in this suite
   filtered 0 test(s) outside -Only/-Filter
-  time     19.7 s (including compile)
+  time     19.5 s (including compile)
   result   ALL PASSED

@@ -1,14 +1,152 @@
 joukowsky test run
-  when     2026-09-28 17:29:16
-  suite    quick, only hydraulics, filter 'va1'
-  commit   67e4153 (with uncommitted changes)
+  when     2026-09-28 17:37:34
+  suite    quick
+  commit   11c6fce (with uncommitted changes)
   rust     rustc 1.98.1 (48a229cea 2026-09-01)
-  command  cargo test -p jk-tests --test hydraulics --no-fail-fast -- --nocapture --test-threads=1 va1
+  command  cargo test --workspace --no-fail-fast -- --nocapture --test-threads=1
 ==============================================================================
     Finished `test` profile [unoptimized + debuginfo] target(s) in 0.02s
+     Running unittests src\main.rs (target\debug\deps\jk-7274c5438ed9f47a.exe)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running unittests src\lib.rs (target\debug\deps\jk_hydraulics-c42e47dfc771fa13.exe)
+
+running 24 tests
+test boundary::check_valve::tests::open_valve_passes_forward_flow_like_a_plain_joint ... ok
+test boundary::check_valve::tests::reversing_flow_shuts_it_and_each_side_becomes_a_dead_end ... ok
+test boundary::check_valve::tests::stays_shut_until_upstream_pushes_harder_then_reopens ... ok
+test boundary::closure::tests::openings ... ok
+test boundary::closure::tests::rejects_bad_power_closures ... ok
+test boundary::dead_end::tests::no_flow_and_head_from_the_characteristic ... ok
+test boundary::junction::tests::a_single_pipe_without_outflow_is_a_dead_end ... ok
+test boundary::junction::tests::flows_balance_and_every_pipe_satisfies_its_characteristic ... ok
+test boundary::leak::tests::a_zero_coefficient_is_no_leak ... ok
+test boundary::leak::tests::below_the_outside_head_water_is_drawn_in ... ok
+test boundary::leak::tests::outflow_obeys_the_orifice_law_and_continuity ... ok
+test boundary::reservoir::tests::head_is_held_and_flow_satisfies_the_characteristic ... ok
+test boundary::valve::tests::a_shut_valve_passes_nothing_and_takes_the_full_characteristic_head ... ok
+test boundary::valve::tests::fully_open_valve_passes_its_steady_flow ... ok
+test boundary::valve::tests::solves_the_orifice_law_both_ways ... ok
+test moc::characteristics::tests::a_steady_friction_gradient_is_a_fixed_point ... ok
+test moc::characteristics::tests::interior_solution_lies_on_both_characteristics ... ok
+test moc::grid::tests::courant_one_time_step ... ok
+test moc::grid::tests::step_counts_and_limits ... ok
+test moc::single_pipe::tests::rejects_bad_setups ... ok
+test moc::trace::tests::records_only_the_probes_in_request_order ... ok
+test pipe::friction::quasi_steady::tests::matches_darcy_weisbach_in_velocity_form_and_is_odd_in_flow ... ok
+test pipe::tests::rejects_non_physical_values ... ok
+test pipe::tests::timing_matches_docs_example ... ok
+
+test result: ok. 24 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+     Running unittests src\lib.rs (target\debug\deps\jk_kernel-eccabcc9e10cd5d2.exe)
+
+running 6 tests
+test units::tests::circle_area_dn150 ... ok
+test units::tests::display_carries_unit ... ok
+test units::tests::head_pressure_round_trip ... ok
+test units::tests::same_type_arithmetic ... ok
+test units::tests::velocity_flow_area ... ok
+test units::tests::wave_travel_time_and_distance_round_trip ... ok
+
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running unittests common\lib.rs (target\debug\deps\jk_tests-976cd44839b14c24.exe)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
      Running hydraulics\main.rs (target\debug\deps\hydraulics-356f9c4fa69611d2.exe)
 
-running 1 test
+running 16 tests
+test analytical::boundaries::burst::a_10mm_hole_at_60m_head ... DN150 AC main at 60 m head, 0.5 m/s; a 10 mm hole opens (Cd 0.6):
+  water lost              1.555 l/s  (134 m^3 per day)
+  head step at the burst  -4.486 m
+  step = -(B/2) Q_L [m]                        got      -4.486351   expected      -4.486351   rel.err 3.4e-15
+  orifice law at the new head [l/s]            got       1.554950   expected       1.554950   rel.err 0.0e0
+  engine sizes the burst from the step [l/s]   got       1.554950   expected       1.554950   rel.err 3.6e-15
+ok
+test analytical::boundaries::burst::a_down_surge_turns_the_hole_into_an_intake ... Pump trip pulls the main to -3 m while trench water stands at +0.5 m:
+  head at the hole        -2.040 m
+  flow through the hole   -0.3326 l/s (negative = drawn IN)
+  water flows into the pipe (intrusion)        yes
+  orifice law, reversed [l/s]                  got       0.332628   expected       0.332628   rel.err 0.0e0
+  => every such event is logged as a water-quality event (docs: P5 exposure).
+ok
+test analytical::boundaries::check_valve::the_door_opens_one_way_only ... 1. Normal operation: forward flow 0.03 m^3/s at 60 m on both sides.
+  valve open                                   yes
+  flow passes unchanged [m^3/s]                got       0.030000   expected       0.030000   rel.err 0.0e0
+2. Pump trips: upstream pressure collapses, flow tries to run back.
+  valve shuts                                  yes
+  no flow through                              got       0.000000   expected       0.000000   rel.err 0.0e0
+  upstream side 30.0 m, downstream side 65.0 m: each is now a dead end
+3. Downstream still higher: the valve holds.
+  valve stays shut                             yes
+4. Pump restarts and upstream pushes harder: the valve reopens.
+  valve reopens                                yes
+  flow is forward                              yes
+ok
+test analytical::boundaries::reflections::dead_end_doubles_the_wave ... Wave of 10 m reaching a closed end:
+  head rise at the dead end [m]                got      20.000000   expected      20.000000   rel.err 0.0e0
+  reflection R (docs: +1)                      got       1.000000   expected       1.000000   rel.err 0.0e0
+  flow at the dead end                         got       0.000000   expected       0.000000   rel.err 0.0e0
+  junction formula with one pipe gives R       got       1.000000   expected       1.000000   rel.err 0.0e0
+ok
+test analytical::boundaries::reflections::reservoir_inverts_the_wave ... Wave of 10 m reaching a large reservoir:
+  head at the reservoir [m]                    got     100.000000   expected     100.000000   rel.err 0.0e0
+  reflection R (docs: -1)                      got      -1.000000   expected      -1.000000   rel.err 0.0e0
+  flow into the reservoir doubles: 0.003466 m^3/s
+  flow = 2F / B [m^3/s]                        got       0.003466   expected       0.003466   rel.err 0.0e0
+ok
+test analytical::boundaries::reflections::va3_steel_into_pvc_transmits_less_than_half ... Wave travelling from a steel pipe into a uPVC pipe of the same bore:
+  B_steel / B_PVC = 3.38 (docs: ~3.4)
+  transmitted T (docs: ~0.46)                  got       0.456790   expected       0.460000   rel.err 7.0e-3
+  matches the closed-form formula              got       0.456790   expected       0.456790   rel.err 7.3e-16
+  => material changes partly reflect waves - a feature localisation can use.
+ok
+test analytical::boundaries::reflections::va3_tee_of_identical_pipes_transmits_two_thirds ... Wave of 10 m reaching a tee of three identical DN150 pipes:
+  transmitted T (docs: 2/3)                    got       0.666667   expected       0.666667   rel.err 8.3e-16
+  reflected R (docs: -1/3)                     got      -0.333333   expected      -0.333333   rel.err 1.5e-15
+  matches the closed-form formula              got       0.666667   expected       0.666667   rel.err 8.3e-16
+  => each tee cuts the front by a third: waves fade fast in branched networks.
+ok
+test analytical::joukowsky::burst_quantification::dn150_ac_main_2_litre_per_second_burst ... DN150 AC main, a = 1000 m/s:
+  impedance B [s/m^2]                          got    5768.442835   expected    5770.000000   rel.err 2.7e-4
+  step from a 2 l/s burst [m]                  got       5.768443   expected       5.800000   rel.err 5.4e-3
+  burst flow back from the step [l/s]          got       2.000000   expected       2.000000   rel.err 0.0e0
+  water lost per day [m^3]                     got     172.800000   expected     172.800000   rel.err 0.0e0
+ok
+test analytical::joukowsky::surge_by_material::head_rise_when_1_m_per_s_is_stopped ... dH = -(a / g) dV with dV = -1 m/s:
+  steel / ductile iron / cast iron (a = 1250) [m] got     127.420999   expected     127.000000   rel.err 3.3e-3
+  asbestos-cement (a = 1000) [m]               got     101.936799   expected     102.000000   rel.err 6.2e-4
+  uPVC (a = 370) [m]                           got      37.716616   expected      38.000000   rel.err 7.5e-3
+  HDPE (a = 300) [m]                           got      30.581040   expected      31.000000   rel.err 1.4e-2
+ok
+test analytical::joukowsky::surge_by_material::pressure_and_head_forms_agree ... rho a dV versus rho g (a/g dV), steel main:
+  pressure rise [bar]                          got      12.475000   expected      12.475000   rel.err 0.0e0
+  pressure rise vs docs ~12.5 bar              got      12.475000   expected      12.500000   rel.err 2.0e-3
+ok
+test analytical::single_pipe::friction::friction_causes_line_packing_and_damping ... Friction f = 0.03, instant closure; Joukowsky dH = 101.972 m
+  steady valve head            94.901 m
+  just after closure (step 1)  196.873 m
+  just before relief (step 40) 201.716 m
+  head climbs during 2L/a (line packing)       yes
+  surge exceeds Joukowsky                      yes
+  peak in period 1             201.716 m
+  peak in period 3             185.408 m
+  oscillation decays                           yes
+ok
+test analytical::single_pipe::slow_closure::va2_slow_closure_surge_is_well_below_joukowsky ... Linear closure over 20 s (10 x 2L/a):
+  Joukowsky (instant closure)  101.972 m
+  Michaud estimate             10.197 m
+  simulated surge              5.468 m
+  surge is positive (above 5% of Joukowsky)    yes
+  surge is below half of Joukowsky             yes
+ok
 test analytical::single_pipe::square_wave::va1_frictionless_instant_closure_is_a_joukowsky_square_wave ... Grid and timing:
   time step dt [s]                             got       0.050000   expected       0.050000   rel.err 0.0e0
   2L/a = 2 s = 40 steps; period 4L/a = 4 s = 80 steps.
@@ -23,13 +161,79 @@ Every one of the 241 samples on the square wave:
   all samples within 1e-9 m of the ideal       yes
   no flow through the shut valve               yes
 ok
+test invariants::grid_independence::joukowsky_peak_is_exact_on_every_grid_and_material ... ignored, full suite: 1024 simulations (run-tests.ps1 -Suite full)
+test invariants::grid_independence::joukowsky_peak_is_the_same_on_every_grid ... 1 reach(es), dt = 1.0000 s:
+  peak head [m]                                got     201.971621   expected     201.971621   rel.err 1.4e-16
+  lowest head [m]                              got      -1.971621   expected      -1.971621   rel.err 1.4e-14
+7 reach(es), dt = 0.1429 s:
+  peak head [m]                                got     201.971621   expected     201.971621   rel.err 1.4e-16
+  lowest head [m]                              got      -1.971621   expected      -1.971621   rel.err 1.4e-14
+20 reach(es), dt = 0.0500 s:
+  peak head [m]                                got     201.971621   expected     201.971621   rel.err 1.4e-16
+  lowest head [m]                              got      -1.971621   expected      -1.971621   rel.err 1.4e-14
+64 reach(es), dt = 0.0156 s:
+  peak head [m]                                got     201.971621   expected     201.971621   rel.err 1.4e-16
+  lowest head [m]                              got      -1.971621   expected      -1.971621   rel.err 1.4e-14
+ok
+test invariants::steady_state::an_undisturbed_pipe_stays_steady ... Steady state with friction f = 0.02:
+  valve head: solver vs hand formula [m]       got      96.600946   expected      96.600946   rel.err 0.0e0
+  reservoir end: largest head drift 0.0e0 m, flow drift 1.4e-17 m^3/s
+  reservoir end holds steady                   yes
+  mid pipe: largest head drift 1.4e-14 m, flow drift 1.4e-17 m^3/s
+  mid pipe holds steady                        yes
+  valve: largest head drift 0.0e0 m, flow drift 0.0e0 m^3/s
+  valve holds steady                           yes
+ok
 
-test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 8 filtered out; finished in 0.00s
+test result: ok. 15 passed; 0 failed; 1 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+     Running kernel\main.rs (target\debug\deps\kernel-de7e7becf50a66a6.exe)
+
+running 5 tests
+test conversions::dn150_area ... Cross-section of a DN150 pipe:
+  area [m^2]                                   got       0.017671   expected       0.017670   rel.err 8.3e-5
+ok
+test conversions::flow_velocity_area ... 1 m/s in a DN300 pipe:
+  flow [l/s]                                   got      70.685835   expected      70.686000   rel.err 2.3e-6
+  velocity back [m/s]                          got       1.000000   expected       1.000000   rel.err 0.0e0
+ok
+test conversions::head_and_pressure_round_trip ... 127 m of head -> pressure -> back to head:
+  pressure [bar]                               got      12.433783   expected      12.430000   rel.err 3.0e-4
+  head again [m]                               got     127.000000   expected     127.000000   rel.err 1.1e-16
+ok
+test conversions::one_bar_is_about_10_2_metres_of_water ... 1 bar expressed as head of water (rho = 998 kg/m^3):
+  head of 1 bar [m]                            got      10.217597   expected      10.200000   rel.err 1.7e-3
+ok
+test conversions::wave_travel_time ... Pressure wave crossing 1000 m of steel main at 1250 m/s:
+  one way L/a [s]                              got       0.800000   expected       0.800000   rel.err 0.0e0
+  round trip 2L/a [s]                          got       1.600000   expected       1.600000   rel.err 0.0e0
+  distance back from a * t [m]                 got    1000.000000   expected    1000.000000   rel.err 0.0e0
+ok
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+   Doc-tests jk_hydraulics
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+   Doc-tests jk_kernel
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+   Doc-tests jk_tests
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
 
 ==============================================================================
-  passed   1
+  passed   50
   failed   0
-  skipped  0 slow test(s) not in this suite
-  filtered 8 test(s) outside -Only/-Filter
-  time     0.2 s (including compile)
+  skipped  1 slow test(s) not in this suite (run -Suite full)
+  filtered 0 test(s) outside -Only/-Filter
+  time     0.6 s (including compile)
   result   ALL PASSED

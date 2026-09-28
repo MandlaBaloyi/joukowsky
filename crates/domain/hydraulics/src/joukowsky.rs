@@ -53,4 +53,23 @@ pub fn burst_flow_from_head_drop(
     Flow::new(2.0 * head_drop.abs().value() / impedance(wave_speed, area, gravity))
 }
 
-// Validation against the docs worked numbers: tests/02_joukowsky/.
+/// Fraction of a wave's amplitude transmitted into EVERY pipe at a junction
+/// (section 6): T = 2 (1/`B_in`) / sum(1/`B_i`), where the sum runs over all
+/// pipes meeting at the junction, including the incoming one.
+///
+/// Special cases: n identical pipes (a tee, n = 3) give T = 2/3; a dead end
+/// (only the incoming pipe) gives T = 2 - the pressure doubles.
+#[must_use]
+pub fn junction_transmission(incoming_impedance: f64, all_impedances: &[f64]) -> f64 {
+    let admittance: f64 = all_impedances.iter().map(|b| 1.0 / b).sum();
+    2.0 / incoming_impedance / admittance
+}
+
+/// Fraction of a wave's amplitude reflected back into the incoming pipe at a
+/// junction: R = T - 1. A tee reflects -1/3; a dead end +1.
+#[must_use]
+pub fn junction_reflection(incoming_impedance: f64, all_impedances: &[f64]) -> f64 {
+    junction_transmission(incoming_impedance, all_impedances) - 1.0
+}
+
+// Validation against the docs worked numbers: tests/hydraulics/analytical/joukowsky/.
