@@ -11,6 +11,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "jk-detection"
+version = "0.1.0"
+dependencies = [
+ "jk-kernel",
+]
+
+[[package]]
 name = "jk-hydraulics"
 version = "0.1.0"
 dependencies = [
@@ -25,6 +32,7 @@ version = "0.1.0"
 name = "jk-tests"
 version = "0.1.0"
 dependencies = [
+ "jk-detection",
  "jk-hydraulics",
  "jk-kernel",
 ]

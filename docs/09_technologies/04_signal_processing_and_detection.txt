@@ -44,6 +44,29 @@ Modal / oscillation analysis                                    [BUILD]
 Spectral tools                                                  [TRIAL]
   rustfft / realfft for spectra and frequency-response functions.
 
+STATUS 2026-09-28: first detector built (crates/domain/detection, jk-detection,
+no dependencies):
+  - noise: robust sigma from first differences (MAD), drift-proof;
+  - baseline: Brown's double exponential smoothing (level AND slope), so
+    demand drift leaves no lag - a plain moving average failed the drift
+    test by design (lag = slope x time constant looked like an event);
+  - CUSUM (two-sided, allocation-free per sample, edge-ready);
+  - onset: STEP-AREA method - exact for integrating loggers at any clock
+    phase; half-level interpolation would be biased up to ~9% of a sample.
+Validated (tests/detection): delay = floor(h/(d-k)) + 1 exactly; zero false
+alarms in 24 h of Gaussian noise (11 M samples) and in +/-3 m drift; noisy
+timing RMS 0.012 sample with honest uncertainty (99.8% inside 2 sigma);
+V-S1 end to end (simulated burst -> 128 S/s loggers, random phase, 2 cm
+noise -> detect -> locate): 0.04 m location error, 0.07% sizing error.
+CAVEATS: Gaussian noise, sharp simulated fronts and perfect clocks are the
+best case; real noise has heavier tails and plastic pipes smear fronts
+(viscoelasticity, S6) - rung 4 data must re-measure all of this.
+OPEN: in the V-S1 sweep, 1000 S/s with 0.5 cm noise gave 0.077 m, worse
+than 128 S/s. Hypothesis (unproven): the 1 ms simulation step limits the
+truth at that rate. To test: rerun with a 0.1 ms simulation.
+Not yet: GLR, wavelet and Bayesian online change-point detectors
+(benchmarks by ROC curve), clock-error part of V-S1, heavy-tailed noise.
+
 2. Edge portability
 ------------------------------------------------------------------------
 The detection library is split: a no_std-compatible core (per-sample

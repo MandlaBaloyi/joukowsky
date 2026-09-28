@@ -3,6 +3,7 @@ resolver = "3"
 members = [
     "crates/kernel",
     "crates/domain/hydraulics",
+    "crates/domain/detection",
     "crates/interfaces/cli",
     "tests",
 ]
@@ -18,6 +19,7 @@ repository = "https://github.com/MandlaBaloyi/joukowsky"
 [workspace.dependencies]
 jk-kernel = { path = "crates/kernel" }
 jk-hydraulics = { path = "crates/domain/hydraulics" }
+jk-detection = { path = "crates/domain/detection" }
 
 [workspace.lints.rust]
 unsafe_code = "forbid"

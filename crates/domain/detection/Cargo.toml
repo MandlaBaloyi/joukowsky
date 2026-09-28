@@ -1,0 +1,17 @@
+[package]
+name = "jk-detection"
+description = "Detection bounded context: finding transient events in pressure signals"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+publish.workspace = true
+license.workspace = true
+
+[lib]
+name = "jk_detection"
+
+[dependencies]
+jk-kernel.workspace = true
+
+[lints]
+workspace = true

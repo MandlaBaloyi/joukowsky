@@ -25,9 +25,14 @@ path = "kernel/main.rs"
 name = "hydraulics"
 path = "hydraulics/main.rs"
 
+[[test]]
+name = "detection"
+path = "detection/main.rs"
+
 [dependencies]
 jk-kernel.workspace = true
 jk-hydraulics.workspace = true
+jk-detection.workspace = true
 
 [lints]
 workspace = true

@@ -3,6 +3,8 @@
 //! Every test prints what it measured next to what the physics predicts, so
 //! a test log reads like a lab notebook, not just "ok".
 
+pub mod sensor;
+
 use jk_hydraulics::{Pipe, ReservoirPipeValve, ValveClosure};
 use jk_kernel::{Head, Length, STANDARD_GRAVITY, Velocity, WaveSpeed};
 

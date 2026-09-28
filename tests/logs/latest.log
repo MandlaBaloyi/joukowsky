@@ -1,16 +1,34 @@
 joukowsky test run
-  when     2026-09-28 18:17:48
+  when     2026-09-28 18:39:43
   suite    quick
-  commit   c5b700a (with uncommitted changes)
+  commit   94a4b18 (with uncommitted changes)
   rust     rustc 1.98.1 (48a229cea 2026-09-01)
   command  cargo test --workspace --no-fail-fast -- --nocapture --test-threads=1
 ==============================================================================
-    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.02s
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.03s
      Running unittests src\main.rs (target\debug\deps\jk-7274c5438ed9f47a.exe)
 
 running 0 tests
 
 test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running unittests src\lib.rs (target\debug\deps\jk_detection-ab885d9bb867d09a.exe)
+
+running 12 tests
+test baseline::tests::follows_a_steady_trend_without_lag ... ok
+test baseline::tests::shifting_keeps_the_trend ... ok
+test cusum::tests::a_clean_step_is_caught_and_its_start_found ... ok
+test cusum::tests::rejects_bad_settings ... ok
+test cusum::tests::shifts_below_the_drift_never_alarm ... ok
+test detector::tests::finds_one_clean_drop_and_times_it ... ok
+test detector::tests::refuses_gaps_and_short_series ... ok
+test noise::tests::a_straight_ramp_has_no_noise ... ok
+test noise::tests::median_of_odd_and_even_counts ... ok
+test onset::tests::a_ramp_front_is_placed_at_its_centre ... ok
+test onset::tests::declines_when_the_windows_do_not_fit ... ok
+test onset::tests::exact_for_a_sharp_step_at_any_phase ... ok
+
+test result: ok. 12 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
 
      Running unittests src\lib.rs (target\debug\deps\jk_hydraulics-c42e47dfc771fa13.exe)
 
@@ -73,13 +91,67 @@ test units::tests::wave_travel_time_and_distance_round_trip ... ok
 
 test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
 
-     Running unittests common\lib.rs (target\debug\deps\jk_tests-976cd44839b14c24.exe)
+     Running unittests common\lib.rs (target\debug\deps\jk_tests-21432e64899b3d9e.exe)
 
-running 0 tests
+running 2 tests
+test sensor::tests::averaging_a_step_gives_the_covered_fraction ... ok
+test sensor::tests::normal_numbers_have_the_right_spread ... ok
 
-test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
 
-     Running hydraulics\main.rs (target\debug\deps\hydraulics-356f9c4fa69611d2.exe)
+     Running detection\main.rs (target\debug\deps\detection-6c52b0918e4d398f.exe)
+
+running 9 tests
+test analytical::delay::delay_follows_the_cusum_formula ... Sharp drops at t = 3 s, noise-free signal with a 2 cm noise floor set:
+      5 noise units (0.10 m): alarm after 6 samples (formula 6)
+    delay matches floor(h / (d - k)) + 1       yes
+      8 noise units (0.16 m): alarm after 3 samples (formula 3)
+    delay matches floor(h / (d - k)) + 1       yes
+     20 noise units (0.40 m): alarm after 1 samples (formula 1)
+    delay matches floor(h / (d - k)) + 1       yes
+    200 noise units (4.00 m): alarm after 1 samples (formula 1)
+    delay matches floor(h / (d - k)) + 1       yes
+ok
+test analytical::drift::a_burst_on_top_of_drift_is_still_caught ... Same drift, with a 4.5 m drop at t = 400 s:
+  event at 399.9922 s, step -4.50 m
+  exactly one event                            yes
+  timed within one sample of 400 s             yes
+  step measured within 5 cm                    yes
+ok
+test analytical::drift::slow_demand_drift_is_not_an_event ... 10 minutes swinging +/- 3 m (5-minute period) with 2 cm noise: 0 alarms
+  drift raises no alarm                        yes
+ok
+test analytical::false_alarms::a_full_day_of_pure_noise_raises_no_alarm ... ignored, full suite: 24 hours of samples (11 million)
+test analytical::false_alarms::ten_minutes_of_pure_noise_raise_no_alarm ... 10 minutes of 2 cm Gaussian noise at 128 S/s (76 800 samples): 0 alarms
+  no false alarms                              yes
+ok
+test analytical::onset_precision::a_noise_free_front_is_timed_to_a_tiny_fraction_of_a_sample ... Sharp 4.5 m drop, 128 S/s integrating logger, no noise, 25 clock phases:
+  largest timing error over all phases: 5.00e-5 s (0.0064 of a sample)
+  (limited by the 0.1 ms simulation step, not by the method)
+  error below 1% of a sample                   yes
+ok
+test analytical::onset_precision::with_noise_the_error_matches_the_reported_uncertainty ... 4.5 m drop, 2 cm noise, 400 trials at random clock phases:
+  RMS timing error    0.092 ms  (0.012 of a sample, 0.05 m of location)
+  reported 1-sigma    0.142 ms (average)
+  errors within 2 x reported sigma: 99.8%
+  timing error under a tenth of a sample       yes
+  the reported uncertainty is honest (>= 90% inside 2 sigma) yes
+ok
+test simulation::burst_location::vs1_burst_located_from_128_samples_per_second_loggers ... DN150 main at rest (60 m); 10 mm hole opens at t = 2.0 s, 700 m from S1.
+Loggers: 128 S/s, integrating, random clock phase, 2 cm noise:
+  S1: noise learned 0.0190 m, arrival 2.69958 s (+/- 0.16 ms), step -4.483 m, alarm 8.0 ms later
+  S2: noise learned 0.0199 m, arrival 3.29951 s (+/- 0.14 ms), step -4.479 m
+  burst located 700.04 m from S1 (true 700 m)
+  burst sized 1.554 l/s (true 1.555 l/s)
+  location error 0.036 m, sizing error 0.07%
+  located within 1 m (docs target: metre-level at 128 S/s) yes
+  sized within 2%                              yes
+ok
+test simulation::burst_location::vs1_location_error_versus_sampling_rate_and_noise ... ignored, full suite: 150 recorded sensor pairs across rates and noise levels
+
+test result: ok. 7 passed; 0 failed; 2 ignored; 0 measured; 0 filtered out; finished in 1.13s
+
+     Running hydraulics\main.rs (target\debug\deps\hydraulics-c439236f6d736e51.exe)
 
 running 35 tests
 test analytical::boundaries::burst::a_10mm_hole_at_60m_head ... DN150 AC main at 60 m head, 0.5 m/s; a 10 mm hole opens (Cd 0.6):
@@ -341,7 +413,7 @@ ok
 
 test result: ok. 34 passed; 0 failed; 1 ignored; 0 measured; 0 filtered out; finished in 0.07s
 
-     Running kernel\main.rs (target\debug\deps\kernel-de7e7becf50a66a6.exe)
+     Running kernel\main.rs (target\debug\deps\kernel-5524f584c44fc0a1.exe)
 
 running 5 tests
 test conversions::dn150_area ... Cross-section of a DN150 pipe:
@@ -366,6 +438,12 @@ ok
 
 test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
 
+   Doc-tests jk_detection
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
    Doc-tests jk_hydraulics
 
 running 0 tests
@@ -385,9 +463,9 @@ running 0 tests
 test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
 
 ==============================================================================
-  passed   88
+  passed   109
   failed   0
-  skipped  1 slow test(s) not in this suite (run -Suite full)
+  skipped  3 slow test(s) not in this suite (run -Suite full)
   filtered 0 test(s) outside -Only/-Filter
-  time     0.6 s (including compile)
+  time     1.9 s (including compile)
   result   ALL PASSED
