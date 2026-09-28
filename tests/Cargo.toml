@@ -1,0 +1,34 @@
+[package]
+name = "jk-tests"
+description = "Validation tests for the joukowsky engine, one folder per topic"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+publish.workspace = true
+license.workspace = true
+autotests = false
+
+# Shared helpers used by every test folder.
+[lib]
+name = "jk_tests"
+path = "common/lib.rs"
+
+# One test program per folder. Run one with:  cargo test -p jk-tests --test single_pipe
+[[test]]
+name = "units"
+path = "01_units/main.rs"
+
+[[test]]
+name = "joukowsky"
+path = "02_joukowsky/main.rs"
+
+[[test]]
+name = "single_pipe"
+path = "03_single_pipe/main.rs"
+
+[dependencies]
+jk-kernel.workspace = true
+jk-hydraulics.workspace = true
+
+[lints]
+workspace = true

@@ -1,7 +1,14 @@
+//! A single pipe: geometry, wave speed and wall friction.
+//!
+//! Later in this folder: `wave_speed.rs` (Korteweg estimates, used as
+//! priors) and `viscoelastic.rs` (PE/PVC walls, milestone S6).
+
+pub mod friction;
+
 use jk_kernel::{Acceleration, Area, Flow, Head, Length, Time, WaveSpeed};
 
-use crate::HydraulicsError;
-use crate::joukowsky;
+use crate::error::positive;
+use crate::{HydraulicsError, joukowsky};
 
 /// One pipe: geometry, wave speed and quasi-steady Darcy friction.
 ///
@@ -94,41 +101,22 @@ impl Pipe {
         self.travel_time() * 2.0
     }
 
-    /// Steady friction head loss over the whole pipe:
-    /// `h_f` = f L Q|Q| / (2 g D A^2). Signed with the flow.
+    /// Steady friction head loss over the whole pipe, signed with the flow.
     #[must_use]
     pub fn friction_head_loss(&self, flow: Flow, gravity: Acceleration) -> Head {
-        let a = self.area().value();
-        let q = flow.value();
-        Head::new(
-            self.friction_factor * self.length.value() * q * q.abs()
-                / (2.0 * gravity.value() * self.diameter.value() * a * a),
+        friction::quasi_steady::head_loss(
+            self.friction_factor,
+            self.length,
+            self.diameter,
+            flow,
+            gravity,
         )
-    }
-}
-
-pub(crate) fn positive(name: &'static str, value: f64) -> Result<(), HydraulicsError> {
-    if value.is_finite() && value > 0.0 {
-        Ok(())
-    } else {
-        Err(HydraulicsError::invalid(name, value, "finite and > 0"))
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use jk_kernel::{STANDARD_GRAVITY, Velocity};
-
-    fn pipe() -> Pipe {
-        Pipe::new(
-            Length::new(1000.0),
-            Length::new(0.3),
-            WaveSpeed::new(1250.0),
-            0.02,
-        )
-        .unwrap()
-    }
 
     #[test]
     fn rejects_non_physical_values() {
@@ -144,19 +132,14 @@ mod tests {
     #[test]
     fn timing_matches_docs_example() {
         // joukowsky_equation.txt 4(b): L = 1000 m, a = 1250 m/s -> 2L/a = 1.6 s.
-        let p = pipe();
+        let p = Pipe::new(
+            Length::new(1000.0),
+            Length::new(0.3),
+            WaveSpeed::new(1250.0),
+            0.02,
+        )
+        .unwrap();
         assert_eq!(p.travel_time(), Time::new(0.8));
         assert_eq!(p.round_trip_time(), Time::new(1.6));
-    }
-
-    #[test]
-    fn friction_loss_is_darcy_weisbach_and_odd_in_flow() {
-        let p = pipe();
-        let q = Velocity::new(1.0) * p.area();
-        let hf = p.friction_head_loss(q, STANDARD_GRAVITY);
-        // f L V^2 / (2 g D) with V = 1 m/s.
-        let expected = 0.02 * 1000.0 / (2.0 * STANDARD_GRAVITY.value() * 0.3);
-        assert!((hf.value() - expected).abs() < 1e-12);
-        assert_eq!(p.friction_head_loss(-q, STANDARD_GRAVITY), -hf);
     }
 }

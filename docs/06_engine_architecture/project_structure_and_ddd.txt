@@ -49,12 +49,21 @@ joukowsky/
     interfaces/
       api/                     what dashboards and mobile apps call
       cli/                     run scenarios, replay events (`jk`)
-  validation/                  analytical cases, TSNet cross-checks,
-                               golden events
+  tests/                       validation tests (crate jk-tests), one
+                               numbered folder per topic, run-tests.ps1,
+                               logs/ (see tests/README.md). Later also
+                               TSNet cross-checks and golden events.
   research/                    Python notebooks (later)
   docs/
 
 Crates are created when work on them starts - never as empty scaffolding.
+The same rule holds for folders inside a crate: e.g. hydraulics/src has
+pipe/, boundary/ and moc/ now; fluid/, cavitation/, steady/, adjoint/ and
+frequency/ appear with their milestones (09_technologies/02_ S1-S9).
+
+Tests: small unit tests stay next to the code (#[cfg(test)], the Rust
+convention). Validation against physics lives in tests/, one numbered
+folder per topic, and every check prints measured vs expected.
 Package names carry the prefix `jk-` (e.g. jk-kernel, jk-hydraulics).
 
 Dependency rules (enforced in review, later by a CI check)

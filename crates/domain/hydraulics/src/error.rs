@@ -60,3 +60,21 @@ impl fmt::Display for HydraulicsError {
 }
 
 impl std::error::Error for HydraulicsError {}
+
+/// Accepts only finite, strictly positive values.
+pub(crate) fn positive(name: &'static str, value: f64) -> Result<(), HydraulicsError> {
+    if value.is_finite() && value > 0.0 {
+        Ok(())
+    } else {
+        Err(HydraulicsError::invalid(name, value, "finite and > 0"))
+    }
+}
+
+/// Accepts only finite values.
+pub(crate) fn finite(name: &'static str, value: f64) -> Result<(), HydraulicsError> {
+    if value.is_finite() {
+        Ok(())
+    } else {
+        Err(HydraulicsError::invalid(name, value, "finite"))
+    }
+}

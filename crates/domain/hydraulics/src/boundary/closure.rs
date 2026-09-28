@@ -1,7 +1,9 @@
+//! Valve closure curves: how a valve's relative opening changes with time.
+
 use jk_kernel::Time;
 
 use crate::HydraulicsError;
-use crate::pipe::positive;
+use crate::error::positive;
 
 /// How a valve's relative opening tau (1 = as at steady state, 0 = shut)
 /// changes with time. Closure starts at t = 0.

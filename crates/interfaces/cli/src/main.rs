@@ -124,7 +124,10 @@ fn run_rpv(a: &Args) -> Result<(), String> {
         gravity: STANDARD_GRAVITY,
     };
     let valve = system.valve_node();
-    let mid = system.node_at(pipe.length() * 0.5);
+    let mid = system
+        .grid()
+        .map_err(|e| e.to_string())?
+        .node_at(pipe.length() * 0.5);
     let trace = system
         .simulate(Time::new(a.duration), &[valve, mid])
         .map_err(|e| e.to_string())?;

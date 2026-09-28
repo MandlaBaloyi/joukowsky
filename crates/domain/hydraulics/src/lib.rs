@@ -5,21 +5,23 @@
 //! `docs/02_physics_of_transients/`, and each module names the file it
 //! implements.
 //!
-//! What exists so far (solver milestone S1 in
-//! `docs/09_technologies/02_numerics_and_solvers.txt`):
+//! Layout (folders appear as their milestone starts; see
+//! `docs/09_technologies/02_numerics_and_solvers.txt` for S1-S9):
 //! - [`joukowsky`]: the closed-form surge relations.
-//! - [`Pipe`]: one pipe's geometry, wave speed and friction.
-//! - [`ValveClosure`]: how a valve's opening changes with time.
-//! - [`ReservoirPipeValve`]: the classic reservoir-pipe-valve system solved
-//!   by the method of characteristics (MOC).
+//! - [`pipe`]: one pipe's geometry, wave speed and friction.
+//! - [`boundary`]: devices at pipe ends (reservoir, valve, ...).
+//! - [`moc`]: the method-of-characteristics solver engine and the solvers
+//!   built on it.
 
-mod closure;
+pub mod boundary;
 mod error;
 pub mod joukowsky;
-mod pipe;
-mod rpv;
+pub mod moc;
+pub mod pipe;
 
-pub use closure::ValveClosure;
+pub use boundary::closure::ValveClosure;
 pub use error::HydraulicsError;
+pub use moc::grid::Grid;
+pub use moc::single_pipe::ReservoirPipeValve;
+pub use moc::trace::Trace;
 pub use pipe::Pipe;
-pub use rpv::{ReservoirPipeValve, Trace};

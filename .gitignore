@@ -4,3 +4,7 @@
 # Personal Claude Code config (voice hook etc.)
 .claude/settings.local.json
 .claude/hooks/
+
+# Test logs: keep only the latest run in git
+tests/logs/*.log
+!tests/logs/latest.log

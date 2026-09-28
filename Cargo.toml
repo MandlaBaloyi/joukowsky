@@ -4,6 +4,7 @@ members = [
     "crates/kernel",
     "crates/domain/hydraulics",
     "crates/interfaces/cli",
+    "tests",
 ]
 
 [workspace.package]
