@@ -45,6 +45,11 @@ Modules (candidate repository layout, to decide)
   service/     ingest, event pipeline, APIs, alerting
   docs/        this documentation
 
+  SUPERSEDED (2026-09-28): the approved layout is DDD bounded contexts +
+  ports and adapters - see project_structure_and_ddd.txt, which also maps
+  each module above to its new home. Technology choices are recorded in
+  09_technologies/ (Rust first: TD-001).
+
 Technology questions to decide (see 08_research/open_questions.txt)
 --------------------------------------------------------------------
   - Core numerics language: Rust vs C++ vs Julia vs JAX (differentiable);

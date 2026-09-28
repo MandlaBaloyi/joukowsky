@@ -37,12 +37,14 @@ TD-008 | 2026-09-28 | Database = PostgreSQL. Development uses the
 TD-009 | 2026-09-28 | GPU work (ML training, large surrogates) runs on
        Google Colab, not the dev laptop. | owner | laptop has
        integrated Intel graphics only. |
-TD-010 | 2026-09-28 | Dev toolchain = Rust stable, x86_64-pc-windows-gnu
-       host, minimal profile; cargo limited to 4 parallel jobs
-       (~/.cargo/config.toml). | Claude | avoids ~5-7 GB of MSVC Build
-       Tools on a modest laptop; production targets are Linux anyway.
-       Switch to MSVC only if a crate needs it (e.g. prebuilt ONNX
-       Runtime binaries). |
+TD-010 | 2026-09-28 | Dev toolchain = Rust 1.98.1, x86_64-pc-windows-msvc
+       host, minimal profile + clippy + rustfmt, pinned in
+       rust-toolchain.toml; cargo limited to 4 parallel jobs
+       (~/.cargo/config.toml). | owner approved MSVC (disk budget
+       50-65 GB for the project) | Rust's tier-1 Windows target; needed
+       later for prebuilt ONNX Runtime. Build Tools 2022 were already
+       installed; only the Windows 11 SDK (10.0.26100) was added. The
+       interim GNU toolchain was removed. |
 TD-011 | 2026-09-28 | Steady-state solver: our own global gradient
        algorithm on faer; epanet-rs and WNTR are test cross-checks
        only. | Claude (delegated by owner) | TD-005; epanet-rs lacks

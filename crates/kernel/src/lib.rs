@@ -1,0 +1,16 @@
+//! Shared kernel of the joukowsky engine.
+//!
+//! Everything here is used by every bounded context, so it is kept small
+//! and depends on nothing but the standard library (dependency rule R1 in
+//! `docs/06_engine_architecture/project_structure_and_ddd.txt`).
+//!
+//! The core of the kernel is [`units`]: SI quantities as distinct types, so
+//! that adding a head [m] to a flow [m^3/s] is a compile error rather than
+//! a silent physics bug.
+
+pub mod units;
+
+pub use units::{
+    Acceleration, Area, Density, Flow, Head, Length, Pressure, STANDARD_GRAVITY, Time, Velocity,
+    WaveSpeed,
+};

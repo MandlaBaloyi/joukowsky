@@ -1,0 +1,19 @@
+[package]
+name = "jk-cli"
+description = "The `jk` command: run joukowsky scenarios from the terminal"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+publish.workspace = true
+license.workspace = true
+
+[[bin]]
+name = "jk"
+path = "src/main.rs"
+
+[dependencies]
+jk-kernel.workspace = true
+jk-hydraulics.workspace = true
+
+[lints]
+workspace = true

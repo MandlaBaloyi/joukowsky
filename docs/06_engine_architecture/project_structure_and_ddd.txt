@@ -1,0 +1,96 @@
+PROJECT STRUCTURE: BOUNDED CONTEXTS, LAYERS AND DEPENDENCY RULES
+STATUS: DRAFT v0.1 - for review (owner approved the tree, 2026-09-28)
+
+Why this structure
+------------------
+The engine is the product. Dashboards and the mobile app are windows onto
+it and can be copied; the engine cannot, because it is years of physics,
+statistics and validation. The structure therefore protects the engine:
+the domain (the knowledge) sits in the centre, knows nothing about
+databases, networks or screens, and can be tested and replayed on its own.
+
+Two ideas combined:
+  - Domain-Driven Design (DDD) for the SHAPE: the problem splits into
+    bounded contexts, each with its own language and model.
+  - Ports and adapters (hexagonal architecture) for the EDGES: the domain
+    defines what it needs (ports); adapters plug in Postgres, MQTT, files,
+    HTTP.
+One adjustment to classical DDD: the tactical patterns (aggregates,
+repositories, domain events) live where business state lives - network
+versions, events, alerts, labels. The numerical kernels (MOC, detectors,
+samplers) are pure functions over typed data; wrapping a solver loop in
+aggregates would add ceremony and cost speed, and buys nothing.
+
+Target tree
+-----------
+joukowsky/
+  Cargo.toml                   workspace
+  rust-toolchain.toml          pinned Rust version and components
+  crates/
+    kernel/                    SHARED KERNEL: typed physical quantities,
+                               time, IDs, errors. Depends on nothing.
+    domain/                    PURE: no I/O, no async, no database.
+      network/                 pipes, junctions, devices, materials;
+                               versioned network models
+      hydraulics/              MOC solver, boundary conditions, steady
+                               state, friction, cavitation, viscoelasticity
+      telemetry/               sources, streams, data tiers, clocks, gaps
+      detection/               change detection, onset picking
+      localisation/            graph travel times, Bayesian source location
+      classification/          event classes, physical features
+      twin/                    calibration, inference, data assimilation
+      health/                  fatigue, surge and intrusion exposure, risk
+      response/                safe action plans, checked by simulation
+    application/               use cases (the event pipeline); defines
+                               PORTS (traits) for storage, sources, alerts
+    adapters/                  implementations of ports: postgres, files
+                               (EPANET .inp, CSV), later mqtt, modbus,
+                               opcua, object storage
+    interfaces/
+      api/                     what dashboards and mobile apps call
+      cli/                     run scenarios, replay events (`jk`)
+  validation/                  analytical cases, TSNet cross-checks,
+                               golden events
+  research/                    Python notebooks (later)
+  docs/
+
+Crates are created when work on them starts - never as empty scaffolding.
+Package names carry the prefix `jk-` (e.g. jk-kernel, jk-hydraulics).
+
+Dependency rules (enforced in review, later by a CI check)
+----------------------------------------------------------
+  R1  kernel depends on nothing (standard library only).
+  R2  domain crates depend on kernel and on other domain crates only as
+      the context map below allows. No I/O, no async runtime, no
+      database, no network, no clock reads (time is always an input).
+  R3  application depends on domain + kernel and declares ports.
+  R4  adapters depend on application (to implement its ports) and on
+      external crates. The domain never sees them.
+  R5  interfaces are the composition root: they wire adapters into
+      application use cases. Nothing depends on interfaces.
+  R6  No cycles. A needed cycle means a context boundary is wrong.
+
+Context map (who may use whom, inside domain/)
+----------------------------------------------
+  network        <- hydraulics, localisation, twin, health, response
+  hydraulics     <- twin, health, response, localisation (templates)
+  telemetry      <- detection
+  detection      <- localisation, classification
+  localisation   <- classification
+  (arrow = "is used by"; everything may use kernel)
+
+Ubiquitous language (terms mean the same thing in code and docs)
+----------------------------------------------------------------
+  head H [m], flow Q [m^3/s], wave speed a [m/s], reach (MOC segment),
+  event (a detected transient), arrival (one sensor's onset of an event),
+  source (where an event originated), data tier (0/1/2), credible region,
+  probe (a known event used for calibration). New terms are added to
+  docs before they appear in code.
+
+Mapping from the earlier sketch (engine_overview.txt)
+-----------------------------------------------------
+  physics/ -> domain/hydraulics      signal/  -> domain/detection
+  locate/  -> domain/localisation    infer/   -> domain/twin
+  learn/   -> domain/classification, domain/health, domain/twin
+  connect/ -> adapters/              sim/     -> interfaces/cli + validation
+  service/ -> application/ + interfaces/api

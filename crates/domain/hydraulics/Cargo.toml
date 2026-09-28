@@ -1,0 +1,17 @@
+[package]
+name = "jk-hydraulics"
+description = "Hydraulics bounded context: transient pipe-flow physics (MOC) for joukowsky"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+publish.workspace = true
+license.workspace = true
+
+[lib]
+name = "jk_hydraulics"
+
+[dependencies]
+jk-kernel.workspace = true
+
+[lints]
+workspace = true
