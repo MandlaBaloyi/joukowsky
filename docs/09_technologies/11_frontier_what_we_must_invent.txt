@@ -94,6 +94,12 @@ F10 Sensor placement under uncertainty for partners
           uncertain wave speeds and our own data tiers is not.
     OURS  Placement advisor optimising expected credible-region size
           over the wave-speed posterior.
+    STATUS 2026-09-28: first advisor built (placement/, greedy + swaps,
+          objective = expected 90% region with a fixed 10% wave-speed
+          doubt). Found: pinpointing needs wave speeds known to ~2%
+          (estate: 78% pinpointed at 1%, 0% at 5%). Open: optimise over
+          the wave-speed POSTERIOR per pipe, and detectability (V-S2).
+          Details: burst_localisation.txt, placement note.
 
 This file grows as we learn. When an item is solved, it moves to the
 relevant design doc with its proof, and stays listed here as SOLVED.

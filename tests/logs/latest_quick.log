@@ -1,16 +1,15 @@
 joukowsky test run
-  when     2026-09-28 19:40:27
+  when     2026-09-28 20:32:39
   suite    quick
-  commit   a4dc936 (with uncommitted changes)
+  commit   8236f4d (with uncommitted changes)
   rust     rustc 1.98.1 (48a229cea 2026-09-01)
   command  cargo test --workspace --no-fail-fast -- --nocapture --test-threads=1
 ==============================================================================
-   Compiling jk-detection v0.1.0 (C:\Users\HP\Desktop\joukowsky\crates\domain\detection)
-   Compiling jk-classification v0.1.0 (C:\Users\HP\Desktop\joukowsky\crates\domain\classification)
+   Compiling jk-localisation v0.1.0 (C:\Users\HP\Desktop\joukowsky\crates\domain\localisation)
    Compiling jk-application v0.1.0 (C:\Users\HP\Desktop\joukowsky\crates\application)
    Compiling jk-tests v0.1.0 (C:\Users\HP\Desktop\joukowsky\tests)
-    Finished `test` profile [unoptimized + debuginfo] target(s) in 10.42s
-     Running unittests src\lib.rs (target\debug\deps\jk_application-66135842a37c86bf.exe)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 7.29s
+     Running unittests src\lib.rs (target\debug\deps\jk_application-31ec11ad23313301.exe)
 
 running 3 tests
 test pipeline::fusion::tests::arrivals_too_far_apart_for_the_pipes_are_not_one_event ... ok
@@ -37,13 +36,15 @@ test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; fini
 
      Running unittests src\lib.rs (target\debug\deps\jk_detection-ab885d9bb867d09a.exe)
 
-running 12 tests
+running 14 tests
 test baseline::brown::tests::follows_a_steady_trend_without_lag ... ok
 test baseline::brown::tests::shifting_keeps_the_trend ... ok
 test change::cusum::tests::a_clean_step_is_caught_and_its_start_found ... ok
 test change::cusum::tests::rejects_bad_settings ... ok
 test change::cusum::tests::shifts_below_the_drift_never_alarm ... ok
 test detector::tests::finds_one_clean_drop_and_times_it ... ok
+test detector::tests::listens_through_ringing_and_catches_a_second_event ... ok
+test detector::tests::live_and_whole_record_runs_agree_for_any_chunk_sizes ... ok
 test detector::tests::refuses_gaps_and_short_series ... ok
 test noise::robust::tests::a_straight_ramp_has_no_noise ... ok
 test noise::robust::tests::median_of_odd_and_even_counts ... ok
@@ -51,7 +52,7 @@ test onset::step_area::tests::a_ramp_front_is_placed_at_its_centre ... ok
 test onset::step_area::tests::declines_when_the_windows_do_not_fit ... ok
 test onset::step_area::tests::exact_for_a_sharp_step_at_any_phase ... ok
 
-test result: ok. 12 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+test result: ok. 14 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.03s
 
      Running unittests src\lib.rs (target\debug\deps\jk_hydraulics-c42e47dfc771fa13.exe)
 
@@ -98,7 +99,7 @@ test pipe::friction::quasi_steady::tests::matches_darcy_weisbach_in_velocity_for
 test pipe::tests::rejects_non_physical_values ... ok
 test pipe::tests::timing_matches_docs_example ... ok
 
-test result: ok. 41 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s
+test result: ok. 41 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
 
      Running unittests src\lib.rs (target\debug\deps\jk_kernel-eccabcc9e10cd5d2.exe)
 
@@ -114,7 +115,7 @@ test units::tests::same_type_arithmetic ... ok
 test units::tests::velocity_flow_area ... ok
 test units::tests::wave_travel_time_and_distance_round_trip ... ok
 
-test result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+test result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
 
      Running unittests src\lib.rs (target\debug\deps\jk_localisation-b57d917c3efe0d09.exe)
 
@@ -127,14 +128,24 @@ test posterior::score::tests::with_independent_errors_the_correlated_score_match
 
 test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
 
-     Running unittests common\lib.rs (target\debug\deps\jk_tests-3e0f6d6f27d15d3f.exe)
+     Running unittests src\lib.rs (target\debug\deps\jk_telemetry-c8a96417b1d674bc.exe)
+
+running 4 tests
+test assembly::tests::a_missing_chunk_is_a_gap_and_a_new_stretch ... ok
+test assembly::tests::back_to_back_chunks_are_one_stretch_despite_jitter ... ok
+test assembly::tests::invalid_samples_are_a_gap_even_across_chunks ... ok
+test assembly::tests::overlaps_and_interval_changes_are_refused_and_change_nothing ... ok
+
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running unittests common\lib.rs (target\debug\deps\jk_tests-9b6010198dc710d9.exe)
 
 running 1 test
 test sensor::tests::averaging_a_step_gives_the_covered_fraction ... ok
 
 test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
 
-     Running classification\main.rs (target\debug\deps\classification-1fe8dcb6fe65a4ba.exe)
+     Running classification\main.rs (target\debug\deps\classification-34b7a14708c88642.exe)
 
 running 8 tests
 test simulation::scenarios::a_pump_trip_is_recognised_from_its_shape_alone ... Pump losing power, sensor at its discharge, power NOT monitored:
@@ -228,9 +239,9 @@ test simulation::scenarios::power_data_settles_the_slow_burst ... The same slow 
   burst                                        yes
 ok
 
-test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.97s
+test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.00s
 
-     Running detection\main.rs (target\debug\deps\detection-22e23113576ab696.exe)
+     Running detection\main.rs (target\debug\deps\detection-b444fcbf23cd3a81.exe)
 
 running 9 tests
 test analytical::delay::delay_follows_the_cusum_formula ... Sharp drops at t = 3 s, noise-free signal with a 2 cm noise floor set:
@@ -280,9 +291,9 @@ Loggers: 128 S/s, integrating, random clock phase, 2 cm noise:
 ok
 test simulation::burst_location::vs1_location_error_versus_sampling_rate_and_noise ... ignored, full suite: 150 recorded sensor pairs across rates and noise levels
 
-test result: ok. 7 passed; 0 failed; 2 ignored; 0 measured; 0 filtered out; finished in 1.02s
+test result: ok. 7 passed; 0 failed; 2 ignored; 0 measured; 0 filtered out; finished in 1.14s
 
-     Running hydraulics\main.rs (target\debug\deps\hydraulics-6adf7756224c89af.exe)
+     Running hydraulics\main.rs (target\debug\deps\hydraulics-1ec183be55c13ac0.exe)
 
 running 35 tests
 test analytical::boundaries::burst::a_10mm_hole_at_60m_head ... DN150 AC main at 60 m head, 0.5 m/s; a 10 mm hole opens (Cd 0.6):
@@ -544,7 +555,7 @@ ok
 
 test result: ok. 34 passed; 0 failed; 1 ignored; 0 measured; 0 filtered out; finished in 0.07s
 
-     Running kernel\main.rs (target\debug\deps\kernel-e7a09895fc76f918.exe)
+     Running kernel\main.rs (target\debug\deps\kernel-419ce9c0b855e6a8.exe)
 
 running 5 tests
 test conversions::dn150_area ... Cross-section of a DN150 pipe:
@@ -569,9 +580,9 @@ ok
 
 test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
 
-     Running localisation\main.rs (target\debug\deps\localisation-479c04082f54937f.exe)
+     Running localisation\main.rs (target\debug\deps\localisation-f844bf3dc056be80.exe)
 
-running 9 tests
+running 13 tests
 test analytical::branched::two_sensors_see_a_whole_branch_three_sensors_see_the_point ... Sensors S1 and S2 only (burst 200 m along branch T-S3):
   probability on branch T-S3: 100.0%
   90% region: 540 m of pipe
@@ -596,6 +607,51 @@ Picks with 0.2 ms noise:
     within 3 reported sigma                    yes
   node 4: -40.843 ms (true -41.0 ms), uncertainty 0.163 ms
     within 3 reported sigma                    yes
+ok
+test analytical::placement::campus_value_of_each_extra_logger ... ignored, full suite: the advisor on a 2.3 km campus takes about a minute
+test analytical::placement::knowing_the_wave_speeds_is_worth_as_much_as_a_logger ...   wave speeds known to   0%: pinpointed  78%, average 90% region   89 m
+  wave speeds known to   1%: pinpointed  78%, average 90% region   89 m
+  wave speeds known to   2%: pinpointed  69%, average 90% region   99 m
+  wave speeds known to   5%: pinpointed   0%, average 90% region  119 m
+  wave speeds known to  10%: pinpointed   0%, average 90% region  154 m
+  wave speeds known to  20%: pinpointed   0%, average 90% region  226 m
+  the region only grows as the doubt grows     yes
+  exact speeds: all but the supply main pinpointed (78%) yes
+ok
+test analytical::placement::the_advisor_minimises_the_search_and_says_what_stays_blind ... What each extra logger buys (wave speeds known to +/-10%):
+  2 loggers: S1, S3
+  pinpointed (90% region <= 20 m): 0% of the pipe length; average 90% region 336 m
+    R-S1 supply main     400 m   pinpointed    0%   typical region   400 m
+    S1-T spine           300 m   pinpointed    0%   typical region   410 m
+    T-S2 north           500 m   pinpointed    0%   typical region   525 m
+    T-S3 south           600 m   pinpointed    0%   typical region    70 m
+  3 loggers: S1, S3, S2
+  pinpointed (90% region <= 20 m): 0% of the pipe length; average 90% region 154 m
+    R-S1 supply main     400 m   pinpointed    0%   typical region   390 m
+    S1-T spine           300 m   pinpointed    0%   typical region    75 m
+    T-S2 north           500 m   pinpointed    0%   typical region    65 m
+    T-S3 south           600 m   pinpointed    0%   typical region    70 m
+  for comparison, the two far ends: S2, S3
+  pinpointed (90% region <= 20 m): 0% of the pipe length; average 90% region 413 m
+    R-S1 supply main     400 m   pinpointed    0%   typical region   715 m
+    S1-T spine           300 m   pinpointed    0%   typical region   715 m
+    T-S2 north           500 m   pinpointed    0%   typical region   110 m
+    T-S3 south           600 m   pinpointed    0%   typical region   100 m
+  best pair S1 + S3: two small blind zones beat one big one yes
+    ... a shorter expected search than the two ends yes
+  3 loggers: S1, S2, S3                        yes
+  each extra logger helps                      yes
+  R-S1 stays blind: no logger can sit beyond a reservoir yes
+ok
+test analytical::placement::two_sensors_pinpoint_only_what_lies_between_them ... Loggers at the two ends (wave speeds exactly known): S2, S3
+  pinpointed (90% region <= 20 m): 61% of the pipe length; average 90% region 253 m
+    R-S1 supply main     400 m   pinpointed    0%   typical region   635 m
+    S1-T spine           300 m   pinpointed    0%   typical region   635 m
+    T-S2 north           500 m   pinpointed  100%   typical region    10 m
+    T-S3 south           600 m   pinpointed  100%   typical region    10 m
+  T-S2 and T-S3 (between them): pinpointed     yes
+  S1-T and R-S1 (beyond them): blind           yes
+    a burst there could be anywhere upstream of T: region 630 m yes
 ok
 test analytical::straight_main::a_burst_on_a_straight_main_is_found_where_the_formula_says ... Arrivals 0.7 s and 1.3 s after the burst, +/- 0.15 ms each:
   most likely: pipe 1 at 700.000 m
@@ -654,11 +710,102 @@ Localisation:
   the arrivals fit one source (misfit < 3)     yes
 ok
 
-test result: ok. 8 passed; 0 failed; 1 ignored; 0 measured; 0 filtered out; finished in 1.95s
+test result: ok. 11 passed; 0 failed; 2 ignored; 0 measured; 0 filtered out; finished in 6.37s
 
-     Running pipeline\main.rs (target\debug\deps\pipeline-671771d9c6fffa76.exe)
+     Running pipeline\main.rs (target\debug\deps\pipeline-aee9828f246fe90a.exe)
 
-running 4 tests
+running 7 tests
+test simulation::live::a_power_cut_at_a_sensor_is_reported_not_taken_for_silence ... A burst at t = 3 s while load-shedding has cut S2's gateway from
+t = 2.5 s to t = 6 s: S2's samples for that time never arrive, and when
+it comes back the network is still ringing:
+1 alert(s) went out:
+[Alarm] #1 BURST (98% confident) at t = 2.999 s
+  where: T-S3 south branch at 199.9 m from its start; 90% within 2 m of pipe
+    T-S3 south branch    100.0%
+  seen by: S3 south block, S1 gatehouse
+  because: pressure DROPPED by 9.01 m: a burst or a pump trip, not a closing valve (seen upstream)
+  because: SHARP front (12 ms, 10-90%): a sudden change - a pipe splitting, a valve slamming - not a pump running down
+  because: pump power is not monitored: no outside evidence
+  because: S2 north block was not watching at full sensitivity when this wave passed (a gap in its data, calibrating, or ringing after an earlier event): its silence says nothing
+  -> sent when the data had reached t = 7.00 s
+  exactly one alert - no echo alerts from S2 coming back yes
+  an ALARM, seen by S1 and S3                  yes
+  says S2's silence means nothing              yes
+  located on the south branch within 2 m       yes
+ok
+test simulation::live::a_sensor_that_comes_back_late_revises_the_alert ... A burst at t = 3 s. S2's connection is down; its data arrives only
+after everything else. The monitor waits 10 s (data time) for it, then
+decides without it - and revises when S2's data turns up:
+2 alert(s) went out:
+[Alarm] #1 BURST (98% confident) at t = 2.999 s
+  where: T-S3 south branch at 199.9 m from its start; 90% within 2 m of pipe
+    T-S3 south branch    100.0%
+  seen by: S3 south block, S1 gatehouse
+  because: pressure DROPPED by 9.02 m: a burst or a pump trip, not a closing valve (seen upstream)
+  because: SHARP front (12 ms, 10-90%): a sudden change - a pipe splitting, a valve slamming - not a pump running down
+  because: pump power is not monitored: no outside evidence
+  because: S2 north block: no data at all - it could not confirm or help locate this event
+  -> sent when the data had reached t = 15.00 s
+[Alarm] #1 (revision 1) BURST (98% confident) at t = 2.999 s
+  where: T-S3 south branch at 200.0 m from its start; 90% within 2 m of pipe
+    T-S3 south branch    100.0%
+  seen by: S3 south block, S1 gatehouse, S2 north block
+  because: pressure DROPPED by 9.02 m: a burst or a pump trip, not a closing valve (seen upstream)
+  because: SHARP front (12 ms, 10-90%): a sudden change - a pipe splitting, a valve slamming - not a pump running down
+  because: pump power is not monitored: no outside evidence
+  -> sent when the data had reached t = 20.00 s
+  two alerts: the first issue and one revision yes
+  first: alert #1, revision 0                  yes
+    seen by S1 and S3 only                     yes
+    says S2 sent nothing                       yes
+    still an ALARM, located                    yes
+  then: alert #1 again, revision 1             yes
+    now seen by all three sensors              yes
+    on the south branch within 2 m of the truth yes
+ok
+test simulation::live::live_feed_gives_the_same_alerts_as_whole_records_within_seconds ... Two bursts (t = 3 s, t = 30 s) on the flowing estate.
+
+Whole records, for comparison:
+2 alert(s):
+[Alarm] #1 BURST (98% confident) at t = 2.999 s
+  where: T-S3 south branch at 199.3 m from its start; 90% within 2 m of pipe
+    T-S3 south branch    100.0%
+  seen by: S3 south block, S1 gatehouse, S2 north block
+  because: pressure DROPPED by 7.78 m: a burst or a pump trip, not a closing valve (seen upstream)
+  because: SHARP front (7 ms, 10-90%): a sudden change - a pipe splitting, a valve slamming - not a pump running down
+  because: pump power is not monitored: no outside evidence
+[Alarm] #2 BURST (98% confident) at t = 29.999 s
+  where: T-S2 north branch at 150.7 m from its start; 90% within 6 m of pipe
+    T-S2 north branch    100.0%
+  seen by: S2 north block, S1 gatehouse, S3 south block
+  because: pressure DROPPED by 7.96 m: a burst or a pump trip, not a closing valve (seen upstream)
+  because: SHARP front (8 ms, 10-90%): a sudden change - a pipe splitting, a valve slamming - not a pump running down
+  because: pump power is not monitored: no outside evidence
+
+Live: each sensor sends a 1 s chunk in turn:
+2 alert(s) went out:
+[Alarm] #1 BURST (98% confident) at t = 2.999 s
+  where: T-S3 south branch at 199.3 m from its start; 90% within 2 m of pipe
+    T-S3 south branch    100.0%
+  seen by: S3 south block, S1 gatehouse, S2 north block
+  because: pressure DROPPED by 7.78 m: a burst or a pump trip, not a closing valve (seen upstream)
+  because: SHARP front (7 ms, 10-90%): a sudden change - a pipe splitting, a valve slamming - not a pump running down
+  because: pump power is not monitored: no outside evidence
+  -> sent when the data had reached t = 7.00 s
+[Alarm] #2 BURST (98% confident) at t = 29.999 s
+  where: T-S2 north branch at 150.7 m from its start; 90% within 6 m of pipe
+    T-S2 north branch    100.0%
+  seen by: S2 north block, S1 gatehouse, S3 south block
+  because: pressure DROPPED by 7.96 m: a burst or a pump trip, not a closing valve (seen upstream)
+  because: SHARP front (8 ms, 10-90%): a sudden change - a pipe splitting, a valve slamming - not a pump running down
+  because: pump power is not monitored: no outside evidence
+  -> sent when the data had reached t = 34.00 s
+  the same alerts as from whole records        yes
+  alert 1 went out 4.00 s (data time) after its burst
+    ... within 5.5 s                           yes
+  alert 2 went out 4.00 s (data time) after its burst
+    ... within 5.5 s                           yes
+ok
 test simulation::scenarios::a_faulty_sensor_is_sent_for_review_not_raised_as_an_alarm ... No event in the pipes; S2's reading jumps 3 m at t = 6 s (sensor fault):
 1 alert(s):
 [Review] #1 VALVE CLOSURE (98% confident) at t = 5.999 s
@@ -715,7 +862,7 @@ another on the north branch at t = 30 s:
   the second on the north branch, ~150 m       yes
 ok
 
-test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 2.17s
+test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 8.64s
 
    Doc-tests jk_application
 
@@ -753,6 +900,12 @@ running 0 tests
 
 test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
 
+   Doc-tests jk_telemetry
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
    Doc-tests jk_tests
 
 running 0 tests
@@ -760,9 +913,9 @@ running 0 tests
 test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
 
 ==============================================================================
-  passed   142
+  passed   154
   failed   0
-  skipped  4 slow test(s) not in this suite (run -Suite full)
+  skipped  5 slow test(s) not in this suite (run -Suite full)
   filtered 0 test(s) outside -Only/-Filter
-  time     19.3 s (including compile)
+  time     28.3 s (including compile)
   result   ALL PASSED

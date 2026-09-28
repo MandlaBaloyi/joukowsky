@@ -80,59 +80,154 @@ pub struct Localisation {
 /// # Errors
 /// Fewer than two arrivals, an unknown or repeated node, non-positive
 /// uncertainties or options, or a sensor no wave can reach.
-///
-/// # Panics
-/// Only if an internal invariant is broken (an empty candidate grid after
-/// validation passed) - that would be a bug.
-#[allow(clippy::too_many_lines)] // one algorithm, kept together
 pub fn localise(
     network: &Network,
     arrivals: &[Arrival],
     options: &LocaliseOptions,
 ) -> Result<Localisation, LocalisationError> {
     validate(network, arrivals, options)?;
-    let graph = TravelGraph::new(network);
-    let grid = Grid::new(network, options.spacing.value());
-    let pipes = network.pipes();
-    let ends: Vec<(usize, usize)> = pipes
-        .iter()
-        .map(|p| (p.from.index(), p.to.index()))
-        .collect();
-    let nominal: Vec<f64> = pipes.iter().map(|p| p.pipe.travel_time().value()).collect();
-    let observed: Vec<f64> = arrivals.iter().map(|a| a.time.value()).collect();
-    let sigma: Vec<f64> = arrivals.iter().map(|a| a.uncertainty.value()).collect();
-    let sensors: Vec<usize> = arrivals.iter().map(|a| a.node.index()).collect();
+    let sensors: Vec<NodeId> = arrivals.iter().map(|a| a.node).collect();
+    Localiser::new(network, &sensors, options)?.locate(arrivals)
+}
 
-    // Routes from every sensor with the book wave speeds.
-    let routes: Vec<(Vec<f64>, Vec<Vec<usize>>)> = sensors
-        .iter()
-        .map(|&s| graph.routes_from(s, &nominal))
-        .collect();
-    for (&s, (times, _)) in sensors.iter().zip(&routes) {
-        if times
+/// The observed times, their uncertainties, and the probability of each
+/// candidate cell.
+struct Posterior {
+    observed: Vec<f64>,
+    sigma: Vec<f64>,
+    mass: Vec<f64>,
+}
+
+/// A localiser for one fixed set of sensors.
+///
+/// Everything that does not depend on the arrival times - the routes from
+/// each sensor, the candidate cells, each cell's predicted travel times and
+/// the wave-speed part of its error covariance - is computed once. Locating
+/// many events with the same sensors (a live site; the placement advisor's
+/// thousands of trial bursts) then costs one small factorisation per cell.
+/// The arithmetic is exactly that of [`localise`], so the answers are
+/// identical.
+#[derive(Debug, Clone)]
+pub struct Localiser<'a> {
+    network: &'a Network,
+    options: LocaliseOptions,
+    sensors: Vec<NodeId>,
+    graph: TravelGraph,
+    grid: Grid,
+    ends: Vec<(usize, usize)>,
+    nominal: Vec<f64>,
+    lengths: Vec<f64>,
+    ids: Vec<PipeId>,
+    routes: Vec<(Vec<f64>, Vec<Vec<usize>>)>,
+    /// Per cell, the predicted travel time to each sensor (cells x n)...
+    travel: Vec<f64>,
+    /// ... and the wave-speed part of the covariance (cells x n x n).
+    speed_cov: Vec<f64>,
+}
+
+impl<'a> Localiser<'a> {
+    /// Prepares to locate fronts seen by `sensors` (in this order).
+    ///
+    /// # Errors
+    /// Fewer than two sensors, an unknown or repeated node, options out of
+    /// range, or a sensor no wave can reach.
+    ///
+    /// # Panics
+    /// Only if an internal invariant is broken (a pipe index out of range)
+    /// - that would be a bug.
+    pub fn new(
+        network: &'a Network,
+        sensors: &[NodeId],
+        options: &LocaliseOptions,
+    ) -> Result<Self, LocalisationError> {
+        validate_setup(network, sensors, options)?;
+        let graph = TravelGraph::new(network);
+        let grid = Grid::new(network, options.spacing.value());
+        let pipes = network.pipes();
+        let ends = pipes
             .iter()
-            .enumerate()
-            .all(|(n, t)| n == s || !t.is_finite())
-        {
-            return Err(LocalisationError::Unreachable { node: s });
+            .map(|p| (p.from.index(), p.to.index()))
+            .collect();
+        let nominal: Vec<f64> = pipes.iter().map(|p| p.pipe.travel_time().value()).collect();
+        let lengths = pipes.iter().map(|p| p.pipe.length().value()).collect();
+        let ids = (0..pipes.len())
+            .map(|i| network.pipe_id(i).expect("index in range"))
+            .collect();
+        // Routes from every sensor with the book wave speeds.
+        let routes: Vec<(Vec<f64>, Vec<Vec<usize>>)> = sensors
+            .iter()
+            .map(|s| graph.routes_from(s.index(), &nominal))
+            .collect();
+        for (s, (times, _)) in sensors.iter().zip(&routes) {
+            if times
+                .iter()
+                .enumerate()
+                .all(|(n, t)| n == s.index() || !t.is_finite())
+            {
+                return Err(LocalisationError::Unreachable { node: s.index() });
+            }
         }
-    }
-    let spread2 = options.wave_speed_uncertainty * options.wave_speed_uncertainty;
-
-    // Score of a candidate point: predicted arrival times, and their error
-    // covariance = timing noise + each shared pipe's wave-speed error.
-    let evaluate = |pipe: usize, fraction: f64| -> Score {
+        let mut localiser = Self {
+            network,
+            options: *options,
+            sensors: sensors.to_vec(),
+            graph,
+            grid,
+            ends,
+            nominal,
+            lengths,
+            ids,
+            routes,
+            travel: Vec::new(),
+            speed_cov: Vec::new(),
+        };
         let n = sensors.len();
+        let mut travel = Vec::with_capacity(localiser.grid.cells.len() * n);
+        let mut speed_cov = Vec::with_capacity(localiser.grid.cells.len() * n * n);
+        for c in &localiser.grid.cells {
+            let (t, cov) = localiser.model(c.pipe, c.fraction);
+            travel.extend(t);
+            speed_cov.extend(cov);
+        }
+        localiser.travel = travel;
+        localiser.speed_cov = speed_cov;
+        Ok(localiser)
+    }
+
+    /// The network.
+    #[must_use]
+    pub fn network(&self) -> &Network {
+        self.network
+    }
+
+    /// The sensors, in the order arrivals must be given.
+    #[must_use]
+    pub fn sensors(&self) -> &[NodeId] {
+        &self.sensors
+    }
+
+    /// Predicted travel times from a point to each sensor, and the
+    /// wave-speed part of their error covariance: each shared pipe's
+    /// travel-time error, spread^2 x (time on it for j) x (time for k).
+    fn model(&self, pipe: usize, fraction: f64) -> (Vec<f64>, Vec<f64>) {
+        let n = self.sensors.len();
+        let spread2 = self.options.wave_speed_uncertainty * self.options.wave_speed_uncertainty;
         let mut travel = vec![0.0; n];
         let mut legs: Vec<Vec<(usize, f64)>> = Vec::with_capacity(n);
-        for (j, &s) in sensors.iter().enumerate() {
-            let (times, pipe_routes) = &routes[j];
-            let (t, entry) = graph.point_route(s, times, ends[pipe], fraction, nominal[pipe]);
+        for (j, s) in self.sensors.iter().enumerate() {
+            let (times, pipe_routes) = &self.routes[j];
+            let (t, entry) = self.graph.point_route(
+                s.index(),
+                times,
+                self.ends[pipe],
+                fraction,
+                self.nominal[pipe],
+            );
             travel[j] = t;
             let mut leg: Vec<(usize, f64)> = Vec::new();
             if let Some((end, part)) = entry {
-                leg.extend(pipe_routes[end].iter().map(|&p| (p, nominal[p])));
-                leg.push((pipe, part * nominal[pipe]));
+                leg.extend(pipe_routes[end].iter().map(|&p| (p, self.nominal[p])));
+                leg.push((pipe, part * self.nominal[pipe]));
             }
             legs.push(leg);
         }
@@ -148,70 +243,165 @@ pub fn localise(
                             .map(move |&(_, wk)| wj * wk)
                     })
                     .sum();
-                let v = spread2 * shared + if j == k { sigma[j] * sigma[j] } else { 0.0 };
+                let v = spread2 * shared;
                 cov[j * n + k] = v;
                 cov[k * n + j] = v;
             }
         }
-        score_correlated(&observed, &travel, &mut cov)
-    };
-
-    let log_posterior: Vec<f64> = grid
-        .cells
-        .iter()
-        .map(|c| evaluate(c.pipe, c.fraction).log_likelihood + c.length.ln())
-        .collect();
-    let top = log_posterior
-        .iter()
-        .copied()
-        .fold(f64::NEG_INFINITY, f64::max);
-    if !top.is_finite() {
-        return Err(LocalisationError::InvalidInput(
-            "no candidate point is reachable from every sensor".into(),
-        ));
-    }
-    let mut mass: Vec<f64> = log_posterior.iter().map(|lp| (lp - top).exp()).collect();
-    let total: f64 = mass.iter().sum();
-    for m in &mut mass {
-        *m /= total;
+        (travel, cov)
     }
 
-    // Summaries.
-    let ids: Vec<PipeId> = (0..pipes.len())
-        .map(|i| network.pipe_id(i).expect("index in range"))
-        .collect();
-    let lengths: Vec<f64> = pipes.iter().map(|p| p.pipe.length().value()).collect();
-    let ranked = credible::per_pipe(&grid.cells, &mass, &ids);
-    let region = credible::region(&grid.cells, &mass, &ids, &lengths, options.credible_level);
-    let credible_length = region.iter().map(|s| (s.to - s.from).value()).sum();
+    /// Scores a candidate: timing noise added to the wave-speed covariance.
+    fn score(observed: &[f64], sigma: &[f64], travel: &[f64], speed_cov: &[f64]) -> Score {
+        let n = observed.len();
+        let mut cov = speed_cov.to_vec();
+        for j in 0..n {
+            cov[j * n + j] += sigma[j] * sigma[j];
+        }
+        score_correlated(observed, travel, &mut cov)
+    }
 
-    // Most likely point: the best cell, refined along its pipe (golden-
-    // section search on the same score).
-    let best = (0..mass.len())
-        .max_by(|&a, &b| mass[a].total_cmp(&mass[b]))
-        .expect("at least one cell");
-    let cell = grid.cells[best];
-    let half_cell = 0.5 * cell.length / lengths[cell.pipe];
-    let fraction = golden_minimum(
-        |f| -evaluate(cell.pipe, f).log_likelihood,
-        (cell.fraction - 2.0 * half_cell).max(0.0),
-        (cell.fraction + 2.0 * half_cell).min(1.0),
-    );
-    let at_best = evaluate(cell.pipe, fraction);
-    #[allow(clippy::cast_precision_loss)]
-    let dof = (arrivals.len() - 1).max(1) as f64;
+    /// The normalised posterior over the candidate cells for `arrivals`.
+    fn posterior(&self, arrivals: &[Arrival]) -> Result<Posterior, LocalisationError> {
+        if arrivals.len() != self.sensors.len()
+            || arrivals
+                .iter()
+                .zip(&self.sensors)
+                .any(|(a, s)| a.node != *s)
+        {
+            return Err(LocalisationError::InvalidInput(
+                "arrivals must match the localiser's sensors, in order".into(),
+            ));
+        }
+        for a in arrivals {
+            if !a.time.is_finite() {
+                return Err(LocalisationError::invalid(
+                    "arrival time",
+                    a.time.value(),
+                    "finite",
+                ));
+            }
+            positive("arrival uncertainty", a.uncertainty.value())?;
+        }
+        let n = self.sensors.len();
+        let observed: Vec<f64> = arrivals.iter().map(|a| a.time.value()).collect();
+        let sigma: Vec<f64> = arrivals.iter().map(|a| a.uncertainty.value()).collect();
+        let cells = &self.grid.cells;
+        let log_posterior: Vec<f64> = cells
+            .iter()
+            .enumerate()
+            .map(|(i, c)| {
+                let s = Self::score(
+                    &observed,
+                    &sigma,
+                    &self.travel[i * n..(i + 1) * n],
+                    &self.speed_cov[i * n * n..(i + 1) * n * n],
+                );
+                s.log_likelihood + c.length.ln()
+            })
+            .collect();
+        let top = log_posterior
+            .iter()
+            .copied()
+            .fold(f64::NEG_INFINITY, f64::max);
+        if !top.is_finite() {
+            return Err(LocalisationError::InvalidInput(
+                "no candidate point is reachable from every sensor".into(),
+            ));
+        }
+        let mut mass: Vec<f64> = log_posterior.iter().map(|lp| (lp - top).exp()).collect();
+        let total: f64 = mass.iter().sum();
+        for m in &mut mass {
+            *m /= total;
+        }
+        Ok(Posterior {
+            observed,
+            sigma,
+            mass,
+        })
+    }
 
-    Ok(Localisation {
-        most_likely: Point {
-            pipe: ids[cell.pipe],
-            distance: Length::new(fraction * lengths[cell.pipe]),
-        },
-        emission: Time::new(at_best.emission),
-        pipes: ranked,
-        credible_region: region,
-        credible_length: Length::new(credible_length),
-        misfit: (at_best.chi_squared / dof).sqrt(),
-    })
+    /// Only the total length of the 90% (credible-level) region for
+    /// `arrivals` - all the placement advisor needs, without refining the
+    /// most likely point.
+    ///
+    /// # Errors
+    /// As [`Self::locate`].
+    pub fn credible_length(&self, arrivals: &[Arrival]) -> Result<Length, LocalisationError> {
+        let mass = self.posterior(arrivals)?.mass;
+        let region = credible::region(
+            &self.grid.cells,
+            &mass,
+            &self.ids,
+            &self.lengths,
+            self.options.credible_level,
+        );
+        Ok(Length::new(
+            region.iter().map(|s| (s.to - s.from).value()).sum(),
+        ))
+    }
+
+    /// Locates the source of a front seen at `arrivals` - one per sensor,
+    /// in the order of [`Self::sensors`].
+    ///
+    /// # Errors
+    /// Arrivals that do not match the sensors, a non-finite time, or a
+    /// non-positive uncertainty.
+    ///
+    /// # Panics
+    /// Only if an internal invariant is broken (an empty candidate grid after
+    /// validation passed) - that would be a bug.
+    pub fn locate(&self, arrivals: &[Arrival]) -> Result<Localisation, LocalisationError> {
+        let Posterior {
+            observed,
+            sigma,
+            mass,
+        } = self.posterior(arrivals)?;
+        let cells = &self.grid.cells;
+        let evaluate = |pipe: usize, fraction: f64| -> Score {
+            let (travel, cov) = self.model(pipe, fraction);
+            Self::score(&observed, &sigma, &travel, &cov)
+        };
+
+        // Summaries.
+        let ranked = credible::per_pipe(cells, &mass, &self.ids);
+        let region = credible::region(
+            cells,
+            &mass,
+            &self.ids,
+            &self.lengths,
+            self.options.credible_level,
+        );
+        let credible_length = region.iter().map(|s| (s.to - s.from).value()).sum();
+
+        // Most likely point: the best cell, refined along its pipe (golden-
+        // section search on the same score).
+        let best = (0..mass.len())
+            .max_by(|&a, &b| mass[a].total_cmp(&mass[b]))
+            .expect("at least one cell");
+        let cell = cells[best];
+        let half_cell = 0.5 * cell.length / self.lengths[cell.pipe];
+        let fraction = golden_minimum(
+            |f| -evaluate(cell.pipe, f).log_likelihood,
+            (cell.fraction - 2.0 * half_cell).max(0.0),
+            (cell.fraction + 2.0 * half_cell).min(1.0),
+        );
+        let at_best = evaluate(cell.pipe, fraction);
+        #[allow(clippy::cast_precision_loss)]
+        let dof = (arrivals.len() - 1).max(1) as f64;
+
+        Ok(Localisation {
+            most_likely: Point {
+                pipe: self.ids[cell.pipe],
+                distance: Length::new(fraction * self.lengths[cell.pipe]),
+            },
+            emission: Time::new(at_best.emission),
+            pipes: ranked,
+            credible_region: region,
+            credible_length: Length::new(credible_length),
+            misfit: (at_best.chi_squared / dof).sqrt(),
+        })
+    }
 }
 
 /// Minimum of `f` on [a, b] by golden-section search (f unimodal there).
@@ -246,24 +436,9 @@ fn validate(
             arrivals.len()
         )));
     }
-    if network.pipes().is_empty() {
-        return Err(LocalisationError::InvalidInput(
-            "the network has no pipes".into(),
-        ));
-    }
-    for (i, a) in arrivals.iter().enumerate() {
-        if a.node.index() >= network.nodes().len() {
-            return Err(LocalisationError::InvalidInput(format!(
-                "sensor node {} does not exist",
-                a.node.index()
-            )));
-        }
-        if arrivals[..i].iter().any(|b| b.node == a.node) {
-            return Err(LocalisationError::InvalidInput(format!(
-                "node {} has two arrivals",
-                a.node.index()
-            )));
-        }
+    let nodes: Vec<NodeId> = arrivals.iter().map(|a| a.node).collect();
+    validate_setup(network, &nodes, options)?;
+    for a in arrivals {
         if !a.time.is_finite() {
             return Err(LocalisationError::invalid(
                 "arrival time",
@@ -272,6 +447,39 @@ fn validate(
             ));
         }
         positive("arrival uncertainty", a.uncertainty.value())?;
+    }
+    Ok(())
+}
+
+fn validate_setup(
+    network: &Network,
+    sensors: &[NodeId],
+    options: &LocaliseOptions,
+) -> Result<(), LocalisationError> {
+    if sensors.len() < 2 {
+        return Err(LocalisationError::InvalidInput(format!(
+            "{} sensor(s): at least two are needed to locate anything",
+            sensors.len()
+        )));
+    }
+    if network.pipes().is_empty() {
+        return Err(LocalisationError::InvalidInput(
+            "the network has no pipes".into(),
+        ));
+    }
+    for (i, s) in sensors.iter().enumerate() {
+        if s.index() >= network.nodes().len() {
+            return Err(LocalisationError::InvalidInput(format!(
+                "sensor node {} does not exist",
+                s.index()
+            )));
+        }
+        if sensors[..i].contains(s) {
+            return Err(LocalisationError::InvalidInput(format!(
+                "node {} has two arrivals",
+                s.index()
+            )));
+        }
     }
     positive("spacing", options.spacing.value())?;
     if !(options.wave_speed_uncertainty.is_finite() && options.wave_speed_uncertainty >= 0.0) {

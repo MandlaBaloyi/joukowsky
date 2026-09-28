@@ -10,7 +10,9 @@
 //! metres along every pipe, the travel time to each sensor; the unknown
 //! emission time cancels analytically; each candidate is scored by how well
 //! it explains the observed arrival times (Gaussian errors); uncertain wave
-//! speeds are marginalised by averaging over many plausible sets.
+//! speeds are carried through each wave's route as correlated timing errors
+//! (generalised least squares - sensors whose waves shared a pipe share its
+//! error).
 //!
 //! Pure domain code (rule R2). The folders:
 //! - [`graph`]: the wave-travel graph and fastest travel times.
@@ -18,14 +20,16 @@
 //! - [`locate`]: the entry point, [`localise`].
 //! - [`clocks`]: sensor clock offsets, estimated from known-source events
 //!   and removed (software clock repair, frontier F9).
+//! - [`placement`]: where loggers should go - the placement advisor.
 
 pub mod clocks;
 mod error;
 pub mod graph;
 pub mod locate;
+pub mod placement;
 pub mod posterior;
 
 pub use clocks::{CalibrationEvent, ClockEstimate, estimate_offsets};
 pub use error::LocalisationError;
-pub use locate::{Arrival, Localisation, LocaliseOptions, Point, localise};
+pub use locate::{Arrival, Localisation, LocaliseOptions, Localiser, Point, localise};
 pub use posterior::{PipeProbability, Segment};

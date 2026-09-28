@@ -82,3 +82,51 @@ submodularity arguments is a reasonable start; mixed-integer or
 evolutionary methods for refinement. Delivered as a software placement
 advisor: we tell the installer (a partner, not us) where sensors should
 go.
+
+Implementation note: the placement advisor (2026-09-28)
+-------------------------------------------------------
+crates/domain/localisation/src/placement/ {coverage.rs, advise.rs};
+tests/localisation/analytical/placement.rs.
+
+Score of a placement: bursts every 20 m along every pipe; for each, the
+exact arrival times at the sensors, timing sigma 1 ms [VERIFY on field
+data], book wave speeds doubted by 10% (one sigma, independently per
+pipe), located by the real localiser (5 m candidates). Recorded: the 90%
+region length. Objective = its mean over the network (weighted by length,
+optionally risk) = the expected search length for a repair crew. Also
+reported: share of pipe length PINPOINTED (region <= 20 m) and per-pipe
+figures. Choice: best pair (exhaustive up to 300 pairs, else the pair
+furthest apart), greedy additions (each step recorded: "what each extra
+logger buys"), then swaps until none helps.
+
+Speed: a Localiser prepares everything that does not depend on the
+arrival times once per sensor set (routes, cells, predicted travel times,
+wave-speed covariance); each trial burst then costs one small Cholesky
+per cell. Bit-identical to the earlier localise (every number printed by
+the test suite unchanged). Campus (2.31 km, 11 candidates, 6 loggers):
+86 s -> 54 s on the dev laptop.
+
+Findings:
+  1. Geometry: only bursts BETWEEN sensors are pinpointed; a branch
+     beyond the outermost sensor looks like its junction. Estate, loggers
+     at S2 + S3, exact wave speeds: T-S2 and T-S3 100% pinpointed (region
+     10 m); the 700 m upstream of T blind (region 635 m = 90% of 700 m +
+     one cell). No logger can sit beyond a reservoir: the supply main
+     stays blind, and the report says so.
+  2. The objective is not "loggers at the ends". Best pair on the estate:
+     S1 + S3 (two blind zones of 400 and 500 m: expected region 336 m),
+     not S2 + S3 (one blind zone of 700 m: 413 m).
+  3. Wave-speed doubt dominates. Estate, 3 loggers: pinpointed 78% with
+     exact or 1% wave speeds, 69% at 2%, 0% at 5% and beyond (regions
+     60-100 m). Calibrating wave speeds from known events (F9) to about
+     2% is worth as much as extra loggers - a concrete target.
+  4. Campus (ring + plastic branches), 6 loggers: greedy 2 -> 6 loggers
+     cut the mean region 291 -> 89 m; swaps moved the ring junctions to
+     building ends: 77 m, 22% pinpointed. Branches with a logger at their
+     end ~20 m; the ring 60-70 m; the unlogged 90 m branch and the
+     municipal connection blind (named in the report).
+Not yet: detectability of small bursts at the chosen sensors (V-S2);
+robustness over a posterior of wave speeds (F10 proper); speed for large
+networks (cost grows with length squared: a 10 km network would take
+~20x longer - options: coarser trial bursts far from sensors, parallel
+scoring, or an analytical score for the pair search).

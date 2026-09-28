@@ -2,4 +2,5 @@
 
 mod branched;
 mod clocks;
+mod placement;
 mod straight_main;
