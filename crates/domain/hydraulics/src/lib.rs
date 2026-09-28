@@ -22,6 +22,10 @@ pub mod pipe;
 pub use boundary::closure::ValveClosure;
 pub use error::HydraulicsError;
 pub use moc::grid::Grid;
+pub use moc::network::{
+    Burst, BurstOpening, GridOptions, InitialCondition, Network, NetworkGrid, NetworkRun, Node,
+    NodeId, PipeId, Probe,
+};
 pub use moc::single_pipe::ReservoirPipeValve;
 pub use moc::trace::Trace;
 pub use pipe::Pipe;

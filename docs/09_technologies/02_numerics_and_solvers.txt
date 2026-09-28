@@ -85,6 +85,14 @@ In build order:
   S3  Network MOC: global dt, integer reaches per pipe, wave-speed
       adjustment recorded as a known model error. Mass conservation to
       machine precision (V-A4).
+      STATUS 2026-09-28: done (moc/network/). Nodes: reservoir, junction
+      (+ demand, + scheduled burst), valve, check valve. Initial state:
+      at rest, or given pipe flows (checked: loops close, flows balance,
+      every node reaches a reservoir) until S4 computes them. Validated:
+      matches the single-pipe solver exactly; splitting a pipe changes
+      < 1e-12 m; mirror networks bit-identical; junction mass balance
+      ~1e-17 m^3/s; two-sensor burst location exact to the grid (700 m)
+      and burst sizing within 0.1%. Minor losses at junctions: not yet.
   S4  Steady-state solver (initial conditions): global gradient algorithm
       (Todini-Pilati, as in EPANET) on faer sparse LU. We may cross-check
       against or temporarily use epanet-rs (03_).

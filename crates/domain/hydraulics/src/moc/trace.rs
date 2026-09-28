@@ -1,44 +1,49 @@
-//! Recorded head and flow histories at chosen nodes ("probes").
+//! Recorded head and flow histories at chosen points ("probes").
 //!
 //! A probe is the simulation's equivalent of a pressure sensor: the engine
-//! compares these histories with what real sensors record.
+//! compares these histories with what real sensors record. Each solver
+//! decides what its probes are (a node index, a point on a pipe, a network
+//! node) and pushes one sample per probe per time step.
 
 use jk_kernel::{Flow, Head, Time};
 
-/// Head and flow histories at the requested probe nodes.
+/// Head and flow histories, one per probe, in the order the probes were
+/// requested.
 ///
 /// Sample k is at time k * dt; sample 0 is the initial (steady) state.
 #[derive(Debug, Clone, PartialEq)]
 pub struct Trace {
     time_step: Time,
-    probes: Vec<usize>,
     heads: Vec<Vec<Head>>,
     flows: Vec<Vec<Flow>>,
 }
 
 impl Trace {
-    /// An empty trace for `probes`, with room for `capacity` samples each.
-    pub(crate) fn new(time_step: Time, probes: &[usize], capacity: usize) -> Self {
+    /// An empty trace for `probes` probes, with room for `capacity` samples.
+    pub(crate) fn new(time_step: Time, probes: usize, capacity: usize) -> Self {
         Self {
             time_step,
-            probes: probes.to_vec(),
-            heads: vec![Vec::with_capacity(capacity); probes.len()],
-            flows: vec![Vec::with_capacity(capacity); probes.len()],
+            heads: vec![Vec::with_capacity(capacity); probes],
+            flows: vec![Vec::with_capacity(capacity); probes],
         }
     }
 
-    /// Appends one sample per probe from the full node arrays.
-    pub(crate) fn record(&mut self, heads: &[f64], flows: &[f64]) {
-        for (j, &node) in self.probes.iter().enumerate() {
-            self.heads[j].push(Head::new(heads[node]));
-            self.flows[j].push(Flow::new(flows[node]));
-        }
+    /// Appends one sample to probe `i`.
+    pub(crate) fn push(&mut self, i: usize, head: f64, flow: f64) {
+        self.heads[i].push(Head::new(head));
+        self.flows[i].push(Flow::new(flow));
     }
 
     /// The time step dt.
     #[must_use]
     pub fn time_step(&self) -> Time {
         self.time_step
+    }
+
+    /// Number of probes.
+    #[must_use]
+    pub fn probe_count(&self) -> usize {
+        self.heads.len()
     }
 
     /// Number of samples per probe (steps + 1).
@@ -60,13 +65,15 @@ impl Trace {
         self.time_step * k as f64
     }
 
-    /// Node indices that were recorded, in request order.
+    /// Index of the first sample at or after time `t` (clamped to the end).
     #[must_use]
-    pub fn probes(&self) -> &[usize] {
-        &self.probes
+    #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)] // clamped below
+    pub fn sample_at(&self, t: Time) -> usize {
+        let k = (t / self.time_step).ceil().max(0.0) as usize;
+        k.min(self.len().saturating_sub(1))
     }
 
-    /// Head history of the `i`-th requested probe.
+    /// Head history of the `i`-th probe.
     ///
     /// # Panics
     /// If `i` is not less than the number of probes.
@@ -75,7 +82,9 @@ impl Trace {
         &self.heads[i]
     }
 
-    /// Flow history of the `i`-th requested probe.
+    /// Flow history of the `i`-th probe. What "flow" means depends on the
+    /// probe: the pipe flow for a point on a pipe, the outflow for a
+    /// network node.
     ///
     /// # Panics
     /// If `i` is not less than the number of probes.
@@ -114,16 +123,20 @@ mod tests {
     use super::*;
 
     #[test]
-    fn records_only_the_probes_in_request_order() {
-        let mut t = Trace::new(Time::new(0.5), &[2, 0], 2);
-        t.record(&[10.0, 11.0, 12.0], &[0.1, 0.2, 0.3]);
-        t.record(&[13.0, 14.0, 15.0], &[0.4, 0.5, 0.6]);
+    fn keeps_samples_per_probe_in_order() {
+        let mut t = Trace::new(Time::new(0.5), 2, 2);
+        t.push(0, 12.0, 0.3);
+        t.push(1, 10.0, 0.1);
+        t.push(0, 15.0, 0.6);
+        t.push(1, 13.0, 0.4);
         assert_eq!(t.len(), 2);
-        assert_eq!(t.probes(), &[2, 0]);
+        assert_eq!(t.probe_count(), 2);
         assert_eq!(t.head(0), &[Head::new(12.0), Head::new(15.0)]);
         assert_eq!(t.flow(1), &[Flow::new(0.1), Flow::new(0.4)]);
         assert_eq!(t.time(1), Time::new(0.5));
         assert_eq!(t.max_head(1), Head::new(13.0));
         assert_eq!(t.min_head(0), Head::new(12.0));
+        assert_eq!(t.sample_at(Time::new(0.4)), 1);
+        assert_eq!(t.sample_at(Time::new(99.0)), 1);
     }
 }

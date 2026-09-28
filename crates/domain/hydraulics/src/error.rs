@@ -20,6 +20,12 @@ pub enum HydraulicsError {
         /// Head drop across the valve at steady state [m].
         head_drop: f64,
     },
+    /// The network's topology breaks a rule (e.g. a valve node with two
+    /// pipes, a pipe that starts and ends at the same node).
+    InvalidNetwork(String),
+    /// The initial condition is not a consistent steady state (heads around
+    /// a loop do not close, flows do not balance, a node has no reservoir).
+    InconsistentInitialState(String),
     /// A requested probe node does not exist on the grid.
     ProbeOutOfRange {
         /// The requested node index.
@@ -52,6 +58,10 @@ impl fmt::Display for HydraulicsError {
                 "valve passes flow but its steady head drop is {head_drop} m; \
                  the downstream head must be below the head at the valve"
             ),
+            Self::InvalidNetwork(reason) => write!(f, "invalid network: {reason}"),
+            Self::InconsistentInitialState(reason) => {
+                write!(f, "initial state is not steady: {reason}")
+            }
             Self::ProbeOutOfRange { node, last } => {
                 write!(f, "probe node {node} does not exist (last node is {last})")
             }

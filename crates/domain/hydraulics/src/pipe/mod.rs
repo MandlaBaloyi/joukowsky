@@ -71,6 +71,20 @@ impl Pipe {
         self.wave_speed
     }
 
+    /// The same pipe with a different wave speed - used by the network grid,
+    /// which must nudge wave speeds so every pipe has a whole number of
+    /// reaches at one shared time step.
+    ///
+    /// # Errors
+    /// If `wave_speed` is not finite and positive.
+    pub fn with_wave_speed(&self, wave_speed: WaveSpeed) -> Result<Self, HydraulicsError> {
+        positive("wave_speed", wave_speed.value())?;
+        Ok(Self {
+            wave_speed,
+            ..*self
+        })
+    }
+
     /// Darcy-Weisbach friction factor (dimensionless).
     #[must_use]
     pub fn friction_factor(&self) -> f64 {

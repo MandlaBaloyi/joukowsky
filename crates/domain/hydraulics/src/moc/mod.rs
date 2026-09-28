@@ -8,9 +8,10 @@
 //!
 //! Solvers built from them:
 //!   - [`single_pipe`]: reservoir - pipe - valve (milestone S1).
-//!   - `network.rs`: many connected pipes (milestone S3, next).
+//!   - [`network`]: many connected pipes (milestone S3).
 
 pub mod characteristics;
 pub mod grid;
+pub mod network;
 pub mod single_pipe;
 pub mod trace;

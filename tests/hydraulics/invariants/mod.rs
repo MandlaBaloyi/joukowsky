@@ -7,4 +7,5 @@
 //! (`.\tests\run-tests.ps1 -Suite full`).
 
 mod grid_independence;
+mod network;
 mod steady_state;

@@ -100,7 +100,7 @@ impl ReservoirPipeValve {
         }
         let steps = grid.steps_for(duration)?;
         let dt = grid.time_step();
-        let c = Characteristics::new(&self.pipe, &grid, self.gravity);
+        let c = Characteristics::new(&self.pipe, grid.reach_length(), self.gravity);
         let b = c.impedance();
         let hr = self.reservoir_head.value();
         let hd = self.downstream_head.value();
@@ -114,8 +114,13 @@ impl ReservoirPipeValve {
         let mut h_new = h.clone();
         let mut q_new = q.clone();
 
-        let mut trace = Trace::new(dt, probes, steps + 1);
-        trace.record(&h, &q);
+        let mut trace = Trace::new(dt, probes.len(), steps + 1);
+        let record = |trace: &mut Trace, h: &[f64], q: &[f64]| {
+            for (j, &node) in probes.iter().enumerate() {
+                trace.push(j, h[node], q[node]);
+            }
+        };
+        record(&mut trace, &h, &q);
 
         for k in 1..=steps {
             #[allow(clippy::cast_precision_loss)] // k <= MAX_STEPS, exact in f64
@@ -134,7 +139,7 @@ impl ReservoirPipeValve {
 
             std::mem::swap(&mut h, &mut h_new);
             std::mem::swap(&mut q, &mut q_new);
-            trace.record(&h, &q);
+            record(&mut trace, &h, &q);
         }
 
         Ok(trace)

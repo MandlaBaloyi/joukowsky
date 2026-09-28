@@ -33,6 +33,22 @@ pub fn check(what: &str, condition: bool) {
     assert!(condition, "{what}: not true");
 }
 
+/// A pipe from plain numbers: length [m], internal diameter [m], wave speed
+/// [m/s], Darcy friction factor.
+///
+/// # Panics
+/// If the numbers are not physical.
+#[must_use]
+pub fn pipe(length: f64, diameter: f64, wave_speed: f64, friction: f64) -> Pipe {
+    Pipe::new(
+        Length::new(length),
+        Length::new(diameter),
+        WaveSpeed::new(wave_speed),
+        friction,
+    )
+    .expect("test pipe must be physical")
+}
+
 /// Steady flow velocity used by the standard single-pipe system [m/s].
 pub const V0: f64 = 1.0;
 

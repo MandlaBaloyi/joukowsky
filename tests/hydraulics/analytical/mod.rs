@@ -7,4 +7,5 @@
 
 mod boundaries;
 mod joukowsky;
+mod network;
 mod single_pipe;

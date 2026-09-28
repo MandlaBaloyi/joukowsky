@@ -14,10 +14,9 @@
 //! devices - uses these same functions, so they are tested once and trusted
 //! everywhere.
 
-use jk_kernel::Acceleration;
+use jk_kernel::{Acceleration, Length};
 
 use crate::Pipe;
-use crate::moc::grid::Grid;
 use crate::pipe::friction::quasi_steady;
 
 /// The coefficients B and R of one pipe on its grid.
@@ -28,14 +27,14 @@ pub struct Characteristics {
 }
 
 impl Characteristics {
-    /// Coefficients for `pipe` discretised on `grid`.
+    /// Coefficients for `pipe` cut into reaches of length `reach_length`.
     #[must_use]
-    pub fn new(pipe: &Pipe, grid: &Grid, gravity: Acceleration) -> Self {
+    pub fn new(pipe: &Pipe, reach_length: Length, gravity: Acceleration) -> Self {
         Self {
             impedance: pipe.impedance(gravity),
             friction: quasi_steady::coefficient(
                 pipe.friction_factor(),
-                grid.reach_length(),
+                reach_length,
                 pipe.diameter(),
                 gravity,
             ),
@@ -99,8 +98,7 @@ mod tests {
             friction_factor,
         )
         .unwrap();
-        let grid = Grid::new(&pipe, 20).unwrap();
-        Characteristics::new(&pipe, &grid, STANDARD_GRAVITY)
+        Characteristics::new(&pipe, Length::new(50.0), STANDARD_GRAVITY)
     }
 
     #[test]

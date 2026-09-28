@@ -1,7 +1,7 @@
 joukowsky test run
-  when     2026-09-28 17:37:34
+  when     2026-09-28 17:48:22
   suite    quick
-  commit   11c6fce (with uncommitted changes)
+  commit   2b0e68b (with uncommitted changes)
   rust     rustc 1.98.1 (48a229cea 2026-09-01)
   command  cargo test --workspace --no-fail-fast -- --nocapture --test-threads=1
 ==============================================================================
@@ -14,7 +14,7 @@ test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; fini
 
      Running unittests src\lib.rs (target\debug\deps\jk_hydraulics-c42e47dfc771fa13.exe)
 
-running 24 tests
+running 35 tests
 test boundary::check_valve::tests::open_valve_passes_forward_flow_like_a_plain_joint ... ok
 test boundary::check_valve::tests::reversing_flow_shuts_it_and_each_side_becomes_a_dead_end ... ok
 test boundary::check_valve::tests::stays_shut_until_upstream_pushes_harder_then_reopens ... ok
@@ -34,13 +34,24 @@ test moc::characteristics::tests::a_steady_friction_gradient_is_a_fixed_point ..
 test moc::characteristics::tests::interior_solution_lies_on_both_characteristics ... ok
 test moc::grid::tests::courant_one_time_step ... ok
 test moc::grid::tests::step_counts_and_limits ... ok
+test moc::network::grid::tests::awkward_lengths_are_adjusted_within_the_bound ... ok
+test moc::network::grid::tests::commensurate_pipes_need_no_adjustment ... ok
+test moc::network::grid::tests::impossible_bound_is_an_error_not_a_hang ... ok
+test moc::network::initial::tests::a_node_without_a_reservoir_is_rejected ... ok
+test moc::network::initial::tests::a_symmetric_loop_closes_and_heads_fall_with_friction ... ok
+test moc::network::initial::tests::an_unbalanced_loop_is_rejected ... ok
+test moc::network::initial::tests::at_rest_needs_equal_reservoirs_and_no_demand ... ok
+test moc::network::initial::tests::flows_that_do_not_balance_are_rejected ... ok
+test moc::network::model::tests::burst_opening_schedules ... ok
+test moc::network::model::tests::bursts_only_at_junctions_and_one_per_node ... ok
+test moc::network::model::tests::rejects_broken_topologies ... ok
 test moc::single_pipe::tests::rejects_bad_setups ... ok
-test moc::trace::tests::records_only_the_probes_in_request_order ... ok
+test moc::trace::tests::keeps_samples_per_probe_in_order ... ok
 test pipe::friction::quasi_steady::tests::matches_darcy_weisbach_in_velocity_form_and_is_odd_in_flow ... ok
 test pipe::tests::rejects_non_physical_values ... ok
 test pipe::tests::timing_matches_docs_example ... ok
 
-test result: ok. 24 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+test result: ok. 35 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s
 
      Running unittests src\lib.rs (target\debug\deps\jk_kernel-eccabcc9e10cd5d2.exe)
 
@@ -62,7 +73,7 @@ test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; fini
 
      Running hydraulics\main.rs (target\debug\deps\hydraulics-356f9c4fa69611d2.exe)
 
-running 16 tests
+running 21 tests
 test analytical::boundaries::burst::a_10mm_hole_at_60m_head ... DN150 AC main at 60 m head, 0.5 m/s; a 10 mm hole opens (Cd 0.6):
   water lost              1.555 l/s  (134 m^3 per day)
   head step at the burst  -4.486 m
@@ -130,6 +141,21 @@ test analytical::joukowsky::surge_by_material::pressure_and_head_forms_agree ...
   pressure rise [bar]                          got      12.475000   expected      12.475000   rel.err 0.0e0
   pressure rise vs docs ~12.5 bar              got      12.475000   expected      12.500000   rel.err 2.0e-3
 ok
+test analytical::network::burst_location::two_sensors_locate_and_size_a_burst ... Grid: dt = 0.01 s, dx = 10 m, largest wave-speed adjustment 1.1e-16
+Arrival times:
+  burst node  1.000 s
+  sensor S1   1.700 s   (expected burst + 0.7 s)
+  sensor S2   2.300 s   (expected burst + 1.3 s)
+Location from the arrival times alone:
+  burst distance from S1 [m]                   got     700.000000   expected     700.000000   rel.err 3.2e-16
+  burst time recovered [s]                     got       1.000000   expected       1.000000   rel.err 2.2e-16
+Size from the step at S1:
+  step seen at S1           -4.482 m (-0.44 bar)
+  true burst outflow        1.555 l/s
+  burst flow sized from the step [l/s]         got       1.553399   expected       1.554948   rel.err 1.0e-3
+  S2 hears it later than S1 (closer to S1)     yes
+  => estimated loss 134 m^3/day, located to within one 10 m reach.
+ok
 test analytical::single_pipe::friction::friction_causes_line_packing_and_damping ... Friction f = 0.03, instant closure; Joukowsky dH = 101.972 m
   steady valve head            94.901 m
   just after closure (step 1)  196.873 m
@@ -175,6 +201,31 @@ test invariants::grid_independence::joukowsky_peak_is_the_same_on_every_grid ...
   peak head [m]                                got     201.971621   expected     201.971621   rel.err 1.4e-16
   lowest head [m]                              got      -1.971621   expected      -1.971621   rel.err 1.4e-14
 ok
+test invariants::network::continuity::flows_balance_at_the_junction_at_every_instant ...   samples checked: 253
+  flow into branch 1 went from 20.00 to 0.67 l/s as its valve shut
+  largest imbalance at the junction: 3.5e-17 m^3/s
+  mass balances to rounding error at every instant yes
+ok
+test invariants::network::matches_single_pipe::network_solver_reproduces_the_single_pipe_solver ... Reservoir -> 1000 m -> valve at 1 m/s, solved by both solvers:
+  instant closure, no friction     largest difference 0.0e0 m over 241 samples
+    solvers agree within 1e-9 m                yes
+  instant closure, f = 0.02        largest difference 0.0e0 m over 241 samples
+    solvers agree within 1e-9 m                yes
+  slow closure, f = 0.02           largest difference 0.0e0 m over 241 samples
+    solvers agree within 1e-9 m                yes
+ok
+test invariants::network::matches_single_pipe::splitting_a_pipe_at_a_junction_changes_nothing ... The same 1000 m pipe, cut into pieces joined by junctions:
+  pieces [400.0, 600.0]: largest difference 4.0e-13 m
+    junctions between identical pipes are invisible yes
+  pieces [100.0, 250.0, 650.0]: largest difference 5.7e-13 m
+    junctions between identical pipes are invisible yes
+  pieces [500.0, 500.0]: largest difference 5.7e-13 m
+    junctions between identical pipes are invisible yes
+ok
+test invariants::network::symmetry::mirror_branches_give_bit_identical_results ...   samples compared bit by bit: 222
+  peak head at valve A 206.637 m, at valve B 206.637 m
+  every sample identical to the last bit       yes
+ok
 test invariants::steady_state::an_undisturbed_pipe_stays_steady ... Steady state with friction f = 0.02:
   valve head: solver vs hand formula [m]       got      96.600946   expected      96.600946   rel.err 0.0e0
   reservoir end: largest head drift 0.0e0 m, flow drift 1.4e-17 m^3/s
@@ -185,7 +236,7 @@ test invariants::steady_state::an_undisturbed_pipe_stays_steady ... Steady state
   valve holds steady                           yes
 ok
 
-test result: ok. 15 passed; 0 failed; 1 ignored; 0 measured; 0 filtered out; finished in 0.01s
+test result: ok. 20 passed; 0 failed; 1 ignored; 0 measured; 0 filtered out; finished in 0.03s
 
      Running kernel\main.rs (target\debug\deps\kernel-de7e7becf50a66a6.exe)
 
@@ -231,7 +282,7 @@ running 0 tests
 test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
 
 ==============================================================================
-  passed   50
+  passed   66
   failed   0
   skipped  1 slow test(s) not in this suite (run -Suite full)
   filtered 0 test(s) outside -Only/-Filter
