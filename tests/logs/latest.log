@@ -1,12 +1,11 @@
 joukowsky test run
-  when     2026-09-28 17:26:31
+  when     2026-09-28 17:29:17
   suite    full
-  commit   2b3199e (with uncommitted changes)
+  commit   67e4153 (with uncommitted changes)
   rust     rustc 1.98.1 (48a229cea 2026-09-01)
   command  cargo test --workspace --no-fail-fast -- --nocapture --test-threads=1 --include-ignored
 ==============================================================================
-   Compiling jk-tests v0.1.0 (C:\Users\HP\Desktop\joukowsky\tests)
-    Finished `test` profile [unoptimized + debuginfo] target(s) in 1.05s
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.02s
      Running unittests src\main.rs (target\debug\deps\jk-7274c5438ed9f47a.exe)
 
 running 0 tests
@@ -128,7 +127,7 @@ test invariants::steady_state::an_undisturbed_pipe_stays_steady ... Steady state
   valve holds steady                           yes
 ok
 
-test result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 8.96s
+test result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 19.11s
 
      Running kernel\main.rs (target\debug\deps\kernel-de7e7becf50a66a6.exe)
 
@@ -178,5 +177,5 @@ test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; fini
   failed   0
   skipped  0 slow test(s) not in this suite
   filtered 0 test(s) outside -Only/-Filter
-  time     10.8 s (including compile)
+  time     19.7 s (including compile)
   result   ALL PASSED

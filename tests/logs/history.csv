@@ -1,0 +1,4 @@
+when,suite,only,filter,commit,uncommitted,passed,failed,skipped,seconds,result,log
+2026-09-28 17:29:15,quick,,,67e4153,yes,34,0,1,0.6,pass,runs/2026-09/2026-09-28/17-29-15_quick.log
+2026-09-28 17:29:16,quick,hydraulics,va1,67e4153,yes,1,0,0,0.2,pass,runs/2026-09/2026-09-28/17-29-16_quick_hydraulics_va1.log
+2026-09-28 17:29:17,full,,,67e4153,yes,35,0,0,19.7,pass,runs/2026-09/2026-09-28/17-29-17_full.log

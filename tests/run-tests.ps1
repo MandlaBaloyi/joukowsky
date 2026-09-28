@@ -6,9 +6,17 @@
 #   .\tests\run-tests.ps1 -Filter single_pipe      only tests whose path contains this
 #   .\tests\run-tests.ps1 -Only hydraulics -Filter va1
 #
-# Each run writes tests\logs\test-run_<date>_<time>_<suite>.log and copies it
-# to tests\logs\latest.log. Tests print what they measured next to what the
-# physics predicts, so the log reads like a lab notebook.
+# Logs (tests\logs\):
+#   runs\<yyyy-MM>\<yyyy-MM-dd>\<HH-mm-ss>_<suite>[_<only>][_<filter>].log
+#                       every run, grouped by month and day; kept $KeepDays
+#                       days, then deleted (local only, not in git)
+#   latest.log          copy of the most recent run
+#   latest_quick.log    copy of the most recent quick run
+#   latest_full.log     copy of the most recent full run
+#   history.csv         one line per run, kept forever: when, commit, suite,
+#                       passed, failed... - opens as a table in Excel
+# Tests print what they measured next to what the physics predicts, so a
+# log reads like a lab notebook.
 #
 # QUICK runs in seconds and is for every change. FULL adds tests marked
 # #[ignore] in the code (exhaustive sweeps, long simulations, datasets) -
@@ -27,7 +35,10 @@ param(
     [string]$Only = '',
 
     # Substring of the test path, e.g. single_pipe, invariants, va1.
-    [string]$Filter = ''
+    [string]$Filter = '',
+
+    # Run logs older than this are deleted (history.csv keeps their summary).
+    [int]$KeepDays = 30
 )
 
 $root = Split-Path $PSScriptRoot -Parent
@@ -36,9 +47,14 @@ if ($env:Path -notlike "*$cargoBin*") { $env:Path += ";$cargoBin" }
 $env:CARGO_TERM_COLOR = 'never'   # no colour codes in the log file
 
 $logDir = Join-Path $PSScriptRoot 'logs'
-New-Item -ItemType Directory -Force $logDir | Out-Null
-$stamp = Get-Date -Format 'yyyy-MM-dd_HH-mm-ss'
-$logFile = Join-Path $logDir "test-run_${stamp}_$Suite.log"
+$runsDir = Join-Path $logDir 'runs'
+$now = Get-Date
+$dayDir = Join-Path (Join-Path $runsDir $now.ToString('yyyy-MM')) $now.ToString('yyyy-MM-dd')
+New-Item -ItemType Directory -Force $dayDir | Out-Null
+$name = $now.ToString('HH-mm-ss') + "_$Suite"
+if ($Only) { $name += "_$Only" }
+if ($Filter) { $name += '_' + ($Filter -replace '[^\w-]', '_') }
+$logFile = Join-Path $dayDir "$name.log"
 
 $target = if ($Only) { "-p jk-tests --test $Only" } else { '--workspace' }
 $harness = '--nocapture --test-threads=1'
@@ -53,7 +69,7 @@ try {
     $rustc = (rustc --version 2>$null)
     $header = @(
         'joukowsky test run'
-        "  when     $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')"
+        "  when     $($now.ToString('yyyy-MM-dd HH:mm:ss'))"
         "  suite    $Suite$(if ($Only) { ", only $Only" })$(if ($Filter) { ", filter '$Filter'" })"
         "  commit   $commit$dirty"
         "  rust     $rustc"
@@ -92,6 +108,32 @@ $footer = @(
 $utf8 = New-Object System.Text.UTF8Encoding($false)
 [System.IO.File]::WriteAllLines($logFile, [string[]]($header + $output + $footer), $utf8)
 Copy-Item -LiteralPath $logFile -Destination (Join-Path $logDir 'latest.log') -Force
+Copy-Item -LiteralPath $logFile -Destination (Join-Path $logDir "latest_$Suite.log") -Force
+
+# One summary line per run, kept forever. Plain CSV so Excel opens it.
+$history = Join-Path $logDir 'history.csv'
+if (-not (Test-Path -LiteralPath $history)) {
+    [System.IO.File]::WriteAllText($history,
+        "when,suite,only,filter,commit,uncommitted,passed,failed,skipped,seconds,result,log`r`n", $utf8)
+}
+$relLog = $logFile.Substring($logDir.Length + 1) -replace '\\', '/'
+$row = @(
+    $now.ToString('yyyy-MM-dd HH:mm:ss'), $Suite, $Only, ($Filter -replace ',', ';'),
+    $commit, $(if ($dirty) { 'yes' } else { 'no' }),
+    $passed, $failed, $ignored, ('{0:F1}' -f $seconds),
+    $(if ($exit -eq 0) { 'pass' } else { 'FAIL' }), $relLog
+) -join ','
+[System.IO.File]::AppendAllText($history, "$row`r`n", $utf8)
+
+# Retention: delete run logs older than $KeepDays, then empty day/month folders.
+$cutoff = $now.AddDays(-$KeepDays)
+Get-ChildItem -LiteralPath $runsDir -Recurse -File -Filter '*.log' -ErrorAction SilentlyContinue |
+    Where-Object { $_.LastWriteTime -lt $cutoff } |
+    Remove-Item -Force -ErrorAction SilentlyContinue
+Get-ChildItem -LiteralPath $runsDir -Recurse -Directory -ErrorAction SilentlyContinue |
+    Sort-Object { $_.FullName.Length } -Descending |
+    Where-Object { -not (Get-ChildItem -LiteralPath $_.FullName -Force) } |
+    Remove-Item -Force -ErrorAction SilentlyContinue
 
 $footer | ForEach-Object { Write-Host $_ }
 Write-Host "  log      $logFile"

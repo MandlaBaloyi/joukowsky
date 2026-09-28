@@ -35,7 +35,7 @@ tests/
 │   │   ├── joukowsky/      surge by material, burst sizing
 │   │   └── single_pipe/    va1 square wave, va2 slow closure, friction
 │   └── invariants/         steady state, grid independence
-└── logs/                   one log per run; latest.log is the most recent
+└── logs/                   see "Logs" below
 ```
 
 **Why one test program per context, not per folder:** Rust compiles and
@@ -74,6 +74,32 @@ From the repository root, in the VS Code terminal:
 | Quick, no log | `cargo test --workspace` |
 
 Then open `tests/logs/latest.log`.
+
+## Logs
+
+```
+tests/logs/
+├── latest.log            the most recent run, whatever it was
+├── latest_quick.log      the most recent quick run
+├── latest_full.log       the most recent full run
+├── history.csv           one line per run, kept forever (opens in Excel)
+└── runs/                 every run, by month then day (local only, not in git)
+    └── 2026-09/
+        └── 2026-09-28/
+            ├── 17-29-15_quick.log
+            ├── 17-29-16_quick_hydraulics_va1.log
+            └── 17-29-17_full.log
+```
+
+- A run's file name is its time, its suite, and any `-Only` / `-Filter`.
+- `history.csv` has: when, suite, only, filter, commit, uncommitted
+  changes (yes/no), passed, failed, skipped, seconds, result, and the path of
+  the full log. It shows the test count growing and the day any failure
+  first appeared - the engine's health record.
+- Run logs older than 30 days are deleted automatically
+  (`-KeepDays` changes this); their summary line in `history.csv` stays.
+- Git tracks the `latest*.log` files and `history.csv`; `runs/` stays on
+  your machine.
 
 ## Reading a log
 

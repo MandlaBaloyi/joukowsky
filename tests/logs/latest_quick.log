@@ -1,0 +1,35 @@
+joukowsky test run
+  when     2026-09-28 17:29:16
+  suite    quick, only hydraulics, filter 'va1'
+  commit   67e4153 (with uncommitted changes)
+  rust     rustc 1.98.1 (48a229cea 2026-09-01)
+  command  cargo test -p jk-tests --test hydraulics --no-fail-fast -- --nocapture --test-threads=1 va1
+==============================================================================
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.02s
+     Running hydraulics\main.rs (target\debug\deps\hydraulics-356f9c4fa69611d2.exe)
+
+running 1 test
+test analytical::single_pipe::square_wave::va1_frictionless_instant_closure_is_a_joukowsky_square_wave ... Grid and timing:
+  time step dt [s]                             got       0.050000   expected       0.050000   rel.err 0.0e0
+  2L/a = 2 s = 40 steps; period 4L/a = 4 s = 80 steps.
+  The valve shuts at step 1 (t = dt), so each front lands one step
+  after its ideal time: high for steps 1..=40, low for 41..=80.
+Levels at the valve:
+  head just after closure [m]                  got     201.971621   expected     201.971621   rel.err 1.4e-16
+  head after the wave returns [m]              got      -1.971621   expected      -1.971621   rel.err 1.4e-14
+  head one period later [m]                    got     201.971621   expected     201.971621   rel.err 1.4e-16
+Every one of the 241 samples on the square wave:
+  largest deviation from the ideal square wave: 2.84e-14 m
+  all samples within 1e-9 m of the ideal       yes
+  no flow through the shut valve               yes
+ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 8 filtered out; finished in 0.00s
+
+==============================================================================
+  passed   1
+  failed   0
+  skipped  0 slow test(s) not in this suite
+  filtered 8 test(s) outside -Only/-Filter
+  time     0.2 s (including compile)
+  result   ALL PASSED
