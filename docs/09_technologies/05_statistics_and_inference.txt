@@ -27,8 +27,14 @@ Ensemble Kalman filter                                           [BUILD]
 Grid posterior over the network                                  [BUILD]
   ROLE  The localisation posterior p(x0 | arrival times) evaluated on a
         fine grid along every edge, with t0 eliminated analytically and
-        wave-speed uncertainty marginalised by Monte Carlo. Exact, fast,
-        and explainable - the primary localiser before any ML.
+        wave-speed uncertainty carried as correlated timing errors
+        (generalised least squares). Exact, fast, and explainable - the
+        primary localiser before any ML.
+  STATUS 2026-09-28: built (crates/domain/localisation). Marginalising
+        wave speeds by Monte Carlo was tried first and FAILED its
+        coverage test (90% regions held the truth 8% of the time); the
+        correlated GLS holds it 92.8% of the time (400 trials). Details:
+        04_detection_and_localisation/burst_localisation.txt.
 
 2. Calibration of uncertainty
 ------------------------------------------------------------------------
