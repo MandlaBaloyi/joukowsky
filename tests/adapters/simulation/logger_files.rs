@@ -55,6 +55,7 @@ fn export(name: &str, heads: &[f64], phase: f64) -> String {
 }
 
 #[test]
+#[allow(clippy::too_many_lines)] // files out, files in, engine: one story
 fn a_burst_recorded_in_logger_files_raises_one_alarm_in_the_right_place() {
     // 1. The physics: 10 s, the hole opening at 3 s.
     let (sim, burst) = estate(Some(200.0));
