@@ -3,7 +3,8 @@
 //!
 //! Zones make the placement advisor fast on large networks (each search is
 //! local), at a price: a zone planned early cannot count on loggers its
-//! neighbours place later. These tests measure that price.
+//! neighbours place later - a whole-town polish repairs most of it. These
+//! tests measure what is left (FN-020).
 
 use jk_kernel::Length;
 use jk_localisation::placement::{PlacementOptions, advise, advise_zoned, zones};
@@ -113,5 +114,5 @@ fn zoned_plans_stay_close_to_whole_town_plans() {
         "the asked number of loggers",
         zoned.best.sensors.len() == count,
     );
-    check("within 30% of the whole-town plan", z <= 1.3 * w);
+    check("within 10% of the whole-town plan", z <= 1.1 * w);
 }

@@ -365,6 +365,22 @@ impl<'a> Bench<'a> {
         felt_by
     }
 
+    /// The (at most) `k` of `among` a wave from node `from` reaches first.
+    pub(super) fn nearest(&self, from: usize, among: &[NodeId], k: usize) -> Vec<NodeId> {
+        if among.len() <= k {
+            return among.to_vec();
+        }
+        let times = self.graph.times_from(from, &self.nominal);
+        let mut by_time: Vec<NodeId> = among.to_vec();
+        by_time.sort_by(|a, b| {
+            times[a.index()]
+                .total_cmp(&times[b.index()])
+                .then(a.index().cmp(&b.index()))
+        });
+        by_time.truncate(k);
+        by_time
+    }
+
     /// Whether loggers at nodes `a` and `b` feel any trial in common.
     pub(super) fn overlap(&mut self, a: usize, b: usize) -> bool {
         self.hearing_of(a);

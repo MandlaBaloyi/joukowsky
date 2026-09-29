@@ -16,14 +16,15 @@
 //!   proven for this objective (a second logger can make a first one more
 //!   useful); on the test sites it chooses exactly what full greedy does,
 //!   and the swaps repair the rest.
-//! - Swaps are tried only between loggers whose trial bursts overlap: a
-//!   logger is replaced by one that would feel some of the same bursts.
-//!   On a site where every logger feels most bursts that is every
-//!   candidate; across a town it is the neighbourhood.
+//! - Swaps are tried only with each logger's 12 NEAREST unused candidates
+//!   (by wave travel time) that feel some of the same bursts. A good swap
+//!   moves a logger a little; trying every candidate in town cost 86% of
+//!   the time on a 20 km town (FN-020). On a site with 12 candidates or
+//!   fewer this is every candidate, as before.
 
 use jk_hydraulics::{Network, NodeId};
 
-use super::bench::{Bench, Totals};
+use super::bench::{Bench, State, Totals};
 use super::coverage::{Coverage, PlacementOptions, validate};
 use crate::error::LocalisationError;
 use crate::graph::TravelGraph;
@@ -34,6 +35,9 @@ const MAX_PAIRS: usize = 300;
 
 /// Most rounds of swaps.
 const MAX_SWAP_ROUNDS: usize = 5;
+
+/// Unused candidates each logger may be swapped with: its nearest ones.
+const SWAP_NEIGHBOURS: usize = 12;
 
 /// Candidates re-checked together (in parallel) per round of lazy greedy.
 const LAZY_BATCH: usize = 8;
@@ -188,40 +192,7 @@ pub(super) fn advise_on(
         steps.push(bench.coverage(&chosen, state.regions()));
     }
 
-    // Swaps: replace one chosen (not fixed) sensor by an unused candidate
-    // whenever that helps, until nothing does.
-    let mut best = bench.totals(state.regions());
-    for _ in 0..MAX_SWAP_ROUNDS {
-        let mut improved = false;
-        for i in fixed.len()..chosen.len() {
-            // Everything this logger's swaps need, located in parallel
-            // (again after each accepted swap, which changes the rest).
-            let near: Vec<NodeId> = pool
-                .iter()
-                .copied()
-                .filter(|c| !chosen.contains(c) && bench.overlap(chosen[i].index(), c.index()))
-                .collect();
-            let moves: Vec<(Option<usize>, usize)> =
-                near.iter().map(|c| (Some(i), c.index())).collect();
-            bench.prefetch_moves(&state, &moves);
-            for &c in &near {
-                if chosen.contains(&c) {
-                    continue;
-                }
-                let regions = bench.regions_with(&state, Some(i), c.index());
-                let totals = bench.totals(&regions);
-                if totals.beats(&best) {
-                    chosen[i] = c;
-                    state = bench.state(&chosen);
-                    best = totals;
-                    improved = true;
-                }
-            }
-        }
-        if !improved {
-            break;
-        }
-    }
+    swap_rounds(&mut bench, &pool, &mut chosen, fixed.len(), &mut state);
     let best = bench.coverage(&chosen, state.regions());
     Ok(Advice { steps, best })
 }
@@ -245,4 +216,55 @@ fn farthest_pair(network: &Network, pool: &[NodeId]) -> Vec<NodeId> {
         }
     }
     best.1
+}
+
+/// Swaps: replaces a chosen logger (from index `first` on - the ones
+/// before are fixed) by one of its nearest unused candidates in `pool`
+/// whenever that helps, until nothing does. Updates `chosen` and `state`.
+pub(super) fn swap_rounds(
+    bench: &mut Bench<'_>,
+    pool: &[NodeId],
+    chosen: &mut [NodeId],
+    first: usize,
+    state: &mut State,
+) {
+    let mut best = bench.totals(state.regions());
+    for _ in 0..MAX_SWAP_ROUNDS {
+        let mut improved = false;
+        for i in first..chosen.len() {
+            // Everything this logger's swaps need, located in parallel
+            // (again after each accepted swap, which changes the rest).
+            let unused: Vec<NodeId> = pool
+                .iter()
+                .copied()
+                .filter(|c| !chosen.contains(c) && bench.overlap(chosen[i].index(), c.index()))
+                .collect();
+            let nearest = bench.nearest(chosen[i].index(), &unused, SWAP_NEIGHBOURS);
+            // In pool order, as full swaps would scan them.
+            let near: Vec<NodeId> = unused
+                .iter()
+                .copied()
+                .filter(|c| nearest.contains(c))
+                .collect();
+            let moves: Vec<(Option<usize>, usize)> =
+                near.iter().map(|c| (Some(i), c.index())).collect();
+            bench.prefetch_moves(state, &moves);
+            for &c in &near {
+                if chosen.contains(&c) {
+                    continue;
+                }
+                let regions = bench.regions_with(state, Some(i), c.index());
+                let totals = bench.totals(&regions);
+                if totals.beats(&best) {
+                    chosen[i] = c;
+                    *state = bench.state(chosen);
+                    best = totals;
+                    improved = true;
+                }
+            }
+        }
+        if !improved {
+            break;
+        }
+    }
 }

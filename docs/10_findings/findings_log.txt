@@ -144,3 +144,18 @@ FN-019  2026-09-29  Zones: 50 km planning from hours to 13.5 minutes
   mean 90% region 69 m vs 119 m for evenly spread loggers. The price,
   measured on a 5 km town: 92 m vs 83 m planning the whole town at once
   (+11%). Zones are the way to hundreds of km; faster zones next.
+
+FN-020  2026-09-29  86% of whole-town planning was swaps; zones cost 3%
+  WHAT HAPPENED  The owner would not accept losing 11% to zones. A timing
+    probe on a 20 km town planned whole: choosing 20 loggers 168 s, then
+    swaps 1031 s (10 180 swaps tried in 3 rounds) - each logger was offered
+    every candidate whose bursts overlap its own, i.e. most of the town.
+  WHAT IT TAUGHT A good swap moves a logger a little. Offering each logger
+    only its 12 nearest candidates (by wave travel time): 20 km whole-town
+    20 min -> 3.5 min, mean 90% region 60 m -> 61 m (+1.7%).
+    Zones without polish: 42 s but 67 m (+10% - the owner's point).
+    Zones then ONE whole-town polish (every logger tries its 12 nearest,
+    scored on the whole town - it can cross zone borders): 2.8 min, 63 m
+    (+3% vs whole-town), and 13% pinpointed vs 12%.
+  WHAT CHANGED   advise.rs swap_rounds (12 nearest), zones.rs polish.
+    50 km numbers: detection_range_and_scale.txt.

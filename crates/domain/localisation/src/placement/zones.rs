@@ -17,17 +17,23 @@
 //!    logger already chosen - in any zone - kept fixed. A logger near a
 //!    boundary that feels bursts across it counts for both zones; bursts
 //!    are scored in the zone being planned only.
-//! 4. The final placement is scored on the whole network, as one.
+//! 4. Polish on the whole network: every new logger tries its nearest
+//!    unused candidates (the advisor's swaps), scored on the WHOLE town -
+//!    repairing what zone borders and the share-by-length got wrong (a
+//!    logger can move across a border, and so from one zone to another).
+//! 5. The final placement is scored on the whole network, as one.
 //!
 //! The price of zones: a zone planned early cannot count on loggers placed
-//! later next door. The gain: each search is local, so the cost grows with
-//! the number of zones, not with its square.
+//! later next door - the polish repairs most of it (measured: FN-020). The
+//! gain: each search is local, so the cost grows with the number of zones,
+//! not with its square.
 
 use jk_hydraulics::{Network, Node, NodeId, PipeId};
 use jk_kernel::Length;
 
-use super::advise::{Advice, advise_on};
-use super::coverage::{Coverage, PlacementOptions, coverage, validate};
+use super::advise::{Advice, advise_on, swap_rounds};
+use super::bench::Bench;
+use super::coverage::{Coverage, PlacementOptions, validate};
 use crate::error::{LocalisationError, positive};
 use crate::graph::TravelGraph;
 use crate::locate::nominal_times;
@@ -39,7 +45,8 @@ pub struct ZoneAdvice {
     pub pipes: Vec<PipeId>,
     /// Their total length.
     pub length: Length,
-    /// Loggers placed in this zone.
+    /// Loggers placed in this zone (before the whole-network polish, which
+    /// may move some; the final set is [`ZonedAdvice::best`]).
     pub loggers: Vec<NodeId>,
     /// The advisor's steps and result for this zone, scored on the zone's
     /// bursts only, with earlier zones' loggers fixed.
@@ -234,7 +241,12 @@ pub fn advise_zoned(
             advice,
         });
     }
-    let best = coverage(network, &chosen, weights, options)?;
+    // 4. Polish on the whole network.
+    let mut bench = Bench::new(network, weights, options, None);
+    let pool: Vec<NodeId> = all.iter().copied().filter(|c| !fixed.contains(c)).collect();
+    let mut state = bench.state(&chosen);
+    swap_rounds(&mut bench, &pool, &mut chosen, fixed.len(), &mut state);
+    let best = bench.coverage(&chosen, state.regions());
     Ok(ZonedAdvice {
         zones: planned,
         best,
