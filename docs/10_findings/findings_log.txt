@@ -129,3 +129,18 @@ FN-017  2026-09-29  A drifting clock's rate depends on whose seconds
   19.9996 ppm - negligible, but a test demanding exactness found it. And
   clock time (1.79e9 s, stored to 0.24 us) limits a rate over 14 hours to
   ~1e-11 - the precision floor, stated in the test.
+
+FN-018  2026-09-29  The plastic-wall simulator is first order in time
+  V-A5 matched theory's frequency at once, but the decay came out 6% too
+  fast at 200 reaches. Refining showed +12.7%, +6.4%, +3.2%: the error
+  halves as the grid doubles, and extrapolating gives theory to 0.04%.
+  So the physics is right and the scheme is first order; coarse grids
+  over-damp plastic pipes a little. The test now demands the convergence
+  itself, not one tolerance.
+
+FN-019  2026-09-29  Zones: 50 km planning from hours to 13.5 minutes
+  Planning a 50 km town zone by zone (10 zones of ~5 km, placement/zones.rs)
+  chose 50 loggers in 13.5 min (whole-town search: stopped after 30+ min);
+  mean 90% region 69 m vs 119 m for evenly spread loggers. The price,
+  measured on a 5 km town: 92 m vs 83 m planning the whole town at once
+  (+11%). Zones are the way to hundreds of km; faster zones next.

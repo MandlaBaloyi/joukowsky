@@ -123,6 +123,7 @@ In build order:
   S5  Unsteady friction: Brunone/IAB first, convolution (Vardy-Brown,
       sum-of-exponentials) later.
   S6  Viscoelastic walls: 1-3 Kelvin-Voigt elements for PE/PVC.
+      STATUS 2026-09-29: built and validated (V-A5); parameters [VERIFY].
   S7  Cavitation: DGCM (discrete gas cavity model), DVCM for comparison.
   S8  Discrete adjoint of the network MOC - exact gradients of a data
       misfit w.r.t. wave speeds, friction, leak parameters, in one

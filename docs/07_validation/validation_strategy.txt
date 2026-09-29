@@ -19,6 +19,10 @@ Rung 1  Analytical: results that must match closed-form physics.
         benchmark solutions.
   V-A3  Junction transmission/reflection coefficients.
   V-A4  Mass conservation to machine precision in network MOC.
+  V-A5  Viscoelastic (plastic) wall: ring frequency and decay rate of a
+        reservoir-pipe-valve system vs the exact complex-frequency
+        solution; first-order convergence, extrapolated within 0.5%
+        (2026-09-29: 0.04%).
 Rung 2  Published benchmarks and experiments.
   V-B1  Classic laboratory data (e.g. Adelaide / Bergant-Simpson
         reservoir-pipe-valve experiments) for friction and column

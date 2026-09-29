@@ -14,15 +14,18 @@ use jk_hydraulics::{
 };
 use jk_kernel::{Area, Head, Length, Time};
 use jk_localisation::graph::TravelGraph;
-use jk_localisation::placement::{PlacementOptions, advise, coverage};
+use jk_localisation::placement::{PlacementOptions, advise, advise_zoned, coverage};
 use jk_localisation::{Arrival, LocaliseOptions, Localiser};
 use jk_sim::{Town, TownOptions, town};
 
 pub const USAGE: &str = "
-    jk scale [--km 2,10,50,100] [--seed N] [--loggers-per-km X] [--no-placement] [--advise]
+    jk scale [--km 2,10,50,100] [--seed N] [--loggers-per-km X] [--no-placement]
+             [--advise] [--zone-km X]
                           time every part of the engine on synthetic towns
                           of growing size (build with --release); --advise
-                          also runs the placement advisor in full
+                          also runs the placement advisor in full, zone by
+                          zone (about X km of pipe per zone, default 5;
+                          0: the whole town at once)
 ";
 
 /// Loggers near the burst that see it in the live-alert timing.
@@ -37,6 +40,7 @@ pub struct Args {
     loggers_per_km: f64,
     placement: bool,
     advise: bool,
+    zone_km: f64,
 }
 
 /// Reads the arguments after `scale`.
@@ -50,6 +54,7 @@ pub fn parse(mut it: impl Iterator<Item = String>) -> Result<Args, String> {
         loggers_per_km: 1.0,
         placement: true,
         advise: false,
+        zone_km: 5.0,
     };
     let number = |v: Option<String>, what: &str| -> Result<f64, String> {
         let v = v.ok_or(format!("{what} needs a value"))?;
@@ -76,6 +81,14 @@ pub fn parse(mut it: impl Iterator<Item = String>) -> Result<Args, String> {
             "--loggers-per-km" => a.loggers_per_km = number(it.next(), "--loggers-per-km")?,
             "--no-placement" => a.placement = false,
             "--advise" => a.advise = true,
+            "--zone-km" => {
+                let v = it.next().ok_or("--zone-km needs a number")?;
+                a.zone_km = v
+                    .parse::<f64>()
+                    .ok()
+                    .filter(|x| x.is_finite() && *x >= 0.0)
+                    .ok_or(format!("--zone-km: '{v}' is not a number >= 0"))?;
+            }
             _ => return Err(format!("unexpected argument '{arg}'")),
         }
     }
@@ -145,7 +158,7 @@ fn study(km: f64, a: &Args) -> Result<(), String> {
 
     // 4. Scoring a placement of loggers spread over the town.
     if a.placement {
-        place(&t, a.loggers_per_km * km, a.advise);
+        place(&t, a.loggers_per_km * km, a.advise, a.zone_km);
     }
     println!();
     Ok(())
@@ -232,7 +245,7 @@ fn locate(net: &Network, burst_at: NodeId, loggers: &[NodeId]) {
     }
 }
 
-fn place(t: &Town, count: f64, advise_too: bool) {
+fn place(t: &Town, count: f64, advise_too: bool, zone_km: f64) {
     #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)] // small, positive
     let count = (count.round() as usize).clamp(2, t.hydrants.len());
     let loggers = spread(&t.network, &t.hydrants, count);
@@ -251,13 +264,27 @@ fn place(t: &Town, count: f64, advise_too: bool) {
         return;
     }
     let clock = Instant::now();
-    match advise(&t.network, &t.hydrants, count, &[], None, &options) {
-        Ok(a) => println!(
-            "  advise                {:>10}   chose {count} of {} hydrants: {:.0}% pinpointed, mean 90% region {:.0} m",
+    let result = if zone_km > 0.0 {
+        advise_zoned(
+            &t.network,
+            &t.hydrants,
+            count,
+            &[],
+            None,
+            &options,
+            Length::new(zone_km * 1000.0),
+        )
+        .map(|z| (z.best, z.zones.len()))
+    } else {
+        advise(&t.network, &t.hydrants, count, &[], None, &options).map(|a| (a.best, 1))
+    };
+    match result {
+        Ok((best, zones)) => println!(
+            "  advise                {:>10}   chose {count} of {} hydrants in {zones} zone(s): {:.0}% pinpointed, mean 90% region {:.0} m",
             secs(clock.elapsed().as_secs_f64()),
             t.hydrants.len(),
-            a.best.pinpointed * 100.0,
-            a.best.expected_region.value()
+            best.pinpointed * 100.0,
+            best.expected_region.value()
         ),
         Err(e) => println!("  advise                FAILED: {e}"),
     }

@@ -57,7 +57,9 @@ mod advise;
 mod bench;
 mod coverage;
 pub mod detectability;
+mod zones;
 
 pub use advise::{Advice, advise};
 pub use coverage::{Coverage, PipeCoverage, PlacementOptions, coverage};
 pub use detectability::{Detectability, PipeDetectability, detectability, first_fronts};
+pub use zones::{ZoneAdvice, ZonedAdvice, advise_zoned, zones};

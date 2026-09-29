@@ -7,7 +7,12 @@
 //!      applies its boundary: reservoir, junction (with any active burst),
 //!      valve, check valve, or pump (after a trip, its speed is advanced
 //!      with a predictor-corrector step of the run-down equation);
-//!   3. probes are recorded.
+//!   3. plastic pipes advance each point's wall creep (S6);
+//!   4. probes are recorded.
+//!
+//! A plastic pipe's creep is folded into every characteristic it carries
+//! (`pipe/viscoelastic.rs`): interior points and pipe ends then solve with
+//! the same code as rigid pipes.
 //!
 //! All arithmetic is in a fixed order, so the same network and inputs give
 //! bit-identical results on the same platform (rule T3).
@@ -25,6 +30,31 @@ use crate::moc::network::grid::{GridOptions, NetworkGrid};
 use crate::moc::network::initial::InitialCondition;
 use crate::moc::trace::Trace;
 use crate::model::{Burst, Network, Node, NodeId, PipeId};
+use crate::pipe::viscoelastic::{Creep, CreepStep};
+
+/// A plastic pipe's wall during a run: the step constants, each grid
+/// point's creep, and the head each point's wall settled at (the initial
+/// state).
+struct Wall {
+    step: CreepStep,
+    creep: Vec<Creep>,
+    settled: Vec<f64>,
+}
+
+impl Wall {
+    /// The characteristic (c, b) arriving at point `i` (old head `head`)
+    /// with the creep folded in.
+    #[inline]
+    fn fold(&self, i: usize, c: f64, b: f64, head: f64) -> (f64, f64) {
+        self.step.fold(
+            c,
+            b,
+            &self.creep[i],
+            self.settled[i],
+            head - self.settled[i],
+        )
+    }
+}
 
 /// A point to record - the simulation's equivalent of a sensor.
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -108,6 +138,18 @@ impl Network {
         }
         let mut h_new = h.clone();
         let mut q_new = q.clone();
+        let mut walls: Vec<Option<Wall>> = self
+            .pipes()
+            .iter()
+            .enumerate()
+            .map(|(p, np)| {
+                np.pipe.wall().map(|w| Wall {
+                    step: CreepStep::new(w, grid.wave_speeds()[p], dt, g),
+                    creep: vec![Creep::default(); h[p].len()],
+                    settled: h[p].clone(),
+                })
+            })
+            .collect();
 
         // Nodes: heads, outflows, device states.
         let mut burst_at: Vec<Option<Burst>> = vec![None; self.nodes().len()];
@@ -169,7 +211,14 @@ impl Network {
                 for i in 1..hp.len() - 1 {
                     let cp = c.c_plus(hp[i - 1], qp[i - 1]);
                     let cm = c.c_minus(hp[i + 1], qp[i + 1]);
-                    (h_new[p][i], q_new[p][i]) = c.interior(cp, cm);
+                    (h_new[p][i], q_new[p][i]) = match &walls[p] {
+                        None => c.interior(cp, cm),
+                        Some(w) => {
+                            let (cp, b) = w.fold(i, cp, c.impedance(), hp[i]);
+                            let (cm, _) = w.fold(i, cm, c.impedance(), hp[i]);
+                            (f64::midpoint(cp, cm), (cp - cm) / (2.0 * b))
+                        }
+                    };
                 }
             }
 
@@ -179,13 +228,17 @@ impl Network {
                 for &(pid, end) in &topo[n] {
                     let (c, hp, qp) = (&chars[pid.0], &h[pid.0], &q[pid.0]);
                     let last = hp.len() - 1;
-                    let characteristic = match end {
-                        PipeEnd::Downstream => c.c_plus(hp[last - 1], qp[last - 1]),
-                        PipeEnd::Upstream => c.c_minus(hp[1], qp[1]),
+                    let (characteristic, at) = match end {
+                        PipeEnd::Downstream => (c.c_plus(hp[last - 1], qp[last - 1]), last),
+                        PipeEnd::Upstream => (c.c_minus(hp[1], qp[1]), 0),
+                    };
+                    let (characteristic, impedance) = match &walls[pid.0] {
+                        None => (characteristic, c.impedance()),
+                        Some(w) => w.fold(at, characteristic, c.impedance(), hp[at]),
                     };
                     arrivals.push(Arrival {
                         characteristic,
-                        impedance: c.impedance(),
+                        impedance,
                         end,
                     });
                 }
@@ -316,6 +369,16 @@ impl Network {
                 }
                 node_head[n] = head;
                 node_outflow[n] = outflow;
+            }
+
+            // 3. Plastic walls creep on, point by point.
+            for (p, wall) in walls.iter_mut().enumerate() {
+                if let Some(w) = wall {
+                    for i in 0..w.creep.len() {
+                        let (old, new) = (h[p][i] - w.settled[i], h_new[p][i] - w.settled[i]);
+                        w.step.advance(&mut w.creep[i], old, new);
+                    }
+                }
             }
 
             std::mem::swap(&mut h, &mut h_new);

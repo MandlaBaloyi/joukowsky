@@ -19,7 +19,10 @@ Reading order
 01_problem_definition/       The problem, stated plainly and then formally.
 02_physics_of_transients/    The physics the engine is built on: Joukowsky's
                              equation, wave speed, the governing PDEs, MOC,
-                             cavitation, friction, pressure-leakage laws.
+                             cavitation, friction, pressure-leakage laws;
+                             and the sources upstream - dams, rivers,
+                             canals, bulk supply (sources_dams_rivers_
+                             canals.txt).
 03_sensing_and_signal/       Why current SCADA cannot see transients, and what
                              we need from the data sources we connect to (we
                              build software, not sensors).

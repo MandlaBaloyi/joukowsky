@@ -1,25 +1,32 @@
-//! A single pipe: geometry, wave speed and wall friction.
+//! A single pipe: geometry, wave speed, wall friction and - for plastic
+//! pipes - a creeping (viscoelastic) wall.
 //!
 //! Later in this folder: `wave_speed.rs` (Korteweg estimates, used as
-//! priors) and `viscoelastic.rs` (PE/PVC walls, milestone S6).
+//! priors).
 
 pub mod friction;
+pub mod viscoelastic;
 
 use jk_kernel::{Acceleration, Area, Flow, Head, Length, Time, WaveSpeed};
 
 use crate::error::positive;
 use crate::{HydraulicsError, joukowsky};
+use viscoelastic::ViscoelasticWall;
 
-/// One pipe: geometry, wave speed and quasi-steady Darcy friction.
+/// One pipe: geometry, wave speed and quasi-steady Darcy friction; a
+/// plastic pipe also has a viscoelastic wall.
 ///
 /// The wave speed is given, not derived: on real networks it is uncertain
 /// and learned from data (`docs/02_physics_of_transients/wave_speed.txt`).
+/// For a plastic pipe it is the INSTANTANEOUS (elastic) wave speed; the
+/// wall's creep comes on top ([`viscoelastic`]).
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Pipe {
     length: Length,
     diameter: Length,
     wave_speed: WaveSpeed,
     friction_factor: f64,
+    wall: Option<ViscoelasticWall>,
 }
 
 impl Pipe {
@@ -50,7 +57,23 @@ impl Pipe {
             diameter,
             wave_speed,
             friction_factor,
+            wall: None,
         })
+    }
+
+    /// The same pipe with a creeping (viscoelastic) wall - a plastic pipe.
+    #[must_use]
+    pub fn with_wall(self, wall: ViscoelasticWall) -> Self {
+        Self {
+            wall: Some(wall),
+            ..self
+        }
+    }
+
+    /// The viscoelastic wall, if the pipe is plastic.
+    #[must_use]
+    pub fn wall(&self) -> Option<&ViscoelasticWall> {
+        self.wall.as_ref()
     }
 
     /// Pipe length.

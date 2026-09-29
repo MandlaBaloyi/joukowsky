@@ -1,0 +1,131 @@
+WATER SOURCES: DAMS, RIVERS, CANALS AND BULK SUPPLY
+STATUS: DRAFT v0.1 (2026-09-29) - research note from what we know; every
+outside fact marked [VERIFY] until checked (web research needs the
+owner's approval)
+
+Why this file exists (owner, 2026-09-29)
+----------------------------------------
+"Most of the water, even in a city, comes from dams... if our engine
+focuses on the pipes but misses where the water is coming from, we might
+miss something." Correct. Today the engine treats every source as a
+RESERVOIR node with a FIXED head. For a burst lasting seconds that is
+right; for everything that happens over hours - supply cuts, reservoirs
+running low, pipes draining and refilling - it is blind.
+
+1. The supply chain, source to tap (typical South African city)
+------------------------------------------------------------------------
+  dam (storage) -> river release, canal or raw-water pipeline
+    -> treatment works -> bulk mains (gravity or pumped)
+    -> command reservoirs and water towers -> distribution network
+    -> the site (campus, mall, mine) -> taps
+Bulk suppliers run the first half, municipalities the second
+[VERIFY which, per metro]. Each link has its own physics and its own
+timescale:
+  link                    physics                      timescale
+  dam, reservoir, tank    storage (volume balance)     hours - months
+  river, canal            open-channel flow            minutes - days
+  raw / bulk mains        pressurised pipe (ours)      seconds (waves)
+                          + slow balance               hours (demand)
+  distribution, site      pressurised pipe (ours)      seconds
+
+2. What happens at the source that the pipes feel
+------------------------------------------------------------------------
+  - Levels change: a reservoir drawn down over the day lowers every
+    pressure downstream; the engine's "normal" pressure moves with it.
+  - Supply cuts and water shedding: reservoirs run low -> pipes drain ->
+    air enters -> when supply returns, the refilling surges are among the
+    most violent transients in SA networks
+    (01_problem_definition/the_operating_environment.txt, section 2).
+  - Pump stations on bulk mains trip with load-shedding (already a class).
+  - Missing water: a bulk main that loses water between two meters leaks,
+    even when the leak is too small to send a wave we can feel (gap G-12).
+Point to keep: the SLOW physics here is fully visible in slow data. A
+reservoir level logged every 15 minutes misses nothing a reservoir does
+(P2 cuts both ways: never claim what the rate hides, but use every rate
+for what it does show).
+
+3. The physics
+------------------------------------------------------------------------
+(a) Storage (dams, reservoirs, tanks) - one number per tank:
+        A(h) dh/dt = Q_in - Q_out
+    with the level-area curve A(h) of the tank or dam basin. Outlets:
+    valves (orifice law, as our valves), spillways (weir law
+    Q = C_w L H^1.5 [VERIFY C_w for typical crests]). Simple, exact.
+
+(b) Open channels (canals, rivers) - 1-D Saint-Venant equations:
+        dA/dt + dQ/dx = q_lateral
+        dQ/dt + d(Q^2/A)/dx + g A dy/dx = g A (S0 - Sf)
+        Sf = n^2 Q|Q| / (A^2 R^(4/3))       (Manning, n per channel)
+    A = wetted area, y = depth, R = hydraulic radius, S0 = bed slope.
+    Surface waves travel at c = V +/- sqrt(g y): about 3-10 m/s, not
+    1000 m/s. Flow is subcritical (Froude < 1, the usual case) or
+    supercritical (steep chutes); hydraulic jumps where it switches.
+    Numerics in common use [VERIFY]: the Preissmann four-point implicit
+    scheme (the classic for rivers and canals; stable with large time
+    steps), MOC for Saint-Venant, finite-volume Godunov schemes for
+    shocks and dam-break waves.
+
+(c) Pipes flowing PARTLY full (sewers, and water mains while draining or
+    refilling) obey the same Saint-Venant equations with a circular
+    cross-section - and switch to pressurised flow when full (mixed
+    flow; the "Preissmann slot" trick makes one solver do both
+    [VERIFY]). This is exactly the physics of refilling after a supply
+    cut (gap G-14): the open-channel work and the refilling surges are
+    the same problem.
+
+4. How it connects to our pipe engine
+------------------------------------------------------------------------
+Timescales differ a thousandfold, so the coupling is loose and clean:
+  - the source model (storage, channels) runs in seconds-to-minutes steps
+    and hands the pipe network a slowly varying HEAD at each source node
+    (reservoir level h(t)) and takes back the flow drawn;
+  - the pipe MOC runs in millisecond steps, with that head as a boundary
+    that is constant within any one transient;
+  - volume is exchanged at the interface, so water is conserved from dam
+    to tap (P1).
+Both run side by side in the same engine - two solvers, one network
+model, each doing the physics it is built for.
+
+5. Data and sensors
+------------------------------------------------------------------------
+  - Reservoir and tank levels: level loggers (pressure or radar), usually
+    in the bulk supplier's or municipality's SCADA (Tier 0 - enough here).
+  - Flows: meters on bulk mains and reservoir outlets.
+  - Dam levels: published regularly by the national Department of Water
+    and Sanitation [VERIFY: frequency, format, licence].
+  - Canal and river levels and flows: gauging stations [VERIFY sources].
+  No new hardware is needed for the slow physics: it is visible in the
+  data utilities already collect.
+
+6. What the engine would gain
+------------------------------------------------------------------------
+  - Pressure "normal" that follows the source (fewer false alarms).
+  - Supply-cut warnings: a reservoir heading empty means pressure will
+    fall, pipes will drain and later refill violently - warn before.
+  - Refilling surges simulated and classified (gap G-14).
+  - Water balance from source to tap: where water goes missing (G-12),
+    including small leaks on big mains that no wave reveals.
+
+7. Plan (phases, each through the validation ladder)
+------------------------------------------------------------------------
+  R-1  Sources whose head changes with time: a reservoir node with a
+       level history (from data) or a storage model, in the steady
+       solver and the MOC. Small; links source to pipes at once.
+  R-2  Tanks with inflow and outflow (volume balance) - extended-period
+       simulation, as EPANET's tanks [VERIFY]; our .inp reader already
+       sees [TANKS].
+  R-3  Water balance between meters on bulk mains (slow leaks, G-12).
+  R-4  1-D Saint-Venant solver for canals and rivers. Analytical tests
+       first: uniform flow at normal depth (Manning), gradually varied
+       backwater profile vs the direct-step method, small-wave celerity
+       sqrt(g y), Ritter's dam-break solution [VERIFY].
+  R-5  Mixed flow in pipes (partly full <-> full): draining and refilling
+       - joins the pipe transients (G-14).
+Code: a new bounded context (e.g. domain/sources or domain/channels),
+created when R-4 starts; R-1 and R-2 live in hydraulics (they are
+boundary conditions of the pipe network).
+
+8. Out of scope until asked
+------------------------------------------------------------------------
+Floods and river flood-plains, dam safety and dam-break studies, water
+quality and treatment processes, groundwater.

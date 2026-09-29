@@ -110,7 +110,7 @@ pub fn coverage(
     options: &PlacementOptions,
 ) -> Result<Coverage, LocalisationError> {
     validate(network, sensors, weights, options)?;
-    let mut bench = Bench::new(network, weights, options);
+    let mut bench = Bench::new(network, weights, options, None);
     let state = bench.state(sensors);
     Ok(bench.coverage(sensors, state.regions()))
 }

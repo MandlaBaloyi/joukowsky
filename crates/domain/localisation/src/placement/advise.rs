@@ -55,7 +55,6 @@ pub struct Advice {
 /// # Errors
 /// Fewer than two sensors asked for, too few candidates, or the scoring
 /// errors of [`coverage`].
-#[allow(clippy::too_many_lines)] // pairs, lazy greedy, swaps: one search, kept together
 pub fn advise(
     network: &Network,
     candidates: &[NodeId],
@@ -63,6 +62,21 @@ pub fn advise(
     fixed: &[NodeId],
     weights: Option<&[f64]>,
     options: &PlacementOptions,
+) -> Result<Advice, LocalisationError> {
+    advise_on(network, candidates, count, fixed, weights, options, None)
+}
+
+/// As [`advise`], scoring only bursts on the pipes marked in `only` (one
+/// flag per pipe; None: every pipe) - one zone of a large network.
+#[allow(clippy::too_many_lines)] // pairs, lazy greedy, swaps: one search, kept together
+pub(super) fn advise_on(
+    network: &Network,
+    candidates: &[NodeId],
+    count: usize,
+    fixed: &[NodeId],
+    weights: Option<&[f64]>,
+    options: &PlacementOptions,
+    only: Option<&[bool]>,
 ) -> Result<Advice, LocalisationError> {
     let mut pool: Vec<NodeId> = Vec::new();
     for &c in candidates {
@@ -83,7 +97,7 @@ pub fn advise(
     // is located once per set of loggers that feel it, and a placement that
     // differs by one logger only looks again at the trials that logger
     // feels. The answers are those of `coverage` for each placement.
-    let mut bench = Bench::new(network, weights, options);
+    let mut bench = Bench::new(network, weights, options, only);
 
     let mut chosen: Vec<NodeId> = fixed.to_vec();
     if chosen.len() < 2 {

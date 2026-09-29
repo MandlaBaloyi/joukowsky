@@ -111,12 +111,14 @@ pub(super) struct Bench<'a> {
 }
 
 impl<'a> Bench<'a> {
-    /// Lays out the trials on `network`. `weights` (one per pipe) default to
-    /// 1. Options must have been validated.
+    /// Lays out the trials on `network` - on the pipes marked in `only`
+    /// (one flag per pipe; None: every pipe). `weights` (one per pipe)
+    /// default to 1. Options must have been validated.
     pub(super) fn new(
         network: &'a Network,
         weights: Option<&[f64]>,
         options: &PlacementOptions,
+        only: Option<&[bool]>,
     ) -> Self {
         let pipes = network.pipes();
         let step = options.source_step.value();
@@ -126,6 +128,9 @@ impl<'a> Bench<'a> {
             let Some(id) = network.pipe_id(p) else {
                 continue;
             };
+            if only.is_some_and(|o| !o[p]) {
+                continue;
+            }
             let length = link.pipe.length().value();
             #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
             // ceil of a positive ratio

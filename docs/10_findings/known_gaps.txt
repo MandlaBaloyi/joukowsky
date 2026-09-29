@@ -26,7 +26,11 @@ G-01  No independent cross-check of our simulator                 OPEN
     papers) as analytical tests.
   AFFECTS         Everything downstream of the simulator.
 
-G-02  Plastic pipe walls are not modelled (viscoelastic damping)  OPEN
+G-02  Plastic pipe walls are not modelled (viscoelastic damping) IN PROGRESS
+  2026-09-29: the wall model is built and validated against exact theory
+  (V-A5). Still open: real parameters (literature, field data); plastic
+  damping inside detectability and placement (still lossless upper
+  bounds); wall data when reading network files.
   WHY IT MATTERS  uPVC and HDPE walls stretch and slowly relax, soaking
     up the wave and smearing its front (02_/friction_and_damping.txt,
     02_/wave_speed.txt). Much newer South African pipe is plastic. Today
@@ -122,3 +126,10 @@ C. Engineering
 G-15  Guard rails are not a sandbox (FN-011)                      OPEN
   Real isolation (Linux / WSL2) before third-party tools or untrusted
   data at scale; tell the owner first.
+
+G-18  Sources are fixed heads; dams, rivers, canals not modelled  OPEN
+  Every reservoir node holds one head forever. Right for a burst lasting
+  seconds; blind to levels that change over hours, supply cuts, draining
+  and refilling, and water lost between source and site. Plan R-1..R-5 in
+  02_physics_of_transients/sources_dams_rivers_canals.txt (raised by the
+  owner, 2026-09-29).

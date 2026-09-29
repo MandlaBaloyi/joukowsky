@@ -1,7 +1,7 @@
 joukowsky test run
-  when     2026-09-29 20:02:11
+  when     2026-09-29 20:53:07
   suite    full
-  commit   bb44115 (with uncommitted changes)
+  commit   6ed4ef4 (with uncommitted changes)
   rust     rustc 1.98.1 (48a229cea 2026-09-01)
   command  cargo test --workspace --no-fail-fast -- --nocapture --test-threads=1 --include-ignored
 ==============================================================================
@@ -9,7 +9,9 @@ joukowsky test run
    Compiling jk-cli v0.1.0 (C:\Users\HP\Desktop\joukowsky\crates\interfaces\cli)
    Compiling jk-tests v0.1.0 (C:\Users\HP\Desktop\joukowsky\tests)
    Compiling jk-localisation v0.1.0 (C:\Users\HP\Desktop\joukowsky\crates\domain\localisation)
-    Finished `test` profile [unoptimized + debuginfo] target(s) in 8.43s
+   Compiling jk-sim v0.1.0 (C:\Users\HP\Desktop\joukowsky\crates\sim)
+   Compiling jk-files v0.1.0 (C:\Users\HP\Desktop\joukowsky\crates\adapters\files)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 14.81s
      Running unittests src\lib.rs (target\debug\deps\jk_application-31ec11ad23313301.exe)
 
 running 3 tests
@@ -79,11 +81,11 @@ test logger::time::tests::the_usual_logger_formats ... ok
 test logger::units::tests::one_bar_is_about_ten_metres ... ok
 test logger::units::tests::units_from_headers ... ok
 
-test result: ok. 16 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+test result: ok. 16 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
 
      Running unittests src\lib.rs (target\debug\deps\jk_hydraulics-c42e47dfc771fa13.exe)
 
-running 41 tests
+running 45 tests
 test boundary::check_valve::tests::open_valve_passes_forward_flow_like_a_plain_joint ... ok
 test boundary::check_valve::tests::reversing_flow_shuts_it_and_each_side_becomes_a_dead_end ... ok
 test boundary::check_valve::tests::stays_shut_until_upstream_pushes_harder_then_reopens ... ok
@@ -125,8 +127,12 @@ test model::tests::rejects_broken_topologies ... ok
 test pipe::friction::quasi_steady::tests::matches_darcy_weisbach_in_velocity_form_and_is_odd_in_flow ... ok
 test pipe::tests::rejects_non_physical_values ... ok
 test pipe::tests::timing_matches_docs_example ... ok
+test pipe::viscoelastic::tests::a_constant_pressure_rise_creeps_along_the_exact_curve ... ok
+test pipe::viscoelastic::tests::the_rate_is_what_advancing_produces ... ok
+test pipe::viscoelastic::tests::walls_are_checked ... ok
+test pipe::viscoelastic::tests::without_creep_a_characteristic_is_unchanged ... ok
 
-test result: ok. 41 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.03s
+test result: ok. 45 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
 
      Running unittests src\lib.rs (target\debug\deps\jk_kernel-eccabcc9e10cd5d2.exe)
 
@@ -142,7 +148,7 @@ test units::tests::same_type_arithmetic ... ok
 test units::tests::velocity_flow_area ... ok
 test units::tests::wave_travel_time_and_distance_round_trip ... ok
 
-test result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+test result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
 
      Running unittests src\lib.rs (target\debug\deps\jk_localisation-b57d917c3efe0d09.exe)
 
@@ -322,7 +328,7 @@ test simulation::logger_files::a_burst_recorded_in_logger_files_raises_one_alarm
   at 10:15:03 - seconds past 10:15:00          got       2.998747   expected       3.000000   rel.err 4.2e-4
 ok
 
-test result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.45s
+test result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.33s
 
      Running classification\main.rs (target\debug\deps\classification-4a848a22bad9e255.exe)
 
@@ -418,7 +424,7 @@ test simulation::scenarios::power_data_settles_the_slow_burst ... The same slow 
   burst                                        yes
 ok
 
-test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.26s
+test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.98s
 
      Running detection\main.rs (target\debug\deps\detection-5fb88cfa3a816592.exe)
 
@@ -494,11 +500,11 @@ test simulation::burst_location::vs1_location_error_versus_sampling_rate_and_noi
   128 S/s with 2 cm noise locates to under 1 m RMS yes
 ok
 
-test result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 3.60s
+test result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 3.08s
 
      Running hydraulics\main.rs (target\debug\deps\hydraulics-20d714b021436fba.exe)
 
-running 35 tests
+running 36 tests
 test analytical::boundaries::burst::a_10mm_hole_at_60m_head ... DN150 AC main at 60 m head, 0.5 m/s; a 10 mm hole opens (Cd 0.6):
   water lost              1.555 l/s  (134 m^3 per day)
   head step at the burst  -4.486 m
@@ -693,6 +699,17 @@ test analytical::steady::three_reservoirs::three_reservoirs_meeting_at_one_junct
   water balances at the junction               yes
   solved in 9 Newton rounds
 ok
+test analytical::viscoelastic::va5_a_creeping_wall_slows_and_damps_the_ring_as_theory_says ... Theory: rigid ring 4.000 s period; with the creeping wall 4.500 s, dying away at 0.0102 per second (amplitude x0.96 per period)
+  100 reaches: decay 0.011529 per second, +12.7% from theory
+  200 reaches: decay 0.010882 per second, +6.4% from theory
+  400 reaches: decay 0.010558 per second, +3.2% from theory
+  error halves as the reaches double (first order) got       1.993181   expected       2.000000   rel.err 3.4e-3
+  extrapolated to a zero time step: decay rate [1/s] got       0.010234   expected       0.010230   rel.err 4.2e-4
+  phase of the ring at theory's frequency moves 0.007 rad over 7 periods (0 if the frequency is right)
+  the ring keeps theory's frequency (drift < 0.1 rad) yes
+  rigid pipe, same run: fundamental 10.387 m then 10.387 m (no creep, no friction: no decay)
+  rigid pipe does not decay                    got      10.386751   expected      10.386751   rel.err 5.1e-16
+ok
 test invariants::grid_independence::joukowsky_peak_is_exact_on_every_grid_and_material ...   1024 simulations; largest error in peak or trough: 2.84e-14 m
   every case within 1e-9 m of Joukowsky        yes
 ok
@@ -758,7 +775,7 @@ test invariants::steady_state::an_undisturbed_pipe_stays_steady ... Steady state
   valve holds steady                           yes
 ok
 
-test result: ok. 35 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 9.20s
+test result: ok. 36 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 10.20s
 
      Running kernel\main.rs (target\debug\deps\kernel-5b9e09cb13e50ac8.exe)
 
@@ -787,7 +804,7 @@ test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; fini
 
      Running localisation\main.rs (target\debug\deps\localisation-29bcd85f7b4b18b2.exe)
 
-running 24 tests
+running 27 tests
 test analytical::branched::two_sensors_see_a_whole_branch_three_sensors_see_the_point ... Sensors S1 and S2 only (burst 200 m along branch T-S3):
   probability on branch T-S3: 100.0%
   90% region: 540 m of pipe
@@ -1018,6 +1035,21 @@ test invariants::time_origin::locating_with_clock_time_gives_the_same_answer_as_
   emission time, clock minus zero [s]          got 1790676900.000000   expected 1790676900.000000   rel.err 0.0e0
   misfit stays small (arrivals fit one source) yes
 ok
+test invariants::zones::one_zone_gives_exactly_the_plain_advice ... 3 km town, 3 loggers: whole [NodeId(19), NodeId(15), NodeId(6)], zoned [NodeId(19), NodeId(15), NodeId(6)]
+  one zone                                     yes
+  the same loggers                             yes
+  the same mean 90% region [m]                 got     142.889725   expected     142.889725   rel.err 0.0e0
+ok
+test invariants::zones::zoned_plans_stay_close_to_whole_town_plans ... 5 km town, 6 loggers: whole town at once 82.8 m mean 90% region (11% pinpointed); 3 zones 91.9 m (10% pinpointed)
+  planned in more than one zone                yes
+  the asked number of loggers                  yes
+  within 30% of the whole-town plan            yes
+ok
+test invariants::zones::zones_cover_every_pipe_exactly_once ... 20 km town in zones of about 5 km: [6.60, 6.57, 3.80, 3.02] km
+  4 zones                                      yes
+  every pipe in exactly one zone               yes
+  no zone more than twice the average          yes
+ok
 test simulation::clock_study::f9_software_clock_repair_restores_metre_level_location ... Burst 200 m along branch T-S3; S2 reads 23 ms late, S3 41 ms early.
   WITHOUT repair: most likely pipe 3 at 220.6 m; 90% region 66 m of pipe
   estimated offset of node 1: +0.00 ms (+/- 0.00 ms)
@@ -1065,7 +1097,7 @@ Localisation:
   the arrivals fit one source (misfit < 3)     yes
 ok
 
-test result: ok. 24 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 6.02s
+test result: ok. 27 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 81.34s
 
      Running pipeline\main.rs (target\debug\deps\pipeline-c326c19a150f67d8.exe)
 
@@ -1217,7 +1249,7 @@ another on the north branch at t = 30 s:
   the second on the north branch, ~150 m       yes
 ok
 
-test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 5.15s
+test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 4.78s
 
    Doc-tests jk_application
 
@@ -1280,9 +1312,9 @@ running 0 tests
 test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
 
 ==============================================================================
-  passed   205
+  passed   213
   failed   0
   skipped  0 slow test(s) not in this suite
   filtered 0 test(s) outside -Only/-Filter
-  time     42.6 s (including compile)
+  time     119.8 s (including compile)
   result   ALL PASSED
