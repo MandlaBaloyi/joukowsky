@@ -40,6 +40,10 @@ Reading order
                              claim), detection range and scale, external
                              factors (weather, lightning, tremors), real
                              data candidates. Living folder.
+11_business/                 How the engine meets the world: loggers and
+                             hardware partners, the pilot kit, markets
+                             (sites, mines, municipalities). Owner's
+                             decisions.
 glossary.txt                 The words we use, in plain language.
 
 These docs are hints, not limits
