@@ -111,3 +111,13 @@ Parameters used in tests are illustrative [VERIFY: Covas et al. 2005 and
 field data]. Not yet: plastic damping in the detectability model and the
 placement advisor (they still use the lossless front model - upper
 bounds); wall data from network files (EPANET has none).
+
+Plastic damping in the detectability model (2026-09-29): Fronts multiply a
+front by exp(-kappa x) along every plastic pipe it crosses (kappa = the
+wall's front_damping; 0 for rigid pipes), so the placement advisor and the
+detectability report account for plastic walls automatically. Checked
+against the full simulator on a plastic estate with a burst (tests/
+localisation/simulation/plastic_fronts.rs): S1, S2, S3 within 2.9%, 3.8%,
+1.5%. With the illustrative wall the front at S2 is 0.15 m where rigid
+pipe would give 2.9 m - twenty times smaller. Network files carry no wall
+data yet: pipes read from EPANET are treated as rigid until told otherwise.

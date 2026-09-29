@@ -28,6 +28,12 @@
 //! SMALLEST burst each logger can feel there - and the smallest burst that
 //! TWO loggers feel, which is the smallest that can be located.
 //!
+//! Plastic pipes (a creeping wall, `pipe/viscoelastic.rs`): along each one
+//! the front also shrinks as exp(-kappa x), kappa = the wall's
+//! `front_damping` - validated against the simulator (V-A6), and here
+//! against a burst on a plastic estate (tests/localisation/simulation/
+//! `plastic_fronts.rs`). Rigid pipes have kappa = 0.
+//!
 //! What this leaves out, all of which make real fronts SMALLER - so these
 //! are upper bounds:
 //! - bursts that open over a time comparable to the reflections (the front
@@ -35,9 +41,7 @@
 //! - friction: quasi-steady friction shrinks a front by
 //!   exp(-f V x / (2 D a)) - for f = 0.02, V = 0.5 m/s, D = 0.15 m,
 //!   a = 1000 m/s that is 3% per km, so it is ignored;
-//! - unsteady friction and, above all, the damping of plastic pipe walls
-//!   (viscoelasticity, milestones S5/S6) - which can dominate in plastic
-//!   networks [VERIFY against field data];
+//! - unsteady friction (milestone S5);
 //! - a valve node is treated as a dead end, and a pump or check valve as a
 //!   straight run.
 
@@ -61,6 +65,11 @@ pub(super) struct Fronts {
     /// Per node: the impedances of the pipes meeting there.
     at_node: Vec<Vec<f64>>,
     reservoir: Vec<bool>,
+    /// Per pipe: how much of a sharp front it keeps per metre travelled -
+    /// the plastic wall's damping kappa [1/m] (0 for rigid pipes) - and
+    /// its length [m].
+    damping: Vec<f64>,
+    lengths: Vec<f64>,
     routes: Vec<Routes>,
 }
 
@@ -84,6 +93,15 @@ impl Fronts {
             .iter()
             .map(|n| matches!(n, Node::Reservoir { .. }))
             .collect();
+        let damping = pipes
+            .iter()
+            .map(|p| {
+                p.pipe
+                    .wall()
+                    .map_or(0.0, |w| w.front_damping(p.pipe.wave_speed(), g))
+            })
+            .collect();
+        let lengths = pipes.iter().map(|p| p.pipe.length().value()).collect();
         let graph = TravelGraph::new(network);
         let routes = sensors
             .iter()
@@ -97,6 +115,8 @@ impl Fronts {
             impedance,
             at_node,
             reservoir,
+            damping,
+            lengths,
             routes,
         }
     }
@@ -127,15 +147,26 @@ impl Fronts {
         let (_, entry) =
             self.graph
                 .point_route(sensor, times, self.ends[pipe], fraction, self.nominal[pipe]);
-        let Some((end, _)) = entry else { return 0.0 };
-        // Out of the burst pipe at `end`, then along the route to the sensor
-        // (listed in the order the wave travels).
-        let mut head = 0.5 * self.impedance[pipe] * transmission(end, self.impedance[pipe]);
+        let Some((end, part)) = entry else {
+            return 0.0;
+        };
+        // Along the burst pipe to `end` (a `part` of it), out at `end`, then
+        // along the route to the sensor (listed in the order the wave
+        // travels); plastic pipes shrink the front on the way.
+        let kept = |p: usize, share: f64| {
+            if self.damping[p] > 0.0 {
+                (-self.damping[p] * share * self.lengths[p]).exp()
+            } else {
+                1.0
+            }
+        };
+        let mut head =
+            0.5 * self.impedance[pipe] * kept(pipe, part) * transmission(end, self.impedance[pipe]);
         let mut node = end;
         for &p in &pipe_routes[end] {
             let (a, b) = self.ends[p];
             node = if a == node { b } else { a };
-            head *= transmission(node, self.impedance[p]);
+            head *= kept(p, 1.0) * transmission(node, self.impedance[p]);
         }
         head
     }

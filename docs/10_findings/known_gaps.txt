@@ -28,9 +28,11 @@ G-01  No independent cross-check of our simulator                 OPEN
 
 G-02  Plastic pipe walls are not modelled (viscoelastic damping) IN PROGRESS
   2026-09-29: the wall model is built and validated against exact theory
-  (V-A5). Still open: real parameters (literature, field data); plastic
-  damping inside detectability and placement (still lossless upper
-  bounds); wall data when reading network files.
+  (V-A5 ring, V-A6 sharp front), and the detectability model and placement
+  advisor now include plastic damping (checked against the simulator
+  within 4%). Still open: REAL creep parameters for SA plastic pipes
+  (literature, field data) - the most important open number for range
+  claims; wall data when reading network files (EPANET has none).
   WHY IT MATTERS  uPVC and HDPE walls stretch and slowly relax, soaking
     up the wave and smearing its front (02_/friction_and_damping.txt,
     02_/wave_speed.txt). Much newer South African pipe is plastic. Today

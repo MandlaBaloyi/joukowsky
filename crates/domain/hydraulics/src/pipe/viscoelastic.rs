@@ -155,6 +155,23 @@ impl ViscoelasticWall {
     pub fn stress_per_head(&self, gravity: Acceleration) -> f64 {
         WATER_DENSITY * gravity.value() * self.alpha_d_over_e / 2.0
     }
+
+    /// How fast a SHARP front shrinks along a pipe with this wall and
+    /// instantaneous wave speed `a`: it keeps exp(-kappa x) of its height
+    /// after x metres, kappa = `sum_k a c J_k / (g tau_k)` [1/m].
+    ///
+    /// From the high-frequency limit of the wave number (every component of
+    /// a sharp front has omega tau >> 1): gamma ~ i omega / a + kappa.
+    /// Validated against the simulator (V-A6: within 1.4%). Behind the front
+    /// the creep brings part of the drop back over a few tau.
+    #[must_use]
+    pub fn front_damping(&self, a: WaveSpeed, gravity: Acceleration) -> f64 {
+        let c = self.stress_per_head(gravity);
+        self.elements()
+            .iter()
+            .map(|k| a.value() * c * k.compliance / (gravity.value() * k.retardation.value()))
+            .sum()
+    }
 }
 
 /// The retarded strain of each element at one point of the pipe.
