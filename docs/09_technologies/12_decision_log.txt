@@ -107,6 +107,29 @@ TD-019 | 2026-09-29 | THE DEVELOPMENT VIEWER IS OUR OWN SVG, NO CHART
        engine's own results exactly, and it keeps the laptop free of a
        front-end toolchain until the product UI is designed. |
 
+TD-020 | 2026-09-29 | GUARD RAILS FOR THE PC AND PERSONAL DATA, in layers.
+       (1) Claude Code permissions: .claude/settings.json (shared) makes
+       every internet action ASK first - WebFetch, WebSearch, curl/wget,
+       Invoke-WebRequest/RestMethod, git clone/fetch/pull, package installs
+       (pip, npm, cargo install/add, rustup, winget) - and git push asks
+       too (only the owner pushes unless he says otherwise); recursive
+       deletes ask. .claude/settings.local.json (this machine only) DENIES
+       reading or editing personal folders (Documents, Pictures, Videos,
+       Music, Downloads, OneDrive, .ssh, browser profiles) - checked: a read
+       of Documents is refused. (2) Cargo offline (.cargo/config.toml): no
+       crate can be downloaded. (3) data/ quarantine: approved datasets
+       only, never executed, each with source, licence, approver, size and
+       SHA-256 in data/manifest.csv; data/verify.ps1 re-checks them.
+       LIMITS, stated plainly: permission rules match how a command
+       starts, so a combined or scripted command can slip past them; they
+       are a seatbelt, not a vault. NEXT LEVEL, when the work needs it
+       (running third-party tools such as TSNet/WNTR, unknown datasets at
+       scale, services): a real sandbox - Linux (WSL2 or a separate
+       install) chosen by the owner, or Claude Code's own sandbox
+       (/sandbox) if it proves to work on this Windows machine. Claude
+       tells the owner BEFORE work reaches that point. | owner + Claude |
+       protect the PC and personal data as the project grows. |
+
 WORKING RULES FOR THE DEV MACHINE
 ------------------------------------------------------------------------
   Laptop: Intel Core i3-1125G4 (4 cores / 8 threads, 2.0 GHz), 16 GB RAM,

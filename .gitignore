@@ -10,3 +10,8 @@ tests/logs/runs/
 
 # jk view output
 jk-view.html
+
+# Real data quarantine (data/README.md): files stay on this machine;
+# only the README, manifest and verify script are tracked.
+data/incoming/
+data/datasets/
