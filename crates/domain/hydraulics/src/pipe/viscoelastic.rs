@@ -23,24 +23,36 @@
 //!   dH/dt + (a^2 / (g A)) dQ/dx + (2 a^2 / g) d(eps_r)/dt = 0,   eps_r = sum eps_k
 //! ```
 //!
-//! so along both characteristics (C+ and C-) a term K d(`eps_r`)/dt,
-//! K = 2 a^2 dt / g, is subtracted from the head at the new time.
+//! so along each characteristic (C+ and C-) the head loses the creep rate
+//! integrated along the characteristic's path, times 2 a^2 / g.
 //!
-//! Stepping one element exactly, with sigma varying linearly over the step
-//! (e = exp(-dt / tau), s = tau / dt):
+//! Integration along the PATH matters (FN-021). At a sudden front the wall
+//! at the front has only just been loaded and creeps at its fastest rate,
+//! J sigma / tau; averaging the rate over a time step at one grid point
+//! (as if the load had risen gradually through the step) takes half of it,
+//! whatever the step - and the front then shrinks at half the right rate.
+//! So the rate is taken where each characteristic STARTS (its foot, at the
+//! old time) and where it ARRIVES (the new point), trapezoid-rule:
+//!
+//! ```text
+//!   H_P = C -/+ B Q_P - (K / 2) (rate_foot + rate_P),   K = 2 a^2 dt / g
+//!   rate = sum_k (J_k sigma - eps_k) / tau_k              (instantaneous)
+//! ```
+//!
+//! Each element's strain is stepped exactly, with sigma varying linearly
+//! over the step (e = exp(-dt / tau), s = tau / dt):
 //!
 //! ```text
 //!   eps_new = e eps_old + J [ (1 - s (1 - e)) sigma_new + (s (1 - e) - e) sigma_old ]
 //! ```
 //!
-//! (exact solution of the element's equation for linear sigma; for a
-//! constant sigma it is the creep curve J sigma (1 - exp(-t / tau))). The
-//! creep rate at the new time, (`eps_new` - `eps_old`) / dt, is therefore linear
-//! in the new head: rate = c1 (H - H0) + c0. Folded into a characteristic
-//! H = C -/+ B Q - K rate, it gives an ordinary characteristic
+//! (exact for linear sigma; for constant sigma, the creep curve
+//! J sigma (1 - exp(-t / tau))). With it, `rate_P` is linear in the new head,
+//! `rate_P` = d1 (`H_P` - H0) + d0, and the characteristic stays linear:
 //!
 //! ```text
-//!   H = C' -/+ B' Q,   C' = (C + K (c1 H0 - c0)) / (1 + K c1),   B' = B / (1 + K c1)
+//!   H_P = C' -/+ B' Q_P,   C' = (C - (K/2) (rate_foot + d0 - d1 H0)) / (1 + (K/2) d1),
+//!                          B' = B / (1 + (K/2) d1)
 //! ```
 //!
 //! so every junction, valve and pump in the network solves exactly as for
@@ -163,6 +175,9 @@ impl Creep {
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct CreepStep {
     count: usize,
+    /// Per element: compliance J [1/Pa] and 1 / tau [1/s].
+    compliance: [f64; MAX_ELEMENTS],
+    inv_tau: [f64; MAX_ELEMENTS],
     /// Per element: e = exp(-dt / tau).
     decay: [f64; MAX_ELEMENTS],
     /// Per element: J (1 - s (1 - e)) - weight of the new stress.
@@ -171,9 +186,8 @@ pub struct CreepStep {
     old_weight: [f64; MAX_ELEMENTS],
     /// Hoop stress per metre of head [Pa/m].
     stress_per_head: f64,
-    /// K = 2 a^2 dt / g [m s].
-    k: f64,
-    dt: f64,
+    /// K / 2 = a^2 dt / g [m s].
+    half_k: f64,
 }
 
 impl CreepStep {
@@ -181,51 +195,78 @@ impl CreepStep {
     #[must_use]
     pub fn new(wall: &ViscoelasticWall, a: WaveSpeed, dt: Time, gravity: Acceleration) -> Self {
         let dt_s = dt.value();
-        let mut decay = [0.0; MAX_ELEMENTS];
-        let mut new_weight = [0.0; MAX_ELEMENTS];
-        let mut old_weight = [0.0; MAX_ELEMENTS];
-        for (i, el) in wall.elements().iter().enumerate() {
-            let e = (-dt_s / el.retardation.value()).exp();
-            let s = el.retardation.value() / dt_s;
-            decay[i] = e;
-            new_weight[i] = el.compliance * (1.0 - s * (1.0 - e));
-            old_weight[i] = el.compliance * (s * (1.0 - e) - e);
-        }
-        Self {
+        let mut step = Self {
             count: wall.count,
-            decay,
-            new_weight,
-            old_weight,
+            compliance: [0.0; MAX_ELEMENTS],
+            inv_tau: [0.0; MAX_ELEMENTS],
+            decay: [0.0; MAX_ELEMENTS],
+            new_weight: [0.0; MAX_ELEMENTS],
+            old_weight: [0.0; MAX_ELEMENTS],
             stress_per_head: wall.stress_per_head(gravity),
-            k: 2.0 * a.value() * a.value() * dt_s / gravity.value(),
-            dt: dt_s,
+            half_k: a.value() * a.value() * dt_s / gravity.value(),
+        };
+        for (i, el) in wall.elements().iter().enumerate() {
+            let tau = el.retardation.value();
+            let e = (-dt_s / tau).exp();
+            let s = tau / dt_s;
+            step.compliance[i] = el.compliance;
+            step.inv_tau[i] = 1.0 / tau;
+            step.decay[i] = e;
+            step.new_weight[i] = el.compliance * (1.0 - s * (1.0 - e));
+            step.old_weight[i] = el.compliance * (s * (1.0 - e) - e);
         }
+        step
     }
 
-    /// The creep rate at the new time as `c1 x rise_new + c0` [1/s], for a
-    /// point with creep state `creep` whose head stood `rise_old` above the
-    /// settled head H0 at the old time: returns (c1 [1/(m s)], c0 [1/s]).
+    /// The creep rate NOW at a point with state `creep` whose head stands
+    /// `rise` above the settled head H0: sum (J sigma - eps) / tau [1/s].
     #[must_use]
     #[inline]
-    pub fn rate(&self, creep: &Creep, rise_old: f64) -> (f64, f64) {
-        let (mut c1, mut c0) = (0.0, 0.0);
+    pub fn rate_now(&self, creep: &Creep, rise: f64) -> f64 {
+        let stress = self.stress_per_head * rise;
+        (0..self.count)
+            .map(|i| (self.compliance[i] * stress - creep.strain[i]) * self.inv_tau[i])
+            .sum()
+    }
+
+    /// The creep rate at the NEW time at a point, as `d1 x rise_new + d0`,
+    /// given its state `creep` and `rise_old` at the old time: (d1, d0).
+    #[must_use]
+    #[inline]
+    fn rate_next(&self, creep: &Creep, rise_old: f64) -> (f64, f64) {
         let stress_old = self.stress_per_head * rise_old;
+        let (mut d1, mut d0) = (0.0, 0.0);
         for i in 0..self.count {
-            c1 += self.new_weight[i];
-            c0 += (self.decay[i] - 1.0) * creep.strain[i] + self.old_weight[i] * stress_old;
+            // eps_new = e eps_old + nw sigma_new + ow sigma_old, and
+            // rate_new = (J sigma_new - eps_new) / tau.
+            d1 += (self.compliance[i] - self.new_weight[i]) * self.inv_tau[i];
+            d0 -= (self.decay[i] * creep.strain[i] + self.old_weight[i] * stress_old)
+                * self.inv_tau[i];
         }
-        (c1 * self.stress_per_head / self.dt, c0 / self.dt)
+        (d1 * self.stress_per_head, d0)
     }
 
-    /// A characteristic `H = c -/+ b Q` of a rigid pipe, with the creep at
-    /// the point folded in: returns (C', B') for the same form. `settled` is
-    /// H0 there, `rise_old` the old head minus H0.
+    /// A characteristic `H = c -/+ b Q` of a rigid pipe arriving at a point
+    /// P, with the creep folded in: `foot_rate` is [`Self::rate_now`] where
+    /// the characteristic starts (old time); `creep`, `settled` (H0) and
+    /// `rise_old` describe P. Returns (C', B') for the same form.
     #[must_use]
     #[inline]
-    pub fn fold(&self, c: f64, b: f64, creep: &Creep, settled: f64, rise_old: f64) -> (f64, f64) {
-        let (c1, c0) = self.rate(creep, rise_old);
-        let scale = 1.0 / (1.0 + self.k * c1);
-        ((c + self.k * (c1 * settled - c0)) * scale, b * scale)
+    pub fn fold(
+        &self,
+        c: f64,
+        b: f64,
+        foot_rate: f64,
+        creep: &Creep,
+        settled: f64,
+        rise_old: f64,
+    ) -> (f64, f64) {
+        let (d1, d0) = self.rate_next(creep, rise_old);
+        let scale = 1.0 / (1.0 + self.half_k * d1);
+        (
+            (c - self.half_k * (foot_rate + d0 - d1 * settled)) * scale,
+            b * scale,
+        )
     }
 
     /// Advances `creep` over the step, the head having risen from
@@ -278,7 +319,7 @@ mod tests {
     }
 
     #[test]
-    fn the_rate_is_what_advancing_produces() {
+    fn the_new_rate_is_what_advancing_then_gives() {
         let w = wall(3e-10, 0.2);
         let step = CreepStep::new(
             &w,
@@ -288,11 +329,10 @@ mod tests {
         );
         let mut creep = Creep::default();
         step.advance(&mut creep, 0.0, 4.0);
-        let (c1, c0) = step.rate(&creep, 4.0);
-        let before = creep.total();
+        let (d1, d0) = step.rate_next(&creep, 4.0);
         step.advance(&mut creep, 4.0, 7.5);
-        let rate = (creep.total() - before) / 0.002;
-        assert!((rate - (c1 * 7.5 + c0)).abs() <= 1e-12 * rate.abs());
+        let rate = step.rate_now(&creep, 7.5);
+        assert!((rate - (d1 * 7.5 + d0)).abs() <= 1e-12 * rate.abs());
     }
 
     #[test]
@@ -304,7 +344,7 @@ mod tests {
             Time::new(0.001),
             STANDARD_GRAVITY,
         );
-        let (c, b) = step.fold(55.0, 1234.0, &Creep::default(), 50.0, 3.0);
+        let (c, b) = step.fold(55.0, 1234.0, 0.0, &Creep::default(), 50.0, 3.0);
         assert!((c - 55.0).abs() < 1e-12 && (b - 1234.0).abs() < 1e-9);
     }
 

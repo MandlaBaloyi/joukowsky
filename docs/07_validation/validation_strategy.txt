@@ -22,7 +22,10 @@ Rung 1  Analytical: results that must match closed-form physics.
   V-A5  Viscoelastic (plastic) wall: ring frequency and decay rate of a
         reservoir-pipe-valve system vs the exact complex-frequency
         solution; first-order convergence, extrapolated within 0.5%
-        (2026-09-29: 0.04%).
+        (2026-09-29: +0.1% at 400 reaches after FN-021).
+  V-A6  Viscoelastic wall, sharp front: jump height decays as exp(-kappa x)
+        with kappa = sum a c J / (g tau); fitted kappa within 5%
+        (2026-09-29: 1.4%).
 Rung 2  Published benchmarks and experiments.
   V-B1  Classic laboratory data (e.g. Adelaide / Bergant-Simpson
         reservoir-pipe-valve experiments) for friction and column

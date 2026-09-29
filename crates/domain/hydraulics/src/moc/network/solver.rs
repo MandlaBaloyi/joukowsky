@@ -42,13 +42,24 @@ struct Wall {
 }
 
 impl Wall {
-    /// The characteristic (c, b) arriving at point `i` (old head `head`)
-    /// with the creep folded in.
+    /// The characteristic (c, b) from point `foot` (old head `foot_head`)
+    /// arriving at point `i` (old head `head`), with the creep folded in.
     #[inline]
-    fn fold(&self, i: usize, c: f64, b: f64, head: f64) -> (f64, f64) {
+    fn fold(
+        &self,
+        (foot, foot_head): (usize, f64),
+        i: usize,
+        c: f64,
+        b: f64,
+        head: f64,
+    ) -> (f64, f64) {
+        let foot_rate = self
+            .step
+            .rate_now(&self.creep[foot], foot_head - self.settled[foot]);
         self.step.fold(
             c,
             b,
+            foot_rate,
             &self.creep[i],
             self.settled[i],
             head - self.settled[i],
@@ -214,8 +225,8 @@ impl Network {
                     (h_new[p][i], q_new[p][i]) = match &walls[p] {
                         None => c.interior(cp, cm),
                         Some(w) => {
-                            let (cp, b) = w.fold(i, cp, c.impedance(), hp[i]);
-                            let (cm, _) = w.fold(i, cm, c.impedance(), hp[i]);
+                            let (cp, b) = w.fold((i - 1, hp[i - 1]), i, cp, c.impedance(), hp[i]);
+                            let (cm, _) = w.fold((i + 1, hp[i + 1]), i, cm, c.impedance(), hp[i]);
                             (f64::midpoint(cp, cm), (cp - cm) / (2.0 * b))
                         }
                     };
@@ -228,13 +239,17 @@ impl Network {
                 for &(pid, end) in &topo[n] {
                     let (c, hp, qp) = (&chars[pid.0], &h[pid.0], &q[pid.0]);
                     let last = hp.len() - 1;
-                    let (characteristic, at) = match end {
-                        PipeEnd::Downstream => (c.c_plus(hp[last - 1], qp[last - 1]), last),
-                        PipeEnd::Upstream => (c.c_minus(hp[1], qp[1]), 0),
+                    let (characteristic, at, foot) = match end {
+                        PipeEnd::Downstream => {
+                            (c.c_plus(hp[last - 1], qp[last - 1]), last, last - 1)
+                        }
+                        PipeEnd::Upstream => (c.c_minus(hp[1], qp[1]), 0, 1),
                     };
                     let (characteristic, impedance) = match &walls[pid.0] {
                         None => (characteristic, c.impedance()),
-                        Some(w) => w.fold(at, characteristic, c.impedance(), hp[at]),
+                        Some(w) => {
+                            w.fold((foot, hp[foot]), at, characteristic, c.impedance(), hp[at])
+                        }
                     };
                     arrivals.push(Arrival {
                         characteristic,

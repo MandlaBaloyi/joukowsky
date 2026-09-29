@@ -115,3 +115,10 @@ fixed) - the cellphone-tower idea of section 4.
 Zones (2026-09-29, placement/zones.rs): 50 km town, 50 loggers, 10 zones:
 13.5 min, mean 90% region 69 m (evenly spread loggers: 119 m). Cost of
 zones measured on a 5 km town: +11% region vs planning it whole (FN-019).
+
+Plastic walls change the range picture (2026-09-29, V-A6): a sharp front in
+plastic pipe shrinks as exp(-kappa x), kappa = sum a c J / (g tau). With
+illustrative PE figures it halves every ~100 m - stronger than 7 tees. Real
+creep figures for SA plastic pipes are now the most important unknown for
+range claims [VERIFY]. Planning at 50 km (FN-022): whole town 30.7 min,
+56 m - better than zones (60 m); zones only beyond that size.

@@ -23,9 +23,10 @@ pub const USAGE: &str = "
              [--advise] [--zone-km X]
                           time every part of the engine on synthetic towns
                           of growing size (build with --release); --advise
-                          also runs the placement advisor in full, zone by
-                          zone (about X km of pipe per zone, default 5;
-                          0: the whole town at once)
+                          also runs the placement advisor in full - on the
+                          whole town at once (best; default), or zone by
+                          zone with --zone-km X (about X km of pipe per zone,
+                          for networks too big to plan whole)
 ";
 
 /// Loggers near the burst that see it in the live-alert timing.
@@ -54,7 +55,7 @@ pub fn parse(mut it: impl Iterator<Item = String>) -> Result<Args, String> {
         loggers_per_km: 1.0,
         placement: true,
         advise: false,
-        zone_km: 5.0,
+        zone_km: 0.0,
     };
     let number = |v: Option<String>, what: &str| -> Result<f64, String> {
         let v = v.ok_or(format!("{what} needs a value"))?;

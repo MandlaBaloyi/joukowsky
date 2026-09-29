@@ -8,6 +8,7 @@
 mod boundaries;
 mod joukowsky;
 mod network;
+mod plastic_front;
 mod pumps;
 mod single_pipe;
 pub mod steady;

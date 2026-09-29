@@ -87,9 +87,17 @@ Implementation note: plastic walls, S6 first build (2026-09-29)
 crates/domain/hydraulics/src/pipe/viscoelastic.rs. A pipe may carry a
 ViscoelasticWall: alpha D / e and 1-3 Kelvin-Voigt elements (J_k, tau_k);
 its wave speed a is the INSTANTANEOUS one. Each element is stepped exactly
-for a head varying linearly over the step; the creep rate, linear in the
-new head, is folded into every characteristic (C' and B'), so junctions,
-valves and pumps solve unchanged (moc/network/solver.rs).
+for a head varying linearly over the step; the creep rate is integrated
+ALONG each characteristic (trapezoid: foot and arrival - see FN-021 for
+why), linear in the new head, and folded into every characteristic (C' and
+B'), so junctions, valves and pumps solve unchanged.
+Sharp fronts (V-A6, tests/hydraulics/analytical/plastic_front.rs): a front
+shrinks as exp(-kappa x), kappa = sum_k a c J_k / (g tau_k) (theory, high-
+frequency limit); simulated kappa within 1.4%. With the illustrative PE
+wall (a 400 m/s, alpha D/e 16.7, J 1e-10 1/Pa, tau 0.05 s) a front HALVES
+EVERY ~104 m - far more than junctions or friction. If real SA plastic
+pipes are anything like this, plastic damping sets the detection range in
+plastic networks [VERIFY parameters: the most important open number].
 Validated (V-A5, tests/hydraulics/analytical/viscoelastic.rs): reservoir -
 400 m plastic pipe - valve slammed shut, no friction. Theory (complex
 frequency from s^2 (1 + phi(s)) + omega0^2 = 0): the ring slows from 4.0 s
@@ -97,8 +105,8 @@ to 4.5 s and dies away at 0.01023 per second. Simulation: frequency right
 (phase drift 0.007 rad over 7 periods); decay +12.7%, +6.4%, +3.2% at 100,
 200, 400 reaches - FIRST ORDER in the time step (error halves as the grid
 doubles, ratio 1.993) - and extrapolated to a zero step 0.010234: 0.04%
-from theory. Consequence: on coarse grids the simulator slightly
-OVER-damps plastic pipes; use fine grids (or extrapolate) for studies.
+from theory - that was the first scheme (first order); with the
+trapezoid rule the decay is +0.4% at 100 reaches, +0.1% at 400.
 Parameters used in tests are illustrative [VERIFY: Covas et al. 2005 and
 field data]. Not yet: plastic damping in the detectability model and the
 placement advisor (they still use the lossless front model - upper

@@ -159,3 +159,24 @@ FN-020  2026-09-29  86% of whole-town planning was swaps; zones cost 3%
     (+3% vs whole-town), and 13% pinpointed vs 12%.
   WHAT CHANGED   advise.rs swap_rounds (12 nearest), zones.rs polish.
     50 km numbers: detection_range_and_scale.txt.
+
+FN-021  2026-09-29  A sudden front shrank at HALF the right rate (fixed)
+  WHAT HAPPENED  New test V-A6: a sharp front in a plastic pipe must shrink
+    as exp(-kappa x), kappa = sum a c J / (g tau) - with the illustrative PE
+    wall, half its height every ~104 m. The simulator shrank it at exactly
+    half that rate, with a sawtooth behind it. V-A5 (a slow ring) had not
+    shown it: slow waves are forgiving.
+  WHAT IT TAUGHT At a front the wall has only just been loaded and creeps
+    at its fastest (J sigma / tau). Taking the creep rate as an average over
+    a time step AT A GRID POINT - as if the load rose gradually through the
+    step - gives half of it, whatever the step. The creep must be integrated
+    along the characteristic's own path (trapezoid: where the wave starts
+    and where it arrives).
+  WHAT CHANGED   pipe/viscoelastic.rs + moc/network/solver.rs. V-A6: kappa
+    within 1.4%; V-A5 ring decay now +0.4% at 100 reaches (was +12.7%).
+
+FN-022  2026-09-29  At 50 km, planning the whole town beats zones
+  With near swaps (FN-020), 50 km, 50 loggers: whole town at once 30.7 min,
+  mean 90% region 56 m; zones + polish 38.2 min, 60 m (+7%); evenly spread
+  loggers 119 m. So `jk scale` now plans whole towns by default; zones are
+  kept for networks too big to plan whole (hundreds of km).

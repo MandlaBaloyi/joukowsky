@@ -149,11 +149,10 @@ fn va5_a_creeping_wall_slows_and_damps_the_ring_as_theory_says() {
         (-delta * period).exp()
     );
 
-    // The scheme is first order in the time step (the creep is taken at
-    // the grid point over each step), so the measured decay rate must
-    // approach theory as the grid is refined, the error halving each time
-    // the reaches double; extrapolating to a zero step (Richardson) must
-    // then give theory's value.
+    // The creep is integrated along each characteristic (trapezoid rule),
+    // so the decay rate must be close to theory even on a coarse grid and
+    // closer on finer ones. (The first version took the creep at the grid
+    // point over each step: +12.7% at 100 reaches, first order - FN-021.)
     let seconds = 12.0 * period;
     let measure = |reaches: u32| {
         let (heads, dt) = simulate(true, seconds, reaches);
@@ -176,17 +175,11 @@ fn va5_a_creeping_wall_slows_and_damps_the_ring_as_theory_says() {
             (d / delta - 1.0) * 100.0
         );
     }
-    check_close(
-        "error halves as the reaches double (first order)",
-        (d100 - delta) / (d200 - delta),
-        2.0,
-        0.05,
-    );
-    check_close(
-        "extrapolated to a zero time step: decay rate [1/s]",
-        2.0 * d400 - d200,
-        delta,
-        0.005,
+    check_close("decay rate, 100 reaches [1/s]", d100, delta, 0.01);
+    check_close("decay rate, 400 reaches [1/s]", d400, delta, 0.003);
+    check(
+        "finer grids come closer",
+        (d400 - delta).abs() <= (d100 - delta).abs(),
     );
     println!(
         "  phase of the ring at theory's frequency moves {drift:.3} rad over 7 periods \
