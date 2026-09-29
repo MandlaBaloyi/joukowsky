@@ -11,8 +11,8 @@
 //! ```
 //!
 //! Each file: two lines of metadata, UTC timestamps rounded to the
-//! millisecond (so each logger's clock is off by up to half a millisecond
-//! - realistic), pressure in bar to 4 decimals, 128 S/s, 2 cm of noise.
+//! millisecond (so each logger's clock is off by up to half a millisecond,
+//! which is realistic), pressure in bar to 4 decimals, 128 S/s, 2 cm of noise.
 //! The engine must raise ONE Alarm on T-S3 within 2 m of 200 m, at the
 //! right time of day. Nothing is downloaded: the files are written into
 //! the build's scratch folder.
