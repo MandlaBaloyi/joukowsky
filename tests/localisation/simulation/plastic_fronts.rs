@@ -72,6 +72,7 @@ fn estate(split: bool) -> (Network, [NodeId; 3], Option<NodeId>) {
 }
 
 #[test]
+#[allow(clippy::too_many_lines)] // simulation, model and rigid comparison: one story
 fn the_front_model_with_plastic_damping_matches_the_full_simulation() {
     let k = leak::coefficient(0.6, Area::of_circle(Length::new(0.008)), STANDARD_GRAVITY);
     let (mut net, sensors, hole) = estate(true);
