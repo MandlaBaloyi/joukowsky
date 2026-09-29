@@ -78,3 +78,6 @@ These are UPPER BOUNDS on what is felt: plastic-wall damping (item 2
 above, milestone S6), unsteady friction (S5) and bursts that open slowly
 all make real fronts smaller. The numbers must be re-measured once S6
 exists and on field data (rung 4/5).
+What this means in kilometres, and how to extend coverage:
+10_findings/detection_range_and_scale.txt (junctions limit range in site
+networks, FN-007).

@@ -1,0 +1,66 @@
+GLOSSARY: THE WORDS WE USE, IN PLAIN LANGUAGE
+STATUS: DRAFT v0.1 (2026-09-29) - add a word whenever a new one appears
+
+Transient        A sudden change of pressure that travels through the
+                 pipes as a wave: a burst, a valve slammed, a pump that
+                 stops. Lasts seconds; can damage pipes.
+Water hammer     A strong transient, usually from stopping water fast.
+                 You hear it as a bang in the pipes.
+Joukowsky        The rule that says how big the pressure jump is when
+equation         water speed changes suddenly: jump = (wave speed / g) x
+                 speed change. 02_/joukowsky_equation.txt.
+Wave speed (a)   How fast the pressure wave runs along a pipe: about 1000
+                 metres a second in metal or cement pipe, 250-450 in
+                 plastic. It is how we turn timing into distance.
+Head (H)         Pressure expressed as the height of a water column, in
+                 metres. 1 bar is about 10.2 m.
+Front            The leading edge of a wave arriving at a logger - the
+                 moment the pressure starts to jump.
+Arrival time     When a logger felt the front. Differences between
+                 loggers' arrival times tell us where the event started.
+Logger           A pressure sensor that records readings, e.g. 128 times
+                 a second (128 S/s). We do not make loggers; we read them.
+Tier 2 / 1 / 0   What the data allows: Tier 2 = fast loggers (see and
+                 locate waves); Tier 1 = 1 reading a second (see big
+                 events); Tier 0 = SCADA every few minutes (trends only).
+Noise, sigma     The small random wobble in every sensor. Sigma is its
+                 typical size. We trigger at 6 sigma so noise alone
+                 almost never looks like an event.
+CUSUM            The detector's "running total of surprise": it adds up
+                 how far readings stray from normal and fires when the
+                 total gets too big.
+Baseline         What the pressure normally is right now; slowly updated.
+Ringing / echo   The wave bouncing back and forth in the pipes after an
+                 event. Not a new event.
+Impairment       A stretch of time when a logger was NOT watching at full
+                 sensitivity (calibrating, blind, ringing). Always shown.
+Gap              Missing data. Never filled in; silence is not "no event".
+MOC              Method of characteristics: how our simulator computes
+                 waves in pipes, step by step in time.
+Simulation       Computer-made pressure data from the physics, used to
+                 test the engine where we know the truth.
+Localisation     Finding where on the pipe map an event started.
+Posterior,       Instead of one dot on the map, the engine gives how
+credible region  likely each spot is, and a "dig here" stretch that holds
+                 the true spot with stated probability (e.g. 90%).
+Misfit           How badly the arrival times fit one source. Large misfit
+                 = two events at once, a bad clock, or a wrong map.
+Classification   Saying WHAT happened: burst, valve closure, pump trip,
+                 or Unknown (the engine may abstain).
+Alert levels     Info / Review / Alarm: how loudly the engine raises it.
+Placement        Choosing where loggers should go so bursts are felt and
+advisor          located well.
+Detectability    Whether a burst of a given size is big enough, when it
+                 reaches a logger, to be felt.
+Calibration      Measuring a real number (a sensor's noise, a pipe's wave
+                 speed, a clock's error) from data. Learning without ML.
+Machine learning Learning patterns that have no equation (e.g. which
+(ML)             pipes will fail next) from many examples.
+AI (language     The assistant that explains alerts in plain words and
+models)          turns repair notes into records. Never decides where a
+                 burst is.
+Validation       The steps every method must pass: exact physics ->
+ladder           published benchmarks -> simulation -> real datasets ->
+                 live listen-only mode. 07_validation/.
+Shadow mode      The engine runs on live data but only listens; its
+                 alerts are compared with what really happened.

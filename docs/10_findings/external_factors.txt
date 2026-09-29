@@ -1,0 +1,99 @@
+EXTERNAL FACTORS: WEATHER, LIGHTNING, HEAT, TREMORS, VIBRATION, POWER
+STATUS: DRAFT v0.1 (2026-09-29) - opened by FN-012; none tested yet
+
+Why this matters
+----------------
+The engine watches pressure. The world outside the pipe changes that
+pressure (or the SENSOR's reading of it) in ways that are not bursts. For
+each factor below: what it does, how it looks in the data, what the
+engine does TODAY, and the test that will prove it (V-E ids, to be added
+under tests/pipeline/simulation/ or tests/detection/simulation/).
+
+The rule that protects us from most of them: a real hydraulic event is a
+WAVE on the PIPES. It reaches loggers in an order and at times that the
+pipe graph and the wave speed dictate. Something that reaches one logger
+only, or all loggers at once in a way no pipe path explains, is not a
+pipe event (fusion consistency + the misfit check in assess.rs).
+
+E1  Lightning / electrical surge on a sensor or its cable
+  EFFECT     A spike or jump on ONE channel; not water moving.
+  IN DATA    Very short spike returning to baseline, or a step on one
+             logger only, often with a data gap (logger reset).
+  TODAY      Single-sensor events are rated Review, not Alarm (FN-003);
+             gaps are gaps (P6).
+  GAP        A spike that returns to baseline within a few samples is
+             not a burst front (a burst's step stays); not yet a rule.
+  TEST V-E1  Inject a 1-3 sample spike on one logger during quiet flow:
+             expect no Alarm; Review at most, reason in words.
+
+E2  Storms -> power cuts (and load-shedding)
+  EFFECT     Pumps trip (a REAL transient we want), loggers lose power,
+             uploads arrive late, everything restarts at once.
+  TODAY      Pump trip is a class; gaps, late sensors and power cuts are
+             handled and tested (tests/pipeline/simulation/live.rs).
+  TEST       Covered. Add: simultaneous restart surge after a cut.
+
+E3  Rain
+  EFFECT     No direct effect on water inside a sealed, pressurised pipe.
+             Indirect: (a) demand falls (irrigation stops) -> pressure
+             rises slowly; (b) flooded chambers -> sensor failure, noise,
+             gaps; (c) soil swelling / shrinking and ground movement ->
+             more bursts after heavy rain or drought [VERIFY for SA
+             soils]; (d) municipal supply interruptions -> refilling.
+  TODAY      (a) the baseline follows slow changes; (b) gaps and noise
+             are measured and reported; (c) not used; (d) comes out as
+             Unknown (G-14).
+  LATER      Rainfall and temperature as FEATURES in the pipe-health
+             model (L5); weather data is public [source TBD, approval].
+
+E4  Heat and cold (temperature)
+  EFFECT     Wave speed in plastic pipes depends strongly on temperature
+             (02_/wave_speed.txt section 4); day/night and summer/winter
+             shift it. A wrong wave speed shifts the located position.
+  IN DATA    Consistent location bias that changes with season.
+  TODAY      Placement allows 10% wave-speed doubt; the locator does not
+             learn the speed yet (G-09 L1).
+  PLAN       Learn wave speed per pipe from known-source events and keep
+             it per season / temperature.
+  TEST V-E4  Locate a burst with a +-5%, +-10% wrong wave speed: report
+             the position error; check the credible region widens.
+
+E5  Ground vibration: traffic, trains, construction, pumps nearby
+  EFFECT     Adds noise to the sensor (mounting, pipe vibration); rarely a
+             front.
+  TODAY      Noise is measured per sensor; higher noise = lower
+             sensitivity, reported, never hidden.
+  TEST V-E5  Add band-limited vibration noise; check no false alarms and
+             that the reported sensitivity drops accordingly.
+
+E6  Earth tremors (mining-induced in Gauteng [VERIFY frequency], rare
+    natural quakes)
+  EFFECT     A ground wave reaches all loggers nearly at once (km/s in
+             rock); it can shake sensors - and can really break pipes
+             (then a genuine burst follows).
+  IN DATA    Near-simultaneous disturbance on every logger, timing that
+             no pipe path explains.
+  TODAY      Untested. The misfit check rejects timings that fit no
+             single source, but "all at once" may fit a point in the
+             middle of the network - a possible false location.
+  TEST V-E6  All loggers disturbed within a few ms: expect "not a pipe
+             event" (new rule if needed), and a real burst 2 s later
+             still found.
+
+E7  Wind, hail
+  EFFECT     None on the water; power and connectivity only (see E2).
+
+E8  People
+  Fire brigade opening hydrants (often in storms and fires), contractors
+  hitting pipes, operators closing valves fast. These are REAL transients
+  - and, when their place and time are known, free calibration events
+  (wave speed, clocks). The feedback capture (G-08) should make logging
+  them trivial.
+
+Summary: what is covered today
+------------------------------
+  Covered      power cuts, gaps, late data, single-sensor faults (E2, part
+               of E1, E3b, E5 noise measurement)
+  Partial      lightning spikes (E1), temperature (E4, doubt only)
+  Not yet      tremors (E6), refilling after supply cuts (E3d, G-14),
+               weather as a pipe-health feature (E3c)

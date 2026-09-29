@@ -35,6 +35,19 @@ Reading order
                              backlog.
 09_technologies/             What we build with (and why), what we must
                              invent ourselves, and the decision log.
+10_findings/                 What building and testing taught us: the
+                             findings log, known gaps (read before any
+                             claim), detection range and scale, external
+                             factors (weather, lightning, tremors), real
+                             data candidates. Living folder.
+glossary.txt                 The words we use, in plain language.
+
+These docs are hints, not limits
+--------------------------------
+00-09 are the plan as first written. Building discovers what the plan
+missed. Anything missing or wrong is fixed in the topic file where it
+belongs, as soon as it is found, and logged in 10_findings/
+findings_log.txt with the date (owner's standing rule, 2026-09-29).
 
 Conventions
 -----------

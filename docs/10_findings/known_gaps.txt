@@ -1,0 +1,110 @@
+KNOWN GAPS: WHAT IS NOT BUILT OR NOT PROVEN YET
+STATUS: DRAFT - living list, updated as gaps open and close (2026-09-29)
+
+Read this before telling anyone what the engine can do. Every claim we
+make must survive this list. A gap is CLOSED only with a date and the test
+or dataset that proves it.
+
+State in one sentence (2026-09-29): the heart is built - detect, classify
+(rules), locate, grade, live - and has passed every analytical and
+simulation test (194/194), but has not yet been checked against an
+independent simulator, does not model plastic pipe walls, and has never
+seen real data. Like a team that has won every practice match and has not
+yet played a real game.
+
+A. Not yet PROVEN (the engine exists; the evidence does not)
+------------------------------------------------------------------------
+G-01  No independent cross-check of our simulator                 OPEN
+  WHY IT MATTERS  Our MOC simulator generates the data our detector and
+    locator are tested on. If both share one wrong assumption, every
+    test still passes. An independent code breaks that circle.
+  CLOSE BY        Rung 3 cross_code/: run the same networks in TSNet
+    (Python, 09_/03) and compare pressure histories. Needs a Python
+    install + TSNet download -> owner approval first (TD-020).
+    Without installing anything: type in published benchmark cases
+    (textbook worked examples, V-A2 Michaud, V-B1 lab numbers from
+    papers) as analytical tests.
+  AFFECTS         Everything downstream of the simulator.
+
+G-02  Plastic pipe walls are not modelled (viscoelastic damping)  OPEN
+  WHY IT MATTERS  uPVC and HDPE walls stretch and slowly relax, soaking
+    up the wave and smearing its front (02_/friction_and_damping.txt,
+    02_/wave_speed.txt). Much newer South African pipe is plastic. Today
+    our fronts are UPPER BOUNDS: real ones will be smaller and softer, so
+    the detection range and the smallest locatable burst are optimistic
+    for plastic networks.
+  CLOSE BY        Solver milestone S6 (1-3 Kelvin-Voigt elements for
+    PE/PVC, 09_/02), parameters from published lab data [VERIFY];
+    then re-run V-S2 detectability and the placement numbers.
+  RELATED         S5 unsteady friction (G-03).
+
+G-03  Unsteady friction not modelled (solver S5)                  OPEN
+  Quasi-steady friction under-damps waves after the first front. Matters
+  for echoes, ringing and later arrivals more than for the first front.
+
+G-04  Never run on real data                                      OPEN
+  WHY IT MATTERS  Real noise, real clocks, real sensor faults, real pipe
+    physics. Rungs 4 and 5 of the ladder (07_) have not started.
+  CLOSE BY        real_data_candidates.txt -> owner chooses -> download
+    into data/ (quarantine, manifest, verify) -> datasets/ tests.
+  NOTE            The readers are ready (EPANET .inp, logger CSV) and
+    were tested on realistic hand-made files; FN-010 shows why this
+    matters.
+
+G-05  No scorecard over many events                               OPEN
+  Tests check single cases. The metrics in 07_ (detection rate vs size,
+  false alarms per sensor-day, location error in m, credible-region
+  coverage) need a harness that runs many events and reports them.
+  A score needs ground truth: lab data with known burst positions, or a
+  partner opening a hydrant at a known place and time.
+
+B. Not yet BUILT
+------------------------------------------------------------------------
+G-06  Burst size is not in the alert                              OPEN
+  The physics exists (hydraulics/joukowsky.rs; front h0 = B/2 Q), not yet
+  wired: "about 2 l/s" with an uncertainty. 07_ metric: quantification.
+
+G-07  No safe action advice (P4)                                  OPEN
+  "Close valve V7 over at least 30 s" - simulated first, closure time
+  > 2L/a with margin. Needs valve positions in the network model.
+
+G-08  No feedback capture                                         OPEN
+  Operators cannot yet confirm/reject an alert or record what the repair
+  crew found. These labels are the most valuable data the system will
+  ever get (05_/learning_over_time.txt) - learning cannot start without
+  them.
+
+G-09  Learning loops mostly not built                             OPEN
+  Built: per-sensor noise (L2, at calibration), clock offsets from known-
+  source events (L2/F9). Not built: wave speed updating (L1), "normal for
+  this site" (L3), classifier Stage B/C (L4), pipe health (L5), across
+  sites (L6).
+
+G-10  Large networks untested                                     OPEN
+  Largest network run: campus, 2.3 km. The placement analysis grows with
+  length squared (FN-008). The MOC solver and live engine have not been
+  timed on 10-100 km. See detection_range_and_scale.txt.
+
+G-11  External factors untested                                   OPEN
+  Lightning spikes, tremors, vibration, temperature. external_factors.txt
+  lists the tests (V-E1..V-E6).
+
+G-12  Slow leaks are invisible to the transient method            OPEN
+  A leak that grows over weeks sends no sharp wave. P2: we must not claim
+  to see it from fronts. Needs Tier 0 methods (night flow, mass balance,
+  pressure trends; V-B2 BattLeDIM; 08_ Q-P3).
+
+G-13  Wave-speed doubt in placement is a fixed 10%                OPEN
+  F10 proper: robust placement over a posterior of wave speeds.
+
+G-14  Refilling / air-pocket transients have no class             OPEN
+  Classes today: Burst, ValveClosure, PumpTrip, Unknown. Refilling after
+  supply cuts is among the most violent SA transients
+  (01_/the_operating_environment.txt section 2); it will come out as
+  Unknown until a class and a simulation (S7 cavitation, air) exist.
+
+C. Engineering
+------------------------------------------------------------------------
+G-15  Guard rails are not a sandbox (FN-011)                      OPEN
+  Real isolation (Linux / WSL2) before third-party tools or untrusted
+  data at scale; tell the owner first.

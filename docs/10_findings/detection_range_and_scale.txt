@@ -1,0 +1,92 @@
+DETECTION RANGE AND SCALE: HOW MANY KILOMETRES CAN WE COVER?
+STATUS: DRAFT v0.1 (2026-09-29) - numbers are upper bounds until G-02
+
+Short answer
+------------
+The engine has no kilometre limit. What limits coverage is (1) how far a
+burst's wave travels before it is too faint to feel, and (2) how many
+loggers are spread over the network. The 2.3 km campus is the largest
+network we have RUN, not the largest we CAN run: we started small on
+purpose (fast tests on a modest laptop; the first clients are sites).
+
+Is 2.3 km small? For the first target - a campus, mall, hospital, office
+park or estate - a few km of pipe is the right size (00_/mission: "km,
+not thousands of km"). For a municipality it is tiny: a city has
+thousands of km [VERIFY per city]. "Designed so nothing assumes small
+scale" (CLAUDE.md) means the path to city scale must stay open - below.
+
+1. How big is a burst's wave? (worked numbers)
+------------------------------------------------------------------------
+A sudden burst of flow Q sends a front of height h0 = (B/2) Q both ways
+along the pipe, B = a / (g A)   (02_/friction_and_damping.txt, V-S2).
+
+  pipe                        a [m/s]   B [s/m^2]   h0 per 1 l/s
+  100 mm, rigid (steel, AC)   1000      12 979      6.49 m
+  150 mm, rigid               1000       5 768      2.88 m
+  300 mm, rigid               1000       1 442      0.72 m
+  150 mm, plastic (uPVC)       350       2 019      1.01 m
+  110 mm, plastic (HDPE)       350       3 754      1.88 m
+
+  Working (150 mm rigid): A = pi/4 x 0.15^2 = 0.01767 m^2;
+  B = 1000 / (9.81 x 0.01767) = 5768; h0 = 5768 / 2 x 0.001 = 2.88 m.
+
+A logger feels a front at 6 noise sigmas (FN-005). With 2 cm noise that
+is 0.12 m. So in 150 mm rigid pipe a 1 l/s burst starts 24x louder than
+it needs to be.
+
+2. What shrinks it on the way
+------------------------------------------------------------------------
+(a) Junctions. An equal tee passes 2/3 of a front (V-A3). After n tees:
+    (2/3)^n. 24x of headroom lasts ln 24 / ln 1.5 = 7.8 -> 7 tees.
+      1 l/s: ~7 tees    0.5 l/s: ~6    5 l/s: ~11    0.1 l/s: ~2
+    (A dead end doubles a front; a reservoir erases it.)
+(b) Friction (quasi-steady): exp(-f V x / (2 D a)) = about 3.3% per km
+    at f = 0.02, V = 0.5 m/s, D = 0.15 m, a = 1000 m/s. 24x of headroom
+    would last ln 24 / 3.33e-5 per m = ~95 km of straight pipe.
+(c) Plastic walls (viscoelastic). NOT MODELLED YET (G-02). Expected to be
+    the largest loss in plastic pipe; unknown until S6 and field data.
+(d) Unsteady friction (G-03), service connections and leaks: smaller.
+(e) Slow openings: a burst that opens over a second makes a gentler front
+    than a sudden one: the step reaches about the same height if the
+    opening is short compared with the echo times, but it rises slowly,
+    so it is harder to time and, if much slower, harder to feel.
+
+Conclusion (FN-007): in a branched site network, JUNCTIONS limit range,
+not kilometres. In a long transmission main with few branches, the limit
+is plastic damping and friction - potentially many km between loggers,
+to be measured on real data. 95 km is a mathematical ceiling, not a
+promise.
+
+3. What limits scale in the SOFTWARE
+------------------------------------------------------------------------
+  Live engine (detect + locate): work per logger stream plus one
+    location search per event over the pipe grid (5 m spacing: 100 km of
+    pipe = 20 000 points). Expected cheap; NOT yet timed (G-10).
+  MOC simulator: grows with pipe length x simulated time. Not yet timed
+    beyond the campus.
+  Placement advisor (offline planning): grows with length SQUARED
+    (FN-008). Campus 2.3 km ~6 s (release). Scaling estimate:
+      10 km    ~19x  -> ~2 min
+      50 km   ~470x  -> ~47 min
+      100 km ~1900x  -> ~3 h
+    Too slow past ~50 km. Fixes, in order of effort: coarser trial bursts
+    far from loggers; scoring in parallel (4 cores here, many in the
+    cloud); an analytical score for the pair search.
+
+4. How we extend the kilometres
+------------------------------------------------------------------------
+1. Zones, like cellphone towers. A city is split into zones (supply
+   areas / DMAs), each with its own loggers; the engine runs zones side
+   by side. A zone of 5-20 km behaves like a large site. The total length
+   is then limited only by computers, not by method.
+2. Bigger test networks, without downloading: generate synthetic towns of
+   10, 50, 100 km with our own code (grids, branches, loops, mains).
+   Time the simulator, live engine and advisor on them (closes G-10).
+3. Public networks, WITH owner approval: EPANET example networks, L-Town
+   (BattLeDIM) - real layouts, read by our .inp reader.
+4. Speed up the advisor (section 3).
+5. Model plastic walls (S6, G-02), then re-measure range per material.
+6. Use every tier of data together: slow SCADA and 1 s loggers across
+   the whole network say WHICH ZONE; fast loggers inside it say WHERE.
+7. Mains first: transmission mains have few junctions, so few loggers
+   cover many km - the cheapest way to add kilometres.

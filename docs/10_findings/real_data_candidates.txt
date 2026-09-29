@@ -1,0 +1,76 @@
+REAL DATA CANDIDATES
+STATUS: DRAFT v0.1 (2026-09-29) - for discussion with the owner; NOTHING
+here has been downloaded, searched for or checked online yet
+
+Rule: no download, extraction or install without the owner's explicit
+approval (CLAUDE.md, TD-020). Approved files go only into data/incoming,
+are recorded in data/manifest.csv with their SHA-256, never executed.
+Every fact below is from memory and marked [VERIFY] until checked at the
+source, with approval.
+
+Checklist before asking for approval
+------------------------------------
+  1. Publisher and official source (not a mirror).
+  2. Licence: may we use it commercially? must we credit it?
+  3. Size on disk, and the format (plain text / CSV / .inp preferred; no
+     installers, scripts or macros).
+  4. What it PROVES: which gap (known_gaps.txt) or ladder rung it closes.
+  5. Ground truth: does it say what really happened (where, when, how
+     big)? Without truth it can test robustness, not accuracy.
+  6. Personal data: addresses, customer names? (not expected; if present,
+     do not keep).
+
+Does it have to be South African data?
+--------------------------------------
+Not for the physics: a wave in a pipe obeys the same laws in Pretoria
+and in Adelaide. Yes, eventually, for the CONDITIONS: load-shedding,
+intermittent supply, local pipe materials and ages. So: foreign lab and
+benchmark data first to prove the method; South African partner data to
+prove it where we sell.
+
+Candidates, in suggested order
+------------------------------
+C1  EPANET example networks (Net1, Net2, Net3)                  [VERIFY]
+    Source   US EPA, shipped with EPANET; believed public domain.
+    Size     A few KB each, plain text.
+    Proves   Our .inp reader on files written by real tools, not by us.
+             Layouts only - no pressure recordings.
+    Risk     Lowest.
+
+C2  L-Town (BattLeDIM 2020 competition)                          [VERIFY]
+    Source   Published by the competition organisers (University of
+             Cyprus KIOS centre and partners), on Zenodo; believed CC BY.
+    Content  An EPANET model of a realistic town (tens of km of pipe) and
+             pressure/flow readings every 5 minutes for about two years,
+             with the true leak times and places.
+    Size     Believed hundreds of MB [VERIFY before approval].
+    Proves   Reader and engine at town scale (G-10); Tier 0 behaviour;
+             slow-leak methods (G-12). NOT transients - 5 min is far too
+             slow to see a wave (P2).
+
+C3  Published laboratory water-hammer experiments                [VERIFY]
+    Source   University pipe rigs (e.g. Adelaide: Simpson, Bergant,
+             Lambert) - numbers and figures in journal papers; some with
+             supplementary data files.
+    Proves   Our simulator against REAL physics with known truth (G-01,
+             G-02 plastic pipes if a PE rig, G-03 unsteady friction).
+    Note     Many numbers can be typed in from the papers - no download
+             of data files needed, only reading.
+
+C4  TSNet (Python transient simulator)                           [VERIFY]
+    A tool, not data: needs a Python install and a package download.
+    Proves   Independent cross-check of our simulator (G-01).
+
+C5  Open high-frequency field transient datasets                 [VERIFY]
+    Unknown whether any exist openly (08_ R-3, V-B3). Finding out needs
+    a web SEARCH, which itself asks permission. If none exist, the data
+    we collect with partners becomes a contribution.
+
+C6  A South African partner site (the real prize)
+    A campus, mall or estate that already has, or will install,
+    transient loggers (~128 S/s) and shares the CSV exports. Ground truth
+    by agreement: open a hydrant at a known place and time. This is rung
+    5 - live shadow mode.
+
+C7  Public weather data (for external_factors.txt E3/E4)         [VERIFY]
+    Rainfall and temperature, for the pipe-health model later.

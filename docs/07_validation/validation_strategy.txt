@@ -37,6 +37,12 @@ Rung 3  Simulation studies.
         plastic-wall damping (S6). friction_and_damping.txt, note at end.
   V-S3  Classifier trained on synthetic data, tested on held-out
         networks (generalisation).
+  V-E1..V-E6  External factors (lightning spike on one logger, restart
+        surge, wrong wave speed from temperature, vibration noise, earth
+        tremor on all loggers at once): 10_findings/external_factors.txt.
+  V-S4  Scale: synthetic towns of 10 / 50 / 100 km - time the simulator,
+        live engine and advisor (10_findings/detection_range_and_scale.txt,
+        gap G-10).
 Rung 4  Public and partner datasets (software only - we build no rig).
   Published lab and field transient datasets (08_research/open_questions
   R-3), plus recorded data shared by sensor vendors, utilities or

@@ -1,0 +1,87 @@
+FINDINGS LOG
+STATUS: DRAFT - append only; newest at the bottom
+
+Each entry: WHAT HAPPENED / WHAT IT TAUGHT / WHAT CHANGED.
+Entries FN-001..FN-012 were recorded after the fact on 2026-09-29 from the
+build of 2026-09-28/29; later entries are written as they happen.
+
+FN-001  2026-09-28  One burst raised twelve alerts (echoes)
+  WHAT HAPPENED  In a small network the burst wave bounces off dead ends
+    and junctions. Each reflection looked like a new event to a detector
+    that re-armed after a fixed hold-off.
+  WHAT IT TAUGHT In small commercial networks, echoes are the normal
+    state for seconds after any event. "Re-arm after N seconds" is wrong.
+  WHAT CHANGED   The detector waits until the signal settles, and listens
+    through ringing with a raised floor (ring_units 1, settle band 4
+    sigma). One burst, one alert. 04_/event_detection.txt section 4b.
+
+FN-002  2026-09-28  A second burst during ringing was missed
+  WHAT HAPPENED  "Wait until quiet" fixed FN-001 but went deaf: a second
+    burst 3 s later was never reported.
+  WHAT IT TAUGHT Blindness is also a failure. Reduced sensitivity must be
+    reported, never hidden (P6).
+  WHAT CHANGED   Ringing floor instead of deafness; every stretch of
+    reduced sensitivity is an Impairment span shown to the user.
+
+FN-003  2026-09-28  A faulty sensor's jump came out as "Info"
+  WHAT IT TAUGHT An event seen by one sensor only is not proof of
+    nothing: the others may have been blind or the sensor may be broken.
+  WHAT CHANGED   Corroboration: a single-sensor event is rated Review,
+    with the reason in words ("silence means nothing" when others were
+    impaired).
+
+FN-004  2026-09-28  A sensor returning from a gap calibrated on echoes
+  WHAT HAPPENED  After a power cut it learned its noise from ringing, so
+    it came back too sensitive - or not sensitive enough.
+  WHAT CHANGED   Calibration checks for ringing before trusting a noise
+    estimate (tests/pipeline/simulation/live.rs, power cut).
+
+FN-005  2026-09-28  Detection threshold measured, not assumed
+  5 sigma caught and timed a front to 2 samples in 96% of 300 trials,
+  6 sigma in 100% (tests/detection/analytical/sensitivity.rs). The
+  placement advisor therefore plans with 6 sigma.
+
+FN-006  2026-09-28  The best pair of loggers was not the two ends
+  On the 3-sensor estate intuition said "put them at the two ends"; the
+  scored answer was S1+S3. Lesson: placement is computed, not guessed -
+  which is why the advisor exists.
+
+FN-007  2026-09-28  Junctions, not kilometres, limit how far a burst is felt
+  The first-front model matched full MOC within 0.05%. Each equal tee
+  passes 2/3 of a front; friction takes about 3% per km. So a 1 l/s
+  burst in 150 mm pipe survives about 7 tees but in theory ~95 km of
+  straight pipe. See detection_range_and_scale.txt.
+
+FN-008  2026-09-28  Placement analysis cost grows with length squared
+  Campus (2.3 km): 86 s -> 54 s (debug) after caching the localiser per
+  sensor set; about 6 s in release. A 10 km network would take ~20x
+  longer. Gap G-10.
+
+FN-009  2026-09-29  128 S/s read as 125 S/s from real-format timestamps
+  WHAT HAPPENED  Logger files round times to the millisecond. At 128 S/s
+  the true step is 7.8125 ms; rounded steps are 7 or 8 ms, and the MEDIAN
+  step is 8 ms = 125 S/s. The whole recording would have been stretched.
+  WHAT CHANGED   The reader uses the mean of ordinary steps and snaps to a
+  whole rate only if every sample then fits its slot.
+
+FN-010  2026-09-29  Clock time broke the locator's precision (critical)
+  WHAT HAPPENED  Real files stamp seconds since 1970 (~1.79e9). Squared
+  timing residuals at that size lose every significant digit: a burst's
+  misfit came out as exactly 2^18 and its search stretch as 1166 m, rated
+  Review instead of Alarm. All simulations started at t = 0, so no test
+  had ever seen it.
+  WHAT IT TAUGHT Tests must use realistic absolute times, not just
+  realistic signals. Near 1.79e9 s, 64-bit numbers are spaced 0.24 us
+  apart - fine for storing a time, useless for squaring differences.
+  WHAT CHANGED   Localiser and clock repair measure from the earliest
+  arrival; invariant tests (tests/localisation/invariants/time_origin.rs)
+  prove the answer does not depend on the time origin.
+
+FN-011  2026-09-29  Guard rails match command prefixes only
+  A compound PowerShell command containing Remove-Item was not stopped.
+  The rules are a seatbelt, not a sandbox (TD-020). Real isolation
+  (Linux / WSL2) before untrusted tools or data at scale.
+
+FN-012  2026-09-29  External factors were never written down
+  Owner asked about rain, storms and lightning. No doc covered them. Now
+  external_factors.txt; tests to write are listed there (V-E1..V-E6).
