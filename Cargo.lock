@@ -26,8 +26,11 @@ dependencies = [
 name = "jk-cli"
 version = "0.1.0"
 dependencies = [
+ "jk-application",
+ "jk-classification",
  "jk-hydraulics",
  "jk-kernel",
+ "jk-localisation",
 ]
 
 [[package]]

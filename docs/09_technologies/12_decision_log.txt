@@ -96,6 +96,17 @@ TD-018 | 2026-09-28 | OWN THE BRAIN, BORROW THE PLUMBING - how TD-005
        auditability (P5), no licence traps, no supply-chain risk, edge
        portability. |
 
+TD-019 | 2026-09-29 | THE DEVELOPMENT VIEWER IS OUR OWN SVG, NO CHART
+       LIBRARY. `jk view` writes one self-contained HTML page (inline SVG,
+       ~60 lines of vanilla script for tooltips, CSS colour tokens for
+       light and dark themes, the charting method's validated reference
+       palette). No JS/CSS dependency, nothing downloaded or served; it
+       opens offline. The product dashboard and mobile app (later, on the
+       engine API) may choose a UI framework then, with its own entry.
+       | owner + Claude | TD-005/TD-018: it is small, it shows the
+       engine's own results exactly, and it keeps the laptop free of a
+       front-end toolchain until the product UI is designed. |
+
 WORKING RULES FOR THE DEV MACHINE
 ------------------------------------------------------------------------
   Laptop: Intel Core i3-1125G4 (4 cores / 8 threads, 2.0 GHz), 16 GB RAM,

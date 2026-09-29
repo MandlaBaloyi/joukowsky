@@ -1,14 +1,14 @@
 joukowsky test run
-  when     2026-09-28 20:32:39
+  when     2026-09-29 10:32:22
   suite    quick
-  commit   8236f4d (with uncommitted changes)
+  commit   229aeba (with uncommitted changes)
   rust     rustc 1.98.1 (48a229cea 2026-09-01)
   command  cargo test --workspace --no-fail-fast -- --nocapture --test-threads=1
 ==============================================================================
-   Compiling jk-localisation v0.1.0 (C:\Users\HP\Desktop\joukowsky\crates\domain\localisation)
    Compiling jk-application v0.1.0 (C:\Users\HP\Desktop\joukowsky\crates\application)
    Compiling jk-tests v0.1.0 (C:\Users\HP\Desktop\joukowsky\tests)
-    Finished `test` profile [unoptimized + debuginfo] target(s) in 7.29s
+   Compiling jk-cli v0.1.0 (C:\Users\HP\Desktop\joukowsky\crates\interfaces\cli)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 10.33s
      Running unittests src\lib.rs (target\debug\deps\jk_application-31ec11ad23313301.exe)
 
 running 3 tests
@@ -28,11 +28,14 @@ test features::front::tests::an_integrated_step_rises_in_one_point_six_samples .
 
 test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
 
-     Running unittests src\main.rs (target\debug\deps\jk-7274c5438ed9f47a.exe)
+     Running unittests src\main.rs (target\debug\deps\jk-8d7ba007e226f94d.exe)
 
-running 0 tests
+running 3 tests
+test view::svg::tests::escapes_markup ... ok
+test view::svg::tests::sequential_classes_cover_the_range ... ok
+test view::svg::tests::ticks_are_round ... ok
 
-test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
 
      Running unittests src\lib.rs (target\debug\deps\jk_detection-ab885d9bb867d09a.exe)
 
@@ -52,7 +55,7 @@ test onset::step_area::tests::a_ramp_front_is_placed_at_its_centre ... ok
 test onset::step_area::tests::declines_when_the_windows_do_not_fit ... ok
 test onset::step_area::tests::exact_for_a_sharp_step_at_any_phase ... ok
 
-test result: ok. 14 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.03s
+test result: ok. 14 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.10s
 
      Running unittests src\lib.rs (target\debug\deps\jk_hydraulics-c42e47dfc771fa13.exe)
 
@@ -99,7 +102,7 @@ test pipe::friction::quasi_steady::tests::matches_darcy_weisbach_in_velocity_for
 test pipe::tests::rejects_non_physical_values ... ok
 test pipe::tests::timing_matches_docs_example ... ok
 
-test result: ok. 41 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+test result: ok. 41 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.04s
 
      Running unittests src\lib.rs (target\debug\deps\jk_kernel-eccabcc9e10cd5d2.exe)
 
@@ -115,7 +118,7 @@ test units::tests::same_type_arithmetic ... ok
 test units::tests::velocity_flow_area ... ok
 test units::tests::wave_travel_time_and_distance_round_trip ... ok
 
-test result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+test result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
 
      Running unittests src\lib.rs (target\debug\deps\jk_localisation-b57d917c3efe0d09.exe)
 
@@ -239,11 +242,11 @@ test simulation::scenarios::power_data_settles_the_slow_burst ... The same slow 
   burst                                        yes
 ok
 
-test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.00s
+test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 3.19s
 
      Running detection\main.rs (target\debug\deps\detection-b444fcbf23cd3a81.exe)
 
-running 9 tests
+running 10 tests
 test analytical::delay::delay_follows_the_cusum_formula ... Sharp drops at t = 3 s, noise-free signal with a 2 cm noise floor set:
       5 noise units (0.10 m): alarm after 6 samples (formula 6)
     delay matches floor(h / (d - k)) + 1       yes
@@ -279,6 +282,17 @@ test analytical::onset_precision::with_noise_the_error_matches_the_reported_unce
   timing error under a tenth of a sample       yes
   the reported uncertainty is honest (>= 90% inside 2 sigma) yes
 ok
+test analytical::sensitivity::the_smallest_step_the_detector_catches_and_times ... Step size (noise sd) -> share caught and timed to 2 samples (300 trials):
+     3 sd (  60 mm)     1.7%
+     4 sd (  80 mm)    61.3%
+     5 sd ( 100 mm)    96.3%
+     6 sd ( 120 mm)   100.0%
+     8 sd ( 160 mm)   100.0%
+    10 sd ( 200 mm)   100.0%
+  larger steps are caught at least as often    yes
+  5 sd: caught at least 95% of the time        yes
+  6 sd and more: always caught                 yes
+ok
 test simulation::burst_location::vs1_burst_located_from_128_samples_per_second_loggers ... DN150 main at rest (60 m); 10 mm hole opens at t = 2.0 s, 700 m from S1.
 Loggers: 128 S/s, integrating, random clock phase, 2 cm noise:
   S1: noise learned 0.0190 m, arrival 2.69958 s (+/- 0.16 ms), step -4.483 m, alarm 8.0 ms later
@@ -291,7 +305,7 @@ Loggers: 128 S/s, integrating, random clock phase, 2 cm noise:
 ok
 test simulation::burst_location::vs1_location_error_versus_sampling_rate_and_noise ... ignored, full suite: 150 recorded sensor pairs across rates and noise levels
 
-test result: ok. 7 passed; 0 failed; 2 ignored; 0 measured; 0 filtered out; finished in 1.14s
+test result: ok. 8 passed; 0 failed; 2 ignored; 0 measured; 0 filtered out; finished in 4.17s
 
      Running hydraulics\main.rs (target\debug\deps\hydraulics-1ec183be55c13ac0.exe)
 
@@ -553,7 +567,7 @@ test invariants::steady_state::an_undisturbed_pipe_stays_steady ... Steady state
   valve holds steady                           yes
 ok
 
-test result: ok. 34 passed; 0 failed; 1 ignored; 0 measured; 0 filtered out; finished in 0.07s
+test result: ok. 34 passed; 0 failed; 1 ignored; 0 measured; 0 filtered out; finished in 0.20s
 
      Running kernel\main.rs (target\debug\deps\kernel-419ce9c0b855e6a8.exe)
 
@@ -582,7 +596,7 @@ test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; fini
 
      Running localisation\main.rs (target\debug\deps\localisation-f844bf3dc056be80.exe)
 
-running 13 tests
+running 16 tests
 test analytical::branched::two_sensors_see_a_whole_branch_three_sensors_see_the_point ... Sensors S1 and S2 only (burst 200 m along branch T-S3):
   probability on branch T-S3: 100.0%
   90% region: 540 m of pipe
@@ -607,6 +621,23 @@ Picks with 0.2 ms noise:
     within 3 reported sigma                    yes
   node 4: -40.843 ms (true -41.0 ms), uncertainty 0.163 ms
     within 3 reported sigma                    yes
+ok
+test analytical::detectability::the_first_front_at_each_logger_follows_the_junction_rules ... A sudden 1 l/s burst drops the head at the hole by h0 = 2.885 m.
+First front felt at each logger:
+  S3 (dead end, no junction)       2 h0        got       5.770413   expected       5.770413   rel.err 0.0e0
+  T  (the tee)                   2/3 h0        got       1.923471   expected       1.923471   rel.err 0.0e0
+  S1 (tee, straight run)         2/3 h0        got       1.923471   expected       1.923471   rel.err 0.0e0
+  S2 (tee, then dead end)        4/3 h0        got       3.846942   expected       3.846942   rel.err 0.0e0
+  R  (reservoir holds its head)       0        got       0.000000   expected       0.000000   rel.err 0.0e0
+ok
+test analytical::detectability::the_smallest_burst_three_loggers_can_locate_on_the_estate ... Smallest sudden burst located anywhere on each pipe (2 cm logger noise):
+    R-S1 [l/s]                                 got       0.031194   expected       0.031194   rel.err 0.0e0
+    S1-T [l/s]                                 got       0.031194   expected       0.031194   rel.err 0.0e0
+    T-S2 [l/s]                                 got       0.031194   expected       0.031194   rel.err 0.0e0
+    T-S3 [l/s]                                 got       0.031194   expected       0.031194   rel.err 0.0e0
+  a 1 l/s burst is located everywhere          yes
+Average 90% region, 3 loggers: 154 m if every burst were felt; 1800 m for 0.02 l/s bursts
+  0.02 l/s bursts: blind everywhere (region = the whole 1.8 km) yes
 ok
 test analytical::placement::campus_value_of_each_extra_logger ... ignored, full suite: the advisor on a 2.3 km campus takes about a minute
 test analytical::placement::knowing_the_wave_speeds_is_worth_as_much_as_a_logger ...   wave speeds known to   0%: pinpointed  78%, average 90% region   89 m
@@ -696,6 +727,13 @@ test simulation::clock_study::vs1_location_error_grows_with_clock_error_as_theor
     the 90% region stays honest (>= 80%)       yes
   => metre-level location needs clocks good to ~1 ms: GNSS, or repaired.
 ok
+test simulation::detectability::the_quick_front_model_matches_the_full_simulation ... An 8 mm hole lets out 1.009 l/s; the drop at the hole is 2.912 m.
+First front, full simulation vs the quick model:
+  at the hole                                  got       2.911972   expected       2.911702   rel.err 9.3e-5
+  S3 (dead end)                                got       5.821728   expected       5.823404   rel.err 2.9e-4
+  S1 (through the tee)                         got       1.940494   expected       1.941135   rel.err 3.3e-4
+  S2 (tee, then dead end)                      got       3.880496   expected       3.882269   rel.err 4.6e-4
+ok
 test simulation::estate_burst::a_burst_on_a_branch_is_found_from_raw_logger_data ...   S1: front at 2.49969 s (+/- 0.21 ms), step -2.97 m
   S2: front at 2.69957 s (+/- 0.10 ms), step -5.98 m
   S3: front at 2.39950 s (+/- 0.06 ms), step -8.96 m
@@ -710,7 +748,7 @@ Localisation:
   the arrivals fit one source (misfit < 3)     yes
 ok
 
-test result: ok. 11 passed; 0 failed; 2 ignored; 0 measured; 0 filtered out; finished in 6.37s
+test result: ok. 14 passed; 0 failed; 2 ignored; 0 measured; 0 filtered out; finished in 12.16s
 
      Running pipeline\main.rs (target\debug\deps\pipeline-aee9828f246fe90a.exe)
 
@@ -862,7 +900,7 @@ another on the north branch at t = 30 s:
   the second on the north branch, ~150 m       yes
 ok
 
-test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 8.64s
+test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 15.00s
 
    Doc-tests jk_application
 
@@ -913,9 +951,9 @@ running 0 tests
 test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
 
 ==============================================================================
-  passed   154
+  passed   161
   failed   0
   skipped  5 slow test(s) not in this suite (run -Suite full)
   filtered 0 test(s) outside -Only/-Filter
-  time     28.3 s (including compile)
+  time     52.1 s (including compile)
   result   ALL PASSED

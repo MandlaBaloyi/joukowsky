@@ -121,3 +121,23 @@ that names the blind sensor, no echo alerts when it returns.
 Not yet: an explicit coverage map (E2) built from the impaired stretches;
 persistence of monitor state across restarts; per-site max_wait from each
 logger's upload schedule; clock-quality checks on chunk stamps.
+
+Viewer (2026-09-29)
+-------------------
+`jk view` (crates/interfaces/cli/src/view/) writes jk-view.html: one
+self-contained page, light and dark themes, own inline SVG (TD-019).
+  1. A burst, as the engine saw it: the flowing estate with two bursts,
+     three synthetic loggers fed to the live Monitor in 1 s chunks. Each
+     alert with its level, confidence, when it went out (data time) and
+     why; a map per alert (pipes by probability, the 90% search stretch
+     as a halo, the most likely point and the true burst); each logger's
+     record with the detected fronts and the stretches it was not
+     watching at full sensitivity shaded.
+  2. Where should the loggers go: the placement advisor on the campus -
+     summary figures, the recommendation on a map (pipes by typical
+     search stretch), what each extra logger buys, a table per pipe with
+     the smallest locatable burst.
+The Monitor gained two read-only views for it (and for the product
+dashboard later): detections() and impaired(sensor).
+Next: once the data readers exist, `jk view` shows real network files and
+real logger exports instead of simulations.

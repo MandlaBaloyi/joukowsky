@@ -34,3 +34,5 @@ when,suite,only,filter,commit,uncommitted,passed,failed,skipped,seconds,result,l
 2026-09-28 20:33:25,full,,,8236f4d,yes,159,0,0,139.8,pass,runs/2026-09/2026-09-28/20-33-25_full.log
 2026-09-28 20:38:09,full,,,8236f4d,yes,159,0,0,114.8,pass,runs/2026-09/2026-09-28/20-38-09_full.log
 2026-09-28 21:13:04,full,,,ee611bf,yes,163,0,0,138.3,pass,runs/2026-09/2026-09-28/21-13-04_full.log
+2026-09-28 21:16:51,quick,,,229aeba,no,158,0,5,24.8,pass,runs/2026-09/2026-09-28/21-16-51_quick.log
+2026-09-29 10:32:22,quick,,,229aeba,yes,161,0,5,52.1,pass,runs/2026-09/2026-09-29/10-32-22_quick.log

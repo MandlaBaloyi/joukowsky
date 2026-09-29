@@ -68,6 +68,25 @@ impl SensorState {
             && open_since.iter().flatten().all(|&a| a > to)
     }
 
+    /// Every stretch when it was not watching at full sensitivity, the
+    /// open one (if any) running to its last sample [s].
+    pub fn impaired_spans(&self) -> Vec<(f64, f64)> {
+        let mut spans = self.impaired.clone();
+        let until = self.received_until().unwrap_or(f64::NEG_INFINITY);
+        let open = [
+            self.stream
+                .as_ref()
+                .and_then(DetectorStream::open_impairment)
+                .map(|(t, _)| t.value()),
+            self.assembler
+                .as_ref()
+                .and_then(Assembler::open_gap)
+                .map(|(t, _)| t.value()),
+        ];
+        spans.extend(open.iter().flatten().map(|&from| (from, until)));
+        spans
+    }
+
     /// A new continuous stretch begins at `start`.
     pub fn start_stretch(&mut self, start: f64) {
         self.history.clear();

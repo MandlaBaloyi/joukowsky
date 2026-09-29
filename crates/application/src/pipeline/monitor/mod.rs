@@ -23,7 +23,7 @@
 mod sensor;
 
 use jk_classification::extract;
-use jk_detection::{Detector, StreamOutput};
+use jk_detection::{Detector, Event, StreamOutput};
 use jk_kernel::Time;
 use jk_localisation::ClockEstimate;
 use jk_localisation::clocks::correct;
@@ -134,6 +134,36 @@ impl Monitor {
     #[must_use]
     pub fn site(&self) -> &Site {
         &self.site
+    }
+
+    /// Every detection the monitor still holds - waiting to be decided, or
+    /// part of an event kept for revision - as (sensor number, event on the
+    /// sensor's clock), in order of arrival.
+    #[must_use]
+    pub fn detections(&self) -> Vec<(usize, Event)> {
+        let mut all: Vec<(usize, Event)> = self
+            .issued
+            .iter()
+            .flat_map(|g| g.members.iter())
+            .chain(&self.pending)
+            .map(|f| (f.sensor, f.event))
+            .collect();
+        all.sort_by(|a, b| a.1.arrival.value().total_cmp(&b.1.arrival.value()));
+        all
+    }
+
+    /// When sensor number `sensor` was not watching at full sensitivity -
+    /// gaps in its data, calibrating, blind after its own events, listening
+    /// through ringing - as far as the monitor still remembers; a stretch
+    /// still going on runs to its last sample. Empty for an unknown sensor.
+    #[must_use]
+    pub fn impaired(&self, sensor: usize) -> Vec<(Time, Time)> {
+        self.sensors.get(sensor).map_or_else(Vec::new, |s| {
+            s.impaired_spans()
+                .into_iter()
+                .map(|(a, b)| (Time::new(a), Time::new(b)))
+                .collect()
+        })
     }
 
     /// Time of the latest sample received from any sensor.
