@@ -20,6 +20,20 @@ EPANET .inp format                                               [ADOPT]
         section). Transient-specific data (wave speeds, valve closure
         curves, pump inertia) is NOT in .inp and lives in our own
         versioned sidecar format.
+  STATUS 2026-09-29: built - crates/adapters/files (jk-files),
+        epanet/{sections, units, friction, build}. Reads junctions,
+        reservoirs, tanks (as fixed heads), pipes, pumps and valves (as
+        joined nodes), [DEMANDS], [STATUS], coordinates and pipe bends;
+        US customary and SI units; H-W / D-W / C-M roughness to one Darcy
+        f per pipe at 1 m/s. Every approximation and every unused section
+        is returned as a NOTE (shown by `jk network FILE` and in the
+        viewer). Tested on hand-written files only (tests/adapters): SI and
+        US versions of one network read identically; the engine's
+        placement score on a file network equals the in-code network
+        exactly. No real file has been read yet - the first one is chosen
+        with the owner (no downloads without approval).
+        Not yet: the wave-speed sidecar; pumps, valves and tanks as real
+        devices; demand patterns.
 
 epanet-rs (Vitens)                                              [ASSESS]
   ROLE  Candidate for steady-state initial conditions and .inp parsing.

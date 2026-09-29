@@ -109,6 +109,7 @@ pub fn page(event: &EventModel, placement: Option<&PlacementModel>) -> Page {
         id: "overview",
         title: "Overview".into(),
         crumb: "Flowing estate, two bursts - the live engine fed 1 s chunks".into(),
+        source: "Simulated data",
         body: s,
     }
 }

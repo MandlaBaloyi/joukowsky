@@ -26,6 +26,7 @@ ground. That is the next part of the validation ladder.</p></div>
         id: "about",
         title: "About the data".into(),
         crumb: "What is simulated, what is proven, what is next".into(),
+        source: "Simulated data",
         body: s.to_string(),
     }
 }

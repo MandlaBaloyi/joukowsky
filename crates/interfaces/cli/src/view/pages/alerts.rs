@@ -42,6 +42,7 @@ pub fn page(event: &EventModel) -> Page {
         id: "alerts",
         title: "Alerts".into(),
         crumb: format!("{} alert(s) from the live engine", event.issued.len()),
+        source: "Simulated data",
         body: s,
     }
 }

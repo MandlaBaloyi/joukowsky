@@ -4,10 +4,12 @@
 //! prints or writes results. No physics lives here.
 //!
 //! - `rpv`: the reservoir -> pipe -> valve transient.
+//! - `network`: read an EPANET `.inp` network file and summarise it.
 //! - `view`: a web page to look at the engine working - a burst event and
 //!   the placement advisor.
 //! - `sim` (private): synthetic loggers and demo sites for `view`.
 
+mod network;
 mod rpv;
 mod sim;
 mod view;
@@ -16,8 +18,9 @@ use std::process::ExitCode;
 
 fn usage() -> String {
     format!(
-        "jk - joukowsky engine\n\nUSAGE:{}{}",
+        "jk - joukowsky engine\n\nUSAGE:{}{}{}",
         rpv::USAGE,
+        network::USAGE,
         view::USAGE
     )
 }
@@ -26,6 +29,7 @@ fn main() -> ExitCode {
     let mut args = std::env::args().skip(1);
     let result = match args.next().as_deref() {
         Some("rpv") => rpv::parse(args).and_then(|a| rpv::run(&a)),
+        Some("network") => network::parse(args).and_then(|f| network::run(&f)),
         Some("view") => view::parse(args).and_then(|a| view::run(&a)),
         Some("-h" | "--help") | None => {
             print!("{}", usage());

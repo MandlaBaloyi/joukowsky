@@ -17,6 +17,7 @@ jk-hydraulics.workspace = true
 jk-classification.workspace = true
 jk-localisation.workspace = true
 jk-application.workspace = true
+jk-files.workspace = true
 
 [lints]
 workspace = true

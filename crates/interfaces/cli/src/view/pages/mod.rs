@@ -5,10 +5,12 @@
 //! - [`loggers`]: each logger's record, zoomable, one crosshair for all.
 //! - [`network`]: the site's pipes and nodes.
 //! - [`placement`]: where loggers should go (three pages).
+//! - [`file`]: a network read from an EPANET `.inp` file, with the reader's notes.
 //! - [`about`]: what the data is and what the viewer does not show yet.
 
 pub mod about;
 pub mod alerts;
+pub mod file;
 pub mod loggers;
 pub mod network;
 pub mod overview;

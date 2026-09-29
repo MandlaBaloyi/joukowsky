@@ -113,6 +113,7 @@ pub fn recommendation(m: &PlacementModel) -> Page {
         id: "placement",
         title: "Where the loggers go".into(),
         crumb: CRUMB.into(),
+        source: "Simulated data",
         body: s,
     }
 }
@@ -160,6 +161,7 @@ pub fn value(m: &PlacementModel) -> Page {
         id: "placement-value",
         title: "What each extra logger buys".into(),
         crumb: CRUMB.into(),
+        source: "Simulated data",
         body: s,
     }
 }
@@ -201,6 +203,7 @@ pub fn pipes(m: &PlacementModel) -> Page {
         id: "placement-pipes",
         title: "Pipe by pipe".into(),
         crumb: CRUMB.into(),
+        source: "Simulated data",
         body: s,
     }
 }

@@ -1,0 +1,30 @@
+[TITLE]
+Test estate (US units) - the same network as estate_si.inp
+
+[JUNCTIONS]
+S1  32.808399  0
+T   32.808399  0
+S2  39.370079  237.754847
+S3  36.089239  237.754847
+
+[RESERVOIRS]
+R   196.850394
+
+[PIPES]
+P1  R   S1  1312.335958  5.905512  130
+P2  S1  T   984.251969  5.905512  130
+P3  T   S2  1640.419948  5.905512  130
+P4  T   S3  1968.503937  5.905512  130
+
+[OPTIONS]
+Units     GPM
+Headloss  H-W
+
+[COORDINATES]
+R   0     0
+S1  400   0
+T   700   0
+S2  1200  0
+S3  700   -600
+
+[END]

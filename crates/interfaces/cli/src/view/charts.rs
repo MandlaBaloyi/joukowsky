@@ -122,6 +122,7 @@ struct Plan<'a> {
     pad: f64,
     x0: f64,
     y0: f64,
+    y1: f64,
     k: f64,
     width: f64,
     height: f64,
@@ -136,7 +137,11 @@ impl<'a> Plan<'a> {
             f64::INFINITY,
             f64::NEG_INFINITY,
         );
-        for &(x, y) in &drawing.positions {
+        for &(x, y) in drawing
+            .positions
+            .iter()
+            .chain(drawing.bends.iter().flatten())
+        {
             x0 = x0.min(x);
             x1 = x1.max(x);
             y0 = y0.min(y);
@@ -150,6 +155,7 @@ impl<'a> Plan<'a> {
             pad,
             x0,
             y0,
+            y1,
             k,
             width,
             height,
@@ -157,10 +163,13 @@ impl<'a> Plan<'a> {
     }
 
     fn at(&self, (x, y): (f64, f64)) -> (f64, f64) {
-        (
-            self.pad + (x - self.x0) * self.k,
-            self.pad + (y - self.y0) * self.k,
-        )
+        // Map files have y pointing north; the page has y pointing down.
+        let down = if self.drawing.y_up {
+            self.y1 - y
+        } else {
+            y - self.y0
+        };
+        (self.pad + (x - self.x0) * self.k, self.pad + down * self.k)
     }
 
     fn ends(&self, p: usize) -> ((f64, f64), (f64, f64)) {
@@ -191,7 +200,12 @@ pub fn network_map(
 ) -> String {
     let plan = Plan::new(network, drawing, width);
     let mut s = format!(
-        r#"<svg class="chart map" viewBox="0 0 {width} {:.0}" role="img">"#,
+        r#"<svg class="chart map{}" viewBox="0 0 {width} {:.0}" role="img">"#,
+        if drawing.positions.len() > 40 {
+            " map-dense"
+        } else {
+            ""
+        },
         plan.height
     );
     // Halos under the pipes.
@@ -209,10 +223,24 @@ pub fn network_map(
         let ((ax, ay), (bx, by)) = plan.ends(p);
         let class = pipe_class.get(p).copied().unwrap_or("q0");
         let tip = pipe_tip.get(p).map_or(String::new(), |t| esc(t));
-        let _ = write!(
-            s,
-            r#"<line class="pipe {class}" x1="{ax:.1}" y1="{ay:.1}" x2="{bx:.1}" y2="{by:.1}"/><line class="pipe-hit" data-tip="{tip}" x1="{ax:.1}" y1="{ay:.1}" x2="{bx:.1}" y2="{by:.1}"/>"#
-        );
+        let bends = drawing.bends.get(p).map_or(&[][..], Vec::as_slice);
+        if bends.is_empty() {
+            let _ = write!(
+                s,
+                r#"<line class="pipe {class}" x1="{ax:.1}" y1="{ay:.1}" x2="{bx:.1}" y2="{by:.1}"/><line class="pipe-hit" data-tip="{tip}" x1="{ax:.1}" y1="{ay:.1}" x2="{bx:.1}" y2="{by:.1}"/>"#
+            );
+        } else {
+            let mut points = format!("{ax:.1},{ay:.1}");
+            for &b in bends {
+                let (x, y) = plan.at(b);
+                let _ = write!(points, " {x:.1},{y:.1}");
+            }
+            let _ = write!(points, " {bx:.1},{by:.1}");
+            let _ = write!(
+                s,
+                r#"<polyline class="pipe {class}" points="{points}"/><polyline class="pipe-hit" data-tip="{tip}" points="{points}"/>"#
+            );
+        }
     }
     let taken = node_marks(&plan, markers, &mut s);
     point_marks(&plan, markers, &taken, &mut s);
@@ -220,7 +248,6 @@ pub fn network_map(
     s
 }
 
-/// Nodes (reservoirs, loggers, candidate places) and their names.
 /// A label's box on the map (left, top, right, bottom), roughly: 12 px
 /// type, about 6.4 px per character.
 type LabelBox = (f64, f64, f64, f64);
@@ -274,6 +301,10 @@ fn node_marks(plan: &Plan<'_>, markers: &[Marker], s: &mut String) -> Vec<LabelB
                 s,
                 r#"<circle class="candidate" cx="{x:.1}" cy="{y:.1}" r="4"/>"#
             );
+        }
+        // On a big network, names only where something is marked.
+        if plan.drawing.positions.len() > 40 && !(reservoir || has(n, true) || has(n, false)) {
+            continue;
         }
         let class = if has(n, true) {
             "label strong"

@@ -73,6 +73,7 @@
     links.forEach(a => a.classList.toggle('active', a.dataset.nav === page.dataset.page));
     document.getElementById('page-title').textContent = page.dataset.title;
     document.getElementById('page-crumb').textContent = page.dataset.crumb || '';
+    document.getElementById('page-source').textContent = page.dataset.source || '';
     document.title = page.dataset.title + ' - joukowsky viewer';
     if (page.dataset.page === 'alerts') selectAlert(arg);
     document.body.classList.remove('menu-open');

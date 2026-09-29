@@ -84,6 +84,7 @@ pub fn page(event: &EventModel) -> Page {
         id: "network",
         title: "Network".into(),
         crumb: "The estate, as the engine knows it".into(),
+        source: "Simulated data",
         body: s,
     }
 }

@@ -41,6 +41,10 @@ path = "classification/main.rs"
 name = "pipeline"
 path = "pipeline/main.rs"
 
+[[test]]
+name = "adapters"
+path = "adapters/main.rs"
+
 [dependencies]
 jk-kernel.workspace = true
 jk-hydraulics.workspace = true
@@ -48,6 +52,7 @@ jk-detection.workspace = true
 jk-localisation.workspace = true
 jk-classification.workspace = true
 jk-application.workspace = true
+jk-files.workspace = true
 
 [lints]
 workspace = true

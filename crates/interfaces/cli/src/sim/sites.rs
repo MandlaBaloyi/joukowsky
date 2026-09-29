@@ -21,6 +21,11 @@ pub struct Drawing {
     pub node_names: Vec<String>,
     /// Name of each pipe.
     pub pipe_names: Vec<String>,
+    /// Bends of each pipe between its ends (empty: straight), plan metres.
+    pub bends: Vec<Vec<(f64, f64)>>,
+    /// Whether plan y grows northwards (map files) rather than down the
+    /// page (the demo sites).
+    pub y_up: bool,
 }
 
 /// A network the engine knows, and how to draw it.
@@ -174,6 +179,8 @@ pub fn flowing_estate_two_bursts() -> Result<BurstDemo, String> {
                     "T-S2 north branch",
                     "T-S3 south branch",
                 ]),
+                bends: Vec::new(),
+                y_up: false,
             },
         },
         loggers: vec![s1, s2, s3],
@@ -264,6 +271,8 @@ pub fn campus() -> Result<(DemoSite, Vec<NodeId>), String> {
             ],
             node_names: names(&node_names),
             pipe_names,
+            bends: Vec::new(),
+            y_up: false,
         },
     };
     Ok((site, n))

@@ -33,6 +33,8 @@ pub struct Page {
     pub title: String,
     /// Small text next to the title (which site, which data).
     pub crumb: String,
+    /// Where its data comes from, shown top right ("Simulated data").
+    pub source: &'static str,
     /// The page's HTML.
     pub body: String,
 }
@@ -62,11 +64,12 @@ pub fn document(nav: &[NavGroup], pages: &[Page], data_json: &str) -> String {
     for p in pages {
         let _ = write!(
             body,
-            r#"<section class="page" id="page-{}" data-page="{}" data-title="{}" data-crumb="{}" hidden>{}</section>"#,
+            r#"<section class="page" id="page-{}" data-page="{}" data-title="{}" data-crumb="{}" data-source="{}" hidden>{}</section>"#,
             p.id,
             p.id,
             esc(&p.title),
             esc(&p.crumb),
+            esc(p.source),
             p.body
         );
     }
@@ -100,7 +103,7 @@ pub fn document(nav: &[NavGroup], pages: &[Page], data_json: &str) -> String {
     <button type="button" id="menu-button" aria-label="Open the menu">Menu</button>
     <div><h1 id="page-title">Overview</h1><div class="crumb" id="page-crumb"></div></div>
     <div class="grow"></div>
-    <span class="pill">Simulated data</span>
+    <span class="pill" id="page-source">Simulated data</span>
   </header>
   <div class="content">{body}</div>
 </main>

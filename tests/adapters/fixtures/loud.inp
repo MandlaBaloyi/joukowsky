@@ -1,0 +1,72 @@
+[TITLE]
+A small network with everything the engine can only approximate
+
+[JUNCTIONS]
+;ID   Elev  Demand  Pattern
+J1    5     2       daily
+J2    5     1
+J3    4     0
+J4    4     1
+J5    3     0
+
+[RESERVOIRS]
+SRC   20
+
+[TANKS]
+;ID  Elev  InitLvl  MinLvl  MaxLvl  Diam  MinVol
+TK   30    4        1       6       10    0
+
+[PIPES]
+;ID   N1    N2    Length  Diam  Rough  Minor  Status
+A1    SRC   J1    200     200   0.2    0      Open
+A2    J2    J3    150     150   0.2    0.5    Open
+A3    J3    J4    100     150   0.2    0      CV
+A4    J4    J5    100     150   0.2    0      Closed
+A5    J3    TK    250     150   0.2    0      Open
+A6    J4    J5    120     100   0.2    0      Open
+
+[PUMPS]
+;ID  N1  N2  Properties
+PU1  J1  J2  HEAD curve1
+
+[VALVES]
+;ID  N1  N2  Diam  Type  Setting  Minor
+V1   J4  J5  100   PRV   30       0
+
+[STATUS]
+V1   Closed
+
+[DEMANDS]
+J4   0.5
+J4   0.7
+
+[PATTERNS]
+daily  1.0  1.2  0.8
+
+[CURVES]
+curve1  10  40
+
+[CONTROLS]
+LINK A2 CLOSED IF NODE TK ABOVE 5
+
+[TIMES]
+Duration  24:00
+
+[OPTIONS]
+Units     LPS
+Headloss  D-W
+Quality   None
+
+[COORDINATES]
+SRC  0    0
+J1   200  0
+J2   210  0
+J3   360  0
+J4   460  0
+J5   560  0
+TK   360  250
+
+[VERTICES]
+A5   400  120
+
+[END]

@@ -34,6 +34,7 @@ pub fn page(event: &EventModel) -> Page {
         id: "loggers",
         title: "Logger records".into(),
         crumb: format!("{} loggers, 128 samples a second", event.records.len()),
+        source: "Simulated data",
         body: s,
     }
 }

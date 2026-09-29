@@ -28,6 +28,7 @@ version = "0.1.0"
 dependencies = [
  "jk-application",
  "jk-classification",
+ "jk-files",
  "jk-hydraulics",
  "jk-kernel",
  "jk-localisation",
@@ -37,6 +38,14 @@ dependencies = [
 name = "jk-detection"
 version = "0.1.0"
 dependencies = [
+ "jk-kernel",
+]
+
+[[package]]
+name = "jk-files"
+version = "0.1.0"
+dependencies = [
+ "jk-hydraulics",
  "jk-kernel",
 ]
 
@@ -73,6 +82,7 @@ dependencies = [
  "jk-application",
  "jk-classification",
  "jk-detection",
+ "jk-files",
  "jk-hydraulics",
  "jk-kernel",
  "jk-localisation",

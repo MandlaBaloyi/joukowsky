@@ -1,0 +1,34 @@
+[TITLE]
+Test estate (SI units) - written by hand for joukowsky tests
+
+[JUNCTIONS]
+;ID              Elev    Demand
+S1               10      0
+T                10      0
+S2               12      15
+S3               11      15
+
+[RESERVOIRS]
+;ID              Head
+R                60
+
+[PIPES]
+;ID     Node1   Node2   Length  Diameter  Roughness  MinorLoss  Status
+P1      R       S1      400     150       0.1        0          Open
+P2      S1      T       300     150       0.1        0          Open
+P3      T       S2      500     150       0.1        0          Open
+P4      T       S3      600     150       0.1        0          Open
+
+[OPTIONS]
+Units            LPS
+Headloss         D-W
+
+[COORDINATES]
+;Node   X       Y
+R       0       0
+S1      400     0
+T       700     0
+S2      1200    0
+S3      700     -600
+
+[END]

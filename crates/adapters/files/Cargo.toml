@@ -1,0 +1,18 @@
+[package]
+name = "jk-files"
+description = "File adapters: reading network models (EPANET .inp) and, later, logger exports"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+publish.workspace = true
+license.workspace = true
+
+[lib]
+name = "jk_files"
+
+[dependencies]
+jk-kernel.workspace = true
+jk-hydraulics.workspace = true
+
+[lints]
+workspace = true
