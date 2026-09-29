@@ -33,6 +33,7 @@ dependencies = [
  "jk-hydraulics",
  "jk-kernel",
  "jk-localisation",
+ "jk-sim",
 ]
 
 [[package]]
@@ -70,6 +71,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "jk-sim"
+version = "0.1.0"
+dependencies = [
+ "jk-hydraulics",
+ "jk-kernel",
+]
+
+[[package]]
 name = "jk-telemetry"
 version = "0.1.0"
 dependencies = [
@@ -87,4 +96,5 @@ dependencies = [
  "jk-hydraulics",
  "jk-kernel",
  "jk-localisation",
+ "jk-sim",
 ]

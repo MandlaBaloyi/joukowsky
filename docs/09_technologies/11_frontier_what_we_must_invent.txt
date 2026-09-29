@@ -88,6 +88,12 @@ F9  Repairing bad clocks in software
           known-source events recovered to 0.16 ms; burst error 21 m ->
           0.07 m. Next: clock DRIFT over time (offsets are not constant),
           estimating clocks and wave speeds together, and field data.
+    STATUS 2026-09-29: drift done in simulation (clocks/drift.rs): offset
+          and rate per clock from known events over a day; a burst after
+          the last calibration found 0.06 m off where fixed offsets miss
+          by 400 m (time_synchronisation.txt, note). For mines (no GNSS
+          underground). Next: resync jumps, wandering rates, clocks from
+          ordinary events, field data.
 
 F10 Sensor placement under uncertainty for partners
     WHY   Greedy placement is established; placement that is robust to

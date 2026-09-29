@@ -13,4 +13,5 @@
 
 pub mod travel_time;
 
+pub(crate) use travel_time::Routes;
 pub use travel_time::TravelGraph;

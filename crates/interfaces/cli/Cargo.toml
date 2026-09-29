@@ -19,6 +19,7 @@ jk-localisation.workspace = true
 jk-application.workspace = true
 jk-files.workspace = true
 jk-detection.workspace = true
+jk-sim.workspace = true
 
 [lints]
 workspace = true

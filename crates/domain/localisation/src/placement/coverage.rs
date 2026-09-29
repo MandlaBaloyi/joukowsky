@@ -3,10 +3,9 @@
 use jk_hydraulics::{Network, NodeId, PipeId};
 use jk_kernel::{Flow, Head, Length, Time};
 
-use super::detectability::Fronts;
+use super::bench::Bench;
 use crate::error::{LocalisationError, positive};
-use crate::graph::TravelGraph;
-use crate::locate::{Arrival, LocaliseOptions, Localiser};
+use crate::locate::LocaliseOptions;
 
 /// How placements are scored.
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -111,152 +110,9 @@ pub fn coverage(
     options: &PlacementOptions,
 ) -> Result<Coverage, LocalisationError> {
     validate(network, sensors, weights, options)?;
-    let pipes = network.pipes();
-    let step = options.source_step.value();
-    let mut trials = Trials::new(network, sensors, options);
-
-    let (mut weighted_region, mut weighted_pinpointed, mut total_weight) = (0.0, 0.0, 0.0);
-    let mut per_pipe = Vec::with_capacity(pipes.len());
-    for (p, link) in pipes.iter().enumerate() {
-        let Some(pipe) = network.pipe_id(p) else {
-            continue;
-        };
-        let length = link.pipe.length().value();
-        let weight = weights.map_or(1.0, |w| w[p]);
-        #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
-        // ceil of a positive ratio
-        let n = ((length / step).ceil() as usize).max(1);
-        let segment = length / to_f64(n);
-        let mut regions: Vec<f64> = (0..n)
-            .map(|i| trials.region(p, (to_f64(i) + 0.5) / to_f64(n)))
-            .collect();
-        let pinpointed = regions
-            .iter()
-            .filter(|&&r| r <= options.pinpoint.value())
-            .count();
-        let w = weight * segment;
-        weighted_region += w * regions.iter().sum::<f64>();
-        weighted_pinpointed += w * to_f64(pinpointed);
-        total_weight += w * to_f64(n);
-        regions.sort_by(f64::total_cmp);
-        per_pipe.push(PipeCoverage {
-            pipe,
-            length: link.pipe.length(),
-            pinpointed: to_f64(pinpointed) / to_f64(n),
-            median_region: Length::new(regions[n / 2]),
-        });
-    }
-    let (expected_region, pinpointed) = if total_weight > 0.0 {
-        (
-            weighted_region / total_weight,
-            weighted_pinpointed / total_weight,
-        )
-    } else {
-        (0.0, 0.0)
-    };
-    Ok(Coverage {
-        sensors: sensors.to_vec(),
-        expected_region: Length::new(expected_region),
-        pinpointed,
-        pipes: per_pipe,
-    })
-}
-
-/// Trial bursts on one placement: which loggers feel each, and how large
-/// its 90% region is.
-struct Trials<'a> {
-    network: &'a Network,
-    sensors: &'a [NodeId],
-    options: &'a PlacementOptions,
-    graph: TravelGraph,
-    ends: Vec<(usize, usize)>,
-    nominal: Vec<f64>,
-    /// Fastest travel times from each sensor to every node.
-    times: Vec<Vec<f64>>,
-    total_length: f64,
-    /// First-front heads, if a burst size is set.
-    fronts: Option<Fronts>,
-    /// One localiser per set of loggers that feel a burst, prepared once and
-    /// reused for every trial burst that set feels.
-    localisers: Vec<(Vec<NodeId>, Option<Localiser<'a>>)>,
-}
-
-impl<'a> Trials<'a> {
-    fn new(network: &'a Network, sensors: &'a [NodeId], options: &'a PlacementOptions) -> Self {
-        let graph = TravelGraph::new(network);
-        let pipes = network.pipes();
-        let nominal: Vec<f64> = pipes.iter().map(|p| p.pipe.travel_time().value()).collect();
-        let times = sensors
-            .iter()
-            .map(|s| graph.times_from(s.index(), &nominal))
-            .collect();
-        Self {
-            network,
-            sensors,
-            options,
-            graph,
-            ends: pipes
-                .iter()
-                .map(|p| (p.from.index(), p.to.index()))
-                .collect(),
-            nominal,
-            times,
-            total_length: pipes.iter().map(|p| p.pipe.length().value()).sum(),
-            fronts: options.burst.map(|_| Fronts::new(network, sensors)),
-            localisers: Vec::new(),
-        }
-    }
-
-    /// Size of the 90% region for a burst `fraction` along `pipe` [m]; the
-    /// whole network's length when fewer than two loggers feel it.
-    fn region(&mut self, pipe: usize, fraction: f64) -> f64 {
-        let threshold = self.options.detect_units * self.options.noise.value();
-        let felt: Vec<bool> = match (&self.fronts, self.options.burst) {
-            (Some(f), Some(q)) => f
-                .per_unit_flow(pipe, fraction)
-                .iter()
-                .map(|h| h * q.value() >= threshold)
-                .collect(),
-            _ => vec![true; self.sensors.len()],
-        };
-        let arrivals: Vec<Arrival> = self
-            .sensors
-            .iter()
-            .zip(&self.times)
-            .zip(&felt)
-            .filter(|(_, felt)| **felt)
-            .filter_map(|((&s, t), _)| {
-                let time = self.graph.point_time(
-                    s.index(),
-                    t,
-                    self.ends[pipe],
-                    fraction,
-                    self.nominal[pipe],
-                );
-                time.is_finite().then_some(Arrival {
-                    node: s,
-                    time: Time::new(time),
-                    uncertainty: self.options.timing,
-                })
-            })
-            .collect();
-        if arrivals.len() < 2 {
-            return self.total_length;
-        }
-        let set: Vec<NodeId> = arrivals.iter().map(|a| a.node).collect();
-        let k = if let Some(k) = self.localisers.iter().position(|(s, _)| *s == set) {
-            k
-        } else {
-            let l = Localiser::new(self.network, &set, &self.options.localise).ok();
-            self.localisers.push((set, l));
-            self.localisers.len() - 1
-        };
-        self.localisers[k]
-            .1
-            .as_ref()
-            .and_then(|l| l.credible_length(&arrivals).ok())
-            .map_or(self.total_length, Length::value)
-    }
+    let mut bench = Bench::new(network, weights, options);
+    let state = bench.state(sensors);
+    Ok(bench.coverage(sensors, state.regions()))
 }
 
 pub(super) fn validate(
@@ -300,9 +156,4 @@ pub(super) fn validate(
         ));
     }
     Ok(())
-}
-
-#[allow(clippy::cast_precision_loss)] // counts are far below 2^52
-fn to_f64(i: usize) -> f64 {
-    i as f64
 }

@@ -9,6 +9,7 @@ members = [
     "crates/domain/classification",
     "crates/application",
     "crates/adapters/files",
+    "crates/sim",
     "crates/interfaces/cli",
     "tests",
 ]
@@ -30,6 +31,7 @@ jk-localisation = { path = "crates/domain/localisation" }
 jk-classification = { path = "crates/domain/classification" }
 jk-application = { path = "crates/application" }
 jk-files = { path = "crates/adapters/files" }
+jk-sim = { path = "crates/sim" }
 
 [workspace.lints.rust]
 unsafe_code = "forbid"

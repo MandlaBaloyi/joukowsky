@@ -80,10 +80,24 @@ G-09  Learning loops mostly not built                             OPEN
   this site" (L3), classifier Stage B/C (L4), pipe health (L5), across
   sites (L6).
 
-G-10  Large networks untested                                     OPEN
-  Largest network run: campus, 2.3 km. The placement analysis grows with
-  length squared (FN-008). The MOC solver and live engine have not been
-  timed on 10-100 km. See detection_range_and_scale.txt.
+G-10  Large networks                                       IN PROGRESS
+  2026-09-29: synthetic towns of 2-100 km (crates/sim) and `jk scale`
+  measure every part (FN-013). Live side: fine to 100 km. Planning: much
+  faster (exact pruning, shared bench, 4 cores, lazy greedy - FN-014),
+  numbers in detection_range_and_scale.txt. Still open: zones for
+  hundreds of km; the steady solver's dense matrix (2000 unknown heads,
+  ~200 km); MOC time step set by the shortest pipe (dt 0.36 ms at 100 km).
+
+G-16  Lazy greedy assumes diminishing returns                    OPEN
+  The advisor re-checks only candidates whose last gain could still win
+  (CELF). Not proven for the 90%-region objective; identical to full
+  greedy on every test site so far. Check on more networks; the swaps
+  repair what greed misses.
+
+G-17  Clock repair: jumps, wandering rates, unknown sources       OPEN
+  Offsets and steady drift are estimated from known events (F9). Not yet:
+  a resync that jumps the clock mid-record, a rate that wanders with
+  temperature, clocks estimated from ordinary (unknown-source) events.
 
 G-11  External factors untested                                   OPEN
   Lightning spikes, tremors, vibration, temperature. external_factors.txt

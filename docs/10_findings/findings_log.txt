@@ -85,3 +85,47 @@ FN-011  2026-09-29  Guard rails match command prefixes only
 FN-012  2026-09-29  External factors were never written down
   Owner asked about rain, storms and lightning. No doc covered them. Now
   external_factors.txt; tests to write are listed there (V-E1..V-E6).
+
+FN-013  2026-09-29  Scale study, first measurement (V-S4, `jk scale`)
+  WHAT HAPPENED  Synthetic towns of 2, 10, 50, 100 km (crates/sim). The
+    LIVE engine scaled well from the start (locating a burst: 66 ms at
+    50 km, 230 ms at 100 km). The PLANNING side did not: scoring one
+    logger placement took 112 s at 50 km; at 100 km it grew to 7 GB of
+    memory and was stopped; choosing 50 loggers would have taken ~60 days.
+  WHAT IT TAUGHT Every localiser precomputed every candidate point of the
+    whole network, and every placement tried rebuilt them all.
+  WHAT CHANGED   See FN-014..016. Numbers: detection_range_and_scale.txt.
+
+FN-014  2026-09-29  A loose bound skips nothing; shared routes are the key
+  WHAT HAPPENED  First attempt at skipping hopeless pipes (branch and
+    bound) pruned nothing: with 10% wave-speed doubt, a far pipe's
+    predicted times are so vague that nothing looks impossible - if the
+    doubt of every pipe on the way is counted in full.
+  WHAT IT TAUGHT Two waves travelling down the SAME pipes share that
+    pipe's wave-speed error; it cancels when their arrival times are
+    compared. Counting only the parts of the routes that differ makes far
+    pipes clearly impossible. Plus: the determinant terms of the
+    likelihood are largest with no wave-speed doubt at all (restricted-
+    likelihood identity), which bounds them exactly.
+  WHAT CHANGED   posterior/bound.rs; locating one burst at 50 km 66 -> 5 ms.
+    locate_exhaustive kept to prove the answers identical (tests: 40
+    random bursts, identical to the last digit).
+
+FN-015  2026-09-29  A one-point stretch was silently skipped (caught)
+  WHAT HAPPENED  Bounding stretches of 8 cells within a pipe: a stretch
+    of ONE cell has zero width, and the bound skipped zero-width
+    intervals - so it bounded nothing and the cell was dropped. The
+    equality test caught it at once (90% stretch 259 m instead of 264 m).
+  WHAT IT TAUGHT Every speed-up needs an exact twin to compare against.
+
+FN-016  2026-09-29  Laptop timings wander by ~40%
+  The same run took 72 s and 98 s an hour apart (heat, background work).
+  Compare COUNTS (bursts located, points scored) - they do not wander -
+  and treat seconds on this laptop as +/-40%.
+
+FN-017  2026-09-29  A drifting clock's rate depends on whose seconds
+  Estimating drift from each logger's own readings gives the rate per
+  second OF THAT CLOCK: r / (1 + r) of the real-time rate r. 20 ppm vs
+  19.9996 ppm - negligible, but a test demanding exactness found it. And
+  clock time (1.79e9 s, stored to 0.24 us) limits a rate over 14 hours to
+  ~1e-11 - the precision floor, stated in the test.

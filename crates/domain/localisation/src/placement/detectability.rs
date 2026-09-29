@@ -47,7 +47,7 @@ use jk_kernel::{Flow, Head, Length};
 
 use super::coverage::PlacementOptions;
 use crate::error::LocalisationError;
-use crate::graph::TravelGraph;
+use crate::graph::{Routes, TravelGraph};
 use crate::locate::Point;
 
 /// First-front heads at the sensors, per unit of burst flow.
@@ -61,7 +61,7 @@ pub(super) struct Fronts {
     /// Per node: the impedances of the pipes meeting there.
     at_node: Vec<Vec<f64>>,
     reservoir: Vec<bool>,
-    routes: Vec<(Vec<f64>, Vec<Vec<usize>>)>,
+    routes: Vec<Routes>,
 }
 
 impl Fronts {
@@ -105,6 +105,17 @@ impl Fronts {
     /// (1 m^3/s) `fraction` of the way along `pipe` [m per m^3/s]; 0 where
     /// no wave arrives.
     pub(super) fn per_unit_flow(&self, pipe: usize, fraction: f64) -> Vec<f64> {
+        self.sensors
+            .iter()
+            .zip(&self.routes)
+            .map(|(&s, r)| self.at(s, r, pipe, fraction))
+            .collect()
+    }
+
+    /// As [`Self::per_unit_flow`] for one sensor at node `sensor`, given its
+    /// `routes` ([`TravelGraph::routes_from`] with the book wave speeds) -
+    /// for sensors not given to [`Self::new`].
+    pub(super) fn at(&self, sensor: usize, routes: &Routes, pipe: usize, fraction: f64) -> f64 {
         let transmission = |node: usize, incoming: f64| {
             if self.reservoir[node] {
                 0.0
@@ -112,27 +123,21 @@ impl Fronts {
                 junction_transmission(incoming, &self.at_node[node])
             }
         };
-        let h0 = 0.5 * self.impedance[pipe];
-        self.sensors
-            .iter()
-            .zip(&self.routes)
-            .map(|(&s, (times, routes))| {
-                let (_, entry) =
-                    self.graph
-                        .point_route(s, times, self.ends[pipe], fraction, self.nominal[pipe]);
-                let Some((end, _)) = entry else { return 0.0 };
-                // Out of the burst pipe at `end`, then along the route to
-                // the sensor (listed in the order the wave travels).
-                let mut head = h0 * transmission(end, self.impedance[pipe]);
-                let mut node = end;
-                for &p in &routes[end] {
-                    let (a, b) = self.ends[p];
-                    node = if a == node { b } else { a };
-                    head *= transmission(node, self.impedance[p]);
-                }
-                head
-            })
-            .collect()
+        let (times, pipe_routes) = (&routes.0, &routes.1);
+        let (_, entry) =
+            self.graph
+                .point_route(sensor, times, self.ends[pipe], fraction, self.nominal[pipe]);
+        let Some((end, _)) = entry else { return 0.0 };
+        // Out of the burst pipe at `end`, then along the route to the sensor
+        // (listed in the order the wave travels).
+        let mut head = 0.5 * self.impedance[pipe] * transmission(end, self.impedance[pipe]);
+        let mut node = end;
+        for &p in &pipe_routes[end] {
+            let (a, b) = self.ends[p];
+            node = if a == node { b } else { a };
+            head *= transmission(node, self.impedance[p]);
+        }
+        head
     }
 }
 

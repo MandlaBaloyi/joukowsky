@@ -1,13 +1,16 @@
 //! The entry point: arrival times in, probability map out.
 
+use std::sync::{Arc, OnceLock};
+
 use jk_hydraulics::{Network, NodeId, PipeId};
 use jk_kernel::{Length, Time};
 
 use crate::error::{LocalisationError, positive};
-use crate::graph::TravelGraph;
+use crate::graph::{Routes, TravelGraph};
+use crate::posterior::bound::{Bounds, Scratch};
 use crate::posterior::credible::{self, PipeProbability, Segment};
 use crate::posterior::grid::Grid;
-use crate::posterior::score::{Score, score_correlated};
+use crate::posterior::score::{Score, score_correlated_in};
 
 /// A wave front detected at a sensor.
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -90,42 +93,73 @@ pub fn localise(
     Localiser::new(network, &sensors, options)?.locate(arrivals)
 }
 
+/// Candidates this far below the best (in log-probability) are never
+/// scored: each would hold less than e^-50 (2e-22) of the best one's
+/// probability, so leaving them out changes no answer.
+const PRUNE_MARGIN: f64 = 50.0;
+
+/// Cells per chunk: within a pipe worth scoring, stretches of this many
+/// cells are bounded (and skipped) on their own.
+const CHUNK: usize = 8;
+
 /// The observed times, their uncertainties, and the probability of each
-/// candidate cell.
+/// candidate cell that holds any.
 struct Posterior {
     /// Arrival times measured from `origin` (the earliest arrival).
     observed: Vec<f64>,
     /// Time the observed times are measured from [s].
     origin: f64,
     sigma: Vec<f64>,
-    mass: Vec<f64>,
+    /// (cell index, probability), in cell order; every other cell holds
+    /// (practically) nothing.
+    mass: Vec<(usize, f64)>,
+}
+
+/// One chunk of a pipe's cells: the predicted travel time to each sensor
+/// (cells x n) and the wave-speed part of the covariance (cells x n x n).
+#[derive(Debug, Clone)]
+struct PipeModel {
+    travel: Vec<f64>,
+    speed_cov: Vec<f64>,
 }
 
 /// A localiser for one fixed set of sensors.
 ///
 /// Everything that does not depend on the arrival times - the routes from
 /// each sensor, the candidate cells, each cell's predicted travel times and
-/// the wave-speed part of its error covariance - is computed once. Locating
-/// many events with the same sensors (a live site; the placement advisor's
-/// thousands of trial bursts) then costs one small factorisation per cell.
-/// The arithmetic is exactly that of [`localise`], so the answers are
-/// identical.
+/// the wave-speed part of its error covariance - is computed once, pipe by
+/// pipe as pipes are first needed, and kept. Locating many events with the
+/// same sensors (a live site; the placement advisor's thousands of trial
+/// bursts) then costs one small factorisation per cell scored.
+///
+/// Only cells that could matter are scored (branch and bound). For each
+/// pipe a cheap bound gives the best log-probability ANY cell on it could
+/// reach (`posterior/bound.rs`: each sensor pair's timing miss bounds the
+/// misfit below, counting only the parts of their routes that differ).
+/// Pipes are scored best bound first, and a pipe whose bound is more than
+/// 50 below the best cell found so far is skipped - so on a large network
+/// only the neighbourhood of the answer is scored.
+/// [`Self::locate_exhaustive`] scores every cell, for checking.
 #[derive(Debug, Clone)]
 pub struct Localiser<'a> {
     network: &'a Network,
     options: LocaliseOptions,
     sensors: Vec<NodeId>,
-    graph: TravelGraph,
-    grid: Grid,
+    graph: Arc<TravelGraph>,
+    grid: Arc<Grid>,
     ends: Vec<(usize, usize)>,
     nominal: Vec<f64>,
     lengths: Vec<f64>,
     ids: Vec<PipeId>,
-    routes: Vec<(Vec<f64>, Vec<Vec<usize>>)>,
-    /// Per cell, the predicted travel time to each sensor (cells x n)...
-    travel: Vec<f64>,
-    /// ... and the wave-speed part of the covariance (cells x n x n).
-    speed_cov: Vec<f64>,
+    routes: Vec<Arc<Routes>>,
+    /// Each pipe's cells: a range of `grid.cells`.
+    pipe_cells: Vec<(usize, usize)>,
+    /// Index of each pipe's first chunk in `models`.
+    chunk_base: Vec<usize>,
+    /// Each chunk's model, computed when the chunk is first scored.
+    models: Vec<OnceLock<PipeModel>>,
+    /// What the pruning bound needs, per pipe.
+    bounds: Bounds,
 }
 
 impl<'a> Localiser<'a> {
@@ -144,24 +178,54 @@ impl<'a> Localiser<'a> {
         options: &LocaliseOptions,
     ) -> Result<Self, LocalisationError> {
         validate_setup(network, sensors, options)?;
-        let graph = TravelGraph::new(network);
-        let grid = Grid::new(network, options.spacing.value());
+        let graph = Arc::new(TravelGraph::new(network));
+        let grid = Arc::new(Grid::new(network, options.spacing.value()));
+        let nominal = nominal_times(network);
+        // Routes from every sensor with the book wave speeds.
+        let routes: Vec<Arc<Routes>> = sensors
+            .iter()
+            .map(|s| Arc::new(graph.routes_from(s.index(), &nominal)))
+            .collect();
+        Self::assemble(network, sensors, options, graph, grid, routes)
+    }
+
+    /// As [`Self::new`], sharing the parts that do not depend on the set of
+    /// sensors: the graph, the candidate grid (built with
+    /// `options.spacing`) and each sensor's routes
+    /// ([`TravelGraph::routes_from`] with the book wave speeds). The
+    /// placement advisor builds thousands of localisers on one network.
+    pub(crate) fn with_shared(
+        network: &'a Network,
+        sensors: &[NodeId],
+        options: &LocaliseOptions,
+        graph: Arc<TravelGraph>,
+        grid: Arc<Grid>,
+        routes: Vec<Arc<Routes>>,
+    ) -> Result<Self, LocalisationError> {
+        validate_setup(network, sensors, options)?;
+        Self::assemble(network, sensors, options, graph, grid, routes)
+    }
+
+    fn assemble(
+        network: &'a Network,
+        sensors: &[NodeId],
+        options: &LocaliseOptions,
+        graph: Arc<TravelGraph>,
+        grid: Arc<Grid>,
+        routes: Vec<Arc<Routes>>,
+    ) -> Result<Self, LocalisationError> {
         let pipes = network.pipes();
-        let ends = pipes
+        let ends: Vec<(usize, usize)> = pipes
             .iter()
             .map(|p| (p.from.index(), p.to.index()))
             .collect();
-        let nominal: Vec<f64> = pipes.iter().map(|p| p.pipe.travel_time().value()).collect();
+        let nominal = nominal_times(network);
         let lengths = pipes.iter().map(|p| p.pipe.length().value()).collect();
         let ids = (0..pipes.len())
             .map(|i| network.pipe_id(i).expect("index in range"))
             .collect();
-        // Routes from every sensor with the book wave speeds.
-        let routes: Vec<(Vec<f64>, Vec<Vec<usize>>)> = sensors
-            .iter()
-            .map(|s| graph.routes_from(s.index(), &nominal))
-            .collect();
-        for (s, (times, _)) in sensors.iter().zip(&routes) {
+        for (s, r) in sensors.iter().zip(&routes) {
+            let times = &r.0;
             if times
                 .iter()
                 .enumerate()
@@ -170,7 +234,33 @@ impl<'a> Localiser<'a> {
                 return Err(LocalisationError::Unreachable { node: s.index() });
             }
         }
-        let mut localiser = Self {
+        let mut pipe_cells = vec![(0, 0); pipes.len()];
+        for (i, c) in grid.cells.iter().enumerate() {
+            if pipe_cells[c.pipe] == (0, 0) {
+                pipe_cells[c.pipe].0 = i;
+            }
+            pipe_cells[c.pipe].1 = i + 1;
+        }
+        let cell_lengths: Vec<f64> = pipe_cells
+            .iter()
+            .map(|&(first, _)| grid.cells[first].length)
+            .collect();
+        let mut chunk_base = Vec::with_capacity(pipes.len());
+        let mut chunks = 0;
+        for &(first, end) in &pipe_cells {
+            chunk_base.push(chunks);
+            chunks += (end - first).div_ceil(CHUNK);
+        }
+        let sensor_nodes: Vec<usize> = sensors.iter().map(|s| s.index()).collect();
+        let bounds = Bounds::new(
+            &graph,
+            &sensor_nodes,
+            &routes,
+            &ends,
+            &nominal,
+            &cell_lengths,
+        );
+        Ok(Self {
             network,
             options: *options,
             sensors: sensors.to_vec(),
@@ -181,20 +271,11 @@ impl<'a> Localiser<'a> {
             lengths,
             ids,
             routes,
-            travel: Vec::new(),
-            speed_cov: Vec::new(),
-        };
-        let n = sensors.len();
-        let mut travel = Vec::with_capacity(localiser.grid.cells.len() * n);
-        let mut speed_cov = Vec::with_capacity(localiser.grid.cells.len() * n * n);
-        for c in &localiser.grid.cells {
-            let (t, cov) = localiser.model(c.pipe, c.fraction);
-            travel.extend(t);
-            speed_cov.extend(cov);
-        }
-        localiser.travel = travel;
-        localiser.speed_cov = speed_cov;
-        Ok(localiser)
+            pipe_cells,
+            chunk_base,
+            models: (0..chunks).map(|_| OnceLock::new()).collect(),
+            bounds,
+        })
     }
 
     /// The network.
@@ -212,60 +293,124 @@ impl<'a> Localiser<'a> {
     /// Predicted travel times from a point to each sensor, and the
     /// wave-speed part of their error covariance: each shared pipe's
     /// travel-time error, spread^2 x (time on it for j) x (time for k).
+    ///
+    /// Summed over the pipes both routes cross in full (`tau_q^2` each,
+    /// precomputed per pipe and entry end in [`Bounds`]), plus the burst
+    /// pipe itself, where each wave spends its own share.
     fn model(&self, pipe: usize, fraction: f64) -> (Vec<f64>, Vec<f64>) {
         let n = self.sensors.len();
+        let (mut travel, mut cov) = (Vec::with_capacity(n), Vec::with_capacity(n * n));
+        self.model_into(pipe, fraction, &mut travel, &mut cov, &mut Vec::new());
+        (travel, cov)
+    }
+
+    /// As [`Self::model`], appending to `travel` (n values) and `cov`
+    /// (n x n), with `entry` as scratch space.
+    fn model_into(
+        &self,
+        pipe: usize,
+        fraction: f64,
+        travel: &mut Vec<f64>,
+        cov: &mut Vec<f64>,
+        entry: &mut Vec<Option<(usize, f64)>>,
+    ) {
+        let n = self.sensors.len();
         let spread2 = self.options.wave_speed_uncertainty * self.options.wave_speed_uncertainty;
-        let mut travel = vec![0.0; n];
-        let mut legs: Vec<Vec<(usize, f64)>> = Vec::with_capacity(n);
+        let tau = self.nominal[pipe];
+        // Per sensor: entry end (0 = from, 1 = to) and time on this pipe.
+        entry.clear();
         for (j, s) in self.sensors.iter().enumerate() {
-            let (times, pipe_routes) = &self.routes[j];
-            let (t, entry) = self.graph.point_route(
+            let (t, via) = self.graph.point_route(
                 s.index(),
-                times,
+                &self.routes[j].0,
                 self.ends[pipe],
                 fraction,
-                self.nominal[pipe],
+                tau,
             );
-            travel[j] = t;
-            let mut leg: Vec<(usize, f64)> = Vec::new();
-            if let Some((end, part)) = entry {
-                leg.extend(pipe_routes[end].iter().map(|&p| (p, self.nominal[p])));
-                leg.push((pipe, part * self.nominal[pipe]));
-            }
-            legs.push(leg);
+            travel.push(t);
+            entry.push(via.map(|(end, part)| {
+                let k = usize::from(end != self.ends[pipe].0);
+                let through = if self.bounds.through(pipe, j, k) {
+                    tau
+                } else {
+                    0.0
+                };
+                (k, through + part * tau)
+            }));
         }
-        let mut cov = vec![0.0; n * n];
+        let base = cov.len();
+        cov.resize(base + n * n, 0.0);
+        let block = &mut cov[base..];
         for j in 0..n {
+            let Some((ej, wj)) = entry[j] else { continue };
             for k in 0..=j {
-                let shared: f64 = legs[j]
-                    .iter()
-                    .flat_map(|&(pj, wj)| {
-                        legs[k]
-                            .iter()
-                            .filter(move |(pk, _)| *pk == pj)
-                            .map(move |&(_, wk)| wj * wk)
-                    })
-                    .sum();
-                let v = spread2 * shared;
-                cov[j * n + k] = v;
-                cov[k * n + j] = v;
+                let Some((ek, wk)) = entry[k] else { continue };
+                let v = spread2 * (self.bounds.shared(pipe, j, ej, k, ek) + wj * wk);
+                block[j * n + k] = v;
+                block[k * n + j] = v;
             }
         }
-        (travel, cov)
+    }
+
+    /// The cells of chunk `k` of `pipe`.
+    fn chunk_cells(&self, pipe: usize, k: usize) -> (usize, usize) {
+        let (first, end) = self.pipe_cells[pipe];
+        (first + k * CHUNK, (first + (k + 1) * CHUNK).min(end))
+    }
+
+    /// The model of every cell of chunk `k` of `pipe` (computed once).
+    fn chunk_model(&self, pipe: usize, k: usize) -> &PipeModel {
+        self.models[self.chunk_base[pipe] + k].get_or_init(|| {
+            let (first, end) = self.chunk_cells(pipe, k);
+            let n = self.sensors.len();
+            let mut travel = Vec::with_capacity((end - first) * n);
+            let mut speed_cov = Vec::with_capacity((end - first) * n * n);
+            let mut entry = Vec::with_capacity(n);
+            for c in &self.grid.cells[first..end] {
+                self.model_into(pipe, c.fraction, &mut travel, &mut speed_cov, &mut entry);
+            }
+            PipeModel { travel, speed_cov }
+        })
     }
 
     /// Scores a candidate: timing noise added to the wave-speed covariance.
     fn score(observed: &[f64], sigma: &[f64], travel: &[f64], speed_cov: &[f64]) -> Score {
         let n = observed.len();
-        let mut cov = speed_cov.to_vec();
+        Self::score_in(
+            observed,
+            sigma,
+            travel,
+            speed_cov,
+            &mut vec![0.0; n * n],
+            &mut vec![0.0; 3 * n],
+        )
+    }
+
+    /// As [`Self::score`], in scratch space `cov` (n x n) and `work` (3n).
+    fn score_in(
+        observed: &[f64],
+        sigma: &[f64],
+        travel: &[f64],
+        speed_cov: &[f64],
+        cov: &mut [f64],
+        work: &mut [f64],
+    ) -> Score {
+        let n = observed.len();
+        cov.copy_from_slice(speed_cov);
         for j in 0..n {
             cov[j * n + j] += sigma[j] * sigma[j];
         }
-        score_correlated(observed, travel, &mut cov)
+        score_correlated_in(observed, travel, cov, work)
     }
 
-    /// The normalised posterior over the candidate cells for `arrivals`.
-    fn posterior(&self, arrivals: &[Arrival]) -> Result<Posterior, LocalisationError> {
+    /// The normalised posterior over the candidate cells for `arrivals`:
+    /// the cells that could matter (all of them if `exhaustive`).
+    #[allow(clippy::too_many_lines)] // one branch-and-bound search, kept together
+    fn posterior(
+        &self,
+        arrivals: &[Arrival],
+        exhaustive: bool,
+    ) -> Result<Posterior, LocalisationError> {
         if arrivals.len() != self.sensors.len()
             || arrivals
                 .iter()
@@ -299,32 +444,98 @@ impl<'a> Localiser<'a> {
             .fold(f64::INFINITY, f64::min);
         let observed: Vec<f64> = arrivals.iter().map(|a| a.time.value() - origin).collect();
         let sigma: Vec<f64> = arrivals.iter().map(|a| a.uncertainty.value()).collect();
-        let cells = &self.grid.cells;
-        let log_posterior: Vec<f64> = cells
-            .iter()
-            .enumerate()
-            .map(|(i, c)| {
-                let s = Self::score(
-                    &observed,
-                    &sigma,
-                    &self.travel[i * n..(i + 1) * n],
-                    &self.speed_cov[i * n * n..(i + 1) * n * n],
-                );
-                s.log_likelihood + c.length.ln()
+        let spread2 = self.options.wave_speed_uncertainty * self.options.wave_speed_uncertainty;
+        let constant = -0.5 * sigma.iter().map(|s| (s * s).ln()).sum::<f64>()
+            - 0.5 * sigma.iter().map(|s| 1.0 / (s * s)).sum::<f64>().ln();
+
+        // Pipes, most promising first.
+        let mut scratch = Scratch::default();
+        let mut order: Vec<(f64, usize)> = (0..self.pipe_cells.len())
+            .map(|p| {
+                let b = if exhaustive {
+                    f64::INFINITY
+                } else {
+                    self.bounds.upper(
+                        p,
+                        (0.0, 1.0),
+                        &observed,
+                        &sigma,
+                        spread2,
+                        constant,
+                        &mut scratch,
+                    )
+                };
+                (b, p)
             })
+            .filter(|(b, _)| *b > f64::NEG_INFINITY)
             .collect();
-        let top = log_posterior
-            .iter()
-            .copied()
-            .fold(f64::NEG_INFINITY, f64::max);
+        order.sort_by(|a, b| b.0.total_cmp(&a.0).then(a.1.cmp(&b.1)));
+        let cells = &self.grid.cells;
+        let mut top = f64::NEG_INFINITY;
+        let mut scored: Vec<(usize, f64)> = Vec::new();
+        let (mut cov, mut work) = (vec![0.0; n * n], vec![0.0; 3 * n]);
+        for (b, p) in order {
+            if b < top - PRUNE_MARGIN {
+                break; // every pipe left is bounded below this
+            }
+            // Within the pipe, stretches of cells best bound first.
+            let (first, end) = self.pipe_cells[p];
+            let count = (end - first).div_ceil(CHUNK);
+            let mut chunks: Vec<(f64, usize)> = (0..count)
+                .map(|k| {
+                    if exhaustive || count == 1 {
+                        return (b, k);
+                    }
+                    let (a, z) = self.chunk_cells(p, k);
+                    let span = (cells[a].fraction, cells[z - 1].fraction);
+                    let bound = self.bounds.upper(
+                        p,
+                        span,
+                        &observed,
+                        &sigma,
+                        spread2,
+                        constant,
+                        &mut scratch,
+                    );
+                    (bound, k)
+                })
+                .collect();
+            chunks.sort_by(|a, b| b.0.total_cmp(&a.0).then(a.1.cmp(&b.1)));
+            for (bound, k) in chunks {
+                if bound < top - PRUNE_MARGIN {
+                    break;
+                }
+                let model = self.chunk_model(p, k);
+                let (a, z) = self.chunk_cells(p, k);
+                for (c, i) in (a..z).enumerate() {
+                    let s = Self::score_in(
+                        &observed,
+                        &sigma,
+                        &model.travel[c * n..(c + 1) * n],
+                        &model.speed_cov[c * n * n..(c + 1) * n * n],
+                        &mut cov,
+                        &mut work,
+                    );
+                    let lp = s.log_likelihood + cells[i].length.ln();
+                    if lp.is_finite() {
+                        top = top.max(lp);
+                        scored.push((i, lp));
+                    }
+                }
+            }
+        }
         if !top.is_finite() {
             return Err(LocalisationError::InvalidInput(
                 "no candidate point is reachable from every sensor".into(),
             ));
         }
-        let mut mass: Vec<f64> = log_posterior.iter().map(|lp| (lp - top).exp()).collect();
-        let total: f64 = mass.iter().sum();
-        for m in &mut mass {
+        scored.sort_by_key(|&(i, _)| i);
+        let mut mass: Vec<(usize, f64)> = scored
+            .into_iter()
+            .map(|(i, lp)| (i, (lp - top).exp()))
+            .collect();
+        let total: f64 = mass.iter().map(|(_, m)| m).sum();
+        for (_, m) in &mut mass {
             *m /= total;
         }
         Ok(Posterior {
@@ -342,7 +553,7 @@ impl<'a> Localiser<'a> {
     /// # Errors
     /// As [`Self::locate`].
     pub fn credible_length(&self, arrivals: &[Arrival]) -> Result<Length, LocalisationError> {
-        let mass = self.posterior(arrivals)?.mass;
+        let mass = self.posterior(arrivals, false)?.mass;
         let region = credible::region(
             &self.grid.cells,
             &mass,
@@ -366,12 +577,32 @@ impl<'a> Localiser<'a> {
     /// Only if an internal invariant is broken (an empty candidate grid after
     /// validation passed) - that would be a bug.
     pub fn locate(&self, arrivals: &[Arrival]) -> Result<Localisation, LocalisationError> {
+        Ok(self.summarise(arrivals, self.posterior(arrivals, false)?))
+    }
+
+    /// As [`Self::locate`], but scoring EVERY candidate cell instead of
+    /// skipping those that cannot matter. Slower on large networks; the
+    /// answers are the same (tests check it) - kept to show that.
+    ///
+    /// # Errors
+    /// As [`Self::locate`].
+    ///
+    /// # Panics
+    /// As [`Self::locate`].
+    pub fn locate_exhaustive(
+        &self,
+        arrivals: &[Arrival],
+    ) -> Result<Localisation, LocalisationError> {
+        Ok(self.summarise(arrivals, self.posterior(arrivals, true)?))
+    }
+
+    fn summarise(&self, arrivals: &[Arrival], posterior: Posterior) -> Localisation {
         let Posterior {
             observed,
             origin,
             sigma,
             mass,
-        } = self.posterior(arrivals)?;
+        } = posterior;
         let cells = &self.grid.cells;
         let evaluate = |pipe: usize, fraction: f64| -> Score {
             let (travel, cov) = self.model(pipe, fraction);
@@ -391,9 +622,11 @@ impl<'a> Localiser<'a> {
 
         // Most likely point: the best cell, refined along its pipe (golden-
         // section search on the same score).
-        let best = (0..mass.len())
-            .max_by(|&a, &b| mass[a].total_cmp(&mass[b]))
-            .expect("at least one cell");
+        let best = mass
+            .iter()
+            .max_by(|a, b| a.1.total_cmp(&b.1))
+            .expect("at least one cell")
+            .0;
         let cell = cells[best];
         let half_cell = 0.5 * cell.length / self.lengths[cell.pipe];
         let fraction = golden_minimum(
@@ -405,7 +638,7 @@ impl<'a> Localiser<'a> {
         #[allow(clippy::cast_precision_loss)]
         let dof = (arrivals.len() - 1).max(1) as f64;
 
-        Ok(Localisation {
+        Localisation {
             most_likely: Point {
                 pipe: self.ids[cell.pipe],
                 distance: Length::new(fraction * self.lengths[cell.pipe]),
@@ -415,8 +648,17 @@ impl<'a> Localiser<'a> {
             credible_region: region,
             credible_length: Length::new(credible_length),
             misfit: (at_best.chi_squared / dof).sqrt(),
-        })
+        }
     }
+}
+
+/// Each pipe's end-to-end travel time at the book wave speed [s].
+pub(crate) fn nominal_times(network: &Network) -> Vec<f64> {
+    network
+        .pipes()
+        .iter()
+        .map(|p| p.pipe.travel_time().value())
+        .collect()
 }
 
 /// Minimum of `f` on [a, b] by golden-section search (f unimodal there).

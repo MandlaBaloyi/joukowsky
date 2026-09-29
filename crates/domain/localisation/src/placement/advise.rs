@@ -5,10 +5,26 @@
 //! answers the client's real question - what does each extra logger buy? -
 //! because every step is recorded. Swaps then repair what greed got wrong
 //! (the best pair need not be part of the best three).
+//!
+//! Large networks (the scale study, V-S4):
+//! - Lazy greedy (CELF: Leskovec et al. 2007, "Cost-effective outbreak
+//!   detection in networks", developed on water-network sensor placement
+//!   [VERIFY details]). A candidate's GAIN - how much it shrinks the
+//!   expected region - shrinks as loggers are added (diminishing returns).
+//!   So each step re-checks candidates in order of their last known gain
+//!   and stops once none of the rest could beat the best one checked. Not
+//!   proven for this objective (a second logger can make a first one more
+//!   useful); on the test sites it chooses exactly what full greedy does,
+//!   and the swaps repair the rest.
+//! - Swaps are tried only between loggers whose trial bursts overlap: a
+//!   logger is replaced by one that would feel some of the same bursts.
+//!   On a site where every logger feels most bursts that is every
+//!   candidate; across a town it is the neighbourhood.
 
 use jk_hydraulics::{Network, NodeId};
 
-use super::coverage::{Coverage, PlacementOptions, coverage};
+use super::bench::{Bench, Totals};
+use super::coverage::{Coverage, PlacementOptions, validate};
 use crate::error::LocalisationError;
 use crate::graph::TravelGraph;
 
@@ -18,6 +34,9 @@ const MAX_PAIRS: usize = 300;
 
 /// Most rounds of swaps.
 const MAX_SWAP_ROUNDS: usize = 5;
+
+/// Candidates re-checked together (in parallel) per round of lazy greedy.
+const LAZY_BATCH: usize = 8;
 
 /// The advisor's answer.
 #[derive(Debug, Clone, PartialEq)]
@@ -36,6 +55,7 @@ pub struct Advice {
 /// # Errors
 /// Fewer than two sensors asked for, too few candidates, or the scoring
 /// errors of [`coverage`].
+#[allow(clippy::too_many_lines)] // pairs, lazy greedy, swaps: one search, kept together
 pub fn advise(
     network: &Network,
     candidates: &[NodeId],
@@ -57,17 +77,13 @@ pub fn advise(
             pool.len()
         )));
     }
-    let score = |set: &[NodeId]| coverage(network, set, weights, options);
-    let best_of = |sets: Vec<Vec<NodeId>>| -> Result<Option<Coverage>, LocalisationError> {
-        let mut best: Option<Coverage> = None;
-        for set in sets {
-            let c = score(&set)?;
-            if best.as_ref().is_none_or(|b| c.beats(b)) {
-                best = Some(c);
-            }
-        }
-        Ok(best)
-    };
+    let all: Vec<NodeId> = fixed.iter().chain(&pool).copied().collect();
+    validate(network, &all, weights, options)?;
+    // Every placement below is scored on one shared bench: each trial burst
+    // is located once per set of loggers that feel it, and a placement that
+    // differs by one logger only looks again at the trials that logger
+    // feels. The answers are those of `coverage` for each placement.
+    let mut bench = Bench::new(network, weights, options);
 
     let mut chosen: Vec<NodeId> = fixed.to_vec();
     if chosen.len() < 2 {
@@ -84,42 +100,106 @@ pub fn advise(
         } else {
             pool.iter().map(|&c| vec![chosen[0], c]).collect()
         };
-        if let Some(best) = best_of(sets)? {
-            chosen = best.sensors;
+        bench.prefetch_placements(&sets);
+        let mut best: Option<(Totals, Vec<NodeId>)> = None;
+        for set in sets {
+            let state = bench.state(&set);
+            let totals = bench.totals(state.regions());
+            if best.as_ref().is_none_or(|(b, _)| totals.beats(b)) {
+                best = Some((totals, set));
+            }
+        }
+        if let Some((_, set)) = best {
+            chosen = set;
         }
     }
-    let mut steps = vec![score(&chosen)?];
+    let mut state = bench.state(&chosen);
+    let mut steps = vec![bench.coverage(&chosen, state.regions())];
+    // Per pool candidate: its last known gain, the step it was computed
+    // at, and the totals with it added then.
+    let mut known: Vec<Option<(f64, usize, Totals)>> = vec![None; pool.len()];
     while chosen.len() < count {
-        let sets = pool
-            .iter()
-            .filter(|c| !chosen.contains(c))
-            .map(|&c| {
-                let mut set = chosen.clone();
-                set.push(c);
-                set
-            })
-            .collect();
-        let Some(best) = best_of(sets)? else { break };
-        chosen.clone_from(&best.sensors);
-        steps.push(best);
+        let step = chosen.len();
+        let now = bench.totals(state.regions()).expected_region;
+        let tolerance = 1e-9 * now;
+        loop {
+            let fresh_best = (0..pool.len())
+                .filter_map(|k| known[k].filter(|&(_, at, _)| at == step))
+                .map(|(gain, _, _)| gain)
+                .fold(f64::NEG_INFINITY, f64::max);
+            // Candidates that might still beat the best fresh one: never
+            // checked, or checked earlier with a gain at least as large.
+            let mut stale: Vec<(f64, usize)> = (0..pool.len())
+                .filter(|&k| !chosen.contains(&pool[k]))
+                .filter_map(|k| match known[k] {
+                    None => Some((f64::INFINITY, k)),
+                    Some((gain, at, _)) if at != step && gain >= fresh_best - tolerance => {
+                        Some((gain, k))
+                    }
+                    _ => None,
+                })
+                .collect();
+            if stale.is_empty() {
+                break;
+            }
+            stale.sort_by(|a, b| b.0.total_cmp(&a.0).then(a.1.cmp(&b.1)));
+            let unknown = stale.iter().take_while(|(g, _)| g.is_infinite()).count();
+            stale.truncate(unknown.max(LAZY_BATCH));
+            let moves: Vec<(Option<usize>, usize)> = stale
+                .iter()
+                .map(|&(_, k)| (None, pool[k].index()))
+                .collect();
+            bench.prefetch_moves(&state, &moves);
+            for (_, k) in stale {
+                let regions = bench.regions_with(&state, None, pool[k].index());
+                let totals = bench.totals(&regions);
+                known[k] = Some((now - totals.expected_region, step, totals));
+            }
+        }
+        // The best of those checked this step, in pool order (as full
+        // greedy would pick it).
+        let mut best: Option<(Totals, NodeId)> = None;
+        for (k, &c) in pool.iter().enumerate() {
+            if let Some((_, at, totals)) = known[k]
+                && at == step
+                && !chosen.contains(&c)
+                && best.as_ref().is_none_or(|(b, _)| totals.beats(b))
+            {
+                best = Some((totals, c));
+            }
+        }
+        let Some((_, c)) = best else { break };
+        chosen.push(c);
+        state = bench.state(&chosen);
+        steps.push(bench.coverage(&chosen, state.regions()));
     }
 
     // Swaps: replace one chosen (not fixed) sensor by an unused candidate
     // whenever that helps, until nothing does.
-    let mut best = steps[steps.len() - 1].clone();
+    let mut best = bench.totals(state.regions());
     for _ in 0..MAX_SWAP_ROUNDS {
         let mut improved = false;
         for i in fixed.len()..chosen.len() {
-            for &c in &pool {
+            // Everything this logger's swaps need, located in parallel
+            // (again after each accepted swap, which changes the rest).
+            let near: Vec<NodeId> = pool
+                .iter()
+                .copied()
+                .filter(|c| !chosen.contains(c) && bench.overlap(chosen[i].index(), c.index()))
+                .collect();
+            let moves: Vec<(Option<usize>, usize)> =
+                near.iter().map(|c| (Some(i), c.index())).collect();
+            bench.prefetch_moves(&state, &moves);
+            for &c in &near {
                 if chosen.contains(&c) {
                     continue;
                 }
-                let mut trial = chosen.clone();
-                trial[i] = c;
-                let cov = score(&trial)?;
-                if cov.beats(&best) {
-                    chosen = trial;
-                    best = cov;
+                let regions = bench.regions_with(&state, Some(i), c.index());
+                let totals = bench.totals(&regions);
+                if totals.beats(&best) {
+                    chosen[i] = c;
+                    state = bench.state(&chosen);
+                    best = totals;
                     improved = true;
                 }
             }
@@ -128,6 +208,7 @@ pub fn advise(
             break;
         }
     }
+    let best = bench.coverage(&chosen, state.regions());
     Ok(Advice { steps, best })
 }
 

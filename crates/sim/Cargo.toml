@@ -1,0 +1,18 @@
+[package]
+name = "jk-sim"
+description = "Synthetic networks and scenarios, for validation and demos"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+publish.workspace = true
+license.workspace = true
+
+[lib]
+name = "jk_sim"
+
+[dependencies]
+jk-kernel.workspace = true
+jk-hydraulics.workspace = true
+
+[lints]
+workspace = true

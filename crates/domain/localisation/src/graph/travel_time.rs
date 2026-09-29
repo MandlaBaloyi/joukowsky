@@ -5,6 +5,11 @@ use std::collections::BinaryHeap;
 
 use jk_hydraulics::{Network, Node};
 
+/// Fastest travel time from one source to every node, and each node's
+/// route (the pipes the wave travels along, from the node back to the
+/// source): [`TravelGraph::routes_from`].
+pub(crate) type Routes = (Vec<f64>, Vec<Vec<usize>>);
+
 /// The network as a wave-travel graph.
 #[derive(Debug, Clone, PartialEq)]
 pub struct TravelGraph {
@@ -138,6 +143,29 @@ impl TravelGraph {
             .0
     }
 
+    /// When a wave from `source` can enter the pipe from `from` to `to`
+    /// through each end (infinity through a reservoir end, unless the
+    /// source is that reservoir), given `times` = [`Self::times_from`]
+    /// `(source)`. A point `fraction` along the pipe is then reached at
+    /// min(from + fraction x `pipe_time`, to + (1 - fraction) x `pipe_time`).
+    #[must_use]
+    #[inline]
+    pub fn end_times(
+        &self,
+        source: usize,
+        times: &[f64],
+        (from, to): (usize, usize),
+    ) -> (f64, f64) {
+        let via = |end: usize| {
+            if end == source || self.passes[end] {
+                times[end]
+            } else {
+                f64::INFINITY
+            }
+        };
+        (via(from), via(to))
+    }
+
     /// As [`Self::point_time`], also returning which end of the pipe the
     /// wave comes in through and the fraction of the pipe it then travels
     /// (None if the point cannot be reached).
@@ -151,14 +179,11 @@ impl TravelGraph {
         fraction: f64,
         pipe_time: f64,
     ) -> (f64, Option<(usize, f64)>) {
-        let via = |end: usize, part: f64| {
-            if end == source || self.passes[end] {
-                times[end] + part * pipe_time
-            } else {
-                f64::INFINITY
-            }
-        };
-        let (t_from, t_to) = (via(from, fraction), via(to, 1.0 - fraction));
+        let (at_from, at_to) = self.end_times(source, times, (from, to));
+        let (t_from, t_to) = (
+            at_from + fraction * pipe_time,
+            at_to + (1.0 - fraction) * pipe_time,
+        );
         if !t_from.is_finite() && !t_to.is_finite() {
             (f64::INFINITY, None)
         } else if t_from <= t_to {

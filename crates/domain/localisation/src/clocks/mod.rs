@@ -13,7 +13,12 @@
 //! over, event after event, is the sensor's clock offset.
 //!
 //! - [`calibrate`]: estimate each sensor's offset from known-source events.
+//! - [`drift`]: clocks that drift (no GNSS - underground): offset AND rate
+//!   per sensor, from known events spread over time; corrections whose
+//!   uncertainty grows away from the events.
 
 pub mod calibrate;
+pub mod drift;
 
 pub use calibrate::{CalibrationEvent, ClockEstimate, correct, estimate_offsets};
+pub use drift::{DriftEstimate, correct_drifting, estimate_drift};

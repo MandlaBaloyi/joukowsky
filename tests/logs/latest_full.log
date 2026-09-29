@@ -1,7 +1,7 @@
 joukowsky test run
-  when     2026-09-29 15:44:31
+  when     2026-09-29 20:02:11
   suite    full
-  commit   2bc49a0 (with uncommitted changes)
+  commit   bb44115 (with uncommitted changes)
   rust     rustc 1.98.1 (48a229cea 2026-09-01)
   command  cargo test --workspace --no-fail-fast -- --nocapture --test-threads=1 --include-ignored
 ==============================================================================
@@ -9,8 +9,7 @@ joukowsky test run
    Compiling jk-cli v0.1.0 (C:\Users\HP\Desktop\joukowsky\crates\interfaces\cli)
    Compiling jk-tests v0.1.0 (C:\Users\HP\Desktop\joukowsky\tests)
    Compiling jk-localisation v0.1.0 (C:\Users\HP\Desktop\joukowsky\crates\domain\localisation)
-   Compiling jk-files v0.1.0 (C:\Users\HP\Desktop\joukowsky\crates\adapters\files)
-    Finished `test` profile [unoptimized + debuginfo] target(s) in 5.65s
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 8.43s
      Running unittests src\lib.rs (target\debug\deps\jk_application-31ec11ad23313301.exe)
 
 running 3 tests
@@ -30,7 +29,7 @@ test features::front::tests::an_integrated_step_rises_in_one_point_six_samples .
 
 test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
 
-     Running unittests src\main.rs (target\debug\deps\jk-65cb914eeaa3df1a.exe)
+     Running unittests src\main.rs (target\debug\deps\jk-6863b38d4d11836a.exe)
 
 running 4 tests
 test view::svg::tests::escapes_markup ... ok
@@ -80,7 +79,7 @@ test logger::time::tests::the_usual_logger_formats ... ok
 test logger::units::tests::one_bar_is_about_ten_metres ... ok
 test logger::units::tests::units_from_headers ... ok
 
-test result: ok. 16 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+test result: ok. 16 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
 
      Running unittests src\lib.rs (target\debug\deps\jk_hydraulics-c42e47dfc771fa13.exe)
 
@@ -127,7 +126,7 @@ test pipe::friction::quasi_steady::tests::matches_darcy_weisbach_in_velocity_for
 test pipe::tests::rejects_non_physical_values ... ok
 test pipe::tests::timing_matches_docs_example ... ok
 
-test result: ok. 41 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+test result: ok. 41 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.03s
 
      Running unittests src\lib.rs (target\debug\deps\jk_kernel-eccabcc9e10cd5d2.exe)
 
@@ -143,18 +142,29 @@ test units::tests::same_type_arithmetic ... ok
 test units::tests::velocity_flow_area ... ok
 test units::tests::wave_travel_time_and_distance_round_trip ... ok
 
-test result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+test result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
 
      Running unittests src\lib.rs (target\debug\deps\jk_localisation-b57d917c3efe0d09.exe)
 
-running 5 tests
+running 6 tests
 test graph::travel_time::tests::fastest_path_and_no_passing_through_reservoirs ... ok
 test locate::tests::golden_section_finds_a_parabola_minimum ... ok
+test posterior::bound::tests::the_determinant_terms_are_largest_without_wave_speed_doubt ... ok
 test posterior::score::tests::a_perfect_candidate_scores_zero_misfit_and_recovers_t0 ... ok
 test posterior::score::tests::a_wrong_candidate_is_penalised ... ok
 test posterior::score::tests::with_independent_errors_the_correlated_score_matches_the_simple_one ... ok
 
-test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running unittests src\lib.rs (target\debug\deps\jk_sim-cdf9363ef8ace4d0.exe)
+
+running 4 tests
+test town::tests::big_towns_get_more_reservoirs ... ok
+test town::tests::every_junction_is_reachable_and_the_town_has_loops_and_dead_ends ... ok
+test town::tests::the_length_is_exactly_the_target ... ok
+test town::tests::the_same_seed_gives_the_same_town ... ok
+
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
 
      Running unittests src\lib.rs (target\debug\deps\jk_telemetry-c8a96417b1d674bc.exe)
 
@@ -166,14 +176,14 @@ test assembly::tests::overlaps_and_interval_changes_are_refused_and_change_nothi
 
 test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
 
-     Running unittests common\lib.rs (target\debug\deps\jk_tests-5975eea637b131de.exe)
+     Running unittests common\lib.rs (target\debug\deps\jk_tests-1b20f8e8a7ca16df.exe)
 
 running 1 test
 test sensor::tests::averaging_a_step_gives_the_covered_fraction ... ok
 
 test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
 
-     Running adapters\main.rs (target\debug\deps\adapters-4674bb7233279830.exe)
+     Running adapters\main.rs (target\debug\deps\adapters-63ad50df5bc7fd66.exe)
 
 running 9 tests
 test analytical::epanet::broken_files_are_refused_with_the_line_number ...   refused: line 4: link 'P1' joins unknown node 'B'
@@ -312,9 +322,9 @@ test simulation::logger_files::a_burst_recorded_in_logger_files_raises_one_alarm
   at 10:15:03 - seconds past 10:15:00          got       2.998747   expected       3.000000   rel.err 4.2e-4
 ok
 
-test result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.39s
+test result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.45s
 
-     Running classification\main.rs (target\debug\deps\classification-a20a1f0d6127acae.exe)
+     Running classification\main.rs (target\debug\deps\classification-4a848a22bad9e255.exe)
 
 running 8 tests
 test simulation::scenarios::a_pump_trip_is_recognised_from_its_shape_alone ... Pump losing power, sensor at its discharge, power NOT monitored:
@@ -408,9 +418,9 @@ test simulation::scenarios::power_data_settles_the_slow_burst ... The same slow 
   burst                                        yes
 ok
 
-test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.95s
+test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.26s
 
-     Running detection\main.rs (target\debug\deps\detection-a66070c21306c4c3.exe)
+     Running detection\main.rs (target\debug\deps\detection-5fb88cfa3a816592.exe)
 
 running 10 tests
 test analytical::delay::delay_follows_the_cusum_formula ... Sharp drops at t = 3 s, noise-free signal with a 2 cm noise floor set:
@@ -484,9 +494,9 @@ test simulation::burst_location::vs1_location_error_versus_sampling_rate_and_noi
   128 S/s with 2 cm noise locates to under 1 m RMS yes
 ok
 
-test result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 2.75s
+test result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 3.60s
 
-     Running hydraulics\main.rs (target\debug\deps\hydraulics-f527ea78af929c4d.exe)
+     Running hydraulics\main.rs (target\debug\deps\hydraulics-20d714b021436fba.exe)
 
 running 35 tests
 test analytical::boundaries::burst::a_10mm_hole_at_60m_head ... DN150 AC main at 60 m head, 0.5 m/s; a 10 mm hole opens (Cd 0.6):
@@ -748,9 +758,9 @@ test invariants::steady_state::an_undisturbed_pipe_stays_steady ... Steady state
   valve holds steady                           yes
 ok
 
-test result: ok. 35 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 7.96s
+test result: ok. 35 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 9.20s
 
-     Running kernel\main.rs (target\debug\deps\kernel-8904bd807c4e051d.exe)
+     Running kernel\main.rs (target\debug\deps\kernel-5b9e09cb13e50ac8.exe)
 
 running 5 tests
 test conversions::dn150_area ... Cross-section of a DN150 pipe:
@@ -775,9 +785,9 @@ ok
 
 test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
 
-     Running localisation\main.rs (target\debug\deps\localisation-06d59dadc3c0678e.exe)
+     Running localisation\main.rs (target\debug\deps\localisation-29bcd85f7b4b18b2.exe)
 
-running 18 tests
+running 24 tests
 test analytical::branched::two_sensors_see_a_whole_branch_three_sensors_see_the_point ... Sensors S1 and S2 only (burst 200 m along branch T-S3):
   probability on branch T-S3: 100.0%
   90% region: 540 m of pipe
@@ -789,6 +799,30 @@ Adding sensor S3 at the end of the branch:
   distance from T [m]                          got     200.000007   expected     200.000000   rel.err 3.6e-8
   the region shrinks to a few metres           yes
   => sensor PLACEMENT decides what the engine can see (docs: placement advisor).
+ok
+test analytical::clock_drift::f9_a_burst_after_the_last_calibration_is_found_only_with_drift_repaired ... Burst 200 m along T-S3 at 23:00 (clocks: S2 +20 ppm, S3 -35 ppm, no GNSS):
+  clocks as read                 400.00 m off, 90% stretch     2.0 m, misfit   119.86
+  one fixed offset per clock     400.00 m off, 90% stretch     2.0 m, misfit    60.29
+  offset and drift per clock       0.06 m off, 90% stretch    12.0 m, misfit     0.01
+  drift repaired: within 1 m of the burst      yes
+  drift repaired: 90% stretch under 30 m       yes
+  a fixed offset alone misses by more than 50 m yes
+ok
+test analytical::clock_drift::f9_a_clock_seen_at_only_one_time_has_no_measurable_drift_and_is_refused ...   refused: invalid input: the clock of the sensor at node 3 is in 1 calibration event(s): its drift needs known events at two or more different times
+  the refusal names S2's node                  yes
+ok
+test analytical::clock_drift::f9_drift_rates_and_offsets_are_recovered_from_known_events ... Noise-free picks, four known events between 06:00 and 20:00:
+    S2 drift [ppm of its own seconds]          got      19.999596   expected      19.999600   rel.err 2.0e-7
+    S2 offset at 23:00 [ms]                    got    1263.999786   expected    1263.999939   rel.err 1.2e-7
+    S3 drift [ppm of its own seconds]          got     -35.001223   expected     -35.001225   rel.err 5.5e-8
+    S3 offset at 23:00 [ms]                    got   -2167.000050   expected   -2167.000055   rel.err 2.6e-9
+Picks with 0.2 ms noise:
+  S2: drift +19.990 ppm (true +20); offset at 23:00 +1263.749 ms (true +1264.000), uncertainty 0.320 ms (at the events' middle 0.141 ms)
+      offset at 23:00 within 3 reported sigma  yes
+      less sure when extrapolating than at the events yes
+  S3: drift -34.998 ppm (true -35); offset at 23:00 -2166.820 ms (true -2167.000), uncertainty 0.320 ms (at the events' middle 0.141 ms)
+      offset at 23:00 within 3 reported sigma  yes
+      less sure when extrapolating than at the events yes
 ok
 test analytical::clocks::a_clock_that_never_meets_the_others_is_refused_not_guessed ... S2 only ever sees an event alone: refused - invalid input: the clock of the sensor at node 3 cannot be separated from the event times: it must share events with the other sensors
   the engine refuses                           yes
@@ -840,7 +874,7 @@ Recommended 6 (after swaps): a1 block A1, c1 block C1, b1 block B1, c2 block C2,
     B-b2               90 m   typical region  155 m
     C-c1              150 m   typical region   20 m
     C-c2              220 m   typical region   25 m
-  (advice took 20 s on this machine)
+  (advice took 4 s on this machine)
 Would a sudden 1 l/s burst be felt? By at least one logger on 100% of the pipe, by two (so located) on 100%. Smallest burst locatable anywhere on each pipe (upper bound: no plastic-wall damping yet):
     R-M connection     0.09 l/s
     M-A ring           0.04 l/s
@@ -922,6 +956,53 @@ test invariants::calibration::the_90_percent_region_holds_the_truth_about_90_per
   average region length: 108 m
   coverage between 75% and 99% (60 trials)     yes
 ok
+test invariants::pruning::skipping_changes_nothing_for_40_random_bursts_and_logger_sets ... 40 random bursts on a 6 km town, 2-6 loggers each, 0-3 ms timing noise:
+  largest relative difference, 40 bursts       got       0.000000   expected       0.000000   rel.err 0.0e0
+ok
+test invariants::pruning::skipping_pipes_changes_nothing_on_a_10_km_town ... 10 km town, burst 0.5 along pipe 10, timing noise 0 ms:
+  same most likely pipe                        yes
+  most likely point [m]                        got      79.968493   expected      79.968493   rel.err 0.0e0
+  90% search stretch [m]                       got      39.984245   expected      39.984245   rel.err 0.0e0
+  misfit                                       got       0.000000   expected       0.000000   rel.err 0.0e0
+  probability of the top pipe                  got       1.000000   expected       1.000000   rel.err 0.0e0
+10 km town, burst 0.25 along pipe 60, timing noise 2 ms:
+  same most likely pipe                        yes
+  most likely point [m]                        got     158.711241   expected     158.711241   rel.err 0.0e0
+  90% search stretch [m]                       got     263.982592   expected     263.982592   rel.err 0.0e0
+  misfit                                       got       0.083857   expected       0.083857   rel.err 0.0e0
+  probability of the top pipe                  got       0.265214   expected       0.265214   rel.err 0.0e0
+10 km town, burst 0.9 along pipe 95, timing noise 0 ms:
+  same most likely pipe                        yes
+  most likely point [m]                        got      23.197623   expected      23.197623   rel.err 0.0e0
+  90% search stretch [m]                       got     176.464279   expected     176.464279   rel.err 0.0e0
+  misfit                                       got       0.000000   expected       0.000000   rel.err 0.0e0
+  probability of the top pipe                  got       0.535903   expected       0.535903   rel.err 0.0e0
+10 km town, burst 0.4 along pipe 110, timing noise 2 ms:
+  same most likely pipe                        yes
+  most likely point [m]                        got      40.383626   expected      40.383626   rel.err 0.0e0
+  90% search stretch [m]                       got     193.806708   expected     193.806708   rel.err 0.0e0
+  misfit                                       got       0.168662   expected       0.168662   rel.err 0.0e0
+  probability of the top pipe                  got       0.644992   expected       0.644992   rel.err 0.0e0
+ok
+test invariants::pruning::skipping_pipes_changes_nothing_on_the_estate ... Estate, burst 0.33 along pipe 3:
+  same most likely pipe                        yes
+  most likely point [m]                        got     198.044047   expected     198.044047   rel.err 0.0e0
+  90% search stretch [m]                       got      28.000000   expected      28.000000   rel.err 0.0e0
+  misfit                                       got       0.025024   expected       0.025024   rel.err 0.0e0
+  probability of the top pipe                  got       1.000000   expected       1.000000   rel.err 0.0e0
+Estate, burst 0.8 along pipe 2:
+  same most likely pipe                        yes
+  most likely point [m]                        got     399.850988   expected     399.850988   rel.err 0.0e0
+  90% search stretch [m]                       got      34.000000   expected      34.000000   rel.err 0.0e0
+  misfit                                       got       0.026250   expected       0.026250   rel.err 0.0e0
+  probability of the top pipe                  got       1.000000   expected       1.000000   rel.err 0.0e0
+Estate, burst 0.5 along pipe 0:
+  same most likely pipe                        yes
+  most likely point [m]                        got      66.527864   expected      66.527864   rel.err 0.0e0
+  90% search stretch [m]                       got     374.000000   expected     374.000000   rel.err 0.0e0
+  misfit                                       got       0.035827   expected       0.035827   rel.err 0.0e0
+  probability of the top pipe                  got       0.965347   expected       0.965347   rel.err 0.0e0
+ok
 test invariants::time_origin::clock_repair_with_clock_time_gives_the_same_offsets ...   offset of node 1: +0.000000 ms from zero, +0.000000 ms from clock time
     ... the same to 1 microsecond              yes
   offset of node 3: +3.000000 ms from zero, +2.999989 ms from clock time
@@ -984,9 +1065,9 @@ Localisation:
   the arrivals fit one source (misfit < 3)     yes
 ok
 
-test result: ok. 18 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 25.31s
+test result: ok. 24 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 6.02s
 
-     Running pipeline\main.rs (target\debug\deps\pipeline-2c8d7aacd0c1e245.exe)
+     Running pipeline\main.rs (target\debug\deps\pipeline-c326c19a150f67d8.exe)
 
 running 7 tests
 test simulation::live::a_power_cut_at_a_sensor_is_reported_not_taken_for_silence ... A burst at t = 3 s while load-shedding has cut S2's gateway from
@@ -1136,7 +1217,7 @@ another on the north branch at t = 30 s:
   the second on the north branch, ~150 m       yes
 ok
 
-test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 4.53s
+test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 5.15s
 
    Doc-tests jk_application
 
@@ -1180,6 +1261,12 @@ running 0 tests
 
 test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
 
+   Doc-tests jk_sim
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
    Doc-tests jk_telemetry
 
 running 0 tests
@@ -1193,9 +1280,9 @@ running 0 tests
 test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
 
 ==============================================================================
-  passed   194
+  passed   205
   failed   0
   skipped  0 slow test(s) not in this suite
   filtered 0 test(s) outside -Only/-Filter
-  time     51.1 s (including compile)
+  time     42.6 s (including compile)
   result   ALL PASSED

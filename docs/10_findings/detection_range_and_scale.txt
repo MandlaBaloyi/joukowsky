@@ -90,3 +90,24 @@ promise.
    the whole network say WHICH ZONE; fast loggers inside it say WHERE.
 7. Mains first: transmission mains have few junctions, so few loggers
    cover many km - the cheapest way to add kilometres.
+
+5. Measured (2026-09-29, `jk scale`, release build, this i3 laptop;
+   seconds wander +/-40% with heat - FN-016)
+------------------------------------------------------------------------
+  Town (synthetic, crates/sim)   10 km        50 km        100 km
+  pipes / junctions              125 / 106    601 / 514    1330 / 1114
+  steady state                   3 ms         0.37 s       5.9 s (dense)
+  5 s of burst simulated         0.4 s        4.4 s        38 s
+  locate one burst (live alert)  2 ms         5 ms (was 66 ms)  230 ms (before)
+  score one logger placement     0.3 s        18 s (was 112 s)  - (was: 7 GB, stopped)
+  choose 10 / 50 loggers         1-2 min (was 10.6 min, same choice)
+                                              > 30 min, stopped
+What changed (all exact - identical answers, tests prove it): skipping
+pipes and 8-cell stretches that cannot hold the burst (posterior/bound.rs),
+models built only where needed, one shared bench for every placement the
+advisor compares (each trial burst located once per set of loggers that
+feel it), four cores, lazy greedy.
+Why 50 km planning is still slow: a 50 km town is only ~3 km across and
+a 1 l/s burst is felt 1-2 km away, so each new logger touches most of the
+town. Next: ZONES (plan each part of town with its neighbours' loggers
+fixed) - the cellphone-tower idea of section 4.

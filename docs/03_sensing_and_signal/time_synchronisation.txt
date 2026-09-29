@@ -57,3 +57,23 @@ KNOWN sources, relative to one reference sensor: offsets recovered to
 unrepaired NTP clocks is found again within 0.1 m after repair. A sensor
 that never shares an event with the others is refused, never guessed.
 
+IMPLEMENTATION NOTE (2026-09-29, clocks/drift.rs): clocks that DRIFT
+Where no GNSS reaches (underground: mines, deep chambers) and no cable
+brings time, a logger's crystal gains or loses a few ppm: 1 ppm = 86 ms a
+day = 43 m of location error per day at a = 1000 m/s. Item 3 extended:
+each sensor's offset AND rate are estimated together (least squares, one
+reference clock) from known-source events spread over time; a correction
+at any moment removes offset + rate x (time - epoch) and reports its
+uncertainty at that moment - smallest near the events, growing when it
+extrapolates (P3). A sensor seen in fewer than two known events has no
+measurable drift and is refused. Test (tests/localisation/analytical/
+clock_drift.rs): S2 +20 ppm, S3 -35 ppm, hydrants at 06:00/10:00/14:00/
+20:00, burst at 23:00 when the clocks are 1.26 s and 2.17 s off - as
+read: 400 m off; one fixed offset per clock: 400 m off (misfit 60, so it
+would be flagged); offset + drift: 0.06 m off, 12 m search stretch.
+Note: the rate is per second of the logger's own reading (r / (1 + r)
+of the real-time rate); clock time limits a rate to ~1e-11 over 14 h.
+Still open: clock JUMPS (a resync mid-record) - segment the record at a
+resync the logger reports; rates that wander with temperature (piecewise
+or Kalman tracking); clocks estimated from ordinary events (unknown
+source) together with the source.

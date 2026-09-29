@@ -13,6 +13,7 @@
 //! weight is L(x) x (cell length). (The prior is where pipe risk - age,
 //! material, history - will enter later.)
 
+pub(crate) mod bound;
 pub mod credible;
 pub mod grid;
 pub mod score;

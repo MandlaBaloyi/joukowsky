@@ -66,6 +66,18 @@ pub fn score(observed: &[f64], sigma: &[f64], travel: &[f64]) -> Score {
 /// (a longer route through uncertain pipes is a vaguer prediction).
 #[must_use]
 pub fn score_correlated(observed: &[f64], travel: &[f64], cov: &mut [f64]) -> Score {
+    let mut work = vec![0.0; 3 * observed.len()];
+    score_correlated_in(observed, travel, cov, &mut work)
+}
+
+/// As [`score_correlated`], with `work` (at least 3n long) as scratch space
+/// - no allocation, for the locator's inner loop.
+pub(crate) fn score_correlated_in(
+    observed: &[f64],
+    travel: &[f64],
+    cov: &mut [f64],
+    work: &mut [f64],
+) -> Score {
     let n = observed.len();
     let unreachable = Score {
         log_likelihood: f64::NEG_INFINITY,
@@ -75,14 +87,19 @@ pub fn score_correlated(observed: &[f64], travel: &[f64], cov: &mut [f64]) -> Sc
     if travel.iter().any(|t| !t.is_finite()) || jk_kernel::linalg::cholesky(cov, n).is_err() {
         return unreachable;
     }
-    let r: Vec<f64> = observed.iter().zip(travel).map(|(t, tt)| t - tt).collect();
-    let mut c_inv_r = r.clone();
-    jk_kernel::linalg::solve_factored(cov, &mut c_inv_r, n);
-    let mut c_inv_1 = vec![1.0; n];
-    jk_kernel::linalg::solve_factored(cov, &mut c_inv_1, n);
+    let (r, rest) = work.split_at_mut(n);
+    let (c_inv_r, rest) = rest.split_at_mut(n);
+    let c_inv_1 = &mut rest[..n];
+    for ((r, t), tt) in r.iter_mut().zip(observed).zip(travel) {
+        *r = t - tt;
+    }
+    c_inv_r.copy_from_slice(r);
+    jk_kernel::linalg::solve_factored(cov, c_inv_r, n);
+    c_inv_1.fill(1.0);
+    jk_kernel::linalg::solve_factored(cov, c_inv_1, n);
     let one_c_1: f64 = c_inv_1.iter().sum();
     let one_c_r: f64 = c_inv_r.iter().sum();
-    let r_c_r: f64 = r.iter().zip(&c_inv_r).map(|(a, b)| a * b).sum();
+    let r_c_r: f64 = r.iter().zip(c_inv_r.iter()).map(|(a, b)| a * b).sum();
     let chi_squared = (r_c_r - one_c_r * one_c_r / one_c_1).max(0.0);
     Score {
         log_likelihood: -0.5 * chi_squared

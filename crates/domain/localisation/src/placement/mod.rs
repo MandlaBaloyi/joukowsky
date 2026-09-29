@@ -54,6 +54,7 @@
 //! model (S6).
 
 mod advise;
+mod bench;
 mod coverage;
 pub mod detectability;
 

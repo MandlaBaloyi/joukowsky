@@ -102,5 +102,8 @@ Mapping from the earlier sketch (engine_overview.txt)
   physics/ -> domain/hydraulics      signal/  -> domain/detection
   locate/  -> domain/localisation    infer/   -> domain/twin
   learn/   -> domain/classification, domain/health, domain/twin
-  connect/ -> adapters/              sim/     -> interfaces/cli + validation
+  connect/ -> adapters/              sim/     -> crates/sim (jk-sim)
+  (2026-09-29: synthetic networks are needed by BOTH the validation tests
+  and the `jk` command, so they live in their own small crate, crates/sim:
+  a test bench, never a dependency of domain or application crates.)
   service/ -> application/ + interfaces/api

@@ -28,12 +28,17 @@ pub struct Segment {
     pub probability: f64,
 }
 
-/// Total probability per pipe, most likely first.
+/// Total probability per pipe, most likely first. `mass` lists (cell index,
+/// probability) for the cells that hold any - the others hold none.
 #[must_use]
-pub fn per_pipe(cells: &[Cell], mass: &[f64], pipe_ids: &[PipeId]) -> Vec<PipeProbability> {
+pub fn per_pipe(
+    cells: &[Cell],
+    mass: &[(usize, f64)],
+    pipe_ids: &[PipeId],
+) -> Vec<PipeProbability> {
     let mut totals = vec![0.0; pipe_ids.len()];
-    for (c, m) in cells.iter().zip(mass) {
-        totals[c.pipe] += m;
+    for &(i, m) in mass {
+        totals[cells[i].pipe] += m;
     }
     let mut out: Vec<PipeProbability> = totals
         .into_iter()
@@ -49,46 +54,51 @@ pub fn per_pipe(cells: &[Cell], mass: &[f64], pipe_ids: &[PipeId]) -> Vec<PipePr
 }
 
 /// The smallest set of cells holding at least `level` of the probability,
-/// merged into contiguous segments per pipe, most probable first.
+/// merged into contiguous segments per pipe, most probable first. `mass`
+/// lists (cell index, probability) for the cells that hold any, in cell
+/// order.
 #[must_use]
 pub fn region(
     cells: &[Cell],
-    mass: &[f64],
+    mass: &[(usize, f64)],
     pipe_ids: &[PipeId],
     pipe_lengths: &[f64],
     level: f64,
 ) -> Vec<Segment> {
-    let mut order: Vec<usize> = (0..cells.len()).collect();
-    order.sort_by(|&a, &b| mass[b].total_cmp(&mass[a]).then(a.cmp(&b)));
-    let mut chosen = vec![false; cells.len()];
+    let mut order: Vec<usize> = (0..mass.len()).collect();
+    order.sort_by(|&a, &b| mass[b].1.total_cmp(&mass[a].1).then(a.cmp(&b)));
+    let mut chosen = vec![false; mass.len()];
     let mut held = 0.0;
-    for &i in &order {
+    for &k in &order {
         if held >= level {
             break;
         }
-        chosen[i] = true;
-        held += mass[i];
+        chosen[k] = true;
+        held += mass[k].1;
     }
     // Merge runs of chosen neighbouring cells on the same pipe.
     let mut segments: Vec<Segment> = Vec::new();
-    for (i, c) in cells.iter().enumerate() {
-        if !chosen[i] {
+    let mut previous: Option<usize> = None;
+    for (k, &(i, m)) in mass.iter().enumerate() {
+        if !chosen[k] {
             continue;
         }
+        let c = cells[i];
         let half = 0.5 * c.length;
         let centre = c.fraction * pipe_lengths[c.pipe];
         let (from, to) = (centre - half, centre + half);
-        let continues = i > 0 && chosen[i - 1] && cells[i - 1].pipe == c.pipe;
+        let continues = i > 0 && previous == Some(i - 1) && cells[i - 1].pipe == c.pipe;
+        previous = Some(i);
         match segments.last_mut() {
             Some(last) if continues => {
                 last.to = Length::new(to);
-                last.probability += mass[i];
+                last.probability += m;
             }
             _ => segments.push(Segment {
                 pipe: pipe_ids[c.pipe],
                 from: Length::new(from.max(0.0)),
                 to: Length::new(to),
-                probability: mass[i],
+                probability: m,
             }),
         }
     }
