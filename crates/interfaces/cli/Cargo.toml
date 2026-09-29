@@ -18,6 +18,7 @@ jk-classification.workspace = true
 jk-localisation.workspace = true
 jk-application.workspace = true
 jk-files.workspace = true
+jk-detection.workspace = true
 
 [lints]
 workspace = true

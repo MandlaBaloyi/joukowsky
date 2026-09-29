@@ -9,9 +9,15 @@
 //! - [`epanet`]: network models in the EPANET `.inp` format - the industry
 //!   exchange format utilities and consultants already have.
 //!
-//! Later: logger exports (CSV), SCADA extracts.
+//! - [`logger`]: pressure recordings exported by loggers (CSV and similar
+//!   delimited text).
+//!
+//! Later: SCADA extracts, binary logger formats.
 
 pub mod epanet;
 mod error;
+pub mod logger;
+mod note;
 
 pub use error::ReadError;
+pub use note::Note;

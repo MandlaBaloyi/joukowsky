@@ -6,6 +6,7 @@
 //! - [`network`]: the site's pipes and nodes.
 //! - [`placement`]: where loggers should go (three pages).
 //! - [`file`]: a network read from an EPANET `.inp` file, with the reader's notes.
+//! - [`recording`]: logger recordings read from files - real pressure data.
 //! - [`about`]: what the data is and what the viewer does not show yet.
 
 pub mod about;
@@ -15,6 +16,7 @@ pub mod loggers;
 pub mod network;
 pub mod overview;
 pub mod placement;
+pub mod recording;
 
 use std::fmt::Write as _;
 
@@ -55,29 +57,69 @@ pub fn ramp_legend(what: &str, low: &str, high: &str) -> String {
     )
 }
 
-/// The data the browser draws its charts from: every logger's record
-/// (full resolution), fronts and impaired stretches.
-pub fn data_json(event: &EventModel) -> String {
-    let mut s = String::from(r#"{"records":["#);
-    for (i, r) in event.records.iter().enumerate() {
-        if i > 0 {
+/// One chart line for the browser: a named record in continuous runs,
+/// with the fronts the detector picked and the stretches it was not
+/// watching at full sensitivity. Times in seconds on the page's axis.
+pub struct ChartRecord<'a> {
+    pub name: String,
+    pub interval: f64,
+    /// (start, samples) of each continuous run.
+    pub runs: Vec<(f64, &'a [f64])>,
+    pub fronts: Vec<f64>,
+    pub impaired: Vec<(f64, f64)>,
+}
+
+/// The data the browser draws its charts from: named sets of records
+/// (full resolution), e.g. "event" for the demo, "rec" for recordings.
+pub fn data_json(sets: &[(&str, Vec<ChartRecord<'_>>)]) -> String {
+    let mut s = String::from(r#"{"sets":{"#);
+    for (n, (name, records)) in sets.iter().enumerate() {
+        if n > 0 {
             s.push(',');
         }
-        let fronts: Vec<f64> = r.fronts.iter().map(|f| f.arrival).collect();
-        let _ = write!(
-            s,
-            r#"{{"name":{},"start":{:.6},"dt":{:.9},"h":{},"fronts":{},"impaired":["#,
-            json_str(&r.name),
-            r.start,
-            r.interval,
-            json_numbers(&r.samples, 3),
-            json_numbers(&fronts, 4)
-        );
-        for (k, (a, b)) in r.impaired.iter().enumerate() {
-            let _ = write!(s, "{}[{a:.4},{b:.4}]", if k > 0 { "," } else { "" });
+        let _ = write!(s, "{}:[", json_str(name));
+        for (i, r) in records.iter().enumerate() {
+            if i > 0 {
+                s.push(',');
+            }
+            let _ = write!(
+                s,
+                r#"{{"name":{},"dt":{:.9},"fronts":{},"runs":["#,
+                json_str(&r.name),
+                r.interval,
+                json_numbers(&r.fronts, 4)
+            );
+            for (k, (start, h)) in r.runs.iter().enumerate() {
+                let _ = write!(
+                    s,
+                    r#"{}{{"start":{start:.6},"h":{}}}"#,
+                    if k > 0 { "," } else { "" },
+                    json_numbers(h, 3)
+                );
+            }
+            s.push_str(r#"],"impaired":["#);
+            for (k, (a, b)) in r.impaired.iter().enumerate() {
+                let _ = write!(s, "{}[{a:.4},{b:.4}]", if k > 0 { "," } else { "" });
+            }
+            s.push_str("]}");
         }
-        s.push_str("]}");
+        s.push(']');
     }
-    s.push_str("]}");
+    s.push_str("}}");
     s
+}
+
+/// The demo event's records, as chart records.
+pub fn event_records(event: &EventModel) -> Vec<ChartRecord<'_>> {
+    event
+        .records
+        .iter()
+        .map(|r| ChartRecord {
+            name: r.name.clone(),
+            interval: r.interval,
+            runs: vec![(r.start, r.samples.as_slice())],
+            fronts: r.fronts.iter().map(|f| f.arrival).collect(),
+            impaired: r.impaired.clone(),
+        })
+        .collect()
 }

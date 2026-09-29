@@ -27,7 +27,9 @@ pub struct NavGroup {
     pub items: Vec<NavItem>,
 }
 
-/// One page: shown when its menu entry is chosen.
+/// One page: shown when its menu entry is chosen. Its `id` is the address
+/// (`#id`); no element inside any page may use it as an id, or the browser
+/// jumps to that element when the page opens.
 pub struct Page {
     pub id: &'static str,
     pub title: String,

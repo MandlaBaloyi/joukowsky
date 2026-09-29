@@ -41,6 +41,7 @@ use jk_hydraulics::Network;
 use jk_kernel::{Acceleration, Length, STANDARD_GRAVITY, Velocity, WaveSpeed};
 
 use crate::error::ReadError;
+pub use crate::note::Note;
 pub use friction::Headloss;
 pub use units::FlowUnits;
 
@@ -63,15 +64,6 @@ impl Default for InpOptions {
             gravity: STANDARD_GRAVITY,
         }
     }
-}
-
-/// Something in the file the engine approximated or did not use.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Note {
-    /// The line it concerns (1-based), if one.
-    pub line: Option<usize>,
-    /// What was approximated or not used, in plain words.
-    pub text: String,
 }
 
 /// A network read from an `.inp` file.

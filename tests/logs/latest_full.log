@@ -1,14 +1,16 @@
 joukowsky test run
-  when     2026-09-29 15:17:03
+  when     2026-09-29 15:44:31
   suite    full
-  commit   6118542 (with uncommitted changes)
+  commit   2bc49a0 (with uncommitted changes)
   rust     rustc 1.98.1 (48a229cea 2026-09-01)
   command  cargo test --workspace --no-fail-fast -- --nocapture --test-threads=1 --include-ignored
 ==============================================================================
-   Compiling jk-tests v0.1.0 (C:\Users\HP\Desktop\joukowsky\tests)
+   Compiling jk-application v0.1.0 (C:\Users\HP\Desktop\joukowsky\crates\application)
    Compiling jk-cli v0.1.0 (C:\Users\HP\Desktop\joukowsky\crates\interfaces\cli)
+   Compiling jk-tests v0.1.0 (C:\Users\HP\Desktop\joukowsky\tests)
+   Compiling jk-localisation v0.1.0 (C:\Users\HP\Desktop\joukowsky\crates\domain\localisation)
    Compiling jk-files v0.1.0 (C:\Users\HP\Desktop\joukowsky\crates\adapters\files)
-    Finished `test` profile [unoptimized + debuginfo] target(s) in 32.12s
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 5.65s
      Running unittests src\lib.rs (target\debug\deps\jk_application-31ec11ad23313301.exe)
 
 running 3 tests
@@ -28,7 +30,7 @@ test features::front::tests::an_integrated_step_rises_in_one_point_six_samples .
 
 test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
 
-     Running unittests src\main.rs (target\debug\deps\jk-44e04229ac01e7b2.exe)
+     Running unittests src\main.rs (target\debug\deps\jk-65cb914eeaa3df1a.exe)
 
 running 4 tests
 test view::svg::tests::escapes_markup ... ok
@@ -60,15 +62,25 @@ test result: ok. 14 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; fin
 
      Running unittests src\lib.rs (target\debug\deps\jk_files-ec39beec6edb1da0.exe)
 
-running 6 tests
+running 16 tests
 test epanet::friction::tests::darcy_weisbach_matches_the_moody_chart ... ok
 test epanet::friction::tests::hazen_williams_gives_the_same_head_loss_at_the_reference_velocity ... ok
 test epanet::friction::tests::manning_gives_the_same_head_loss_at_the_reference_velocity ... ok
 test epanet::sections::tests::refuses_unknown_sections_and_stray_data ... ok
 test epanet::sections::tests::splits_sections_drops_comments_stops_at_end ... ok
 test epanet::units::tests::conversions_match_the_definitions ... ok
+test logger::grid::tests::a_missing_second_splits_the_run_and_repeats_are_dropped ... ok
+test logger::grid::tests::millisecond_timestamps_at_128_per_second_snap_to_128 ... ok
+test logger::table::tests::a_plain_csv_with_a_preamble ... ok
+test logger::table::tests::semicolons_decimal_commas_and_split_date_time ... ok
+test logger::table::tests::values_missing_and_bad ... ok
+test logger::time::tests::numbers_and_nonsense ... ok
+test logger::time::tests::the_calendar_is_exact ... ok
+test logger::time::tests::the_usual_logger_formats ... ok
+test logger::units::tests::one_bar_is_about_ten_metres ... ok
+test logger::units::tests::units_from_headers ... ok
 
-test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+test result: ok. 16 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
 
      Running unittests src\lib.rs (target\debug\deps\jk_hydraulics-c42e47dfc771fa13.exe)
 
@@ -163,7 +175,7 @@ test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; fini
 
      Running adapters\main.rs (target\debug\deps\adapters-4674bb7233279830.exe)
 
-running 5 tests
+running 9 tests
 test analytical::epanet::broken_files_are_refused_with_the_line_number ...   refused: line 4: link 'P1' joins unknown node 'B'
   line 4: 'unknown node 'B''                   yes
   refused: line 3: node ID 'A' is used twice
@@ -239,8 +251,68 @@ test analytical::epanet::us_units_give_the_same_network_as_si_units ...   pipe l
   friction factor: D-W 0.1 mm gives 0.0203; H-W C = 130 gives 0.0223
   both friction factors plausible (0.015 - 0.025) yes
 ok
+test analytical::logger::a_column_without_a_unit_is_refused_unless_the_unit_is_given ...   refused: no unit for column(s) Pressure: the header must name it (e.g. 'P1 (bar)') or it must be given - units are never guessed
+  refused: units are never guessed             yes
+  reader's notes (4):
+    - column 'Pressure' names no unit: bar as instructed
+    - 2 sample(s) a second
+    - timestamps carry no time zone: times are as written (only differences matter within one file; across loggers their clocks must agree)
+    - 'Pressure': bar -> metres of head (x 10.2121); ground elevation not added
+  read when the unit is given, and noted       yes
+  2 samples a second                           got       0.500000   expected       0.500000   rel.err 0.0e0
+ok
+test analytical::logger::a_european_export_semicolons_decimal_commas_date_and_time_columns ...   reader's notes (5):
+    - numbers use a decimal comma
+    - 1 sample(s) a second
+    - timestamps carry no time zone: times are as written (only differences matter within one file; across loggers their clocks must agree)
+    - line 7: 1 row(s) repeat an earlier time or go back in time: left out
+    - 'Druck [kPa]': kPa -> metres of head (x 0.1021); ground elevation not added
+  1 sample a second                            got       1.000000   expected       1.000000   rel.err 0.0e0
+  one continuous run across midnight           yes
+  the repeated row is dropped and noted        yes
+  451.2 kPa in metres of head                  got      46.076822   expected      46.076822   rel.err 1.5e-16
+  decimal comma noted                          yes
+  no time zone: noted                          yes
+ok
+test analytical::logger::a_typical_export_with_a_gap_an_empty_cell_and_a_step ...   reader's notes (8):
+    - 2 line(s) of metadata above the table skipped
+    - column 'Temperature (C)' looks like temperature, not a pressure: not used
+    - 128 sample(s) a second
+    - timestamps carry a time zone: times are UTC
+    - timestamps sit up to 0.50 ms off the logger's regular clock (rounding): samples are placed on the regular clock
+    - 1 gap(s) in the rows - 64 sample(s), 0.500 s in all, never arrived: the recording is split there, nothing is filled in
+    - 'P1 (bar)': bar -> metres of head (x 10.2121); ground elevation not added
+    - 'P1 (bar)': 1 empty and 0 unreadable value(s) - kept as gaps, not filled
+  sampling interval [s]                        got       0.007812   expected       0.007812   rel.err 0.0e0
+  one pressure channel (temperature left out)  yes
+  two runs: the lost half second splits it     yes
+  second run starts at 10:15:02.500 (s after the first) got       2.500000   expected       2.500000   rel.err 0.0e0
+  4.5 bar in metres of head                    got      45.954277   expected      45.954277   rel.err 0.0e0
+  the empty cell is a gap (NaN), not filled    yes
+  the 0.5 bar drop, in metres                  got      -5.106031   expected      -5.106031   rel.err 5.2e-16
+  rounded timestamps noted                     yes
+  time zone noted: UTC                         yes
+  metadata lines skipped                       yes
+ok
+test simulation::logger_files::a_burst_recorded_in_logger_files_raises_one_alarm_in_the_right_place ... Wrote 3 logger exports to C:\Users\HP\Desktop\joukowsky\target\tmp\logger_files
+  S1 gatehouse: 1280 samples at 128 S/s from 2026-09-29T10:15:00.000Z, 1 run(s)
+  S2 north block: 1280 samples at 128 S/s from 2026-09-29T10:15:00.004Z, 1 run(s)
+  S3 south block: 1280 samples at 128 S/s from 2026-09-29T10:15:00.000Z, 1 run(s)
+[Alarm] #1 BURST (98% confident) at t = 1790676902.999 s
+  where: T-S3 south branch at 199.9 m from its start; 90% within 2 m of pipe
+    T-S3 south branch    100.0%
+  seen by: S3 south block, S1 gatehouse, S2 north block
+  because: pressure DROPPED by 9.02 m: a burst or a pump trip, not a closing valve (seen upstream)
+  because: SHARP front (7 ms, 10-90%): a sudden change - a pipe splitting, a valve slamming - not a pump running down
+  because: pump power is not monitored: no outside evidence
+  exactly one alert                            yes
+  an ALARM for a burst                         yes
+  on T-S3                                      yes
+  at 200 m (within 2 m: the ms-rounded clocks cost a little) got     199.852358   expected     200.000000   rel.err 7.4e-4
+  at 10:15:03 - seconds past 10:15:00          got       2.998747   expected       3.000000   rel.err 4.2e-4
+ok
 
-test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.13s
+test result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.39s
 
      Running classification\main.rs (target\debug\deps\classification-a20a1f0d6127acae.exe)
 
@@ -336,7 +408,7 @@ test simulation::scenarios::power_data_settles_the_slow_burst ... The same slow 
   burst                                        yes
 ok
 
-test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.94s
+test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.95s
 
      Running detection\main.rs (target\debug\deps\detection-a66070c21306c4c3.exe)
 
@@ -412,7 +484,7 @@ test simulation::burst_location::vs1_location_error_versus_sampling_rate_and_noi
   128 S/s with 2 cm noise locates to under 1 m RMS yes
 ok
 
-test result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 2.90s
+test result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 2.75s
 
      Running hydraulics\main.rs (target\debug\deps\hydraulics-f527ea78af929c4d.exe)
 
@@ -676,7 +748,7 @@ test invariants::steady_state::an_undisturbed_pipe_stays_steady ... Steady state
   valve holds steady                           yes
 ok
 
-test result: ok. 35 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 7.89s
+test result: ok. 35 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 7.96s
 
      Running kernel\main.rs (target\debug\deps\kernel-8904bd807c4e051d.exe)
 
@@ -705,7 +777,7 @@ test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; fini
 
      Running localisation\main.rs (target\debug\deps\localisation-06d59dadc3c0678e.exe)
 
-running 16 tests
+running 18 tests
 test analytical::branched::two_sensors_see_a_whole_branch_three_sensors_see_the_point ... Sensors S1 and S2 only (burst 200 m along branch T-S3):
   probability on branch T-S3: 100.0%
   90% region: 540 m of pipe
@@ -714,7 +786,7 @@ test analytical::branched::two_sensors_see_a_whole_branch_three_sensors_see_the_
 Adding sensor S3 at the end of the branch:
   most likely: branch T-S3 at 200.000 m from T; 90% region 4.0 m
   the most likely pipe is the branch           yes
-  distance from T [m]                          got     200.000030   expected     200.000000   rel.err 1.5e-7
+  distance from T [m]                          got     200.000007   expected     200.000000   rel.err 3.6e-8
   the region shrinks to a few metres           yes
   => sensor PLACEMENT decides what the engine can see (docs: placement advisor).
 ok
@@ -723,8 +795,8 @@ test analytical::clocks::a_clock_that_never_meets_the_others_is_refused_not_gues
 ok
 test analytical::clocks::offsets_are_recovered_from_three_known_events ... Noise-free picks:
     offset of node 1 [ms]                      got       0.000000   expected       0.000000   rel.err 0.0e0
-    offset of node 3 [ms]                      got      23.000000   expected      23.000000   rel.err 4.3e-13
-    offset of node 4 [ms]                      got     -41.000000   expected     -41.000000   rel.err 3.0e-13
+    offset of node 3 [ms]                      got      23.000000   expected      23.000000   rel.err 7.7e-15
+    offset of node 4 [ms]                      got     -41.000000   expected     -41.000000   rel.err 1.7e-16
 Picks with 0.2 ms noise:
   node 3: +23.276 ms (true +23.0 ms), uncertainty 0.163 ms
     within 3 reported sigma                    yes
@@ -832,8 +904,8 @@ ok
 test analytical::straight_main::a_burst_on_a_straight_main_is_found_where_the_formula_says ... Arrivals 0.7 s and 1.3 s after the burst, +/- 0.15 ms each:
   most likely: pipe 1 at 700.000 m
   on the main between the sensors              yes
-  distance from S1 [m]                         got     700.000015   expected     700.000000   rel.err 2.2e-8
-  burst time recovered [s]                     got       2.000000   expected       2.000000   rel.err 2.2e-16
+  distance from S1 [m]                         got     700.000011   expected     700.000000   rel.err 1.6e-8
+  burst time recovered [s]                     got       2.000000   expected       2.000000   rel.err 0.0e0
   probability on that pipe                     got       1.000000   expected       1.000000   rel.err 0.0e0
   90% region: 4.0 m of pipe (timing alone: sigma_x = a sigma / sqrt2 = 0.11 m; grid cells are 2 m)
   the region contains the truth                yes
@@ -841,14 +913,29 @@ test analytical::straight_main::a_burst_on_a_straight_main_is_found_where_the_fo
   misfit of a perfect fit                      got       0.000000   expected       0.000000   rel.err 0.0e0
 ok
 test invariants::calibration::calibration_holds_over_many_trials ... 400 random bursts; wave speeds off by ~3%; timing noise 0.2 ms:
-  truth inside the 90% region: 92.8% (ideal 90%)
+  truth inside the 90% region: 92.5% (ideal 90%)
   average region length: 97 m
   coverage between 85% and 95%                 yes
 ok
 test invariants::calibration::the_90_percent_region_holds_the_truth_about_90_percent_of_the_time ... 60 random bursts; true wave speeds off by ~3%; timing noise 0.2 ms:
-  truth inside the 90% region: 88% of trials
+  truth inside the 90% region: 90% of trials
   average region length: 108 m
   coverage between 75% and 99% (60 trials)     yes
+ok
+test invariants::time_origin::clock_repair_with_clock_time_gives_the_same_offsets ...   offset of node 1: +0.000000 ms from zero, +0.000000 ms from clock time
+    ... the same to 1 microsecond              yes
+  offset of node 3: +3.000000 ms from zero, +2.999989 ms from clock time
+    ... the same to 1 microsecond              yes
+  offset of node 4: +0.000000 ms from zero, -0.000064 ms from clock time
+    ... the same to 1 microsecond              yes
+  S2's clock found 3 ms late from clock time (to 1 us) yes
+ok
+test invariants::time_origin::locating_with_clock_time_gives_the_same_answer_as_from_zero ... Burst 200 m along T-S3, located with times near 0 and near 1790676900 s:
+  most likely point [m]                        got     200.249103   expected     200.249144   rel.err 2.1e-7
+  same pipe                                    yes
+  90% search stretch [m]                       got      28.000000   expected      28.000000   rel.err 0.0e0
+  emission time, clock minus zero [s]          got 1790676900.000000   expected 1790676900.000000   rel.err 0.0e0
+  misfit stays small (arrivals fit one source) yes
 ok
 test simulation::clock_study::f9_software_clock_repair_restores_metre_level_location ... Burst 200 m along branch T-S3; S2 reads 23 ms late, S3 41 ms early.
   WITHOUT repair: most likely pipe 3 at 220.6 m; 90% region 66 m of pipe
@@ -892,12 +979,12 @@ Localisation:
   90% region: 2.0 m of pipe; timing misfit 0.35
   burst emitted at 1.9995 s (true 2.0 s)
   the right branch is the most likely pipe     yes
-  distance from T [m]                          got     200.049417   expected     200.000000   rel.err 2.5e-4
+  distance from T [m]                          got     200.049423   expected     200.000000   rel.err 2.5e-4
   the 90% region contains the truth            yes
   the arrivals fit one source (misfit < 3)     yes
 ok
 
-test result: ok. 16 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 26.01s
+test result: ok. 18 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 25.31s
 
      Running pipeline\main.rs (target\debug\deps\pipeline-2c8d7aacd0c1e245.exe)
 
@@ -1049,7 +1136,7 @@ another on the north branch at t = 30 s:
   the second on the north branch, ~150 m       yes
 ok
 
-test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 4.57s
+test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 4.53s
 
    Doc-tests jk_application
 
@@ -1106,9 +1193,9 @@ running 0 tests
 test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
 
 ==============================================================================
-  passed   178
+  passed   194
   failed   0
   skipped  0 slow test(s) not in this suite
   filtered 0 test(s) outside -Only/-Filter
-  time     77.2 s (including compile)
+  time     51.1 s (including compile)
   result   ALL PASSED

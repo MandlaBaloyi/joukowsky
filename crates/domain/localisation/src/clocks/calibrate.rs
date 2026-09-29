@@ -119,6 +119,14 @@ pub fn estimate_offsets(
     let mut rows = 0_usize;
     for (e, event) in events.iter().enumerate() {
         let tau = graph.times_from(event.source.index(), &pipe_times);
+        // Times from the event's earliest arrival: clock time (about 1.8e9 s)
+        // would swamp the millisecond offsets in the normal equations. The
+        // offsets are differences, so the shift does not change them.
+        let origin = event
+            .arrivals
+            .iter()
+            .map(|(_, t)| t.value())
+            .fold(f64::INFINITY, f64::min);
         for &(node, time) in &event.arrivals {
             let travel = tau[node.index()];
             if !travel.is_finite() {
@@ -133,7 +141,7 @@ pub fn estimate_offsets(
             if s > 0 {
                 cols.push(n_events + s - 1);
             }
-            let y = time.value() - travel;
+            let y = time.value() - origin - travel;
             for &i in &cols {
                 rhs[i] += y;
                 for &j in &cols {

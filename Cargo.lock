@@ -28,6 +28,7 @@ version = "0.1.0"
 dependencies = [
  "jk-application",
  "jk-classification",
+ "jk-detection",
  "jk-files",
  "jk-hydraulics",
  "jk-kernel",

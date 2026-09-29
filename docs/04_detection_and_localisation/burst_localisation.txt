@@ -136,3 +136,15 @@ posterior of wave speeds (F10 proper); speed for large
 networks (cost grows with length squared: a 10 km network would take
 ~20x longer - options: coarser trial bursts far from sensors, parallel
 scoring, or an analytical score for the pair search).
+
+Implementation note: clock time (2026-09-29)
+--------------------------------------------
+Found by the logger-file test: real exports stamp clock time (seconds since
+1970, ~1.79e9). Scored as they were, the squared GLS residuals lost every
+significant digit - a burst came out with a misfit of exactly 2^18 and a
+1.2 km search stretch. The localiser and the clock repair now measure times
+from the earliest arrival (the answer does not depend on the time origin).
+Invariant tests (tests/localisation/invariants/time_origin.rs): same point
+to 0.04 mm, same stretch, emission shifted by exactly the origin; clock
+offsets equal to 1 us (the spacing of 64-bit numbers near 1.79e9 is
+0.24 us - finer than a GNSS clock).

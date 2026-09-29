@@ -105,15 +105,22 @@
     for (let v = Math.ceil(min / step) * step; v <= max + step * 1e-9; v += step) out.push(Math.abs(v) < step * 1e-9 ? 0 : v);
     return { values: out, decimals: step >= 1 ? 0 : Math.ceil(-Math.log10(step)) };
   }
+  // A record: { name, dt, runs: [{ start, h: [...] }], fronts, impaired }.
+  // Runs are continuous stretches; between them the data never arrived,
+  // and inside them NaN (null in JSON) marks an invalid sample - both are
+  // drawn as breaks in the line, never joined up (principle P6).
   const valueAt = (rec, t) => {
-    const i = Math.round((t - rec.start) / rec.dt);
-    return (i >= 0 && i < rec.h.length) ? rec.h[i] : null;
+    for (const run of rec.runs) {
+      const i = Math.round((t - run.start) / rec.dt);
+      if (i >= 0 && i < run.h.length) return run.h[i];
+    }
+    return null;
   };
 
-  // Draws every logger's record between range[0] and range[1] seconds,
+  // Draws every record of `records` between range[0] and range[1] seconds,
   // stacked, sharing the time axis. onZoom(range) is called when the
   // reader drags across a chart (if given).
-  function drawStack(container, range, onZoom) {
+  function drawStack(container, records, range, onZoom) {
     container.replaceChildren();
     const width = Math.max(320, container.clientWidth);
     const height = 150, left = 52, right = 12, top = 20, bottom = 24;
@@ -121,17 +128,26 @@
     const sx = t => left + (t - t0) / (t1 - t0) * (width - left - right);
     const tOf = x => t0 + (x - left) / (width - left - right) * (t1 - t0);
     const charts = [];
-    for (const rec of data.records) {
+    for (const rec of records) {
       const title = document.createElement('div');
       title.className = 'chart-title';
       title.textContent = rec.name;
       container.appendChild(title);
       const svg = el('svg', { class: 'chart trace', viewBox: `0 0 ${width} ${height}`, role: 'img' }, container);
       svg.setAttribute('aria-label', 'Pressure head at ' + rec.name);
-      const i0 = Math.max(0, Math.floor((t0 - rec.start) / rec.dt));
-      const i1 = Math.min(rec.h.length - 1, Math.ceil((t1 - rec.start) / rec.dt));
+      const spans = rec.runs.map(run => ({
+        run,
+        i0: Math.max(0, Math.floor((t0 - run.start) / rec.dt)),
+        i1: Math.min(run.h.length - 1, Math.ceil((t1 - run.start) / rec.dt)),
+      }));
       let lo = Infinity, hi = -Infinity;
-      for (let i = i0; i <= i1; i++) { lo = Math.min(lo, rec.h[i]); hi = Math.max(hi, rec.h[i]); }
+      for (const { run, i0, i1 } of spans) {
+        for (let i = i0; i <= i1; i++) {
+          const h = run.h[i];
+          if (h === null || !isFinite(h)) continue;
+          lo = Math.min(lo, h); hi = Math.max(hi, h);
+        }
+      }
       if (!isFinite(lo)) { lo = 0; hi = 1; }
       const pad = Math.max((hi - lo) * 0.08, 0.05);
       const yt = ticks(lo - pad, hi + pad, 4);
@@ -150,21 +166,28 @@
         el('text', { class: 'tick', x: sx(v), y: height - 6, 'text-anchor': 'middle' }, svg).textContent = v.toFixed(xt.decimals);
       }
       el('line', { class: 'axis', x1: left, x2: width - right, y1: height - bottom, y2: height - bottom }, svg);
-      // The record: min and max per pixel column (exact look, small path).
-      let d = '', col = null, cmin = null, cmax = null;
+      // The record: min and max per pixel column (exact look, small path);
+      // a new sub-path after every break.
+      let d = '', col = null, cmin = null, cmax = null, broken = true;
       const flush = () => {
         if (col === null) return;
         const a = cmin.i < cmax.i ? cmin : cmax, b = cmin.i < cmax.i ? cmax : cmin;
-        d += (d ? 'L' : 'M') + sx(a.t).toFixed(1) + ',' + sy(a.h).toFixed(1);
+        d += (broken ? 'M' : 'L') + sx(a.t).toFixed(1) + ',' + sy(a.h).toFixed(1);
         if (b !== a) d += 'L' + sx(b.t).toFixed(1) + ',' + sy(b.h).toFixed(1);
+        broken = false;
+        col = null;
       };
-      for (let i = i0; i <= i1; i++) {
-        const t = rec.start + i * rec.dt, h = rec.h[i], c = Math.floor(sx(t));
-        const p = { i, t, h };
-        if (c !== col) { flush(); col = c; cmin = p; cmax = p; }
-        else { if (h < cmin.h) cmin = p; if (h > cmax.h) cmax = p; }
+      for (const { run, i0, i1 } of spans) {
+        flush(); broken = true;
+        for (let i = i0; i <= i1; i++) {
+          const t = run.start + i * rec.dt, h = run.h[i], c = Math.floor(sx(t));
+          if (h === null || !isFinite(h)) { flush(); broken = true; continue; }
+          const p = { i, t, h };
+          if (c !== col) { flush(); col = c; cmin = p; cmax = p; }
+          else { if (h < cmin.h) cmin = p; if (h > cmax.h) cmax = p; }
+        }
+        flush();
       }
-      flush();
       el('path', { class: 'series', d }, svg);
       for (const f of rec.fronts) {
         if (f < t0 || f > t1) continue;
@@ -193,7 +216,7 @@
         const rows = [{ text: 't = ' + t.toFixed(3) + ' s', strong: true }];
         for (const o of charts) {
           const v = valueAt(o.rec, t);
-          rows.push({ label: o.rec.name, value: v === null ? '-' : v.toFixed(2) + ' m' });
+          rows.push({ label: o.rec.name, value: (v === null || !isFinite(v)) ? 'no data' : v.toFixed(2) + ' m' });
         }
         showTip(rows, e.clientX, e.clientY);
         if (drag && drag.chart === c) {
@@ -221,12 +244,14 @@
     }
   }
 
-  // Containers: <div class="js-traces" data-from data-to [data-zoomable]>.
+  // Containers: <div class="js-traces" data-set data-from data-to
+  // [data-zoomable]>; data-set names the records to draw (default "event").
   const ranges = new Map();
   function render(container) {
     if (!ranges.has(container)) ranges.set(container, [Number(container.dataset.from), Number(container.dataset.to)]);
     const zoomable = container.hasAttribute('data-zoomable');
-    drawStack(container, ranges.get(container), zoomable ? r => setRange(container, r, null) : null);
+    const records = data.sets[container.dataset.set || 'event'] || [];
+    drawStack(container, records, ranges.get(container), zoomable ? r => setRange(container, r, null) : null);
   }
   function setRange(container, range, preset) {
     ranges.set(container, range);

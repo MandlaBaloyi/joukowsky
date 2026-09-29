@@ -1,12 +1,15 @@
 //! Adapter tests: getting real data in.
 //!
 //! Code under test: `crates/adapters/files` (reading EPANET `.inp` network
-//! files). The files in `fixtures/` are written by hand for these tests -
+//! files and logger exports). `analytical/`: hand-written files, every
+//! number known. `simulation/`: a simulated burst written as logger files,
+//! read back and fed to the live engine. The files in `fixtures/` are written by hand for these tests -
 //! nothing is downloaded - so every expected number is known exactly.
 //!
 //! Run only these:  `.\tests\run-tests.ps1 -Only adapters`
 
 mod analytical;
+mod simulation;
 
 use std::path::PathBuf;
 

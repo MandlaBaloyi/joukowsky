@@ -92,3 +92,20 @@ connect crate with its own tests.
 
 Sources checked 2026-09-28: github.com/vitens/epanet-rs; TSNet docs;
 USEPA/WNTR; zenodo.org records 16416601 and 22073372.
+
+4. Logger exports (added 2026-09-29)
+------------------------------------------------------------------------
+Own reader, crates/adapters/files/src/logger/ {table, time, units, grid}:
+CSV-like exports (',', ';' with decimal commas, tab), metadata lines above
+the header, ISO / day-first / month-first / split date+time / numeric
+timestamps (own calendar arithmetic - Hinnant's days_from_civil), zones,
+bar/mbar/kPa/MPa/Pa/psi/m -> metres of head (rho 998.2, g 9.81). Rows go
+onto the logger's regular clock (rate = mean of ordinary steps: the MEDIAN
+of ms-rounded steps at 128 S/s is 8 ms and would say 125 S/s - caught by a
+test); missing rows split the recording into runs; repeated or backwards
+rows are dropped; invalid cells stay NaN. Units are NEVER guessed: a
+pressure column must name its unit or the caller must give it. Everything
+decided is a NOTE. Tested on hand-written exports and end to end: a
+simulated burst written as three logger files (ms-rounded UTC stamps, bar)
+is read back and fed to the live engine -> one Alarm, 199.9 m against a
+true 200 m. No real logger file read yet (owner approves each download).

@@ -88,14 +88,19 @@ pub fn seq_class(t: f64) -> &'static str {
     CLASSES[i]
 }
 
-/// Numbers as a compact JSON array (3 significant decimals).
+/// Numbers as a compact JSON array with `decimals` decimals; a value that
+/// is not a number (a gap) becomes `null`.
 pub fn json_numbers(values: &[f64], decimals: usize) -> String {
     let mut out = String::from("[");
     for (i, v) in values.iter().enumerate() {
         if i > 0 {
             out.push(',');
         }
-        let _ = write!(out, "{v:.decimals$}");
+        if v.is_finite() {
+            let _ = write!(out, "{v:.decimals$}");
+        } else {
+            out.push_str("null");
+        }
     }
     out.push(']');
     out

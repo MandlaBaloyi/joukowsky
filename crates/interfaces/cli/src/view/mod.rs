@@ -31,6 +31,9 @@ pub const USAGE: &str = "
     --loggers N           loggers for the placement advisor, 2-8 [6]
     --no-placement        skip the placement pages
     --network FILE        also show a network read from an EPANET .inp file
+    --recording FILE      also show a logger export (CSV); repeat for more files
+    --unit UNIT           unit for recording columns that name none (bar, kPa, psi, m)
+    --month-first         read dates like 01/02/2026 as 2 January
 ";
 
 /// What `jk view` was asked for.
@@ -39,6 +42,8 @@ pub struct Args {
     loggers: usize,
     placement: bool,
     network: Option<PathBuf>,
+    recordings: Vec<PathBuf>,
+    csv: jk_files::logger::CsvOptions,
 }
 
 /// Reads the options after `view`.
@@ -51,11 +56,23 @@ pub fn parse(mut it: impl Iterator<Item = String>) -> Result<Args, String> {
         loggers: 6,
         placement: true,
         network: None,
+        recordings: Vec::new(),
+        csv: jk_files::logger::CsvOptions::default(),
     };
     while let Some(flag) = it.next() {
         match flag.as_str() {
             "--no-placement" => a.placement = false,
             "--out" => a.out = PathBuf::from(it.next().ok_or("--out needs a file name")?),
+            "--recording" => a.recordings.push(PathBuf::from(
+                it.next().ok_or("--recording needs a file name")?,
+            )),
+            "--month-first" => a.csv.day_first = false,
+            "--unit" => {
+                let v = it.next().ok_or("--unit needs a unit")?;
+                a.csv.unit = Some(jk_files::logger::PressureUnit::parse(&v).ok_or_else(|| {
+                    format!("--unit: '{v}' is not bar, mbar, kPa, MPa, Pa, psi or m")
+                })?);
+            }
             "--network" => {
                 a.network = Some(PathBuf::from(
                     it.next().ok_or("--network needs a file name")?,
@@ -134,6 +151,29 @@ pub fn run(a: &Args) -> Result<(), String> {
         nav.push(group);
         pages.push(page);
     }
+    let files: Vec<pages::recording::FileRecording> = a
+        .recordings
+        .iter()
+        .map(|p| {
+            jk_files::logger::read(p, &a.csv)
+                .map(|recording| pages::recording::FileRecording {
+                    name: p.file_name().map_or_else(
+                        || p.display().to_string(),
+                        |n| n.to_string_lossy().into_owned(),
+                    ),
+                    recording,
+                })
+                .map_err(|e| format!("{}: {e}", p.display()))
+        })
+        .collect::<Result<_, _>>()?;
+    if !files.is_empty() {
+        nav.push(NavGroup {
+            heading: "Recordings",
+            site: None,
+            items: vec![item("recordings", "Logger files", Some(files.len()))],
+        });
+        pages.push(pages::recording::page(&files));
+    }
     nav.push(NavGroup {
         heading: "Help",
         site: None,
@@ -141,7 +181,11 @@ pub fn run(a: &Args) -> Result<(), String> {
     });
     pages.push(pages::about::page());
 
-    let html = shell::document(&nav, &pages, &pages::data_json(&event));
+    let data = pages::data_json(&[
+        ("event", pages::event_records(&event)),
+        ("rec", pages::recording::chart_records(&files)),
+    ]);
+    let html = shell::document(&nav, &pages, &data);
     std::fs::write(&a.out, html).map_err(|e| format!("cannot write {}: {e}", a.out.display()))?;
     println!("Wrote {} - open it in a browser.", a.out.display());
     Ok(())

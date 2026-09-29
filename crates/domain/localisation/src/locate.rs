@@ -93,7 +93,10 @@ pub fn localise(
 /// The observed times, their uncertainties, and the probability of each
 /// candidate cell.
 struct Posterior {
+    /// Arrival times measured from `origin` (the earliest arrival).
     observed: Vec<f64>,
+    /// Time the observed times are measured from [s].
+    origin: f64,
     sigma: Vec<f64>,
     mass: Vec<f64>,
 }
@@ -284,7 +287,17 @@ impl<'a> Localiser<'a> {
             positive("arrival uncertainty", a.uncertainty.value())?;
         }
         let n = self.sensors.len();
-        let observed: Vec<f64> = arrivals.iter().map(|a| a.time.value()).collect();
+        // Measure the arrivals from the earliest one. Real loggers stamp
+        // clock time (seconds since 1970, about 1.8e9): scored as they are,
+        // the squared residuals lose every significant digit (a real
+        // logger file gave a misfit of exactly 2^18). The answer does not
+        // depend on where time starts, so shifting it changes nothing
+        // else.
+        let origin = arrivals
+            .iter()
+            .map(|a| a.time.value())
+            .fold(f64::INFINITY, f64::min);
+        let observed: Vec<f64> = arrivals.iter().map(|a| a.time.value() - origin).collect();
         let sigma: Vec<f64> = arrivals.iter().map(|a| a.uncertainty.value()).collect();
         let cells = &self.grid.cells;
         let log_posterior: Vec<f64> = cells
@@ -316,6 +329,7 @@ impl<'a> Localiser<'a> {
         }
         Ok(Posterior {
             observed,
+            origin,
             sigma,
             mass,
         })
@@ -354,6 +368,7 @@ impl<'a> Localiser<'a> {
     pub fn locate(&self, arrivals: &[Arrival]) -> Result<Localisation, LocalisationError> {
         let Posterior {
             observed,
+            origin,
             sigma,
             mass,
         } = self.posterior(arrivals)?;
@@ -395,7 +410,7 @@ impl<'a> Localiser<'a> {
                 pipe: self.ids[cell.pipe],
                 distance: Length::new(fraction * self.lengths[cell.pipe]),
             },
-            emission: Time::new(at_best.emission),
+            emission: Time::new(origin + at_best.emission),
             pipes: ranked,
             credible_region: region,
             credible_length: Length::new(credible_length),
