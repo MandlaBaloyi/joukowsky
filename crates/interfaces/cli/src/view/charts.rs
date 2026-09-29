@@ -1,169 +1,100 @@
-//! The three kinds of picture on the page, as inline SVG.
+//! Pictures drawn by the engine side, as inline SVG: the event timeline,
+//! network maps, column charts. (Pressure traces are drawn in the browser,
+//! so they can be zoomed - `assets/app.js`.)
 //!
 //! Colours are never written here: every mark carries a CSS class whose
 //! colour the page defines once per theme (light and dark), so the charts
 //! follow the reader's setting. Text is escaped; hover details ride on
-//! `data-*` attributes and are shown by the page's script with
+//! `data-tip` attributes and are shown by the page's script with
 //! `textContent` only.
 
 use std::fmt::Write as _;
 
 use jk_hydraulics::Network;
 
-use super::svg::{Scale, esc, json_numbers, tick_label, ticks, to_f64};
+use super::svg::{Scale, esc, tick_label, ticks, to_f64};
 use crate::sim::sites::Drawing;
 
-/// One logger's pressure record, for [`trace`].
-pub struct TraceData<'a> {
-    /// Sample times [s].
-    pub times: &'a [f64],
-    /// Heads [m].
-    pub heads: &'a [f64],
-    /// Detected fronts: arrival times [s].
-    pub fronts: &'a [f64],
-    /// Stretches when the logger was not watching at full sensitivity [s].
-    pub impaired: &'a [(f64, f64)],
+/// An alert on the timeline.
+pub struct TimelineAlert {
+    pub id: u32,
+    /// CSS status class suffix: alarm, warning, review, info.
+    pub status: &'static str,
+    /// Hover text, lines separated by '|'.
+    pub tip: String,
+    /// When the event started [s].
+    pub start: f64,
+    /// When the alert went out (data time) [s].
+    pub sent: f64,
 }
 
-/// A pressure trace over `x_range` seconds: the line, the detected fronts
-/// (labelled), the impaired stretches (shaded), a hover crosshair.
-pub fn trace(data: &TraceData<'_>, x_range: (f64, f64), width: f64, height: f64) -> String {
-    let (left, right, top, bottom) = (52.0, 12.0, 22.0, 26.0);
-    let (lo, hi) = data
-        .heads
-        .iter()
-        .fold((f64::INFINITY, f64::NEG_INFINITY), |(a, b), &h| {
-            (a.min(h), b.max(h))
-        });
-    let pad = ((hi - lo) * 0.08).max(0.05);
-    let (y_ticks, y_step) = ticks(lo - pad, hi + pad, 5);
-    let y0 = y_ticks.first().copied().unwrap_or(lo).min(lo - pad);
-    let y1 = y_ticks.last().copied().unwrap_or(hi).max(hi + pad);
-    let sx = Scale::new(x_range, (left, width - right));
-    let sy = Scale::new((y0, y1), (height - bottom, top));
-    let mut s = String::new();
-    let _ = write!(
-        s,
-        r#"<svg class="chart trace" viewBox="0 0 {width} {height}" role="img" data-sx="{left},{},{},{}" "#,
-        width - right,
-        x_range.0,
-        x_range.1
+/// The event timeline: one lane for the alerts (a dot where each event
+/// started, a line to when its alert went out; each links to its page),
+/// then a lane per logger with a tick at every front it picked.
+pub fn timeline(
+    alerts: &[TimelineAlert],
+    loggers: &[(String, Vec<f64>)],
+    span: (f64, f64),
+    width: f64,
+) -> String {
+    let (left, right, lane) = (150.0, 16.0, 30.0);
+    let height = lane * to_f64(loggers.len() + 1) + 34.0;
+    let sx = Scale::new(span, (left, width - right));
+    let mut s = format!(
+        r#"<svg class="chart timeline" viewBox="0 0 {width} {height}" role="img" aria-label="Event timeline">"#
     );
-
-    // Hover data: a decimated copy of the record (min and max per pixel).
-    let (dt, dh) = decimate(data.times, data.heads, &sx);
-    let _ = write!(
-        s,
-        r#"data-t="{}" data-h="{}">"#,
-        json_numbers(&dt, 3),
-        json_numbers(&dh, 3)
-    );
-
-    // Impaired stretches first, under everything.
-    for &(a, b) in data.impaired {
-        let (xa, xb) = (sx.at(a.max(x_range.0)), sx.at(b.min(x_range.1)));
-        if xb > xa {
-            let _ = write!(
-                s,
-                r#"<rect class="impaired" x="{xa:.1}" y="{top}" width="{:.1}" height="{:.1}"/>"#,
-                xb - xa,
-                height - bottom - top
-            );
-        }
-    }
-    // Grid and axes.
-    for v in &y_ticks {
-        let y = sy.at(*v);
-        let _ = write!(
-            s,
-            r#"<line class="grid" x1="{left}" x2="{}" y1="{y:.1}" y2="{y:.1}"/><text class="tick" x="{}" y="{:.1}" text-anchor="end">{}</text>"#,
-            width - right,
-            left - 6.0,
-            y + 4.0,
-            tick_label(*v, y_step)
-        );
-    }
-    let (x_ticks, x_step) = ticks(x_range.0, x_range.1, 8);
+    let (x_ticks, step) = ticks(span.0, span.1, 8);
     for v in &x_ticks {
         let x = sx.at(*v);
         let _ = write!(
             s,
-            r#"<text class="tick" x="{x:.1}" y="{:.1}" text-anchor="middle">{}</text>"#,
+            r#"<line class="grid" x1="{x:.1}" x2="{x:.1}" y1="4" y2="{:.1}"/><text class="tick" x="{x:.1}" y="{:.1}" text-anchor="middle">{} s</text>"#,
+            height - 26.0,
             height - 8.0,
-            tick_label(*v, x_step)
+            tick_label(*v, step)
         );
     }
-    let _ = write!(
-        s,
-        r#"<line class="axis" x1="{left}" x2="{}" y1="{:.1}" y2="{:.1}"/>"#,
-        width - right,
-        height - bottom,
-        height - bottom
-    );
-    // The record.
-    let mut path = String::new();
-    for (i, (t, h)) in dt.iter().zip(&dh).enumerate() {
-        let _ = write!(
-            path,
-            "{}{:.1},{:.1}",
-            if i == 0 { "M" } else { "L" },
-            sx.at(*t),
-            sy.at(*h)
-        );
-    }
-    let _ = write!(s, r#"<path class="series" d="{path}"/>"#);
-    // Detected fronts, labelled.
-    for &f in data.fronts {
-        let x = sx.at(f);
+    // Lanes.
+    let lanes = std::iter::once("Alerts").chain(loggers.iter().map(|(n, _)| n.as_str()));
+    for (i, name) in lanes.enumerate() {
+        let y = 6.0 + lane * to_f64(i);
         let _ = write!(
             s,
-            r#"<line class="front" x1="{x:.1}" x2="{x:.1}" y1="{top}" y2="{:.1}"/><text class="front-label" x="{:.1}" y="{:.1}">front {f:.3} s</text>"#,
-            height - bottom,
-            x + 4.0,
-            top - 6.0
+            r#"<rect class="lane" x="{left}" y="{y:.1}" width="{:.1}" height="{:.1}" rx="4"/><text class="label{}" x="0" y="{:.1}">{}</text>"#,
+            width - left - right,
+            lane - 6.0,
+            if i == 0 { " strong" } else { "" },
+            y + lane / 2.0 + 1.0,
+            esc(name)
         );
     }
-    // Crosshair (moved by the page script).
-    let _ = write!(
-        s,
-        r#"<line class="crosshair" x1="0" x2="0" y1="{top}" y2="{:.1}" visibility="hidden"/><rect class="hit" x="{left}" y="{top}" width="{:.1}" height="{:.1}"/></svg>"#,
-        height - bottom,
-        width - right - left,
-        height - bottom - top
-    );
-    s
-}
-
-/// Keeps the smallest and largest value in every pixel column, in time
-/// order: the drawn line looks exactly like the full record at a fraction
-/// of the size.
-fn decimate(times: &[f64], heads: &[f64], sx: &Scale) -> (Vec<f64>, Vec<f64>) {
-    let (mut t_out, mut h_out) = (Vec::new(), Vec::new());
-    let mut i = 0;
-    while i < times.len() {
-        #[allow(clippy::cast_possible_truncation)] // pixel columns
-        let column = sx.at(times[i]).floor() as i64;
-        let mut j = i;
-        let (mut lo, mut hi) = (i, i);
-        #[allow(clippy::cast_possible_truncation)]
-        while j < times.len() && sx.at(times[j]).floor() as i64 == column {
-            if heads[j] < heads[lo] {
-                lo = j;
-            }
-            if heads[j] > heads[hi] {
-                hi = j;
-            }
-            j += 1;
-        }
-        for k in if lo <= hi { [lo, hi] } else { [hi, lo] } {
-            if t_out.last() != Some(&times[k]) {
-                t_out.push(times[k]);
-                h_out.push(heads[k]);
-            }
-        }
-        i = j;
+    for a in alerts {
+        let (x0, x1, y) = (sx.at(a.start), sx.at(a.sent), 6.0 + (lane - 6.0) / 2.0);
+        let _ = write!(
+            s,
+            r##"<a href="#alerts/{id}"><line class="span" x1="{x0:.1}" x2="{x1:.1}" y1="{y:.1}" y2="{y:.1}" data-tip="{tip}"/><circle class="tl-dot tl-{st}" cx="{x0:.1}" cy="{y:.1}" r="7" data-tip="{tip}"/><text class="label strong" x="{:.1}" y="{:.1}">#{id}</text></a>"##,
+            x1 + 6.0,
+            y + 4.0,
+            id = a.id,
+            st = a.status,
+            tip = esc(&a.tip)
+        );
     }
-    (t_out, h_out)
+    for (i, (name, fronts)) in loggers.iter().enumerate() {
+        let y = 6.0 + lane * to_f64(i + 1);
+        for f in fronts {
+            let x = sx.at(*f);
+            let _ = write!(
+                s,
+                r#"<line class="tl-front" x1="{x:.1}" x2="{x:.1}" y1="{:.1}" y2="{:.1}" data-tip="{}"/>"#,
+                y + 4.0,
+                y + lane - 10.0,
+                esc(&format!("{name}|front at {f:.3} s"))
+            );
+        }
+    }
+    s.push_str("</svg>");
+    s
 }
 
 /// Something drawn on a network map.
@@ -283,14 +214,31 @@ pub fn network_map(
             r#"<line class="pipe {class}" x1="{ax:.1}" y1="{ay:.1}" x2="{bx:.1}" y2="{by:.1}"/><line class="pipe-hit" data-tip="{tip}" x1="{ax:.1}" y1="{ay:.1}" x2="{bx:.1}" y2="{by:.1}"/>"#
         );
     }
-    node_marks(&plan, markers, &mut s);
-    point_marks(&plan, markers, &mut s);
+    let taken = node_marks(&plan, markers, &mut s);
+    point_marks(&plan, markers, &taken, &mut s);
     s.push_str("</svg>");
     s
 }
 
 /// Nodes (reservoirs, loggers, candidate places) and their names.
-fn node_marks(plan: &Plan<'_>, markers: &[Marker], s: &mut String) {
+/// A label's box on the map (left, top, right, bottom), roughly: 12 px
+/// type, about 6.4 px per character.
+type LabelBox = (f64, f64, f64, f64);
+
+fn label_box(x: f64, baseline: f64, text: &str, end_anchored: bool) -> LabelBox {
+    let w = 6.4 * to_f64(text.chars().count());
+    let left = if end_anchored { x - w } else { x };
+    (left, baseline - 12.0, left + w, baseline + 3.0)
+}
+
+fn overlaps(a: &LabelBox, b: &LabelBox) -> bool {
+    a.0 < b.2 && b.0 < a.2 && a.1 < b.3 && b.1 < a.3
+}
+
+/// Nodes (reservoirs, loggers, candidate places) and their names; returns
+/// where the names went, so point labels can keep clear of them.
+fn node_marks(plan: &Plan<'_>, markers: &[Marker], s: &mut String) -> Vec<LabelBox> {
+    let mut taken = Vec::new();
     let has = |n: usize, logger: bool| {
         markers.iter().any(|m| match m {
             Marker::Logger(i) => logger && *i == n,
@@ -338,6 +286,7 @@ fn node_marks(plan: &Plan<'_>, markers: &[Marker], s: &mut String) {
         } else {
             (x + 10.0, "start")
         };
+        taken.push(label_box(lx, y - 10.0, name, anchor == "end"));
         let _ = write!(
             s,
             r#"<text class="{class}" x="{lx:.1}" y="{:.1}" text-anchor="{anchor}">{}</text>"#,
@@ -345,12 +294,14 @@ fn node_marks(plan: &Plan<'_>, markers: &[Marker], s: &mut String) {
             esc(name)
         );
     }
+    taken
 }
 
 /// Points on pipes: the estimate (a ring) and the truth (a cross), each
 /// labelled - the estimate above, the truth below, since when the engine
 /// is right the two marks coincide.
-fn point_marks(plan: &Plan<'_>, markers: &[Marker], s: &mut String) {
+fn point_marks(plan: &Plan<'_>, markers: &[Marker], taken: &[LabelBox], s: &mut String) {
+    let mut taken = taken.to_vec();
     for m in markers {
         let Marker::Point {
             pipe,
@@ -381,11 +332,21 @@ fn point_marks(plan: &Plan<'_>, markers: &[Marker], s: &mut String) {
                 r#"<circle class="likely" cx="{x:.1}" cy="{y:.1}" r="6"/>"#
             );
         }
+        // Estimate above, truth below; step further away until clear of
+        // every name already placed.
+        let (first, step) = if *truth { (26.0, 18.0) } else { (-14.0, -18.0) };
+        let baseline = (0..5)
+            .map(|k| y + first + step * to_f64(k))
+            .find(|b| {
+                let bx = label_box(x + 12.0, *b, label, false);
+                taken.iter().all(|t| !overlaps(&bx, t))
+            })
+            .unwrap_or(y + first);
+        taken.push(label_box(x + 12.0, baseline, label, false));
         let _ = write!(
             s,
-            r#"<text class="label point-label" x="{:.1}" y="{:.1}">{}</text>"#,
+            r#"<text class="label point-label" x="{:.1}" y="{baseline:.1}">{}</text>"#,
             x + 12.0,
-            y + if *truth { 26.0 } else { -14.0 },
             esc(label)
         );
     }

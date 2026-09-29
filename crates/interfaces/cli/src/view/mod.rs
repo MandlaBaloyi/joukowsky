@@ -1,21 +1,27 @@
 //! `jk view`: a web page to look at the engine working.
 //!
-//! One self-contained HTML file - open it in any browser; nothing is
-//! installed, served or downloaded. Two sections, both on simulated sites
-//! until the data readers exist:
-//! 1. [`event`]: a burst as the live engine saw it - alerts, maps, traces.
-//! 2. [`placement`]: where loggers should go on a campus, and what each buys.
+//! One self-contained HTML file with a sidebar menu - open it in any
+//! browser; nothing is installed, served or downloaded (TD-019). Until the
+//! data readers exist, it shows the engine on simulated sites.
 //!
-//! The pieces: [`page`] (theme, type, tooltips), [`charts`] (the pictures
-//! as inline SVG), [`svg`] (escaping, scales, ticks).
+//! - [`model`]: the engine run once on the demo sites.
+//! - [`pages`]: one page per menu entry.
+//! - [`shell`]: the frame - sidebar, title bar, theme; `assets/` holds its
+//!   stylesheet and script, built into the binary.
+//! - [`charts`]: pictures drawn here as SVG (timeline, maps, columns);
+//!   pressure traces are drawn by the page script so they can be zoomed.
+//! - [`svg`]: escaping, scales, ticks, JSON.
 
 mod charts;
-mod event;
-mod page;
-mod placement;
+mod model;
+mod pages;
+mod shell;
 mod svg;
 
 use std::path::PathBuf;
+
+use model::{EventModel, PlacementModel};
+use shell::{NavGroup, NavItem, Page};
 
 pub const USAGE: &str = "
     jk view [OPTIONS]     write a web page showing the engine at work
@@ -23,7 +29,7 @@ pub const USAGE: &str = "
   OPTIONS:
     --out FILE            where to write the page [jk-view.html]
     --loggers N           loggers for the placement advisor, 2-8 [6]
-    --no-placement        skip the placement section (it takes about a minute)
+    --no-placement        skip the placement pages
 ";
 
 /// What `jk view` was asked for.
@@ -66,18 +72,91 @@ pub fn parse(mut it: impl Iterator<Item = String>) -> Result<Args, String> {
 /// # Errors
 /// A failed scenario (a bug) or a file that cannot be written.
 pub fn run(a: &Args) -> Result<(), String> {
-    eprintln!("jk view: simulating the estate burst and running the live engine...");
-    let mut body = String::from(
-        r#"<div class="wrap"><h1>joukowsky - engine viewer</h1>
-<p>The engine at work on simulated sites: what it detects, where it says a burst is, and where
-loggers should go. Everything here is computed by the same code the tests validate.</p>"#,
-    );
-    body.push_str(&event::section()?);
-    if a.placement {
-        body.push_str(&placement::section(a.loggers)?);
+    eprintln!("jk view: simulating the estate bursts and running the live engine...");
+    let event = EventModel::run()?;
+    let placement = if a.placement {
+        eprintln!("jk view: choosing {} loggers for the campus...", a.loggers);
+        Some(PlacementModel::run(a.loggers)?)
+    } else {
+        None
+    };
+
+    let mut nav = vec![
+        NavGroup {
+            heading: "Start",
+            site: None,
+            items: vec![NavItem {
+                id: "overview",
+                label: "Overview",
+                count: None,
+            }],
+        },
+        NavGroup {
+            heading: "Event",
+            site: Some("estate".into()),
+            items: vec![
+                NavItem {
+                    id: "alerts",
+                    label: "Alerts",
+                    count: Some(event.issued.len()),
+                },
+                NavItem {
+                    id: "loggers",
+                    label: "Logger records",
+                    count: Some(event.records.len()),
+                },
+                NavItem {
+                    id: "network",
+                    label: "Network",
+                    count: None,
+                },
+            ],
+        },
+    ];
+    let mut pages: Vec<Page> = vec![
+        pages::overview::page(&event, placement.as_ref()),
+        pages::alerts::page(&event),
+        pages::loggers::page(&event),
+        pages::network::page(&event),
+    ];
+    if let Some(p) = &placement {
+        nav.push(NavGroup {
+            heading: "Placement",
+            site: Some("campus".into()),
+            items: vec![
+                NavItem {
+                    id: "placement",
+                    label: "Where the loggers go",
+                    count: None,
+                },
+                NavItem {
+                    id: "placement-value",
+                    label: "What each logger buys",
+                    count: None,
+                },
+                NavItem {
+                    id: "placement-pipes",
+                    label: "Pipe by pipe",
+                    count: None,
+                },
+            ],
+        });
+        pages.push(pages::placement::recommendation(p));
+        pages.push(pages::placement::value(p));
+        pages.push(pages::placement::pipes(p));
     }
-    body.push_str("</div>");
-    let html = page::page("joukowsky viewer", &body);
+    nav.push(NavGroup {
+        heading: "Help",
+        site: None,
+        items: vec![NavItem {
+            id: "about",
+            label: "About the data",
+            count: None,
+        }],
+    });
+    pages.push(pages::about::page());
+
+    let html = shell::document(&nav, &pages, &pages::data_json(&event));
     std::fs::write(&a.out, html).map_err(|e| format!("cannot write {}: {e}", a.out.display()))?;
     println!("Wrote {} - open it in a browser.", a.out.display());
     Ok(())

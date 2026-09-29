@@ -101,6 +101,26 @@ pub fn json_numbers(values: &[f64], decimals: usize) -> String {
     out
 }
 
+/// A JSON string literal (quotes, backslashes, control characters and `<`
+/// escaped, so it is safe inside a `<script>` element too).
+pub fn json_str(s: &str) -> String {
+    let mut out = String::with_capacity(s.len() + 2);
+    out.push('"');
+    for c in s.chars() {
+        match c {
+            '"' => out.push_str("\\\""),
+            '\\' => out.push_str("\\\\"),
+            '<' => out.push_str("\\u003c"),
+            c if (c as u32) < 0x20 => {
+                let _ = write!(out, "\\u{:04x}", c as u32);
+            }
+            c => out.push(c),
+        }
+    }
+    out.push('"');
+    out
+}
+
 #[allow(clippy::cast_precision_loss)] // small counts
 pub fn to_f64(i: usize) -> f64 {
     i as f64
@@ -113,6 +133,18 @@ mod tests {
     #[test]
     fn escapes_markup() {
         assert_eq!(esc("a<b & \"c\""), "a&lt;b &amp; &quot;c&quot;");
+    }
+
+    #[test]
+    fn json_strings_are_safe_in_a_script() {
+        // The expected text is built with an explicit backslash (bs), so
+        // no tool can turn its escapes into the characters they stand for:
+        // quotes and backslashes escaped, '<' written as u003c, the line
+        // break as u000a.
+        let bs = '\\';
+        let input = format!("a\"b{bs}c</script>\n");
+        let expected = format!("\"a{bs}\"b{bs}{bs}c{bs}u003c/script>{bs}u000a\"");
+        assert_eq!(json_str(&input), expected);
     }
 
     #[test]

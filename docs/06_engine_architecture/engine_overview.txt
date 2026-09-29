@@ -141,3 +141,13 @@ The Monitor gained two read-only views for it (and for the product
 dashboard later): detections() and impaired(sensor).
 Next: once the data readers exist, `jk view` shows real network files and
 real logger exports instead of simulations.
+Viewer, second build (2026-09-29, owner: "testing is no excuse for a bad
+viewer"): an app layout - sidebar menu (Overview; Event: Alerts, Logger
+records, Network; Placement: recommendation, value of each logger, pipe by
+pipe; About the data), title bar, System/Light/Dark switch, phone layout.
+New views: the event timeline (when each event started and when its alert
+went out); per alert, the ARRIVAL AT EACH LOGGER (the fronts stacked on one
+time axis, with the time differences the engine located from); logger
+records drawn in the browser - presets, drag to zoom, one crosshair and
+tooltip across all loggers. Map labels keep clear of each other. Checked by
+rendering every page in headless Edge (light, dark, narrow).
