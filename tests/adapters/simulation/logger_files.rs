@@ -139,6 +139,7 @@ fn a_burst_recorded_in_logger_files_raises_one_alarm_in_the_right_place() {
             "T-S3 south branch".into(),
         ],
         context: Context::unknown(),
+        schedule: None,
     };
     let mut monitor = Monitor::new(site, PipelineConfig::default()).unwrap();
     let mut sink = CollectingSink::default();
