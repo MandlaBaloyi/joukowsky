@@ -165,8 +165,15 @@ G-19  Valves: PRV response over seconds; states by time of day     OPEN
   Same day, closed: routes through shut devices are cut and the share of
   a wave open devices pass enters placement and detectability (FN-029;
   valve_fronts.rs: PRV 0.25%, pump 0.02% vs the full simulator).
-  Still open: the device states come from ONE steady solve at base
-  demand - a PRV active by day may be shut at night; the live monitor
-  should take the state of the hour (extended run) when it locates.
+  Same day, closed: device states by the hour. A site may carry its
+  Schedule (patterns, controls, power cuts; UTC offset); the monitor runs
+  it for two days once, takes each hour's devices from the second, and
+  locates, corroborates and sizes each event with those of its local hour
+  (application/pipeline/monitor/hours.rs). Proved on a zone whose PRV is
+  shut at night (tests/pipeline/simulation/valves_by_hour.rs): without the
+  schedule a 02:00 burst heard by one logger was blamed on that logger
+  ("a fault in S2"); with it, the alert says the valve is shut and the
+  other logger's silence means nothing. Waiting and fusion still use the
+  base state (they only wait a little longer than needed).
   Other valve types (PSV, FCV, TCV, PBV, GPV) and [RULES] remain plain
   connections / unread.

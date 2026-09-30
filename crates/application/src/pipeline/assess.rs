@@ -18,7 +18,7 @@
 use jk_classification::{EventClass, Features, classify};
 use jk_detection::{Direction, Event};
 use jk_kernel::{Head, Time};
-use jk_localisation::{Arrival, Drop, localise, size};
+use jk_localisation::{Arrival, Devices, Drop, localise_with, size_with};
 
 use crate::alert::{Alert, Level};
 use crate::pipeline::{PipelineConfig, Site};
@@ -41,13 +41,16 @@ pub(super) struct Found {
 /// last sample (None if it has sent nothing).
 pub(super) type Unheard = (usize, Option<Time>);
 
-/// The alert for the event seen by `members` (sorted by arrival).
+/// The alert for the event seen by `members` (sorted by arrival), with the
+/// pumps and valves as `devices` has them (and words saying so), and
+/// `travel` the sensor-to-sensor wave times under them.
 /// `watched(sensor, from, to)` says whether a sensor watched at full
 /// sensitivity over the whole of `[from, to]`.
 #[allow(clippy::too_many_arguments, clippy::too_many_lines)] // the grading, told in one place
 pub(super) fn assess(
     site: &Site,
     config: &PipelineConfig,
+    (devices, hour): (&Devices, Option<String>),
     travel: &[Vec<f64>],
     members: &[Found],
     watched: &dyn Fn(usize, f64, f64) -> bool,
@@ -57,6 +60,7 @@ pub(super) fn assess(
 ) -> Alert {
     let first = &members[0];
     let mut reasons = Vec::new();
+    reasons.extend(hour);
 
     let (class, confidence) = match &first.features {
         Some(Ok(features)) => {
@@ -82,7 +86,7 @@ pub(super) fn assess(
     let arrivals: Vec<Arrival> = members.iter().map(|m| m.arrival).collect();
     let mut corroborated = true;
     let location = if arrivals.len() >= 2 {
-        match localise(&site.network, &arrivals, &config.localise) {
+        match localise_with(&site.network, devices, &arrivals, &config.localise) {
             Ok(loc) => Some(loc),
             Err(e) => {
                 reasons.push(format!("not located: {e}"));
@@ -102,8 +106,8 @@ pub(super) fn assess(
             .collect();
         if watching.is_empty() {
             reasons.push(
-                "seen by ONE sensor only, and no other sensor was watching: not located, \
-                 not corroborated"
+                "seen by ONE sensor only, and no other sensor that its wave could reach was \
+                 watching: not located, not corroborated"
                     .into(),
             );
         } else {
@@ -180,7 +184,13 @@ pub(super) fn assess(
                     noise: m.event.noise,
                 })
                 .collect();
-            match size(&site.network, &drops, l.most_likely, config.speed_margin) {
+            match size_with(
+                &site.network,
+                devices,
+                &drops,
+                l.most_likely,
+                config.speed_margin,
+            ) {
                 Ok(s) => {
                     if s.misfit > config.max_misfit {
                         reasons.push(format!(

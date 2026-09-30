@@ -6,7 +6,7 @@ use jk_hydraulics::{Network, NodeId, PipeId};
 use jk_kernel::{Length, Time};
 
 use crate::error::{LocalisationError, positive};
-use crate::graph::{Routes, TravelGraph};
+use crate::graph::{Devices, Routes, TravelGraph};
 use crate::posterior::bound::{Bounds, Scratch};
 use crate::posterior::credible::{self, PipeProbability, Segment};
 use crate::posterior::grid::Grid;
@@ -91,6 +91,22 @@ pub fn localise(
     validate(network, arrivals, options)?;
     let sensors: Vec<NodeId> = arrivals.iter().map(|a| a.node).collect();
     Localiser::new(network, &sensors, options)?.locate(arrivals)
+}
+
+/// As [`localise`], with the network's pumps and valves in the states
+/// `devices` gives (e.g. those of the hour the event happened).
+///
+/// # Errors
+/// As [`localise`].
+pub fn localise_with(
+    network: &Network,
+    devices: &Devices,
+    arrivals: &[Arrival],
+    options: &LocaliseOptions,
+) -> Result<Localisation, LocalisationError> {
+    validate(network, arrivals, options)?;
+    let sensors: Vec<NodeId> = arrivals.iter().map(|a| a.node).collect();
+    Localiser::with_devices(network, &sensors, options, devices)?.locate(arrivals)
 }
 
 /// Candidates this far below the best (in log-probability) are never
@@ -178,7 +194,25 @@ impl<'a> Localiser<'a> {
         options: &LocaliseOptions,
     ) -> Result<Self, LocalisationError> {
         validate_setup(network, sensors, options)?;
-        let graph = Arc::new(TravelGraph::new(network));
+        Self::with_devices(network, sensors, options, &Devices::of(network))
+    }
+
+    /// As [`Self::new`], with the pumps and valves in the states `devices`
+    /// gives.
+    ///
+    /// # Errors
+    /// As [`Self::new`].
+    ///
+    /// # Panics
+    /// As [`Self::new`].
+    pub fn with_devices(
+        network: &'a Network,
+        sensors: &[NodeId],
+        options: &LocaliseOptions,
+        devices: &Devices,
+    ) -> Result<Self, LocalisationError> {
+        validate_setup(network, sensors, options)?;
+        let graph = Arc::new(TravelGraph::with_devices(network, devices));
         let grid = Arc::new(Grid::new(network, options.spacing.value()));
         let nominal = nominal_times(network);
         // Routes from every sensor with the book wave speeds.

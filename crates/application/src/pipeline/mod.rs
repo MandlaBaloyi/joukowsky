@@ -18,6 +18,7 @@ pub use run::process;
 
 use jk_classification::{ClassifierConfig, Context, FeatureConfig};
 use jk_detection::{DetectorConfig, Series};
+use jk_hydraulics::steady::extended::PeriodOptions;
 use jk_hydraulics::{Network, NodeId};
 use jk_kernel::Time;
 use jk_localisation::{ClockEstimate, LocaliseOptions};
@@ -47,6 +48,21 @@ pub struct Site {
     pub pipe_names: Vec<String>,
     /// Outside context: pump power.
     pub context: Context,
+    /// How the site runs over a day, if known: then each event is located
+    /// with the pumps and valves as they stand at its hour.
+    pub schedule: Option<Schedule>,
+}
+
+/// How a site runs over a day: which pumps and valves stand where at each
+/// hour follows from it (gap G-19).
+#[derive(Debug, Clone, PartialEq)]
+pub struct Schedule {
+    /// The day's operation - demand patterns, controls, power cuts - for
+    /// [`Network::extended`], its t = 0 at local midnight. Its duration is
+    /// not used: the monitor runs two days and takes the second.
+    pub period: PeriodOptions,
+    /// Local time minus UTC (South Africa: +2 h). Event times are UTC.
+    pub utc_offset: Time,
 }
 
 /// One sensor's record for the window being processed.

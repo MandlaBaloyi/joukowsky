@@ -34,6 +34,9 @@ pub use clocks::{
     CalibrationEvent, ClockEstimate, DriftEstimate, estimate_drift, estimate_offsets,
 };
 pub use error::LocalisationError;
-pub use locate::{Arrival, Localisation, LocaliseOptions, Localiser, Point, localise};
+pub use graph::Devices;
+pub use locate::{
+    Arrival, Localisation, LocaliseOptions, Localiser, Point, localise, localise_with,
+};
 pub use posterior::{PipeProbability, Segment};
-pub use size::{Drop, SizeEstimate, size};
+pub use size::{Drop, SizeEstimate, size, size_with};

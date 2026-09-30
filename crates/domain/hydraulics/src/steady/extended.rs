@@ -281,8 +281,22 @@ impl Network {
     /// Invalid options or controls, or a steady state that cannot be solved
     /// at the start (later failures from lost supply end the run with a
     /// [`SupplyEvent::SupplyLost`] instead).
-    #[allow(clippy::too_many_lines)] // one time loop with its supply events, kept together
     pub fn extended(&self, options: &PeriodOptions) -> Result<PeriodRun, HydraulicsError> {
+        self.extended_observed(options, &mut |_, _| {})
+    }
+
+    /// As [`Network::extended`], also handing `observe` the whole steady
+    /// state at every recorded time - every flow, every device's state - for
+    /// what the run does not keep (e.g. which valves are shut at 03:00).
+    ///
+    /// # Errors
+    /// As [`Network::extended`].
+    #[allow(clippy::too_many_lines)] // one time loop with its supply events, kept together
+    pub fn extended_observed(
+        &self,
+        options: &PeriodOptions,
+        observe: &mut dyn FnMut(Time, &SteadySolution),
+    ) -> Result<PeriodRun, HydraulicsError> {
         positive("step", options.step.value())?;
         positive("duration", options.duration.value())?;
         positive("pattern_step", options.pattern_step.value())?;
@@ -348,6 +362,7 @@ impl Network {
         switch(options, &mut status, &tanks, t, &mut run.events);
         let mut here = self.settle(t, &mut tanks, &status, options, &mut run.events)?;
         record(&mut run, t, &tanks, &status, &here);
+        observe(Time::new(t), &here);
         for k in 1..=steps {
             #[allow(clippy::cast_precision_loss)] // k is small
             let report = (k as f64 * dt).min(end);
@@ -421,6 +436,7 @@ impl Network {
             }
             t = report;
             record(&mut run, t, &tanks, &status, &here);
+            observe(Time::new(t), &here);
         }
         Ok(run)
     }

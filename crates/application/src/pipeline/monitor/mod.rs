@@ -20,6 +20,7 @@
 //! Memory is bounded: detectors keep only recent samples, the monitor only
 //! recent record for classification and events recent enough to revise.
 
+mod hours;
 mod sensor;
 
 use jk_classification::extract;
@@ -30,6 +31,7 @@ use jk_localisation::clocks::correct;
 use jk_localisation::graph::TravelGraph;
 use jk_telemetry::{Assembler, Chunk, Piece, TelemetryError};
 
+use self::hours::Hours;
 use self::sensor::SensorState;
 use super::assess::{Found, Unheard, assess};
 use super::fusion::{self, Candidate};
@@ -56,8 +58,11 @@ pub struct Monitor {
     site: Site,
     config: PipelineConfig,
     detector: Detector,
-    /// Fastest wave travel time between every pair of sensors [s].
+    /// Fastest wave travel time between every pair of sensors [s], with
+    /// the devices as at base demand (for waiting and fusion).
     travel: Vec<Vec<f64>>,
+    /// Pumps and valves hour by hour (for locating and corroborating).
+    hours: Hours,
     clocks: Vec<ClockEstimate>,
     sensors: Vec<SensorState>,
     /// Detections not yet in a reported event.
@@ -107,14 +112,8 @@ impl Monitor {
                 sensor: "(configuration)".into(),
                 error,
             })?;
-        let travel = site
-            .sensors
-            .iter()
-            .map(|a| {
-                let times = graph.times_from(a.node.index(), &pipe_times);
-                site.sensors.iter().map(|b| times[b.node.index()]).collect()
-            })
-            .collect();
+        let hours = Hours::of(&site)?;
+        let travel = hours.travel[0].clone();
         let clocks = site.sensors.iter().filter_map(|s| s.clock).collect();
         let sensors = vec![SensorState::default(); site.sensors.len()];
         Ok(Self {
@@ -122,6 +121,7 @@ impl Monitor {
             config,
             detector,
             travel,
+            hours,
             clocks,
             sensors,
             pending: Vec::new(),
@@ -418,10 +418,14 @@ impl Monitor {
             .iter()
             .map(|&(j, _)| (j, self.sensors[j].received_until().map(Time::new)))
             .collect();
+        let (set, words) = self
+            .hours
+            .at(self.site.schedule.as_ref(), members[0].arrival.time.value());
         assess(
             &self.site,
             &self.config,
-            &self.travel,
+            (&self.hours.sets[set], words),
+            &self.hours.travel[set],
             members,
             &|j, from, to| self.sensors[j].watched(from, to),
             &unheard,

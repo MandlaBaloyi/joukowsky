@@ -97,6 +97,17 @@ pub(super) struct Fronts {
 
 impl Fronts {
     pub(super) fn new(network: &Network, sensors: &[NodeId], response: Response) -> Self {
+        Self::with_devices(network, sensors, response, Devices::of(network))
+    }
+
+    /// As [`Self::new`], with the pumps and valves in the states `devices`
+    /// gives.
+    pub(super) fn with_devices(
+        network: &Network,
+        sensors: &[NodeId],
+        response: Response,
+        devices: Devices,
+    ) -> Self {
         let pipes = network.pipes();
         let g = network.gravity();
         let ends: Vec<(usize, usize)> = pipes
@@ -135,7 +146,6 @@ impl Fronts {
             .collect();
         let damping = wall_effect.iter().map(|&(d, _)| d).collect();
         let lengths = pipes.iter().map(|p| p.pipe.length().value()).collect();
-        let devices = Devices::of(network);
         let graph = TravelGraph::with_devices(network, &devices);
         let routes = sensors
             .iter()
@@ -220,7 +230,36 @@ pub fn first_fronts(
     point: Point,
     burst: Flow,
 ) -> Result<Vec<Head>, LocalisationError> {
-    heads(network, sensors, point, burst, Response::Front)
+    heads(
+        network,
+        Devices::of(network),
+        sensors,
+        point,
+        burst,
+        Response::Front,
+    )
+}
+
+/// As [`first_fronts`], with the pumps and valves in the states `devices`
+/// gives (e.g. those of the hour).
+///
+/// # Errors
+/// As [`first_fronts`].
+pub fn first_fronts_with(
+    network: &Network,
+    devices: &Devices,
+    sensors: &[NodeId],
+    point: Point,
+    burst: Flow,
+) -> Result<Vec<Head>, LocalisationError> {
+    heads(
+        network,
+        devices.clone(),
+        sensors,
+        point,
+        burst,
+        Response::Front,
+    )
 }
 
 /// The head drop each of `sensors` FEELS within `window` after the first
@@ -239,11 +278,19 @@ pub fn felt_heads(
     window: Time,
 ) -> Result<Vec<Head>, LocalisationError> {
     crate::error::positive("window", window.value())?;
-    heads(network, sensors, point, burst, Response::Window(window))
+    heads(
+        network,
+        Devices::of(network),
+        sensors,
+        point,
+        burst,
+        Response::Window(window),
+    )
 }
 
 fn heads(
     network: &Network,
+    devices: Devices,
     sensors: &[NodeId],
     point: Point,
     burst: Flow,
@@ -264,7 +311,7 @@ fn heads(
             point.distance.value()
         )));
     }
-    Ok(Fronts::new(network, sensors, response)
+    Ok(Fronts::with_devices(network, sensors, response, devices)
         .per_unit_flow(p, fraction)
         .iter()
         .map(|h| Head::new(h * burst.value()))

@@ -46,6 +46,7 @@ pub fn estate_site(context: Context) -> Site {
             "T-S3 south branch".into(),
         ],
         context,
+        schedule: None,
     }
 }
 
@@ -115,6 +116,22 @@ pub fn record(truths: &[Vec<f64>], dt: f64, seed: u64) -> Vec<Recorded> {
 /// If the pipeline fails (a test bug).
 #[must_use]
 pub fn run_pipeline(site: &Site, truths: &[Vec<f64>], dt: f64, seed: u64) -> Vec<Alert> {
+    run_pipeline_at(site, truths, dt, seed, 0.0)
+}
+
+/// As [`run_pipeline`], the records starting `utc` seconds after the UTC
+/// epoch (so a site's schedule sees the hour of day).
+///
+/// # Panics
+/// If the pipeline fails (a test bug).
+#[must_use]
+pub fn run_pipeline_at(
+    site: &Site,
+    truths: &[Vec<f64>],
+    dt: f64,
+    seed: u64,
+    utc: f64,
+) -> Vec<Alert> {
     let recorded = record(truths, dt, seed);
     let records: Vec<Record<'_>> = recorded
         .iter()
@@ -123,7 +140,7 @@ pub fn run_pipeline(site: &Site, truths: &[Vec<f64>], dt: f64, seed: u64) -> Vec
             sensor: i,
             series: Series {
                 samples: &r.samples,
-                start: Time::new(r.start),
+                start: Time::new(utc + r.start),
                 interval: Time::new(1.0 / RATE),
             },
         })

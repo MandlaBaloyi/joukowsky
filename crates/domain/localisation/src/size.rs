@@ -27,8 +27,9 @@ use jk_hydraulics::{Network, NodeId};
 use jk_kernel::{Flow, Head};
 
 use crate::error::LocalisationError;
+use crate::graph::Devices;
 use crate::locate::Point;
-use crate::placement::first_fronts;
+use crate::placement::first_fronts_with;
 
 /// The estimated size of a burst.
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -68,6 +69,26 @@ pub fn size(
     point: Point,
     wave_speed_uncertainty: f64,
 ) -> Result<SizeEstimate, LocalisationError> {
+    size_with(
+        network,
+        &Devices::of(network),
+        drops,
+        point,
+        wave_speed_uncertainty,
+    )
+}
+
+/// As [`size`], with the pumps and valves in the states `devices` gives.
+///
+/// # Errors
+/// As [`size`].
+pub fn size_with(
+    network: &Network,
+    devices: &Devices,
+    drops: &[Drop],
+    point: Point,
+    wave_speed_uncertainty: f64,
+) -> Result<SizeEstimate, LocalisationError> {
     if drops
         .iter()
         .any(|d| d.noise.value().is_nan() || d.noise.value() <= 0.0)
@@ -77,7 +98,7 @@ pub fn size(
         ));
     }
     let nodes: Vec<NodeId> = drops.iter().map(|d| d.node).collect();
-    let per_unit = first_fronts(network, &nodes, point, Flow::new(1.0))?;
+    let per_unit = first_fronts_with(network, devices, &nodes, point, Flow::new(1.0))?;
     let used: Vec<(f64, f64, f64)> = drops
         .iter()
         .zip(&per_unit)
@@ -113,6 +134,7 @@ pub fn size(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::placement::first_fronts;
     use jk_hydraulics::{Node, Pipe};
     use jk_kernel::{Length, STANDARD_GRAVITY, WaveSpeed};
 

@@ -26,7 +26,7 @@
 
 use jk_hydraulics::boundary::prv::PrvState;
 use jk_hydraulics::joukowsky::junction_transmission;
-use jk_hydraulics::{Network, Node, SteadyOptions};
+use jk_hydraulics::{Network, Node, SteadyOptions, SteadySolution};
 
 /// Per node: shut, and the resistance a small wave meets crossing it.
 #[derive(Debug, Clone, PartialEq)]
@@ -38,26 +38,38 @@ pub struct Devices {
 }
 
 impl Devices {
-    /// The devices of `network` as its steady state leaves them.
+    /// The devices of `network` as its steady state (base demands, every
+    /// pump running) leaves them.
     #[must_use]
     pub fn of(network: &Network) -> Self {
-        let n = network.nodes().len();
-        let mut d = Self {
-            shut: vec![false; n],
-            resistance: vec![0.0; n],
-        };
         let any = network.nodes().iter().any(|node| {
             matches!(
                 node,
                 Node::CheckValve | Node::Pump { .. } | Node::PressureReducingValve { .. }
             )
         });
-        if !any {
-            return d;
+        match network.steady_state(&SteadyOptions::default()) {
+            Ok(s) if any => Self::from_steady(network, &s),
+            _ => Self::open(network),
         }
-        let Ok(s) = network.steady_state(&SteadyOptions::default()) else {
-            return d;
-        };
+    }
+
+    /// Every device open and transparent (a straight run).
+    #[must_use]
+    pub fn open(network: &Network) -> Self {
+        let n = network.nodes().len();
+        Self {
+            shut: vec![false; n],
+            resistance: vec![0.0; n],
+        }
+    }
+
+    /// The devices as the steady state `s` of `network` leaves them - e.g.
+    /// a state from an extended-period run at a given hour
+    /// ([`Network::extended_observed`]).
+    #[must_use]
+    pub fn from_steady(network: &Network, s: &SteadySolution) -> Self {
+        let mut d = Self::open(network);
         // The flow leaving a device node: its one downstream pipe.
         let through = |node: usize| {
             network
@@ -95,6 +107,12 @@ impl Devices {
             }
         }
         d
+    }
+
+    /// How many devices are shut.
+    #[must_use]
+    pub fn shut_count(&self) -> usize {
+        self.shut.iter().filter(|s| **s).count()
     }
 
     /// True if no wave passes node `node`.

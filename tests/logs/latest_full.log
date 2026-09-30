@@ -1,18 +1,18 @@
 joukowsky test run
-  when     2026-09-30 13:05:45
+  when     2026-09-30 13:21:49
   suite    full
-  commit   65e5a19 (with uncommitted changes)
+  commit   2c57fd4 (with uncommitted changes)
   rust     rustc 1.98.1 (48a229cea 2026-09-01)
   command  cargo test --workspace --no-fail-fast -- --nocapture --test-threads=1 --include-ignored
 ==============================================================================
-   Compiling jk-localisation v0.1.0 (C:\Users\HP\Desktop\joukowsky\crates\domain\localisation)
-   Compiling jk-files v0.1.0 (C:\Users\HP\Desktop\joukowsky\crates\adapters\files)
-   Compiling jk-sim v0.1.0 (C:\Users\HP\Desktop\joukowsky\crates\sim)
-   Compiling jk-hydraulics v0.1.0 (C:\Users\HP\Desktop\joukowsky\crates\domain\hydraulics)
    Compiling jk-application v0.1.0 (C:\Users\HP\Desktop\joukowsky\crates\application)
+   Compiling jk-sim v0.1.0 (C:\Users\HP\Desktop\joukowsky\crates\sim)
+   Compiling jk-localisation v0.1.0 (C:\Users\HP\Desktop\joukowsky\crates\domain\localisation)
    Compiling jk-tests v0.1.0 (C:\Users\HP\Desktop\joukowsky\tests)
+   Compiling jk-files v0.1.0 (C:\Users\HP\Desktop\joukowsky\crates\adapters\files)
+   Compiling jk-hydraulics v0.1.0 (C:\Users\HP\Desktop\joukowsky\crates\domain\hydraulics)
    Compiling jk-cli v0.1.0 (C:\Users\HP\Desktop\joukowsky\crates\interfaces\cli)
-    Finished `test` profile [unoptimized + debuginfo] target(s) in 22.47s
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 16.87s
      Running unittests src\lib.rs (target\debug\deps\jk_application-31ec11ad23313301.exe)
 
 running 3 tests
@@ -177,7 +177,7 @@ test units::tests::same_type_arithmetic ... ok
 test units::tests::velocity_flow_area ... ok
 test units::tests::wave_travel_time_and_distance_round_trip ... ok
 
-test result: ok. 13 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s
+test result: ok. 13 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
 
      Running unittests src\lib.rs (target\debug\deps\jk_localisation-b57d917c3efe0d09.exe)
 
@@ -428,7 +428,7 @@ test simulation::logger_files::a_burst_recorded_in_logger_files_raises_one_alarm
   at 10:15:03 - seconds past 10:15:00          got       2.998747   expected       3.000000   rel.err 4.2e-4
 ok
 
-test result: ok. 12 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.50s
+test result: ok. 12 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.43s
 
      Running balance\main.rs (target\debug\deps\balance-f50430771254bd71.exe)
 
@@ -453,7 +453,7 @@ test simulation::night_watch::the_detection_curve_matches_the_cusum_arithmetic .
   at the arithmetic's size: caught at least a third of the time yes
 ok
 
-test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.32s
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.14s
 
      Running classification\main.rs (target\debug\deps\classification-31daad1fdce9861c.exe)
 
@@ -549,7 +549,7 @@ test simulation::scenarios::power_data_settles_the_slow_burst ... The same slow 
   burst                                        yes
 ok
 
-test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.92s
+test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.82s
 
      Running detection\main.rs (target\debug\deps\detection-f716915457d43300.exe)
 
@@ -625,7 +625,7 @@ test simulation::burst_location::vs1_location_error_versus_sampling_rate_and_noi
   128 S/s with 2 cm noise locates to under 1 m RMS yes
 ok
 
-test result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 3.60s
+test result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 2.64s
 
      Running hydraulics\main.rs (target\debug\deps\hydraulics-8605ea72ea8561e1.exe)
 
@@ -1018,7 +1018,7 @@ test invariants::steady_state::an_undisturbed_pipe_stays_steady ... Steady state
   valve holds steady                           yes
 ok
 
-test result: ok. 48 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 34.03s
+test result: ok. 48 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 13.28s
 
      Running kernel\main.rs (target\debug\deps\kernel-d5a37fe190909055.exe)
 
@@ -1134,7 +1134,7 @@ Recommended 6 (after swaps): a1 block A1, c1 block C1, b1 block B1, c2 block C2,
     B-b2               90 m   typical region  155 m
     C-c1              150 m   typical region   20 m
     C-c2              220 m   typical region   25 m
-  (advice took 4 s on this machine)
+  (advice took 3 s on this machine)
 Would a sudden 1 l/s burst be felt? By at least one logger on 100% of the pipe, by two (so located) on 100%. Smallest burst locatable anywhere on each pipe (upper bound: no plastic-wall damping yet):
     R-M connection     0.09 l/s
     M-A ring           0.04 l/s
@@ -1380,11 +1380,11 @@ test simulation::valve_fronts::a_shut_prv_passes_no_wave_and_no_route ... A seco
     and no route from S1 reaches the zone: the locator cannot place a burst there from S1 yes
 ok
 
-test result: ok. 32 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 80.02s
+test result: ok. 32 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 113.95s
 
      Running pipeline\main.rs (target\debug\deps\pipeline-d11d8b6223a66c52.exe)
 
-running 7 tests
+running 9 tests
 test simulation::live::a_power_cut_at_a_sensor_is_reported_not_taken_for_silence ... A burst at t = 3 s while load-shedding has cut S2's gateway from
 t = 2.5 s to t = 6 s: S2's samples for that time never arrive, and when
 it comes back the network is still ringing:
@@ -1550,8 +1550,58 @@ another on the north branch at t = 30 s:
   the first on the south branch, ~200 m        yes
   the second on the north branch, ~150 m       yes
 ok
+test simulation::valves_by_hour::a_night_burst_behind_a_shut_valve_is_not_blamed_on_the_one_logger_that_heard_it ... The zone drawing 3 l/s: the PRV is Closed
 
-test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 4.30s
+-- Without the schedule (valve taken as at base demand: open):
+1 alert(s):
+[Review] #1 UNKNOWN (50% confident) at t = 4.199 s
+  where: not located (fewer than two sensors saw it)
+  seen by: S2 in the zone
+  because: pressure DROPPED by 6.31 m: a burst or a pump trip, not a closing valve (seen upstream)
+  because: DRAWN-OUT front (605 ms, 10-90%): a gradual change - a pump running down, a valve closing slowly, or a burst opening slowly
+  because: SHALLOW drop: 12% of the pressure - a hole lets out a little water
+  because: pump power is not monitored: no outside evidence
+  because: seen by ONE sensor only: S1 above the valve watched and felt nothing, though a pressure wave from anywhere in the network would have reached them - a fault in S2 in the zone, or an event too small or too local to travel
+    S1's silence is read as evidence against S2 yes
+
+-- With the schedule:
+1 alert(s):
+[Review] #1 UNKNOWN (50% confident) at t = 4.199 s
+  where: not located (fewer than two sensors saw it)
+  seen by: S2 in the zone
+  because: located with pumps and valves as the site's schedule has them at 02:00 (1 shut: no wave passes it)
+  because: pressure DROPPED by 6.31 m: a burst or a pump trip, not a closing valve (seen upstream)
+  because: DRAWN-OUT front (605 ms, 10-90%): a gradual change - a pump running down, a valve closing slowly, or a burst opening slowly
+  because: SHALLOW drop: 12% of the pressure - a hole lets out a little water
+  because: pump power is not monitored: no outside evidence
+  because: seen by ONE sensor only, and no other sensor that its wave could reach was watching: not located, not corroborated
+    one alert                                  yes
+    it says the valve is shut at 02:00         yes
+    and does not blame S2: S1 could not have heard it yes
+ok
+test simulation::valves_by_hour::at_noon_the_valve_is_active_and_both_loggers_locate_the_burst ... The zone drawing 15 l/s: the PRV is Active
+1 alert(s):
+[Review] #1 UNKNOWN (50% confident) at t = 36002.835 s
+  where: T-J at 35.5 m from its start; 90% within 1262 m of pipe
+    T-J                   71.4%
+    S2-J                  28.6%
+    PRV-S2                 0.0%
+  seen by: S2 in the zone, S1 above the valve
+  because: located with pumps and valves as the site's schedule has them at 12:00
+  because: pressure DROPPED by 4.92 m: a burst or a pump trip, not a closing valve (seen upstream)
+  because: DRAWN-OUT front (605 ms, 10-90%): a gradual change - a pump running down, a valve closing slowly, or a burst opening slowly
+  because: SHALLOW drop: 10% of the pressure - a hole lets out a little water
+  because: pump power is not monitored: no outside evidence
+    one alert                                  yes
+    heard by both loggers                      yes
+    it says the devices are as scheduled at 12:00, none shut yes
+  located on T-J at 35.5 m (truth: S2-J at 200 m); level Review
+    beyond S2: 100% on S2-J (the truth) and T-J together yes
+    the true pipe holds a real share           yes
+    and it is not dismissed                    yes
+ok
+
+test result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 15.00s
 
    Doc-tests jk_application
 
@@ -1620,9 +1670,9 @@ running 0 tests
 test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
 
 ==============================================================================
-  passed   259
+  passed   261
   failed   0
   skipped  0 slow test(s) not in this suite
   filtered 0 test(s) outside -Only/-Filter
-  time     155.3 s (including compile)
+  time     170.9 s (including compile)
   result   ALL PASSED
