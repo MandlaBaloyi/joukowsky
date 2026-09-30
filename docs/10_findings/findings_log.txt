@@ -209,3 +209,12 @@ FN-024  2026-09-30  Real creep data found (web research, owner-approved)
   (pipe/viscoelastic.rs `reference`). Sharp front halves every ~180 m (HDPE)
   and ~560 m (PVC). Still to find: South African pipe classes (PE100 SDR11,
   uPVC class 9/12) and temperature effects - creep grows with temperature.
+
+FN-025  2026-09-30  A baseline estimated from few nights raises false alarms
+  The night watch (slow leaks, jk-balance) with Page's classic CUSUM
+  (drift 0.5, alarm 5) on a 14-night baseline gave a false alarm every
+  ~270 nights per zone on leak-free simulated zones - the theory for known
+  mean and spread promises ~930. The baseline's own uncertainty adds to
+  the noise. Measured grid: 28-night baseline (four whole weeks) and alarm
+  at 6 -> one per ~590 nights (1.6 years), still catching a 1.2-spread
+  leak within a week 72% of the time. Defaults set from the measurement.

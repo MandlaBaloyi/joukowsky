@@ -87,6 +87,7 @@ Context map (who may use whom, inside domain/)
   telemetry      <- detection
   detection      <- localisation, classification
   localisation   <- classification
+  balance        (water balance, slow leaks: kernel only, 2026-09-30)
   (arrow = "is used by"; everything may use kernel)
 
 Ubiquitous language (terms mean the same thing in code and docs)
@@ -94,8 +95,10 @@ Ubiquitous language (terms mean the same thing in code and docs)
   head H [m], flow Q [m^3/s], wave speed a [m/s], reach (MOC segment),
   event (a detected transient), arrival (one sensor's onset of an event),
   source (where an event originated), data tier (0/1/2), credible region,
-  probe (a known event used for calibration). New terms are added to
-  docs before they appear in code.
+  probe (a known event used for calibration), zone (an area bounded by
+  flow meters), balance, night flow, leak alarm (04_/slow_leaks_and_
+  water_balance.txt). New terms are added to docs before they appear in
+  code.
 
 Mapping from the earlier sketch (engine_overview.txt)
 -----------------------------------------------------

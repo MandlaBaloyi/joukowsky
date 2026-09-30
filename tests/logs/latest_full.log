@@ -1,18 +1,12 @@
 joukowsky test run
-  when     2026-09-30 07:39:44
+  when     2026-09-30 07:53:19
   suite    full
-  commit   cab3289 (with uncommitted changes)
+  commit   6cab794 (with uncommitted changes)
   rust     rustc 1.98.1 (48a229cea 2026-09-01)
   command  cargo test --workspace --no-fail-fast -- --nocapture --test-threads=1 --include-ignored
 ==============================================================================
-   Compiling jk-files v0.1.0 (C:\Users\HP\Desktop\joukowsky\crates\adapters\files)
-   Compiling jk-application v0.1.0 (C:\Users\HP\Desktop\joukowsky\crates\application)
-   Compiling jk-localisation v0.1.0 (C:\Users\HP\Desktop\joukowsky\crates\domain\localisation)
    Compiling jk-tests v0.1.0 (C:\Users\HP\Desktop\joukowsky\tests)
-   Compiling jk-sim v0.1.0 (C:\Users\HP\Desktop\joukowsky\crates\sim)
-   Compiling jk-hydraulics v0.1.0 (C:\Users\HP\Desktop\joukowsky\crates\domain\hydraulics)
-   Compiling jk-cli v0.1.0 (C:\Users\HP\Desktop\joukowsky\crates\interfaces\cli)
-    Finished `test` profile [unoptimized + debuginfo] target(s) in 25.98s
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 11.78s
      Running unittests src\lib.rs (target\debug\deps\jk_application-31ec11ad23313301.exe)
 
 running 3 tests
@@ -21,6 +15,18 @@ test pipeline::fusion::tests::one_event_seen_everywhere_is_one_group ... ok
 test pipeline::fusion::tests::two_events_far_apart_in_time_are_two_groups ... ok
 
 test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running unittests src\lib.rs (target\debug\deps\jk_balance-a53bc54c50f611b0.exe)
+
+running 6 tests
+test leak::tests::a_step_of_three_spreads_is_caught_and_dated ... ok
+test leak::tests::missing_nights_neither_raise_nor_lower_the_watch ... ok
+test leak::tests::the_smallest_detectable_leak_follows_the_cusum_arithmetic ... ok
+test night::tests::a_night_mostly_missing_is_missing ... ok
+test night::tests::nights_are_the_mean_over_the_local_window ... ok
+test zone::tests::inflows_minus_outflows_minus_storage ... ok
+
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
 
      Running unittests src\lib.rs (target\debug\deps\jk_classification-ac838da961a672cc.exe)
 
@@ -60,7 +66,7 @@ test onset::step_area::tests::a_ramp_front_is_placed_at_its_centre ... ok
 test onset::step_area::tests::declines_when_the_windows_do_not_fit ... ok
 test onset::step_area::tests::exact_for_a_sharp_step_at_any_phase ... ok
 
-test result: ok. 14 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.09s
+test result: ok. 14 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.08s
 
      Running unittests src\lib.rs (target\debug\deps\jk_files-ec39beec6edb1da0.exe)
 
@@ -184,14 +190,14 @@ test assembly::tests::overlaps_and_interval_changes_are_refused_and_change_nothi
 
 test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
 
-     Running unittests common\lib.rs (target\debug\deps\jk_tests-1b20f8e8a7ca16df.exe)
+     Running unittests common\lib.rs (target\debug\deps\jk_tests-9de71c83ec6b5606.exe)
 
 running 1 test
 test sensor::tests::averaging_a_step_gives_the_covered_fraction ... ok
 
 test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
 
-     Running adapters\main.rs (target\debug\deps\adapters-63ad50df5bc7fd66.exe)
+     Running adapters\main.rs (target\debug\deps\adapters-0b7a076242e7529e.exe)
 
 running 9 tests
 test analytical::epanet::broken_files_are_refused_with_the_line_number ...   refused: line 4: link 'P1' joins unknown node 'B'
@@ -331,9 +337,34 @@ test simulation::logger_files::a_burst_recorded_in_logger_files_raises_one_alarm
   at 10:15:03 - seconds past 10:15:00          got       2.998747   expected       3.000000   rel.err 4.2e-4
 ok
 
-test result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.13s
+test result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.16s
 
-     Running classification\main.rs (target\debug\deps\classification-4a848a22bad9e255.exe)
+     Running balance\main.rs (target\debug\deps\balance-f50430771254bd71.exe)
+
+running 3 tests
+test simulation::night_watch::a_one_litre_per_second_leak_is_caught_dated_and_sized ... Night flow baseline 2.54 l/s, nights vary by 0.29 l/s; a week catches leaks over 0.40 l/s
+  leak from mid-day 45: first night 46 (the night of day 46), alarm night 48, size 0.99 +/- 0.18 l/s
+  dated to the first night after it began (day 46) yes
+  raised within 3 nights                       yes
+  size within 2 uncertainties of 1 l/s         yes
+  one alarm, no echoes                         yes
+ok
+test simulation::night_watch::false_alarms_are_rare_on_a_zone_without_leaks ... 200 zones x 90 days, no leak: 21 false alarm(s) in 12400 watched nights - one every 590 nights
+  fewer than one false alarm a year per zone   yes
+ok
+test simulation::night_watch::the_detection_curve_matches_the_cusum_arithmetic ... Night spread 0.386 l/s: the arithmetic says leaks over 0.523 l/s show within a week.
+  leak 0.26 l/s (0.5 x the arithmetic): caught within a week in 25 of 100 zones
+  leak 0.52 l/s (1 x the arithmetic): caught within a week in 75 of 100 zones
+  leak 0.79 l/s (1.5 x the arithmetic): caught within a week in 94 of 100 zones
+  leak 1.05 l/s (2 x the arithmetic): caught within a week in 95 of 100 zones
+  more leak, more often caught                 yes
+  twice the arithmetic's size: caught 90%+ of the time yes
+  at the arithmetic's size: caught at least a third of the time yes
+ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 3.73s
+
+     Running classification\main.rs (target\debug\deps\classification-31daad1fdce9861c.exe)
 
 running 8 tests
 test simulation::scenarios::a_pump_trip_is_recognised_from_its_shape_alone ... Pump losing power, sensor at its discharge, power NOT monitored:
@@ -427,9 +458,9 @@ test simulation::scenarios::power_data_settles_the_slow_burst ... The same slow 
   burst                                        yes
 ok
 
-test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 3.31s
+test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 3.13s
 
-     Running detection\main.rs (target\debug\deps\detection-5fb88cfa3a816592.exe)
+     Running detection\main.rs (target\debug\deps\detection-f716915457d43300.exe)
 
 running 10 tests
 test analytical::delay::delay_follows_the_cusum_formula ... Sharp drops at t = 3 s, noise-free signal with a 2 cm noise floor set:
@@ -503,9 +534,9 @@ test simulation::burst_location::vs1_location_error_versus_sampling_rate_and_noi
   128 S/s with 2 cm noise locates to under 1 m RMS yes
 ok
 
-test result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 9.03s
+test result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 9.69s
 
-     Running hydraulics\main.rs (target\debug\deps\hydraulics-20d714b021436fba.exe)
+     Running hydraulics\main.rs (target\debug\deps\hydraulics-8605ea72ea8561e1.exe)
 
 running 41 tests
 test analytical::boundaries::burst::a_10mm_hole_at_60m_head ... DN150 AC main at 60 m head, 0.5 m/s; a 10 mm hole opens (Cd 0.6):
@@ -815,9 +846,9 @@ test invariants::steady_state::an_undisturbed_pipe_stays_steady ... Steady state
   valve holds steady                           yes
 ok
 
-test result: ok. 41 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 41.47s
+test result: ok. 41 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 41.29s
 
-     Running kernel\main.rs (target\debug\deps\kernel-5b9e09cb13e50ac8.exe)
+     Running kernel\main.rs (target\debug\deps\kernel-d5a37fe190909055.exe)
 
 running 5 tests
 test conversions::dn150_area ... Cross-section of a DN150 pipe:
@@ -842,7 +873,7 @@ ok
 
 test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
 
-     Running localisation\main.rs (target\debug\deps\localisation-29bcd85f7b4b18b2.exe)
+     Running localisation\main.rs (target\debug\deps\localisation-b8347a4918b09d81.exe)
 
 running 29 tests
 test analytical::branched::two_sensors_see_a_whole_branch_three_sensors_see_the_point ... Sensors S1 and S2 only (burst 200 m along branch T-S3):
@@ -931,7 +962,7 @@ Recommended 6 (after swaps): a1 block A1, c1 block C1, b1 block B1, c2 block C2,
     B-b2               90 m   typical region  155 m
     C-c1              150 m   typical region   20 m
     C-c2              220 m   typical region   25 m
-  (advice took 11 s on this machine)
+  (advice took 10 s on this machine)
 Would a sudden 1 l/s burst be felt? By at least one logger on 100% of the pipe, by two (so located) on 100%. Smallest burst locatable anywhere on each pipe (upper bound: no plastic-wall damping yet):
     R-M connection     0.09 l/s
     M-A ring           0.04 l/s
@@ -1163,9 +1194,9 @@ test simulation::plastic_fronts::the_front_model_with_plastic_walls_matches_the_
   but within 0.25 s S2 feels over two thirds of it yes
 ok
 
-test result: ok. 29 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 190.80s
+test result: ok. 29 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 192.03s
 
-     Running pipeline\main.rs (target\debug\deps\pipeline-c326c19a150f67d8.exe)
+     Running pipeline\main.rs (target\debug\deps\pipeline-d11d8b6223a66c52.exe)
 
 running 7 tests
 test simulation::live::a_power_cut_at_a_sensor_is_reported_not_taken_for_silence ... A burst at t = 3 s while load-shedding has cut S2's gateway from
@@ -1315,9 +1346,15 @@ another on the north branch at t = 30 s:
   the second on the north branch, ~150 m       yes
 ok
 
-test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 14.90s
+test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 15.03s
 
    Doc-tests jk_application
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+   Doc-tests jk_balance
 
 running 0 tests
 
@@ -1378,9 +1415,9 @@ running 0 tests
 test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
 
 ==============================================================================
-  passed   221
+  passed   230
   failed   0
   skipped  0 slow test(s) not in this suite
   filtered 0 test(s) outside -Only/-Filter
-  time     295.0 s (including compile)
+  time     283.7 s (including compile)
   result   ALL PASSED

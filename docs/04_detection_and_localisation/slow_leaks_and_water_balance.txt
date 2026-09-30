@@ -1,0 +1,74 @@
+SLOW LEAKS AND WATER BALANCE
+STATUS: DRAFT v0.1 (2026-09-30) - step R-3 of 02_physics_of_transients/
+sources_dams_rivers_canals.txt; gap G-12
+
+Why
+---
+A leak that grows over days sends no wave: the transient engine cannot
+see it (P2). But it takes water, and water is counted. Where a zone is
+bounded by flow meters - a district metered area (DMA), a bulk main
+between two meters, a site behind its bulk meter - the balance
+
+  used(t) = sum over meters of (+Q_in or -Q_out) - dV/dt (storage)
+
+is everything used inside: consumption plus leakage. At night (about
+02:00-04:00 local) consumption is at its lowest and most regular; the
+MINIMUM NIGHT FLOW (MNF) is then mostly leakage. A new leak is a lasting
+step up in the MNF, night after night.
+
+Terms (ubiquitous language)
+---------------------------
+  zone          an area bounded by flow meters (inflows +, outflows -)
+  balance       used(t) above, per reading
+  night flow    the mean balance over the night window, one per night;
+                a night with less than half its readings is MISSING, not
+                filled (P6)
+  leak alarm    a lasting rise in night flow beyond what nights vary by
+
+Method
+------
+1. Balance per reading; storage change from tank volumes if given.
+2. Night flow per night (local window, default 02:00-04:00).
+3. Baseline from the first nights (default 28 - four whole weeks): their
+   mean mu and the
+   night-to-night spread s (which already contains meter noise and the
+   natural variation of night use).
+4. One-sided CUSUM on z_k = (night_k - mu) / s, drift 0.5, alarm at 6: a
+   step of d spreads is caught after about 6 / (d - 0.5) nights. Chosen
+   by simulation (FN-025): Page's classic 5 with a 14-night baseline gave
+   a false alarm every ~270 nights per zone - the baseline's own
+   uncertainty adds to the noise; 28 nights and 6: one per ~590 nights.
+5. The alarm names the first night of the rise (where the CUSUM last
+   left zero) and the leak's size: the mean night flow since then minus
+   mu, with its uncertainty.
+
+What meters can and cannot see (P2, P3)
+---------------------------------------
+A meter's CALIBRATION error is a constant bias: it shifts every night
+alike, so it does not hide a change - it only makes the absolute leakage
+level uncertain. What hides a change is the night-to-night SPREAD s. The
+smallest leak caught within n nights is about
+
+  d_min = s (0.5 + 6 / n)            (1.36 s within a week)
+
+and the engine states it per zone. Example: a bulk main carrying 300 l/s
+by day but 60 l/s at night, with meters varying 0.5% night to night:
+s ~ 0.3 l/s, so leaks of ~0.4 l/s show within a week - leaks far smaller
+than any wave could reveal on a 1 m pipe.
+
+Validation
+----------
+tests/balance/: analytical (balance and night flows exact on constructed
+series; the detectable-size formula), simulation (90 synthetic days with
+a diurnal pattern, night-to-night variation and meter noise: no alarm
+without a leak; a leak of 3 spreads caught within days, first night and
+size right within their uncertainty).
+Next: real zone data (rung 4), pressure-dependent leakage (a leak grows
+with pressure - pressure_leakage_and_fatigue.txt), meters that drift.
+
+Status (2026-09-30): built - crates/domain/balance (jk-balance: zone,
+night, leak), tests/balance. Simulation, 90 days, 15-min readings, nights
+varying 0.3 l/s, 1% meter noise: one false alarm per ~590 nights a zone;
+a 1 l/s leak dated to its first night and raised two nights later, sized
+0.99 +/- 0.18 l/s; leaks at the d_min arithmetic caught within a week
+75% of the time, at twice it 95%.

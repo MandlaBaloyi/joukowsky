@@ -162,3 +162,6 @@ reaches its floor at 16.224 h (exact 16.224 h); a tank alone supplying
 follows one step later.
 Next: R-3 water balance between meters (slow leaks, G-12); pumps and
 valves switching by tank level (controls); feeding measured levels.
+
+R-3 done (2026-09-30): water balance of metered zones and the night-flow
+leak watch - 04_detection_and_localisation/slow_leaks_and_water_balance.txt.

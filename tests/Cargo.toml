@@ -45,6 +45,10 @@ path = "pipeline/main.rs"
 name = "adapters"
 path = "adapters/main.rs"
 
+[[test]]
+name = "balance"
+path = "balance/main.rs"
+
 [dependencies]
 jk-kernel.workspace = true
 jk-hydraulics.workspace = true
@@ -54,6 +58,7 @@ jk-classification.workspace = true
 jk-application.workspace = true
 jk-files.workspace = true
 jk-sim.workspace = true
+jk-balance.workspace = true
 
 [lints]
 workspace = true

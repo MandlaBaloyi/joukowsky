@@ -31,7 +31,7 @@ param(
     [string]$Suite = 'quick',
 
     # A bounded context = one test program in tests\Cargo.toml.
-    [ValidateSet('', 'kernel', 'hydraulics', 'detection', 'localisation', 'classification', 'pipeline', 'adapters')]
+    [ValidateSet('', 'kernel', 'hydraulics', 'detection', 'localisation', 'classification', 'pipeline', 'adapters', 'balance')]
     [string]$Only = '',
 
     # Substring of the test path, e.g. single_pipe, invariants, va1.

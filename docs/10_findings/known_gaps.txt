@@ -112,7 +112,10 @@ G-11  External factors untested                                   OPEN
   Lightning spikes, tremors, vibration, temperature. external_factors.txt
   lists the tests (V-E1..V-E6).
 
-G-12  Slow leaks are invisible to the transient method            OPEN
+G-12  Slow leaks are invisible to the transient method     IN PROGRESS
+  2026-09-30: water balance of metered zones and a night-flow leak watch
+  built and validated in simulation (jk-balance, FN-025). Open: real zone
+  data, pressure-dependent leakage, drifting meters.
   A leak that grows over weeks sends no sharp wave. P2: we must not claim
   to see it from fronts. Needs Tier 0 methods (night flow, mass balance,
   pressure trends; V-B2 BattLeDIM; 08_ Q-P3).

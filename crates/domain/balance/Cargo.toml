@@ -1,0 +1,17 @@
+[package]
+name = "jk-balance"
+description = "Balance bounded context: water balance of metered zones and slow leaks"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+publish.workspace = true
+license.workspace = true
+
+[lib]
+name = "jk_balance"
+
+[dependencies]
+jk-kernel.workspace = true
+
+[lints]
+workspace = true
