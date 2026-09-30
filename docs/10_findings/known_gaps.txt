@@ -99,7 +99,8 @@ G-10  Large networks                                       IN PROGRESS
   numbers in detection_range_and_scale.txt. 2026-09-30: sparse steady
   solver - 1000 km in 0.29 s (FN-026). Still open: planning hundreds of km
   (zones); the MOC on one core with its time step set by the shortest pipe
-  (dt 0.36 ms at 100 km, ~20 s per simulated second at 150 km).
+  (dt 0.36 ms at 100 km; 4.8 s per simulated second at 150 km on four
+  cores since FN-027).
 
 G-16  Lazy greedy assumes diminishing returns                    OPEN
   The advisor re-checks only candidates whose last gain could still win

@@ -228,3 +228,12 @@ FN-026  2026-09-30  A sparse steady solver: 150 km from 30 s to 7 ms
   dense solver on random networks. `jk scale --no-simulation`: steady state
   100 km 6 ms, 150 km 7 ms, 250 km 15 ms, 500 km 55 ms, 1000 km (10 813
   junctions) 0.29 s; locating a burst at 1000 km 0.1 s.
+
+FN-027  2026-09-30  Wave simulation on four cores: 150 km from ~22 to 4.8 s
+  Within a time step each pipe's interior depends only on the old step, so
+  on grids of 50 000+ points the pipes are shared among up to four threads
+  (contiguous runs of about equal points); nodes stay on one thread. Same
+  arithmetic, bit for bit (unit test). 150 km: 4.8 s per simulated second
+  (was ~22); 50 km barely gains (0.8 s) - a step is short and starting
+  threads each step costs most of the saving; a persistent thread pool
+  would recover it if needed.

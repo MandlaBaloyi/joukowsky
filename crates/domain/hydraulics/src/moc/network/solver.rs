@@ -35,6 +35,7 @@ use crate::pipe::viscoelastic::{Creep, CreepStep};
 /// A plastic pipe's wall during a run: the step constants, each grid
 /// point's creep, and the head each point's wall settled at (the initial
 /// state).
+#[derive(Debug, Clone)]
 struct Wall {
     step: CreepStep,
     creep: Vec<Creep>,
@@ -208,6 +209,7 @@ impl Network {
         }
         let (g_si, dt_si) = (g.value(), dt.value());
 
+        let groups = pipe_groups(&h);
         let mut trace = Trace::new(dt, probes.len(), steps + 1);
         record(&mut trace, &resolved, &node_head, &node_outflow, &h, &q);
         let mut arrivals: Vec<Arrival> = Vec::new();
@@ -216,21 +218,23 @@ impl Network {
             #[allow(clippy::cast_precision_loss)] // k <= MAX_STEPS, exact in f64
             let t = dt * k as f64;
 
-            // 1. Pipe interiors.
-            for (p, c) in chars.iter().enumerate() {
-                let (hp, qp) = (&h[p], &q[p]);
-                for i in 1..hp.len() - 1 {
-                    let cp = c.c_plus(hp[i - 1], qp[i - 1]);
-                    let cm = c.c_minus(hp[i + 1], qp[i + 1]);
-                    (h_new[p][i], q_new[p][i]) = match &walls[p] {
-                        None => c.interior(cp, cm),
-                        Some(w) => {
-                            let (cp, b) = w.fold((i - 1, hp[i - 1]), i, cp, c.impedance(), hp[i]);
-                            let (cm, _) = w.fold((i + 1, hp[i + 1]), i, cm, c.impedance(), hp[i]);
-                            (f64::midpoint(cp, cm), (cp - cm) / (2.0 * b))
-                        }
-                    };
-                }
+            // 1. Pipe interiors - each pipe depends only on the old step, so
+            //    on a large grid the pipes are shared out among threads; the
+            //    arithmetic is the same, so the result is bit for bit the same.
+            if groups.len() > 1 {
+                std::thread::scope(|scope| {
+                    let (mut rest_h, mut rest_q) = (&mut h_new[..], &mut q_new[..]);
+                    for &(first, end) in &groups {
+                        let (hh, next_h) = rest_h.split_at_mut(end - first);
+                        let (qq, next_q) = rest_q.split_at_mut(end - first);
+                        rest_h = next_h;
+                        rest_q = next_q;
+                        let (chars, walls, h, q) = (&chars, &walls, &h, &q);
+                        scope.spawn(move || interiors(chars, walls, h, q, hh, qq, first));
+                    }
+                });
+            } else {
+                interiors(&chars, &walls, &h, &q, &mut h_new, &mut q_new, 0);
             }
 
             // 2. Nodes.
@@ -453,6 +457,68 @@ impl Network {
     }
 }
 
+/// Below this many grid points a step is too quick to share out: starting
+/// threads would cost more than they save.
+const PARALLEL_POINTS: usize = 50_000;
+/// Most threads used for pipe interiors.
+const MAX_THREADS: usize = 4;
+
+/// Consecutive runs of pipes with about equal numbers of grid points, one
+/// per thread - or a single run for a small grid.
+fn pipe_groups(h: &[Vec<f64>]) -> Vec<(usize, usize)> {
+    let total: usize = h.iter().map(Vec::len).sum();
+    let threads = std::thread::available_parallelism()
+        .map_or(1, std::num::NonZero::get)
+        .min(MAX_THREADS);
+    if total < PARALLEL_POINTS || threads < 2 {
+        return vec![(0, h.len())];
+    }
+    let share = total.div_ceil(threads);
+    let mut groups = Vec::with_capacity(threads);
+    let (mut first, mut points) = (0, 0);
+    for (p, pipe) in h.iter().enumerate() {
+        points += pipe.len();
+        if points >= share && groups.len() + 1 < threads {
+            groups.push((first, p + 1));
+            first = p + 1;
+            points = 0;
+        }
+    }
+    if first < h.len() {
+        groups.push((first, h.len()));
+    }
+    groups
+}
+
+/// Interior points of the pipes `first`.. (as many as `h_new` holds) from
+/// the old step `h`, `q` (all pipes).
+fn interiors(
+    chars: &[Characteristics],
+    walls: &[Option<Wall>],
+    h: &[Vec<f64>],
+    q: &[Vec<f64>],
+    h_new: &mut [Vec<f64>],
+    q_new: &mut [Vec<f64>],
+    first: usize,
+) {
+    for (k, (hn, qn)) in h_new.iter_mut().zip(q_new.iter_mut()).enumerate() {
+        let p = first + k;
+        let (c, hp, qp) = (&chars[p], &h[p], &q[p]);
+        for i in 1..hp.len() - 1 {
+            let cp = c.c_plus(hp[i - 1], qp[i - 1]);
+            let cm = c.c_minus(hp[i + 1], qp[i + 1]);
+            (hn[i], qn[i]) = match &walls[p] {
+                None => c.interior(cp, cm),
+                Some(w) => {
+                    let (cp, b) = w.fold((i - 1, hp[i - 1]), i, cp, c.impedance(), hp[i]);
+                    let (cm, _) = w.fold((i + 1, hp[i + 1]), i, cm, c.impedance(), hp[i]);
+                    (f64::midpoint(cp, cm), (cp - cm) / (2.0 * b))
+                }
+            };
+        }
+    }
+}
+
 /// Flow in a pump's suction pipe (the pipe ending at the pump node).
 fn pump_suction_flow(touching: &[(PipeId, PipeEnd)], pipe_flows: &[f64]) -> f64 {
     touching
@@ -489,5 +555,59 @@ fn record(
             Resolved::Node(n) => trace.push(j, node_head[n], node_outflow[n]),
             Resolved::Pipe(p, i) => trace.push(j, h[p][i], q[p][i]),
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::Pipe;
+    use jk_kernel::random::Rng;
+    use jk_kernel::{Length, STANDARD_GRAVITY, WaveSpeed};
+
+    #[test]
+    fn pipe_groups_cover_every_pipe_once_in_order() {
+        let h: Vec<Vec<f64>> = (0..300).map(|k| vec![0.0; 100 + (k * 37) % 400]).collect();
+        let groups = pipe_groups(&h);
+        assert_eq!(groups.first().unwrap().0, 0);
+        assert_eq!(groups.last().unwrap().1, h.len());
+        for w in groups.windows(2) {
+            assert_eq!(w[0].1, w[1].0, "contiguous");
+        }
+    }
+
+    #[test]
+    fn interiors_split_among_threads_are_bit_for_bit_the_same() {
+        let mut rng = Rng::new(3);
+        let pipe = Pipe::new(
+            Length::new(100.0),
+            Length::new(0.2),
+            WaveSpeed::new(1000.0),
+            0.02,
+        )
+        .unwrap();
+        let c = Characteristics::new(&pipe, Length::new(1.0), STANDARD_GRAVITY);
+        let n = 12;
+        let chars = vec![c; n];
+        let walls: Vec<Option<Wall>> = vec![None; n];
+        let h: Vec<Vec<f64>> = (0..n)
+            .map(|k| (0..20 + 3 * k).map(|_| 50.0 + rng.normal()).collect())
+            .collect();
+        let q: Vec<Vec<f64>> = h
+            .iter()
+            .map(|p| p.iter().map(|_| 0.01 * rng.normal()).collect())
+            .collect();
+        let (mut h1, mut q1) = (h.clone(), q.clone());
+        interiors(&chars, &walls, &h, &q, &mut h1, &mut q1, 0);
+        let (mut h2, mut q2) = (h.clone(), q.clone());
+        let (a, b) = h2.split_at_mut(5);
+        let (qa, qb) = q2.split_at_mut(5);
+        std::thread::scope(|s| {
+            let (chars, walls, h, q) = (&chars, &walls, &h, &q);
+            s.spawn(move || interiors(chars, walls, h, q, a, qa, 0));
+            s.spawn(move || interiors(chars, walls, h, q, b, qb, 5));
+        });
+        assert_eq!(h1, h2);
+        assert_eq!(q1, q2);
     }
 }
