@@ -260,7 +260,7 @@ impl Network {
 
                 let (head, outflow) = match *node {
                     Node::Reservoir { head } => {
-                        let hn = head.value();
+                        let hn = self.source_head(n, head, t);
                         let net_in = arrivals
                             .iter()
                             .map(|a| match a.end {

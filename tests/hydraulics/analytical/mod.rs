@@ -11,5 +11,6 @@ mod network;
 mod plastic_front;
 mod pumps;
 mod single_pipe;
+mod sources;
 pub mod steady;
 mod viscoelastic;

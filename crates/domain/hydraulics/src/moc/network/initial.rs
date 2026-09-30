@@ -22,7 +22,7 @@
 
 use std::collections::VecDeque;
 
-use jk_kernel::{Flow, Head};
+use jk_kernel::{Flow, Head, Time};
 
 use crate::HydraulicsError;
 use crate::boundary::check_valve::CheckValveState;
@@ -102,7 +102,10 @@ impl InitialCondition {
                 let h = head.value();
                 for (i, node) in network.nodes().iter().enumerate() {
                     match node {
-                        Node::Reservoir { head: hr } if (hr.value() - h).abs() > HEAD_TOLERANCE => {
+                        Node::Reservoir { head: hr }
+                            if (network.source_head(i, *hr, Time::ZERO) - h).abs()
+                                > HEAD_TOLERANCE =>
+                        {
                             return bad(format!(
                                 "node {i}: reservoir at {hr} cannot be at rest with {head}"
                             ));
@@ -247,7 +250,7 @@ fn heads_from_reservoirs(
     let mut queue = VecDeque::new();
     for (i, node) in network.nodes().iter().enumerate() {
         if let Node::Reservoir { head } = node {
-            heads[i] = Some(head.value());
+            heads[i] = Some(network.source_head(i, *head, Time::ZERO));
             queue.push_back(i);
         }
     }

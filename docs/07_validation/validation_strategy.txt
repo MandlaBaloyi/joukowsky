@@ -23,6 +23,9 @@ Rung 1  Analytical: results that must match closed-form physics.
         reservoir-pipe-valve system vs the exact complex-frequency
         solution; first-order convergence, extrapolated within 0.5%
         (2026-09-29: +0.1% at 400 reaches after FN-021).
+  V-A7  Source level changing with time (reservoir history): rigid-column
+        theory Q = g A r t^2 / (2L) for a slowly rising source (2026-09-30:
+        exact at multiples of 2L/a, 0.05% between).
   V-A6  Viscoelastic wall, sharp front: jump height decays as exp(-kappa x)
         with kappa = sum a c J / (g tau); fitted kappa within 5%
         (2026-09-29: 1.4%).

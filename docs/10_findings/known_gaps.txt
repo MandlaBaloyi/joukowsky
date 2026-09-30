@@ -132,7 +132,8 @@ G-15  Guard rails are not a sandbox (FN-011)                      OPEN
   Real isolation (Linux / WSL2) before third-party tools or untrusted
   data at scale; tell the owner first.
 
-G-18  Sources are fixed heads; dams, rivers, canals not modelled  OPEN
+G-18  Sources are fixed heads; dams, rivers, canals not modelled  IN PROGRESS
+  2026-09-30: R-1 done - reservoirs can follow a level history (V-A7).
   Every reservoir node holds one head forever. Right for a burst lasting
   seconds; blind to levels that change over hours, supply cuts, draining
   and refilling, and water lost between source and site. Plan R-1..R-5 in

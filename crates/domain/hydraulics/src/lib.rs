@@ -30,6 +30,6 @@ pub use moc::grid::Grid;
 pub use moc::network::{GridOptions, InitialCondition, NetworkGrid, NetworkRun, Probe};
 pub use moc::single_pipe::ReservoirPipeValve;
 pub use moc::trace::Trace;
-pub use model::{Burst, BurstOpening, Network, NetworkPipe, Node, NodeId, PipeId};
+pub use model::{Burst, BurstOpening, Network, NetworkPipe, Node, NodeId, PipeId, SourceLevel};
 pub use pipe::Pipe;
 pub use steady::{SteadyOptions, SteadySolution};

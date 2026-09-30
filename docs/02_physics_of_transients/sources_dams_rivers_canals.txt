@@ -129,3 +129,16 @@ boundary conditions of the pipe network).
 ------------------------------------------------------------------------
 Floods and river flood-plains, dam safety and dam-break studies, water
 quality and treatment processes, groundwater.
+
+Implementation note: R-1 done (2026-09-30)
+-------------------------------------------
+crates/domain/hydraulics/src/model.rs SourceLevel: a reservoir may carry a
+level history (time, head points; linear between them, held outside). The
+MOC follows it at every step; the steady state and "at rest" start from its
+value at t = 0 (Network::source_head). Validated (V-A7, tests/hydraulics/
+analytical/sources.rs): an upstream reservoir rising 1 cm/s drives a
+frictionless 1 km pipe exactly as rigid-column theory, Q = g A r t^2 / (2 L)
+- to machine precision at whole multiples of 2L/a, within 0.05% between;
+and a flat history reproduces a fixed reservoir bit for bit. Next: R-2
+(tanks filling and draining by volume balance), and feeding level data
+from files or SCADA into SourceLevel.

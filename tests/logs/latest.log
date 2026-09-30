@@ -1,18 +1,18 @@
 joukowsky test run
-  when     2026-09-29 22:44:41
+  when     2026-09-30 07:27:20
   suite    full
-  commit   9a9a904 (with uncommitted changes)
+  commit   1a37be3 (with uncommitted changes)
   rust     rustc 1.98.1 (48a229cea 2026-09-01)
   command  cargo test --workspace --no-fail-fast -- --nocapture --test-threads=1 --include-ignored
 ==============================================================================
-   Compiling jk-hydraulics v0.1.0 (C:\Users\HP\Desktop\joukowsky\crates\domain\hydraulics)
-   Compiling jk-localisation v0.1.0 (C:\Users\HP\Desktop\joukowsky\crates\domain\localisation)
-   Compiling jk-sim v0.1.0 (C:\Users\HP\Desktop\joukowsky\crates\sim)
-   Compiling jk-files v0.1.0 (C:\Users\HP\Desktop\joukowsky\crates\adapters\files)
    Compiling jk-application v0.1.0 (C:\Users\HP\Desktop\joukowsky\crates\application)
    Compiling jk-tests v0.1.0 (C:\Users\HP\Desktop\joukowsky\tests)
    Compiling jk-cli v0.1.0 (C:\Users\HP\Desktop\joukowsky\crates\interfaces\cli)
-    Finished `test` profile [unoptimized + debuginfo] target(s) in 20.82s
+   Compiling jk-sim v0.1.0 (C:\Users\HP\Desktop\joukowsky\crates\sim)
+   Compiling jk-localisation v0.1.0 (C:\Users\HP\Desktop\joukowsky\crates\domain\localisation)
+   Compiling jk-files v0.1.0 (C:\Users\HP\Desktop\joukowsky\crates\adapters\files)
+   Compiling jk-hydraulics v0.1.0 (C:\Users\HP\Desktop\joukowsky\crates\domain\hydraulics)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 12.29s
      Running unittests src\lib.rs (target\debug\deps\jk_application-31ec11ad23313301.exe)
 
 running 3 tests
@@ -86,7 +86,7 @@ test result: ok. 16 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; fin
 
      Running unittests src\lib.rs (target\debug\deps\jk_hydraulics-c42e47dfc771fa13.exe)
 
-running 45 tests
+running 46 tests
 test boundary::check_valve::tests::open_valve_passes_forward_flow_like_a_plain_joint ... ok
 test boundary::check_valve::tests::reversing_flow_shuts_it_and_each_side_becomes_a_dead_end ... ok
 test boundary::check_valve::tests::stays_shut_until_upstream_pushes_harder_then_reopens ... ok
@@ -129,11 +129,12 @@ test pipe::friction::quasi_steady::tests::matches_darcy_weisbach_in_velocity_for
 test pipe::tests::rejects_non_physical_values ... ok
 test pipe::tests::timing_matches_docs_example ... ok
 test pipe::viscoelastic::tests::a_constant_pressure_rise_creeps_along_the_exact_curve ... ok
+test pipe::viscoelastic::tests::a_slow_window_softens_and_a_fast_one_damps_like_the_front ... ok
 test pipe::viscoelastic::tests::the_new_rate_is_what_advancing_then_gives ... ok
 test pipe::viscoelastic::tests::walls_are_checked ... ok
 test pipe::viscoelastic::tests::without_creep_a_characteristic_is_unchanged ... ok
 
-test result: ok. 45 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+test result: ok. 46 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
 
      Running unittests src\lib.rs (target\debug\deps\jk_kernel-eccabcc9e10cd5d2.exe)
 
@@ -329,7 +330,7 @@ test simulation::logger_files::a_burst_recorded_in_logger_files_raises_one_alarm
   at 10:15:03 - seconds past 10:15:00          got       2.998747   expected       3.000000   rel.err 4.2e-4
 ok
 
-test result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.37s
+test result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.32s
 
      Running classification\main.rs (target\debug\deps\classification-4a848a22bad9e255.exe)
 
@@ -425,7 +426,7 @@ test simulation::scenarios::power_data_settles_the_slow_burst ... The same slow 
   burst                                        yes
 ok
 
-test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.00s
+test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.96s
 
      Running detection\main.rs (target\debug\deps\detection-5fb88cfa3a816592.exe)
 
@@ -501,11 +502,11 @@ test simulation::burst_location::vs1_location_error_versus_sampling_rate_and_noi
   128 S/s with 2 cm noise locates to under 1 m RMS yes
 ok
 
-test result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 2.85s
+test result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 2.89s
 
      Running hydraulics\main.rs (target\debug\deps\hydraulics-20d714b021436fba.exe)
 
-running 37 tests
+running 39 tests
 test analytical::boundaries::burst::a_10mm_hole_at_60m_head ... DN150 AC main at 60 m head, 0.5 m/s; a 10 mm hole opens (Cd 0.6):
   water lost              1.555 l/s  (134 m^3 per day)
   head step at the burst  -4.486 m
@@ -676,6 +677,15 @@ Every one of the 241 samples on the square wave:
   all samples within 1e-9 m of the ideal       yes
   no flow through the shut valve               yes
 ok
+test analytical::sources::a_flat_level_history_is_exactly_a_fixed_reservoir ...   identical flows, step for step               yes
+ok
+test analytical::sources::va7_a_slowly_rising_source_drives_the_water_column_as_theory_says ... Upstream reservoir rising 0.01 m/s; flow at mid-pipe vs rigid-column theory:
+    flow at 20.0 s [l/s]                       got       1.386382   expected       1.386382   rel.err 1.6e-16
+    flow at 21.5 s [l/s]                       got       1.601272   expected       1.602138   rel.err 5.4e-4
+    flow at 40.0 s [l/s]                       got       5.545530   expected       5.545530   rel.err 1.8e-15
+    flow at 40.7 s [l/s]                       got       5.741010   expected       5.741322   rel.err 5.4e-5
+    flow at 60.0 s [l/s]                       got      12.477442   expected      12.477442   rel.err 2.0e-15
+ok
 test analytical::steady::check_valves::forward_head_opens_the_valve ... 80 m on the valve's upstream side, 50 m downstream:
   valve is open                                yes
   flow = sqrt(30 / 2R) [l/s]                   got      76.205416   expected      76.205416   rel.err 3.7e-16
@@ -789,7 +799,7 @@ test invariants::steady_state::an_undisturbed_pipe_stays_steady ... Steady state
   valve holds steady                           yes
 ok
 
-test result: ok. 37 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 12.77s
+test result: ok. 39 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 12.77s
 
      Running kernel\main.rs (target\debug\deps\kernel-5b9e09cb13e50ac8.exe)
 
@@ -818,7 +828,7 @@ test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; fini
 
      Running localisation\main.rs (target\debug\deps\localisation-29bcd85f7b4b18b2.exe)
 
-running 27 tests
+running 29 tests
 test analytical::branched::two_sensors_see_a_whole_branch_three_sensors_see_the_point ... Sensors S1 and S2 only (burst 200 m along branch T-S3):
   probability on branch T-S3: 100.0%
   90% region: 540 m of pipe
@@ -905,7 +915,7 @@ Recommended 6 (after swaps): a1 block A1, c1 block C1, b1 block B1, c2 block C2,
     B-b2               90 m   typical region  155 m
     C-c1              150 m   typical region   20 m
     C-c2              220 m   typical region   25 m
-  (advice took 4 s on this machine)
+  (advice took 3 s on this machine)
 Would a sudden 1 l/s burst be felt? By at least one logger on 100% of the pipe, by two (so located) on 100%. Smallest burst locatable anywhere on each pipe (upper bound: no plastic-wall damping yet):
     R-M connection     0.09 l/s
     M-A ring           0.04 l/s
@@ -1110,8 +1120,34 @@ Localisation:
   the 90% region contains the truth            yes
   the arrivals fit one source (misfit < 3)     yes
 ok
+test simulation::plastic_fronts::the_front_model_holds_for_measured_hdpe ... HDPE, Imperial College (Covas et al. 2005): an 8 mm hole lets out 0.949 l/s; a sharp front keeps exp(-0.00380 x)
+  S1 (tee, 350 m): rigid pipe would give 6.337 m
+      sharp front [m]                          got       1.702651   expected       1.678338   rel.err 1.4e-2
+      felt within 0.25 s [m]                   got       5.120896   expected       4.984633   rel.err 2.7e-2
+  S2 (tee, 450 m, dead end): rigid pipe would give 12.674 m
+      sharp front [m]                          got       2.340426   expected       2.296420   rel.err 1.9e-2
+      felt within 0.25 s [m]                   got       9.754043   expected       9.509130   rel.err 2.5e-2
+  S3 (dead end, 200 m): rigid pipe would give 19.011 m
+      sharp front [m]                          got       8.964749   expected       8.897907   rel.err 7.5e-3
+      felt within 0.25 s [m]                   got      16.345114   expected      16.052330   rel.err 1.8e-2
+  at S2: sharp front 18% of rigid pipe's, felt within 0.25 s 75%
+  felt is more than the sharp front            yes
+ok
+test simulation::plastic_fronts::the_front_model_with_plastic_walls_matches_the_full_simulation ... Illustrative plastic wall: an 8 mm hole lets out 1.016 l/s; a sharp front keeps exp(-0.00667 x)
+  S1 (tee, 350 m): rigid pipe would give 1.453 m
+      sharp front [m]                          got       0.145123   expected       0.140906   rel.err 2.9e-2
+      felt within 0.25 s [m]                   got       1.178654   expected       1.196106   rel.err 1.5e-2
+  S2 (tee, 450 m, dead end): rigid pipe would give 2.906 m
+      sharp front [m]                          got       0.150416   expected       0.144688   rel.err 3.8e-2
+      felt within 0.25 s [m]                   got       2.201915   expected       2.338121   rel.err 5.8e-2
+  S3 (dead end, 200 m): rigid pipe would give 4.359 m
+      sharp front [m]                          got       1.166973   expected       1.149064   rel.err 1.5e-2
+      felt within 0.25 s [m]                   got       3.774112   expected       3.713554   rel.err 1.6e-2
+  the sharp front at S2 is under a fifth of rigid pipe's yes
+  but within 0.25 s S2 feels over two thirds of it yes
+ok
 
-test result: ok. 27 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 74.09s
+test result: ok. 29 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 70.32s
 
      Running pipeline\main.rs (target\debug\deps\pipeline-c326c19a150f67d8.exe)
 
@@ -1263,7 +1299,7 @@ another on the north branch at t = 30 s:
   the second on the north branch, ~150 m       yes
 ok
 
-test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 4.80s
+test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 4.95s
 
    Doc-tests jk_application
 
@@ -1326,9 +1362,9 @@ running 0 tests
 test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
 
 ==============================================================================
-  passed   214
+  passed   219
   failed   0
   skipped  0 slow test(s) not in this suite
   filtered 0 test(s) outside -Only/-Filter
-  time     121.6 s (including compile)
+  time     110.7 s (including compile)
   result   ALL PASSED

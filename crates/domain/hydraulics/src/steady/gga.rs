@@ -47,7 +47,7 @@ use crate::model::{Network, Node, NodeId, Topology};
 use crate::pipe::friction::quasi_steady;
 use crate::steady::{SteadyOptions, SteadySolution};
 use jk_kernel::linalg::cholesky_solve;
-use jk_kernel::{Flow, Head};
+use jk_kernel::{Flow, Head, Time};
 
 /// Largest number of free-head nodes the dense solver accepts (cost grows
 /// as n^3; 2000 nodes is about a second per round on a laptop).
@@ -141,7 +141,7 @@ impl Graph {
         };
         for (n, node) in network.nodes().iter().enumerate() {
             let (fixed, demand) = match node {
-                Node::Reservoir { head } => (Some(head.value()), 0.0),
+                Node::Reservoir { head } => (Some(network.source_head(n, *head, Time::ZERO)), 0.0),
                 Node::Junction { demand } => (None, demand.value()),
                 Node::Valve { .. } | Node::CheckValve | Node::Pump { .. } => (None, 0.0),
             };

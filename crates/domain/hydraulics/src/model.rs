@@ -135,6 +135,39 @@ impl Burst {
     }
 }
 
+/// A reservoir whose level changes with time - a recorded or planned
+/// level history (`docs/02_physics_of_transients/sources_dams_rivers_
+/// canals.txt`, step R-1). Levels change over minutes to hours, so within a
+/// transient the source is practically fixed; over a longer run the flows
+/// follow it.
+#[derive(Debug, Clone, PartialEq)]
+pub struct SourceLevel {
+    /// The reservoir node.
+    pub node: NodeId,
+    /// (time, head) points, times strictly increasing. Linear between
+    /// points; held at the first before it and at the last after it.
+    pub history: Vec<(Time, Head)>,
+}
+
+impl SourceLevel {
+    /// The reservoir's head at time `t`.
+    #[must_use]
+    pub fn head_at(&self, t: Time) -> Head {
+        let h = &self.history;
+        let (first, last) = (h[0], h[h.len() - 1]);
+        if t <= first.0 {
+            return first.1;
+        }
+        if t >= last.0 {
+            return last.1;
+        }
+        let k = h.partition_point(|&(time, _)| time <= t);
+        let ((t0, h0), (t1, h1)) = (h[k - 1], h[k]);
+        let f = (t - t0) / (t1 - t0);
+        Head::new(h0.value() + f * (h1.value() - h0.value()))
+    }
+}
+
 /// A pipe network for transient simulation.
 #[derive(Debug, Clone, PartialEq)]
 pub struct Network {
@@ -142,6 +175,7 @@ pub struct Network {
     nodes: Vec<Node>,
     pipes: Vec<NetworkPipe>,
     bursts: Vec<Burst>,
+    levels: Vec<SourceLevel>,
 }
 
 /// For each node, the pipes that touch it and which end of each.
@@ -156,6 +190,7 @@ impl Network {
             nodes: Vec::new(),
             pipes: Vec::new(),
             bursts: Vec::new(),
+            levels: Vec::new(),
         }
     }
 
@@ -228,6 +263,61 @@ impl Network {
         }
         self.bursts.push(burst);
         Ok(())
+    }
+
+    /// Gives a reservoir a level history: from now on its head follows
+    /// `level` instead of the fixed head of its node.
+    ///
+    /// # Errors
+    /// If the node is not a reservoir or already has a history, the history
+    /// is empty, or its times are not finite and strictly increasing or its
+    /// heads not finite.
+    pub fn add_level(&mut self, level: SourceLevel) -> Result<(), HydraulicsError> {
+        if !matches!(self.nodes.get(level.node.0), Some(Node::Reservoir { .. })) {
+            return Err(HydraulicsError::InvalidNetwork(format!(
+                "a level history must be at a reservoir node (node {})",
+                level.node.0
+            )));
+        }
+        if self.levels.iter().any(|l| l.node == level.node) {
+            return Err(HydraulicsError::InvalidNetwork(format!(
+                "node {} already has a level history",
+                level.node.0
+            )));
+        }
+        if level.history.is_empty() {
+            return Err(HydraulicsError::InvalidNetwork(
+                "a level history needs at least one point".into(),
+            ));
+        }
+        for (i, &(t, h)) in level.history.iter().enumerate() {
+            finite("level time", t.value())?;
+            finite("level head", h.value())?;
+            if i > 0 && t <= level.history[i - 1].0 {
+                return Err(HydraulicsError::invalid(
+                    "level time",
+                    t.value(),
+                    "strictly after the previous point",
+                ));
+            }
+        }
+        self.levels.push(level);
+        Ok(())
+    }
+
+    /// The level histories given to reservoirs.
+    #[must_use]
+    pub fn levels(&self) -> &[SourceLevel] {
+        &self.levels
+    }
+
+    /// The head of reservoir node `node` (fixed head `fixed`) at time `t`:
+    /// its level history if it has one.
+    pub(crate) fn source_head(&self, node: usize, fixed: Head, t: Time) -> f64 {
+        self.levels
+            .iter()
+            .find(|l| l.node.0 == node)
+            .map_or(fixed.value(), |l| l.head_at(t).value())
     }
 
     /// Gravitational acceleration.
