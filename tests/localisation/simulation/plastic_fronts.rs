@@ -1,10 +1,9 @@
 //! Study V-S2, plastic pipes: with creeping (viscoelastic) walls, does the
-//! quick front model - junction transmissions times exp(-kappa x) along
-//! every plastic pipe - still match the full simulator?
+//! quick model still match the full simulator - for the SHARP front (what
+//! is timed) and for the drop FELT within a window after it (what decides
+//! whether a logger notices the burst)?
 //!
-//! A plastic estate (uPVC-like: 110 mm, a = 400 m/s, illustrative wall
-//! alpha D / e = 16.7, J = 1e-10 1/Pa, tau = 0.05 s - a front halves every
-//! ~104 m [VERIFY real figures]), resting at 60 m:
+//! A plastic estate, resting at 60 m:
 //!
 //! ```text
 //!   R --300-- S1 --200-- T --300-- S2 (dead end)
@@ -14,24 +13,34 @@
 //!                        S3 (dead end)
 //! ```
 //!
-//! An 8 mm hole opens suddenly. Each logger's first front is read at the
-//! step it arrives (behind the front the creep brings part of the drop
-//! back, so later reads are smaller drops).
+//! An 8 mm hole opens suddenly. Each logger's sharp front is read at the
+//! step it arrives; the felt drop 0.25 s later (FN-023: behind the shrinking
+//! front the creeping wall builds the drop back up).
+//!
+//! Two walls: an illustrative one (a = 400 m/s, alpha D / e = 16.7,
+//! J = 1e-10 1/Pa, tau = 0.05 s - a front halves every ~104 m), and the HDPE
+//! measured at Imperial College (Covas et al. 2005, five Kelvin-Voigt
+//! elements - `reference::covas_hdpe`: a front halves every ~180 m).
 
 use jk_hydraulics::boundary::leak;
-use jk_hydraulics::pipe::viscoelastic::{KelvinVoigt, ViscoelasticWall};
+use jk_hydraulics::pipe::viscoelastic::{KelvinVoigt, ViscoelasticWall, reference};
 use jk_hydraulics::{
-    Burst, BurstOpening, GridOptions, InitialCondition, Network, Node, NodeId, Pipe, Probe,
+    Burst, BurstOpening, GridOptions, InitialCondition, Network, Node, NodeId, Probe,
 };
-use jk_kernel::{Area, Flow, Head, Length, STANDARD_GRAVITY, Time};
+use jk_kernel::{Area, Flow, Head, Length, STANDARD_GRAVITY, Time, WaveSpeed};
 use jk_localisation::Point;
-use jk_localisation::placement::first_fronts;
+use jk_localisation::placement::{felt_heads, first_fronts};
 use jk_tests::{check, check_close, pipe};
 
-const D: f64 = 0.11;
-const A: f64 = 400.0;
+/// A plastic pipe material: wall, wave speed, inner diameter.
+#[derive(Clone, Copy)]
+struct Material {
+    wall: ViscoelasticWall,
+    a: f64,
+    d: f64,
+}
 
-fn plastic(length: f64) -> Pipe {
+fn illustrative() -> Material {
     let wall = ViscoelasticWall::new(
         16.7,
         &[KelvinVoigt {
@@ -40,11 +49,29 @@ fn plastic(length: f64) -> Pipe {
         }],
     )
     .unwrap();
-    pipe(length, D, A, 0.0).with_wall(wall)
+    Material {
+        wall,
+        a: 400.0,
+        d: 0.11,
+    }
 }
 
-/// The estate, with the burst branch split at the hole if `split`.
-fn estate(split: bool) -> (Network, [NodeId; 3], Option<NodeId>) {
+fn covas() -> Material {
+    let (wall, a, d) = reference::covas_hdpe();
+    Material {
+        wall,
+        a: a.value(),
+        d: d.value(),
+    }
+}
+
+/// The estate in `m` (rigid if `plastic` is false), with the burst branch
+/// split at the hole if `split`.
+fn estate(m: Material, plastic: bool, split: bool) -> (Network, [NodeId; 3], Option<NodeId>) {
+    let make = |l: f64| {
+        let p = pipe(l, m.d, m.a, 0.0);
+        if plastic { p.with_wall(m.wall) } else { p }
+    };
     let mut net = Network::new(STANDARD_GRAVITY);
     let j = || Node::Junction { demand: Flow::ZERO };
     let r = net.add_node(Node::Reservoir {
@@ -56,29 +83,29 @@ fn estate(split: bool) -> (Network, [NodeId; 3], Option<NodeId>) {
         net.add_node(j()),
         net.add_node(j()),
     );
-    net.add_pipe(r, s1, plastic(300.0)).unwrap();
-    net.add_pipe(s1, t, plastic(200.0)).unwrap();
-    net.add_pipe(t, s2, plastic(300.0)).unwrap();
+    net.add_pipe(r, s1, make(300.0)).unwrap();
+    net.add_pipe(s1, t, make(200.0)).unwrap();
+    net.add_pipe(t, s2, make(300.0)).unwrap();
     let hole = if split {
         let h = net.add_node(j());
-        net.add_pipe(t, h, plastic(150.0)).unwrap();
-        net.add_pipe(h, s3, plastic(200.0)).unwrap();
+        net.add_pipe(t, h, make(150.0)).unwrap();
+        net.add_pipe(h, s3, make(200.0)).unwrap();
         Some(h)
     } else {
-        net.add_pipe(t, s3, plastic(350.0)).unwrap();
+        net.add_pipe(t, s3, make(350.0)).unwrap();
         None
     };
     (net, [s1, s2, s3], hole)
 }
 
-#[test]
-#[allow(clippy::too_many_lines)] // simulation, model and rigid comparison: one story
-fn the_front_model_with_plastic_damping_matches_the_full_simulation() {
+/// Simulates the burst on the plastic estate and checks both readings
+/// against the model; returns the modelled (sharp fronts, felt drops,
+/// rigid-pipe fronts) at S1, S2, S3.
+fn compare(m: Material, name: &str) -> ([f64; 3], [f64; 3], [f64; 3]) {
     let k = leak::coefficient(0.6, Area::of_circle(Length::new(0.008)), STANDARD_GRAVITY);
-    let (mut net, sensors, hole) = estate(true);
-    let hole = hole.expect("split");
+    let (mut net, sensors, hole) = estate(m, true, true);
     net.add_burst(Burst {
-        node: hole,
+        node: hole.expect("split"),
         coefficient: k,
         outside_head: Head::ZERO,
         start: Time::new(0.5),
@@ -100,34 +127,29 @@ fn the_front_model_with_plastic_damping_matches_the_full_simulation() {
         .unwrap();
     let dt = run.trace.time_step().value();
 
-    // The model on the unsplit map, the hole's flow found self-consistently.
-    let b = A / (STANDARD_GRAVITY.value() * Area::of_circle(Length::new(D)).value());
+    // The hole's flow, found self-consistently for the sharp drop there.
+    let b = m.a / (STANDARD_GRAVITY.value() * Area::of_circle(Length::new(m.d)).value());
     let mut h0: f64 = 0.0;
     for _ in 0..50 {
         h0 = 0.5 * b * k * (60.0 - h0).sqrt();
     }
-    let flow = k * (60.0 - h0).sqrt();
-    let (map, map_sensors, _) = estate(false);
-    let model = first_fronts(
-        &map,
-        &map_sensors,
-        Point {
-            pipe: map.pipe_id(3).unwrap(),
-            distance: Length::new(150.0),
-        },
-        Flow::new(flow),
-    )
-    .unwrap();
-    let kappa = plastic(1.0)
-        .wall()
-        .unwrap()
-        .front_damping(jk_kernel::WaveSpeed::new(A), STANDARD_GRAVITY);
+    let flow = Flow::new(k * (60.0 - h0).sqrt());
+    let point = |net: &Network| Point {
+        pipe: net.pipe_id(3).unwrap(),
+        distance: Length::new(150.0),
+    };
+    let (map, map_sensors, _) = estate(m, true, false);
+    let (rigid_map, _, _) = estate(m, false, false);
+    let window = Time::new(0.25);
+    let sharp = first_fronts(&map, &map_sensors, point(&map), flow).unwrap();
+    let felt = felt_heads(&map, &map_sensors, point(&map), flow, window).unwrap();
+    let rigid = first_fronts(&rigid_map, &map_sensors, point(&rigid_map), flow).unwrap();
     println!(
-        "An 8 mm hole lets out {:.3} l/s, a {h0:.3} m drop at the hole; plastic walls keep \
-         exp(-{kappa:.5} x) of a front",
-        flow * 1000.0
+        "{name}: an 8 mm hole lets out {:.3} l/s; a sharp front keeps exp(-{:.5} x)",
+        flow.value() * 1000.0,
+        m.wall.front_damping(WaveSpeed::new(m.a), STANDARD_GRAVITY)
     );
-    for (i, name) in [
+    for (i, who) in [
         "S1 (tee, 350 m)",
         "S2 (tee, 450 m, dead end)",
         "S3 (dead end, 200 m)",
@@ -137,57 +159,48 @@ fn the_front_model_with_plastic_damping_matches_the_full_simulation() {
     {
         let heads: Vec<f64> = run.trace.head(i).iter().map(|h| h.value()).collect();
         #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)] // positive
-        let start = (0.5 / dt) as usize;
+        let (start, later) = ((0.5 / dt) as usize, (window.value() / dt).round() as usize);
         let at = (start..heads.len())
             .find(|&n| (heads[n] - 60.0).abs() > 1e-6)
             .expect("the front arrives");
-        let felt = 60.0 - heads[at];
+        println!("  {who}: rigid pipe would give {:.3} m", rigid[i].value());
         check_close(
-            &format!("first front at {name} [m]"),
-            felt,
-            model[i].value(),
+            "    sharp front [m]",
+            60.0 - heads[at],
+            sharp[i].value(),
             0.05,
         );
+        check_close(
+            "    felt within 0.25 s [m]",
+            60.0 - heads[at + later],
+            felt[i].value(),
+            0.10,
+        );
     }
-    let rigid = first_fronts(
-        &{
-            let mut m = Network::new(STANDARD_GRAVITY);
-            let j = || Node::Junction { demand: Flow::ZERO };
-            let r = m.add_node(Node::Reservoir {
-                head: Head::new(60.0),
-            });
-            let (s1, t, s2, s3) = (
-                m.add_node(j()),
-                m.add_node(j()),
-                m.add_node(j()),
-                m.add_node(j()),
-            );
-            for (x, y, l) in [
-                (r, s1, 300.0),
-                (s1, t, 200.0),
-                (t, s2, 300.0),
-                (t, s3, 350.0),
-            ] {
-                m.add_pipe(x, y, pipe(l, D, A, 0.0)).unwrap();
-            }
-            m
-        },
-        &map_sensors,
-        Point {
-            pipe: map.pipe_id(3).unwrap(),
-            distance: Length::new(150.0),
-        },
-        Flow::new(flow),
-    )
-    .unwrap();
-    println!(
-        "  the same pipes without creep would give S1 {:.3} m, S2 {:.3} m, S3 {:.3} m",
-        rigid[0].value(),
-        rigid[1].value(),
-        rigid[2].value()
+    let values = |h: &[Head]| [h[0].value(), h[1].value(), h[2].value()];
+    (values(&sharp), values(&felt), values(&rigid))
+}
+
+#[test]
+fn the_front_model_with_plastic_walls_matches_the_full_simulation() {
+    let (sharp, felt, rigid) = compare(illustrative(), "Illustrative plastic wall");
+    check(
+        "the sharp front at S2 is under a fifth of rigid pipe's",
+        sharp[1] < 0.2 * rigid[1],
     );
     check(
-        "plastic walls cut the front at S2 to under a fifth",
-        model[1].value() < 0.2 * rigid[1].value(),
+        "but within 0.25 s S2 feels over two thirds of it",
+        felt[1] > 0.67 * rigid[1],
     );
+}
+
+#[test]
+fn the_front_model_holds_for_measured_hdpe() {
+    let (sharp, felt, rigid) = compare(covas(), "HDPE, Imperial College (Covas et al. 2005)");
+    println!(
+        "  at S2: sharp front {:.0}% of rigid pipe's, felt within 0.25 s {:.0}%",
+        100.0 * sharp[1] / rigid[1],
+        100.0 * felt[1] / rigid[1]
+    );
+    check("felt is more than the sharp front", felt[1] > sharp[1]);
 }

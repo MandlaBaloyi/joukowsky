@@ -7,7 +7,7 @@
 //!
 //! The instantaneous (elastic) part of the wall's stretch is already in the
 //! pipe's wave speed a. The delayed part - the retarded strain - is modelled
-//! by up to three Kelvin-Voigt elements, each a spring (creep compliance
+//! by up to five Kelvin-Voigt elements, each a spring (creep compliance
 //! `J_k` [1/Pa]) beside a dashpot (retardation time `tau_k` [s]):
 //!
 //! ```text
@@ -63,7 +63,7 @@ use jk_kernel::{Acceleration, Time, WaveSpeed};
 use crate::HydraulicsError;
 
 /// Most Kelvin-Voigt elements per wall.
-pub const MAX_ELEMENTS: usize = 3;
+pub const MAX_ELEMENTS: usize = 5;
 
 /// Density of water [kg/m^3] (docs conventions: rho ~ 998 at 20 C).
 const WATER_DENSITY: f64 = 998.0;
@@ -88,7 +88,8 @@ pub struct ViscoelasticWall {
 
 impl ViscoelasticWall {
     /// A wall with restraint x diameter / thickness `alpha_d_over_e` and 1 to
-    /// 3 Kelvin-Voigt `elements`.
+    /// 5 Kelvin-Voigt `elements` (the HDPE of [`reference::covas_hdpe`]
+    /// needs five).
     ///
     /// # Errors
     /// A non-positive `alpha_d_over_e`, no elements or more than three, or
@@ -106,7 +107,7 @@ impl ViscoelasticWall {
             return Err(HydraulicsError::invalid(
                 "Kelvin-Voigt elements",
                 elements.len() as f64,
-                "1 to 3",
+                "1 to 5",
             ));
         }
         for k in elements {
@@ -171,6 +172,104 @@ impl ViscoelasticWall {
             .iter()
             .map(|k| a.value() * c * k.compliance / (gravity.value() * k.retardation.value()))
             .sum()
+    }
+}
+
+impl ViscoelasticWall {
+    /// What a SLOW change keeps after `x` metres - the part of a step a
+    /// detector sees within a window W after the front: the components of
+    /// frequency omega ~ 1 / W. Returns (alpha [1/m], relax): the change
+    /// keeps exp(-alpha x) of itself per metre, and the pipe's impedance at
+    /// that frequency is `relax` x the instantaneous one (the wall's give
+    /// makes the pipe softer, so a burst's drop is smaller than B Q / 2).
+    ///
+    /// ```text
+    ///   gamma = (i omega / a) sqrt(1 + phi),   phi = sum_k K_k / (1 + i omega tau_k),
+    ///   K_k = 2 a^2 c J_k / g,   alpha = Re gamma,   relax = 1 / |sqrt(1 + phi)|
+    /// ```
+    ///
+    /// For omega -> infinity alpha -> [`Self::front_damping`] (the sharp
+    /// front); for omega -> 0 alpha -> 0 and relax -> 1 / sqrt(1 + sum K):
+    /// the slow part of a step is not damped, only softened. Checked against
+    /// the simulator: tests/localisation/simulation/`plastic_fronts.rs`.
+    #[must_use]
+    pub fn window_response(&self, a: WaveSpeed, gravity: Acceleration, window: Time) -> (f64, f64) {
+        let omega = 1.0 / window.value();
+        let a = a.value();
+        let c = self.stress_per_head(gravity);
+        // 1 + phi as (re, im).
+        let (mut re, mut im) = (1.0, 0.0);
+        for k in self.elements() {
+            let big_k = 2.0 * a * a * c * k.compliance / gravity.value();
+            let wt = omega * k.retardation.value();
+            let d = 1.0 + wt * wt;
+            re += big_k / d;
+            im -= big_k * wt / d;
+        }
+        // Principal square root sr + i si of re + i im; only si is needed:
+        // gamma = (i omega / a)(sr + i si) = (-omega si / a) + i (omega sr / a).
+        let modulus = re.hypot(im);
+        let si = (0.5 * (modulus - re)).sqrt().copysign(im);
+        let alpha = -omega * si / a;
+        (alpha, 1.0 / modulus.sqrt())
+    }
+}
+
+/// Walls measured in published water-hammer experiments - realistic
+/// starting points until a site's own pipes are calibrated.
+pub mod reference {
+    use jk_kernel::{Length, Time, WaveSpeed};
+
+    use super::{KelvinVoigt, ViscoelasticWall};
+
+    fn elements(pairs: &[(f64, f64)]) -> Vec<KelvinVoigt> {
+        pairs
+            .iter()
+            .map(|&(j, tau)| KelvinVoigt {
+                compliance: j * 1e-10,
+                retardation: Time::new(tau),
+            })
+            .collect()
+    }
+
+    /// HDPE, Imperial College test rig (Covas et al. 2004b, 2005; as
+    /// tabulated in Keramat, Tijsseling, Hou & Ahmadi 2011, TU Eindhoven
+    /// CASA-report 11-52, Tables 6-7): 277 m, inner diameter 50.6 mm, wall
+    /// 6.3 mm, instantaneous modulus 1.43 gigapascals, calibrated with wave speed 395 m/s; five
+    /// Kelvin-Voigt elements. Returns the wall (alpha = 1), the wave speed
+    /// and the inner diameter.
+    ///
+    /// # Panics
+    /// Never: the figures are valid.
+    #[must_use]
+    pub fn covas_hdpe() -> (ViscoelasticWall, WaveSpeed, Length) {
+        let wall = ViscoelasticWall::new(
+            50.6 / 6.3,
+            &elements(&[
+                (1.057, 0.05),
+                (1.054, 0.5),
+                (0.9051, 1.5),
+                (0.2617, 5.0),
+                (0.7456, 10.0),
+            ]),
+        )
+        .expect("published figures are valid");
+        (wall, WaveSpeed::new(395.0), Length::new(0.0506))
+    }
+
+    /// PVC, Deltares test rig, Delft (Keramat et al. 2011, Tables 4-5):
+    /// 275.2 m, inner diameter 236 mm, wall 7.3 mm, modulus 2.9 gigapascals, wave speed
+    /// 348 m/s; two Kelvin-Voigt elements calibrated on the measured water
+    /// hammer. Returns the wall (alpha = 1), the wave speed and the inner
+    /// diameter.
+    ///
+    /// # Panics
+    /// Never: the figures are valid.
+    #[must_use]
+    pub fn deltares_pvc() -> (ViscoelasticWall, WaveSpeed, Length) {
+        let wall = ViscoelasticWall::new(236.0 / 7.3, &elements(&[(0.0924, 0.05), (0.1873, 0.5)]))
+            .expect("published figures are valid");
+        (wall, WaveSpeed::new(348.0), Length::new(0.236))
     }
 }
 
@@ -366,6 +465,20 @@ mod tests {
     }
 
     #[test]
+    fn a_slow_window_softens_and_a_fast_one_damps_like_the_front() {
+        let w = wall(1e-10, 0.05);
+        let a = WaveSpeed::new(400.0);
+        let (fast, _) = w.window_response(a, STANDARD_GRAVITY, Time::new(1e-6));
+        let front = w.front_damping(a, STANDARD_GRAVITY);
+        assert!((fast - front).abs() <= 1e-3 * front);
+        let (slow, relax) = w.window_response(a, STANDARD_GRAVITY, Time::new(1e6));
+        let big_k = 2.0 * 400.0 * 400.0 * w.stress_per_head(STANDARD_GRAVITY) * 1e-10
+            / STANDARD_GRAVITY.value();
+        assert!(slow < 1e-9);
+        assert!((relax - 1.0 / (1.0 + big_k).sqrt()).abs() < 1e-9);
+    }
+
+    #[test]
     fn walls_are_checked() {
         let k = KelvinVoigt {
             compliance: 1e-10,
@@ -373,7 +486,7 @@ mod tests {
         };
         assert!(ViscoelasticWall::new(0.0, &[k]).is_err());
         assert!(ViscoelasticWall::new(20.0, &[]).is_err());
-        assert!(ViscoelasticWall::new(20.0, &[k; 4]).is_err());
+        assert!(ViscoelasticWall::new(20.0, &[k; 6]).is_err());
         let bad = KelvinVoigt {
             retardation: Time::ZERO,
             ..k

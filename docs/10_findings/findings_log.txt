@@ -180,3 +180,32 @@ FN-022  2026-09-29  At 50 km, planning the whole town beats zones
   mean 90% region 56 m; zones + polish 38.2 min, 60 m (+7%); evenly spread
   loggers 119 m. So `jk scale` now plans whole towns by default; zones are
   kept for networks too big to plan whole (hundreds of km).
+
+FN-023  2026-09-30  Plastic pipes: the SHARP front fades, the FELT drop does not
+  WHAT HAPPENED  After adding plastic damping to detectability (a front
+    shrinking exp(-kappa x)) the report said a burst at S2 was felt 20x less
+    than in rigid pipe. Checking in the simulator: behind the shrinking
+    front the creeping wall builds the drop back up - within 0.25 s S2 felt
+    76% of the rigid drop (illustrative wall), 75% with the measured HDPE.
+  WHAT IT TAUGHT Two different questions. TIMING (where the burst is) uses
+    the sharp front: it fades as exp(-kappa x). NOTICING (is there a burst)
+    uses the drop over a detection window: plastic softens it a little
+    (relax) and barely damps it. Mixing them up would have made plastic
+    networks look nearly blind.
+  WHAT CHANGED   Wall window_response (theory at omega = 1/W); detectability
+    and the advisor use the felt drop (PlacementOptions::window, 0.25 s);
+    first_fronts keeps the sharp front; felt_heads is new. Checked on a
+    plastic estate, both walls: every reading within 1-6% of the simulator.
+
+FN-024  2026-09-30  Real creep data found (web research, owner-approved)
+  Keramat, Tijsseling, Hou & Ahmadi (2011), TU Eindhoven CASA-report 11-52,
+  tabulate two calibrated walls: HDPE at Imperial College (Covas et al.
+  2004b/2005: 50.6 mm bore, 6.3 mm wall, a 395 m/s, FIVE Kelvin-Voigt
+  elements) and PVC at Deltares, Delft (236 mm bore, 7.3 mm wall, a 348 m/s,
+  two elements). Also: LDPE at four temperatures (Gally et al., via the
+  open review PMC9323711), and single-element HDPE fits J ~ 2.2e-10 1/Pa,
+  tau ~ 0.034 s (MDPI Water 14(19) 3107 - summary only, [VERIFY]). The
+  elements limit rose from 3 to 5; both tabulated walls are in the code
+  (pipe/viscoelastic.rs `reference`). Sharp front halves every ~180 m (HDPE)
+  and ~560 m (PVC). Still to find: South African pipe classes (PE100 SDR11,
+  uPVC class 9/12) and temperature effects - creep grows with temperature.

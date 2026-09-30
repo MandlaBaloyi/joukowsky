@@ -36,6 +36,13 @@ pub struct PlacementOptions {
     /// 6: measured as always caught and timed to 2 samples; 5 is caught
     /// 96% of the time (tests/detection/analytical/sensitivity.rs).
     pub detect_units: f64,
+    /// The drop a logger feels is taken this long after the front arrives.
+    /// It only matters for plastic pipes, whose creep builds the drop up
+    /// behind a shrinking sharp front (FN-023). Default 0.25 s: the
+    /// detector sums a step over time, and a drop that has built up within
+    /// a quarter of a second is caught [VERIFY with detection simulations
+    /// on plastic networks].
+    pub window: Time,
 }
 
 impl Default for PlacementOptions {
@@ -52,6 +59,7 @@ impl Default for PlacementOptions {
             burst: Some(Flow::new(1e-3)),
             noise: Head::new(0.02),
             detect_units: 6.0,
+            window: Time::new(0.25),
         }
     }
 }
@@ -126,6 +134,7 @@ pub(super) fn validate(
     positive("pinpoint", options.pinpoint.value())?;
     positive("noise", options.noise.value())?;
     positive("detect_units", options.detect_units)?;
+    positive("window", options.window.value())?;
     if let Some(q) = options.burst {
         positive("burst", q.value())?;
     }

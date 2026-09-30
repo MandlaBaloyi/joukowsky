@@ -28,11 +28,19 @@
 //! SMALLEST burst each logger can feel there - and the smallest burst that
 //! TWO loggers feel, which is the smallest that can be located.
 //!
-//! Plastic pipes (a creeping wall, `pipe/viscoelastic.rs`): along each one
-//! the front also shrinks as exp(-kappa x), kappa = the wall's
-//! `front_damping` - validated against the simulator (V-A6), and here
-//! against a burst on a plastic estate (tests/localisation/simulation/
-//! `plastic_fronts.rs`). Rigid pipes have kappa = 0.
+//! Plastic pipes (a creeping wall, `pipe/viscoelastic.rs`) change the
+//! picture in two ways, and they must not be confused (FN-023):
+//! - the SHARP front - what the onset picker times - shrinks as
+//!   exp(-kappa x) (the wall's `front_damping`; V-A6): with the published
+//!   HDPE wall it halves every ~180 m. [`first_fronts`] reports this.
+//! - behind it the drop keeps building as the wall creeps, so within a
+//!   detection window W after the front the logger feels far more: the
+//!   components of frequency ~1/W, which plastic softens (relax) but hardly
+//!   damps (the wall's `window_response`). "Felt" - in [`detectability`]
+//!   and the placement advisor - uses this, W = `PlacementOptions::window`.
+//!
+//! Both checked against the full simulator on a plastic estate (tests/
+//! localisation/simulation/`plastic_fronts.rs`). Rigid pipes: no change.
 //!
 //! What this leaves out, all of which make real fronts SMALLER - so these
 //! are upper bounds:
@@ -47,12 +55,21 @@
 
 use jk_hydraulics::joukowsky::junction_transmission;
 use jk_hydraulics::{Network, Node, NodeId};
-use jk_kernel::{Flow, Head, Length};
+use jk_kernel::{Flow, Head, Length, Time};
 
 use super::coverage::PlacementOptions;
 use crate::error::LocalisationError;
 use crate::graph::{Routes, TravelGraph};
 use crate::locate::Point;
+
+/// What a logger is taken to feel of a burst's wave.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub(super) enum Response {
+    /// The sharp first front (what is timed).
+    Front,
+    /// The drop within a window this long after the front (what is felt).
+    Window(Time),
+}
 
 /// First-front heads at the sensors, per unit of burst flow.
 #[derive(Debug, Clone)]
@@ -65,16 +82,16 @@ pub(super) struct Fronts {
     /// Per node: the impedances of the pipes meeting there.
     at_node: Vec<Vec<f64>>,
     reservoir: Vec<bool>,
-    /// Per pipe: how much of a sharp front it keeps per metre travelled -
-    /// the plastic wall's damping kappa [1/m] (0 for rigid pipes) - and
-    /// its length [m].
+    /// Per pipe: how much of the wave it keeps per metre travelled - the
+    /// plastic wall's damping [1/m] for the chosen [`Response`] (0 for rigid
+    /// pipes) - and its length [m].
     damping: Vec<f64>,
     lengths: Vec<f64>,
     routes: Vec<Routes>,
 }
 
 impl Fronts {
-    pub(super) fn new(network: &Network, sensors: &[NodeId]) -> Self {
+    pub(super) fn new(network: &Network, sensors: &[NodeId], response: Response) -> Self {
         let pipes = network.pipes();
         let g = network.gravity();
         let ends: Vec<(usize, usize)> = pipes
@@ -82,7 +99,25 @@ impl Fronts {
             .map(|p| (p.from.index(), p.to.index()))
             .collect();
         let nominal: Vec<f64> = pipes.iter().map(|p| p.pipe.travel_time().value()).collect();
-        let impedance: Vec<f64> = pipes.iter().map(|p| p.pipe.impedance(g)).collect();
+        // Per pipe: damping per metre and the impedance factor (the wall's
+        // give softens a plastic pipe for slow changes).
+        let wall_effect: Vec<(f64, f64)> = pipes
+            .iter()
+            .map(|p| {
+                p.pipe.wall().map_or((0.0, 1.0), |w| match response {
+                    Response::Front => (w.front_damping(p.pipe.wave_speed(), g), 1.0),
+                    Response::Window(window) => w.window_response(p.pipe.wave_speed(), g, window),
+                })
+            })
+            .collect();
+        let impedance: Vec<f64> = pipes
+            .iter()
+            .zip(&wall_effect)
+            .map(|(p, &(_, relax))| {
+                let b = p.pipe.impedance(g);
+                b * relax
+            })
+            .collect();
         let mut at_node = vec![Vec::new(); network.nodes().len()];
         for (i, &(a, b)) in ends.iter().enumerate() {
             at_node[a].push(impedance[i]);
@@ -93,14 +128,7 @@ impl Fronts {
             .iter()
             .map(|n| matches!(n, Node::Reservoir { .. }))
             .collect();
-        let damping = pipes
-            .iter()
-            .map(|p| {
-                p.pipe
-                    .wall()
-                    .map_or(0.0, |w| w.front_damping(p.pipe.wave_speed(), g))
-            })
-            .collect();
+        let damping = wall_effect.iter().map(|&(d, _)| d).collect();
         let lengths = pipes.iter().map(|p| p.pipe.length().value()).collect();
         let graph = TravelGraph::new(network);
         let routes = sensors
@@ -184,6 +212,35 @@ pub fn first_fronts(
     point: Point,
     burst: Flow,
 ) -> Result<Vec<Head>, LocalisationError> {
+    heads(network, sensors, point, burst, Response::Front)
+}
+
+/// The head drop each of `sensors` FEELS within `window` after the first
+/// front, for a sudden burst of `burst` at `point` - what decides whether a
+/// logger notices it. Equal to [`first_fronts`] on rigid pipes; larger on
+/// plastic ones, where the wall's creep builds the drop up behind a
+/// shrinking front.
+///
+/// # Errors
+/// As [`first_fronts`], or a non-positive window.
+pub fn felt_heads(
+    network: &Network,
+    sensors: &[NodeId],
+    point: Point,
+    burst: Flow,
+    window: Time,
+) -> Result<Vec<Head>, LocalisationError> {
+    crate::error::positive("window", window.value())?;
+    heads(network, sensors, point, burst, Response::Window(window))
+}
+
+fn heads(
+    network: &Network,
+    sensors: &[NodeId],
+    point: Point,
+    burst: Flow,
+    response: Response,
+) -> Result<Vec<Head>, LocalisationError> {
     let pipes = network.pipes();
     let p = point.pipe.index();
     if p >= pipes.len() || sensors.iter().any(|s| s.index() >= network.nodes().len()) {
@@ -199,7 +256,7 @@ pub fn first_fronts(
             point.distance.value()
         )));
     }
-    Ok(Fronts::new(network, sensors)
+    Ok(Fronts::new(network, sensors, response)
         .per_unit_flow(p, fraction)
         .iter()
         .map(|h| Head::new(h * burst.value()))
@@ -255,7 +312,7 @@ pub fn detectability(
             "detectability needs a burst size".into(),
         ));
     };
-    let fronts = Fronts::new(network, sensors);
+    let fronts = Fronts::new(network, sensors, Response::Window(options.window));
     let threshold = options.detect_units * options.noise.value();
     let step = options.source_step.value();
     let (mut felt_len, mut locatable_len, mut total_len) = (0.0, 0.0, 0.0);

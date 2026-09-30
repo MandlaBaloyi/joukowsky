@@ -117,8 +117,10 @@ Zones (2026-09-29, placement/zones.rs): 50 km town, 50 loggers, 10 zones:
 zones measured on a 5 km town: +11% region vs planning it whole (FN-019).
 
 Plastic walls change the range picture (2026-09-29, V-A6): a sharp front in
-plastic pipe shrinks as exp(-kappa x), kappa = sum a c J / (g tau). With
-illustrative PE figures it halves every ~100 m - stronger than 7 tees. Real
-creep figures for SA plastic pipes are now the most important unknown for
-range claims [VERIFY]. Planning at 50 km (FN-022): whole town 30.7 min,
+plastic pipe shrinks as exp(-kappa x), kappa = sum a c J / (g tau): with
+MEASURED walls it halves every ~180 m (HDPE, Covas et al.) and ~560 m (PVC,
+Deltares). But (FN-023) the drop a logger FEELS within 0.25 s is far less
+affected - 75% of the rigid-pipe drop 450 m away on the HDPE estate. So
+plastic walls mostly blur the TIMING (where), not the NOTICING (whether).
+SA pipe classes (PE100, uPVC class 9/12) and temperature remain [VERIFY]. Planning at 50 km (FN-022): whole town 30.7 min,
 56 m - better than zones (60 m); zones only beyond that size.

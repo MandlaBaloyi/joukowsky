@@ -26,7 +26,7 @@ use jk_hydraulics::{Network, NodeId, PipeId};
 use jk_kernel::{Length, Time};
 
 use super::coverage::{Coverage, PipeCoverage, PlacementOptions};
-use super::detectability::Fronts;
+use super::detectability::{Fronts, Response};
 use crate::graph::{Routes, TravelGraph};
 use crate::locate::{Arrival, Localiser, nominal_times};
 use crate::posterior::grid::Grid;
@@ -150,7 +150,9 @@ impl<'a> Bench<'a> {
             options: *options,
             graph: Arc::new(TravelGraph::new(network)),
             grid: Arc::new(Grid::new(network, options.localise.spacing.value())),
-            fronts: options.burst.map(|_| Fronts::new(network, &[])),
+            fronts: options
+                .burst
+                .map(|_| Fronts::new(network, &[], Response::Window(options.window))),
             ends: pipes
                 .iter()
                 .map(|p| (p.from.index(), p.to.index()))
