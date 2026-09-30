@@ -60,7 +60,8 @@ pub(crate) struct SteadyState {
     /// Head at each pipe's (from, to) end [m]. Equal to the node heads,
     /// except across a shut check valve, whose two sides differ.
     pub pipe_end_heads: Vec<(f64, f64)>,
-    /// For valve nodes: steady flow and head drop at full opening.
+    /// For valve nodes: steady flow and head drop at full opening; for
+    /// pressure-reducing valves: steady flow and head drop (flow 0: shut).
     pub valve_steady: Vec<(f64, f64)>,
     /// For check-valve nodes: open or closed.
     pub check_valves: Vec<CheckValveState>,
@@ -87,14 +88,13 @@ impl InitialCondition {
         let n_nodes = network.nodes().len();
         let bad = |why: String| Err(HydraulicsError::InconsistentInitialState(why));
         if !matches!(self, Self::Steady(_))
-            && let Some(n) = network
-                .nodes()
-                .iter()
-                .position(|node| matches!(node, Node::Pump { .. }))
+            && let Some(n) = network.nodes().iter().position(|node| {
+                matches!(node, Node::Pump { .. } | Node::PressureReducingValve { .. })
+            })
         {
             return bad(format!(
-                "node {n} is a running pump: its head gain is only known from a \
-                 steady solve - use InitialCondition::Steady"
+                "node {n} is a pump or a pressure-reducing valve: its head change is only \
+                 known from a steady solve - use InitialCondition::Steady"
             ));
         }
         match self {
@@ -180,8 +180,9 @@ fn from_pipe_flows(
         }
         let tol = FLOW_TOLERANCE * scale.max(1e-6);
         match node {
-            // A pump never gets here: it needs a steady solve (refused above).
-            Node::Reservoir { .. } | Node::Pump { .. } => {}
+            // Pumps and PRVs never get here: they need a steady solve
+            // (refused above).
+            Node::Reservoir { .. } | Node::Pump { .. } | Node::PressureReducingValve { .. } => {}
             Node::Junction { demand } => {
                 let imbalance = inflow - outflow - demand.value();
                 if imbalance.abs() > tol {
@@ -206,7 +207,8 @@ fn from_pipe_flows(
                     let expected = kv * drop.max(0.0).sqrt();
                     if (inflow - expected).abs() > 1e-6 * inflow.max(expected).max(1e-9) {
                         return bad(format!(
-                            "node {i}: the valve's coefficient passes {expected:.6} m^3/s                              at this head, not the {inflow:.6} m^3/s given"
+                            "node {i}: the valve's coefficient passes {expected:.6} m^3/s \
+                             at this head, not the {inflow:.6} m^3/s given"
                         ));
                     }
                 }

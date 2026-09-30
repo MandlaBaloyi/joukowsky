@@ -246,3 +246,15 @@ FN-028  2026-09-30  Extended runs smeared each hour's demand into the next
   on switch times. Now steps never cross a pattern edge and both slopes
   use the demand in force during the step. Same fix makes a pump switched
   at a tank level start at that level, not up to a step later (V-A9).
+
+FN-029  2026-09-30  A PRV is a partial mirror for pressure waves
+  Frozen at its steady opening (it cannot move in the time a wave takes
+  to pass), a PRV passing flow is an orifice: a wave dH arriving from
+  upstream passes on as 2 B dH / (2 B + 2 R Q0). For a valve dropping 30 m
+  at 50 l/s between DN300 pipes (B = 1443 s/m^2, 2 R Q0 = 1200 s/m^2),
+  71% passes and 29% reflects (V-A10, matched to 6e-10). A shut PRV (zone
+  held from elsewhere) reflects everything. Consequences: (1) loggers on
+  the far side of a PRV hear a burst weaker - placement and detectability
+  should count it; (2) the localiser's routes through a shut PRV or check
+  valve are wrong - such routes should be cut, as routes through
+  reservoirs already are (gap G-19).

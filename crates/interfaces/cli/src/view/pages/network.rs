@@ -69,6 +69,10 @@ pub fn page(event: &EventModel) -> Page {
             Node::Valve { .. } => ("valve", "-".into()),
             Node::CheckValve => ("check valve", "-".into()),
             Node::Pump { .. } => ("pump", "-".into()),
+            Node::PressureReducingValve { setting, .. } => (
+                "pressure-reducing valve",
+                format!("holds {:.1} m", setting.value()),
+            ),
         };
         let logger = demo.loggers.iter().any(|l| l.index() == n);
         let _ = write!(

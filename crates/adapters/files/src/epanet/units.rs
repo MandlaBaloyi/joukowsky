@@ -119,6 +119,13 @@ impl FlowUnits {
         if self.us() { FOOT } else { 1.0 }
     }
 
+    /// Metres of water head in one unit of pressure (valve settings): psi
+    /// with EPANET's 0.4333 psi per foot of water, or metres.
+    #[must_use]
+    pub fn pressure(self) -> f64 {
+        if self.us() { FOOT / 0.4333 } else { 1.0 }
+    }
+
     /// Metres in one unit of pipe diameter.
     #[must_use]
     pub fn diameter(self) -> f64 {

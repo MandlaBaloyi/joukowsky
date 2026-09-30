@@ -21,6 +21,7 @@ pub mod closure;
 pub mod dead_end;
 pub mod junction;
 pub mod leak;
+pub mod prv;
 pub mod pump;
 pub mod reservoir;
 pub mod valve;

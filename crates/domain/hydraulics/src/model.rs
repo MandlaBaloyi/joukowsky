@@ -77,6 +77,17 @@ pub enum Node {
         /// the steady state assumes the pump is running.
         trip: Option<Time>,
     },
+    /// A pressure-reducing valve joining exactly two pipes: the upstream
+    /// pipe ends here, the downstream pipe starts here. Holds the head just
+    /// downstream at `setting` while the head upstream allows; never passes
+    /// flow backwards. Frozen at its steady opening in transients
+    /// ([`crate::boundary::prv`]).
+    PressureReducingValve {
+        /// The head it holds downstream [m].
+        setting: Head,
+        /// Fully open: head loss = `open_resistance` Q|Q| [s^2/m^5].
+        open_resistance: f64,
+    },
 }
 
 /// A pipe placed between two nodes. Positive flow runs `from` -> `to`.
@@ -485,6 +496,25 @@ impl Network {
                     if !(ending == 1 && starting == 1) {
                         return fail(
                             "a check valve must join one pipe ending and one starting here",
+                        );
+                    }
+                }
+                Node::PressureReducingValve {
+                    setting,
+                    open_resistance,
+                } => {
+                    finite("PRV setting", setting.value())?;
+                    if !(open_resistance.is_finite() && *open_resistance >= 0.0) {
+                        return Err(HydraulicsError::invalid(
+                            "PRV open_resistance",
+                            *open_resistance,
+                            "finite and >= 0",
+                        ));
+                    }
+                    if !(ending == 1 && starting == 1) {
+                        return fail(
+                            "a pressure-reducing valve must join one pipe ending and one \
+                             starting here",
                         );
                     }
                 }

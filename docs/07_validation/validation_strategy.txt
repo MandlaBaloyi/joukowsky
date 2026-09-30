@@ -23,6 +23,13 @@ Rung 1  Analytical: results that must match closed-form physics.
         reservoir-pipe-valve system vs the exact complex-frequency
         solution; first-order convergence, extrapolated within 0.5%
         (2026-09-29: +0.1% at 400 reaches after FN-021).
+  V-A10 Pressure-reducing valves: ACTIVE / OPEN / CLOSED heads in closed
+        form, and a closed PRV reopening to share when a second source
+        cannot hold the zone; a wave crossing the frozen valve vs the
+        orifice law (2026-09-30: all to 1e-9 or better; 71% of a 0.5 m wave
+        passes a valve dropping 30 m at 50 l/s). Also read from EPANET
+        files (SI and US units: elevation + setting, psi at 0.4333 per ft)
+        and a 5 s transient from its steady state stays within 4e-11 m.
   V-A9  Controls (extended period): a pump filling a tank between switch
         levels, a float valve on a tank inlet - switch times vs Simpson
         quadrature of A dh / (Q_in(h) - D) and the straight drain with the

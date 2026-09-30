@@ -17,6 +17,18 @@ use super::{InpNetwork, InpOptions, Note};
 const CONNECTOR_LENGTH: f64 = 10.0;
 /// Darcy friction factor of that pipework (its loss is a few cm).
 const CONNECTOR_FRICTION: f64 = 0.01;
+
+/// A device the engine models itself - a pump or a pressure-reducing
+/// valve - placed between two short lengths of station pipework (the
+/// engine's devices join exactly two pipes).
+struct Device {
+    node: Node,
+    /// Diameter of the station pipework [m] (None: that of the pipes at
+    /// each end).
+    diameter: Option<f64>,
+    /// Names of the two lengths, after the device's ID.
+    ends: (&'static str, &'static str),
+}
 use crate::error::ReadError;
 
 /// What `[OPTIONS]` sets.
@@ -79,6 +91,10 @@ enum LinkKind {
     },
     Valve {
         kind: String,
+        /// Diameter, setting and minor-loss coefficient (file units).
+        diameter: f64,
+        setting: f64,
+        minor_loss: f64,
     },
 }
 
@@ -182,6 +198,21 @@ pub(super) fn build(text: &str, options: &InpOptions) -> Result<InpNetwork, Read
     }
     unused_sections(&sections, &mut notes);
     let coordinates = read_coordinates(&sections, &index)?;
+    let mut devices: HashMap<String, Device> = fitted
+        .into_iter()
+        .map(|(id, f)| {
+            let device = Device {
+                node: Node::Pump {
+                    pump: f.pump,
+                    trip: None,
+                },
+                diameter: None,
+                ends: ("suction", "discharge"),
+            };
+            (id, device)
+        })
+        .collect();
+    devices.extend(prv_devices(&links, &nodes, &settings, options, &mut notes));
     let (mut inp, map) = assemble(
         &sections,
         options,
@@ -190,7 +221,7 @@ pub(super) fn build(text: &str, options: &InpOptions) -> Result<InpNetwork, Read
         &nodes,
         &links,
         &coordinates,
-        &fitted,
+        &devices,
         notes,
     )?;
 
@@ -473,6 +504,9 @@ fn read_links(
                 Section::Pumps => pump_kind(l)?,
                 Section::Valves => LinkKind::Valve {
                     kind: field(l, 4, "valve type")?.to_ascii_uppercase(),
+                    diameter: number(l, 3, "valve diameter")?,
+                    setting: optional(l, 5, "valve setting")?.unwrap_or(0.0),
+                    minor_loss: optional(l, 6, "valve minor loss")?.unwrap_or(0.0),
                 },
                 _ => continue,
             };
@@ -632,6 +666,78 @@ fn fit_pumps(
     out
 }
 
+/// Pressure-reducing valves that can be modelled as devices: not closed,
+/// and feeding a junction (whose elevation turns the pressure setting into
+/// a head). The rest stay plain connections, with a note.
+fn prv_devices(
+    links: &[RawLink],
+    nodes: &[RawNode],
+    s: &Settings,
+    options: &InpOptions,
+    notes: &mut Vec<Note>,
+) -> HashMap<String, Device> {
+    let mut out = HashMap::new();
+    for k in links {
+        let LinkKind::Valve {
+            kind,
+            diameter,
+            setting,
+            minor_loss,
+        } = &k.kind
+        else {
+            continue;
+        };
+        if kind != "PRV" || k.status == Status::Closed {
+            continue;
+        }
+        let NodeKind::Junction { elevation, .. } = nodes[k.to].kind else {
+            note(
+                notes,
+                Some(k.line),
+                format!(
+                    "PRV '{}' feeds a tank or reservoir directly: its setting has no \
+                     elevation to stand on",
+                    k.id
+                ),
+            );
+            continue;
+        };
+        let d = diameter * s.units.diameter();
+        let area = std::f64::consts::PI * 0.25 * d * d;
+        if d.is_nan() || d <= 0.0 {
+            note(
+                notes,
+                Some(k.line),
+                format!("PRV '{}' has no diameter", k.id),
+            );
+            continue;
+        }
+        let head = elevation * s.units.length() + setting * s.units.pressure();
+        out.insert(
+            k.id.clone(),
+            Device {
+                node: Node::PressureReducingValve {
+                    setting: Head::new(head),
+                    open_resistance: minor_loss.max(0.0)
+                        / (2.0 * options.gravity.value() * area * area),
+                },
+                diameter: Some(d),
+                ends: ("in", "out"),
+            },
+        );
+        note(
+            notes,
+            Some(k.line),
+            format!(
+                "PRV '{}': holds {head:.2} m downstream (elevation of {} + setting); frozen at \
+                 its steady opening in transients (its response over seconds is not modelled)",
+                k.id, nodes[k.to].id
+            ),
+        );
+    }
+    out
+}
+
 fn read_status(
     sections: &Sections,
     links: &mut [RawLink],
@@ -713,7 +819,7 @@ fn read_coordinates(
 fn join(
     nodes: &[RawNode],
     links: &[RawLink],
-    fitted: &HashMap<String, Fitted>,
+    devices: &HashMap<String, Device>,
     notes: &mut Vec<Note>,
 ) -> Vec<usize> {
     fn root(parent: &mut [usize], mut i: usize) -> usize {
@@ -727,9 +833,9 @@ fn join(
     for k in links {
         let what = match &k.kind {
             LinkKind::Pipe { .. } => continue,
-            LinkKind::Pump { .. } if fitted.contains_key(&k.id) => continue,
+            _ if devices.contains_key(&k.id) => continue,
             LinkKind::Pump { .. } => "pump".to_string(),
-            LinkKind::Valve { kind } => format!("{kind} valve"),
+            LinkKind::Valve { kind, .. } => format!("{kind} valve"),
         };
         let (a, b) = (&nodes[k.from].id, &nodes[k.to].id);
         if k.status == Status::Closed {
@@ -768,20 +874,26 @@ fn assemble(
     nodes: &[RawNode],
     links: &[RawLink],
     coordinates: &HashMap<usize, (f64, f64)>,
-    fitted: &HashMap<String, Fitted>,
+    devices: &HashMap<String, Device>,
     mut notes: Vec<Note>,
 ) -> Result<(InpNetwork, Mapping), ReadError> {
-    let roots = join(nodes, links, fitted, &mut notes);
+    let roots = join(nodes, links, devices, &mut notes);
     let mut not_switchable: HashMap<String, String> = HashMap::new();
     for k in links {
         match &k.kind {
-            LinkKind::Valve { kind } => {
+            LinkKind::Valve { kind, .. } if devices.contains_key(&k.id) => {
+                not_switchable.insert(
+                    k.id.clone(),
+                    format!("is a {kind} (switching valves by controls is not modelled)"),
+                );
+            }
+            LinkKind::Valve { kind, .. } => {
                 not_switchable.insert(
                     k.id.clone(),
                     format!("is a {kind} valve (valves are modelled as connections)"),
                 );
             }
-            LinkKind::Pump { .. } if !fitted.contains_key(&k.id) => {
+            LinkKind::Pump { .. } if !devices.contains_key(&k.id) => {
                 not_switchable.insert(
                     k.id.clone(),
                     "is a pump without a usable head curve (modelled as a connection)".into(),
@@ -988,8 +1100,9 @@ fn assemble(
         .map(|(i, id)| (id.clone(), i))
         .collect();
 
-    // Pumps with their curves: a pump node between two short lengths of
-    // station pipework (the engine's pump joins exactly two pipes).
+    // Pumps with their curves and PRVs: a device node between two short
+    // lengths of station pipework (the engine's devices join exactly two
+    // pipes).
     let shortest = network
         .pipes()
         .iter()
@@ -1004,9 +1117,9 @@ fn assemble(
         }
     }
     let mut pump_of: HashMap<String, NodeId> = HashMap::new();
-    let mut pumps_list = Vec::new();
+    let (mut pumps_list, mut prvs_list) = (Vec::new(), Vec::new());
     for k in links {
-        let Some(f) = fitted.get(&k.id) else {
+        let Some(device) = devices.get(&k.id) else {
             continue;
         };
         let (a, b) = (group(k.from), group(k.to));
@@ -1015,7 +1128,7 @@ fn assemble(
                 &mut notes,
                 Some(k.line),
                 format!(
-                    "pump '{}' left out: both its ends were joined through valves",
+                    "'{}' left out: both its ends were joined through valves",
                     k.id
                 ),
             );
@@ -1023,7 +1136,9 @@ fn assemble(
             continue;
         }
         let diameter = |n: usize, other: usize| {
-            if largest[n] > 0.0 {
+            if let Some(d) = device.diameter {
+                d
+            } else if largest[n] > 0.0 {
                 largest[n]
             } else if largest[other] > 0.0 {
                 largest[other]
@@ -1038,28 +1153,40 @@ fn assemble(
                 options.wave_speed,
                 CONNECTOR_FRICTION,
             )
-            .map_err(|e| ReadError::at(k.line, format!("pump '{}': {e}", k.id)))
+            .map_err(|e| ReadError::at(k.line, format!("'{}': {e}", k.id)))
         };
-        let node = network.add_node(Node::Pump {
-            pump: f.pump,
-            trip: None,
-        });
+        let node = network.add_node(device.node);
         network
             .add_pipe(ids[a], node, station(diameter(a, b))?)
-            .map_err(|e| ReadError::at(k.line, format!("pump '{}': {e}", k.id)))?;
+            .map_err(|e| ReadError::at(k.line, format!("'{}': {e}", k.id)))?;
         network
             .add_pipe(node, ids[b], station(diameter(b, a))?)
-            .map_err(|e| ReadError::at(k.line, format!("pump '{}': {e}", k.id)))?;
-        pipe_ids.push(format!("{}/suction", k.id));
-        pipe_ids.push(format!("{}/discharge", k.id));
+            .map_err(|e| ReadError::at(k.line, format!("'{}': {e}", k.id)))?;
+        pipe_ids.push(format!("{}/{}", k.id, device.ends.0));
+        pipe_ids.push(format!("{}/{}", k.id, device.ends.1));
         node_ids.push(k.id.clone());
         elevations.push(elevations[a]);
         positions.push(match (positions[a], positions[b]) {
             (Some(p), Some(q)) => Some((f64::midpoint(p.0, q.0), f64::midpoint(p.1, q.1))),
             (p, q) => p.or(q),
         });
-        pump_of.insert(k.id.clone(), node);
-        pumps_list.push((k.id.clone(), node));
+        if matches!(device.node, Node::Pump { .. }) {
+            pump_of.insert(k.id.clone(), node);
+            pumps_list.push((k.id.clone(), node));
+        } else {
+            prvs_list.push((k.id.clone(), node));
+        }
+    }
+    if !prvs_list.is_empty() {
+        note(
+            &mut notes,
+            None,
+            format!(
+                "{} pressure-reducing valve(s) modelled, each between two {connector:.1} m \
+                 lengths of pipe of its own diameter (pipes 'ID/in' and 'ID/out')",
+                prvs_list.len()
+            ),
+        );
     }
     if !pumps_list.is_empty() {
         note(
@@ -1184,6 +1311,7 @@ fn assemble(
             positions,
             vertices,
             pumps: pumps_list,
+            prvs: prvs_list,
             operations: Operations::default(),
             notes,
         },

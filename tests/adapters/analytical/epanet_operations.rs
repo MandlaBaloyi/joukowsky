@@ -242,7 +242,7 @@ Pattern  homes
     );
     check(
         "  a control on a valve is noted",
-        says("link 'V1' is a PRV valve"),
+        says("link 'V1' is a PRV"),
     );
     check("  a pump speed setting is noted", says("set to 0.8"));
     check(
@@ -257,5 +257,95 @@ Pattern  homes
     check("  and the whole thing runs", run.is_ok());
     if let Err(e) = run {
         println!("  run failed: {e}");
+    }
+}
+
+/// A reservoir at 80 m feeding a junction 20 m up through a PRV set to
+/// 30 m of pressure: it holds 20 + 30 = 50 m of head below itself.
+fn prv_file(us: bool) -> String {
+    let (ft, psi) = (0.3048, 0.3048 / 0.4333);
+    let (len, head, elev, set, d, units) = if us {
+        (1.0 / ft, 1.0 / ft, 1.0 / ft, 1.0 / psi, 1.0 / 25.4, "GPM")
+    } else {
+        (1.0, 1.0, 1.0, 1.0, 1.0e-3, "LPS")
+    };
+    // Flows: l/s, or US gallons per minute (1 gpm = 6.30902e-5 m^3/s).
+    let flow = if us { 1e-3 / 6.309_019_64e-5 } else { 1.0 };
+    let (demand, other) = (20.0 * flow, 5.0 * flow);
+    format!(
+        "[RESERVOIRS]\nR {}\n[JUNCTIONS]\nA {} 0\nJ {} {demand}\n[PIPES]\nP1 R A {} {} 0.1\nP2 J K {} {} 0.1\n\
+         [JUNCTIONS]\nK {} {other}\n[VALVES]\nV A J {} PRV {} 2\n[OPTIONS]\nUnits {units}\nHeadloss D-W\n",
+        80.0 * head,
+        10.0 * elev,
+        20.0 * elev,
+        500.0 * len,
+        200.0 / 1000.0 / d,
+        400.0 * len,
+        200.0 / 1000.0 / d,
+        15.0 * elev,
+        200.0 / 1000.0 / d,
+        30.0 * set,
+    )
+}
+
+#[test]
+fn a_prv_in_a_file_holds_elevation_plus_setting_in_either_units() {
+    use jk_hydraulics::boundary::prv::PrvState;
+    use jk_hydraulics::{GridOptions, InitialCondition, Probe, SteadyOptions};
+    for us in [false, true] {
+        let inp = parse(&prv_file(us), &InpOptions::default()).unwrap();
+        println!("{} units:", if us { "US (ft, psi)" } else { "SI (m)" });
+        if !us {
+            print_notes(&inp);
+        }
+        let (_, v) = inp.prvs[0];
+        let Node::PressureReducingValve { setting, .. } = inp.network.nodes()[v.index()] else {
+            panic!("V is a PRV node");
+        };
+        check_close(
+            "  setting as a head: 20 + 30 [m]",
+            setting.value(),
+            50.0,
+            1e-9,
+        );
+        let s = inp.network.steady_state(&SteadyOptions::default()).unwrap();
+        check(
+            "  it is active in the steady state",
+            s.prvs
+                .iter()
+                .any(|(n, st)| *n == v && *st == PrvState::Active),
+        );
+        let out = inp.pipe_ids.iter().position(|p| p == "V/out").unwrap();
+        let q = s.pipe_flows[out].value();
+        check_close(
+            "  it passes the 20 + 5 l/s drawn below it [l/s]",
+            q * 1000.0,
+            25.0,
+            1e-9,
+        );
+        if us {
+            continue;
+        }
+        // A transient started from this steady state, nothing happening:
+        // the frozen valve must not make a wave of its own.
+        let j = inp.node_ids.iter().position(|id| id == "J").unwrap();
+        let run = inp
+            .network
+            .simulate(
+                &InitialCondition::Steady(SteadyOptions::default()),
+                jk_kernel::Time::new(5.0),
+                &[Probe::Node(inp.network.node_id(j).unwrap())],
+                &GridOptions::default(),
+            )
+            .unwrap();
+        let (lo, hi) = (run.trace.min_head(0).value(), run.trace.max_head(0).value());
+        check(
+            &format!(
+                "  5 s with nothing happening: head at J stays within a micrometre \
+                 (spread {:.1e} m)",
+                hi - lo
+            ),
+            hi - lo < 1e-6,
+        );
     }
 }

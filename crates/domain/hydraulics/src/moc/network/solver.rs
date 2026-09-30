@@ -22,7 +22,7 @@ use jk_kernel::Time;
 use crate::HydraulicsError;
 use crate::boundary::check_valve;
 use crate::boundary::junction::{self, Arrival, PipeEnd};
-use crate::boundary::{leak, pump, valve};
+use crate::boundary::{leak, prv, pump, valve};
 use crate::error::positive;
 use crate::moc::characteristics::Characteristics;
 use crate::moc::grid::MAX_STEPS;
@@ -183,7 +183,7 @@ impl Network {
                         PipeEnd::Upstream => -steady.pipe_flows[pid.0],
                     })
                     .sum(),
-                Node::CheckValve => 0.0,
+                Node::CheckValve | Node::PressureReducingValve { .. } => 0.0,
                 Node::Pump { .. } => pump_suction_flow(&topo[n], &steady.pipe_flows),
             })
             .collect();
@@ -322,6 +322,35 @@ impl Network {
                             a_out.impedance,
                         );
                         check_states[n] = s.state;
+                        let (p_in, p_out) = (topo[n][i_in].0.0, topo[n][i_out].0.0);
+                        let last = h_new[p_in].len() - 1;
+                        h_new[p_in][last] = s.head_upstream;
+                        q_new[p_in][last] = s.flow;
+                        h_new[p_out][0] = s.head_downstream;
+                        q_new[p_out][0] = s.flow;
+                        node_head[n] = s.head_upstream;
+                        node_outflow[n] = 0.0;
+                        continue;
+                    }
+                    Node::PressureReducingValve { .. } => {
+                        // Frozen at its steady opening (see boundary/prv.rs).
+                        let pos = |e: PipeEnd| {
+                            arrivals
+                                .iter()
+                                .position(|a| a.end == e)
+                                .expect("topology checked: one pipe each side")
+                        };
+                        let (i_in, i_out) = (pos(PipeEnd::Downstream), pos(PipeEnd::Upstream));
+                        let (a_in, a_out) = (arrivals[i_in], arrivals[i_out]);
+                        let (q0, drop) = steady.valve_steady[n];
+                        let r = (q0 > 0.0).then(|| drop / (q0 * q0));
+                        let s = prv::step(
+                            r,
+                            a_in.characteristic,
+                            a_in.impedance,
+                            a_out.characteristic,
+                            a_out.impedance,
+                        );
                         let (p_in, p_out) = (topo[n][i_in].0.0, topo[n][i_out].0.0);
                         let last = h_new[p_in].len() - 1;
                         h_new[p_in][last] = s.head_upstream;

@@ -85,3 +85,40 @@ Python bindings for research; vectorised over many scenarios at once.
   transient analysis at scale. Alternatively, write the solver in a
   differentiable framework (JAX / PyTorch) so gradients come for free.
   This is one of the more novel directions available to us.
+
+6. Pressure-reducing valves (added 2026-09-30)
+----------------------------------------------
+A PRV holds the head just downstream at its setting H_set (in files: the
+downstream node's elevation + the pressure setting) when the head
+upstream is higher; South African utilities use them everywhere to cut
+leakage by lowering night pressure. Three states (as EPANET 2.2's
+prvstatus, [VERIFY] against its source):
+  ACTIVE  H_down = H_set; the flow is whatever the zone below draws.
+          -> OPEN   if H_up < H_set (it cannot reduce what is not there)
+          -> CLOSED if the flow would run backwards
+  OPEN    a fully open valve: H_up - H_down = R_open Q|Q|,
+          R_open = K / (2 g A_valve^2) (K = the valve's minor loss).
+          -> ACTIVE if H_down > H_set;  -> CLOSED if the flow reverses
+  CLOSED  no flow (it also acts as a check valve).
+          -> ACTIVE if H_up > H_set > H_down;  -> OPEN if H_set > H_up > H_down
+Steady solve (steady/gga.rs): the valve node is split into its two
+sides; ACTIVE fixes the downstream side's head and carries, through a
+zero-conductance link, the flow the downstream side sends on (updated each
+Newton round); OPEN is a friction link; CLOSED is no link. States are
+settled with the check valves, then solved again, until nothing changes.
+Transients (moc/network/solver.rs): a real PRV is hydraulically piloted
+and needs seconds to move [VERIFY: typical response 2-10 s]; a pressure
+wave crosses a site in well under a second. So in a transient the valve
+is FROZEN at its steady opening: an orifice with
+  R = (H_up - H_down) / Q0^2   (from the steady state)
+between the two pipes, never passing flow backwards. With the upstream
+C+ (H_u = Cp - B_u Q) and downstream C- (H_d = Cm + B_d Q):
+  R Q^2 + (B_u + B_d) Q - (Cp - Cm) = 0,  Q >= 0.
+A small wave dH_i arriving from upstream passes on as
+  dH_t = 2 B_d dH_i / (B_u + B_d + 2 R Q0)
+- a PRV passing flow lets part of a wave through and reflects the rest;
+a closed one reflects it all (the zone below it hears nothing). Checked
+in V-A10. Limits: the valve's own response over seconds (it opens to
+feed a burst downstream) is not modelled - a burst below a PRV draws
+more than the frozen opening gives after the first seconds; a PRV closed
+at the start stays closed. Gap G-19.

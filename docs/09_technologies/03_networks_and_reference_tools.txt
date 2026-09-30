@@ -45,9 +45,14 @@ EPANET .inp format                                               [ADOPT]
         closed are shut. `jk network FILE` runs the file's own schedule and
         lists the switches. Proved on the V-A9 system written as a file:
         pump switches within 5e-6 of the independent reference.
-        Not yet: the wave-speed sidecar; valves as real devices (PRV, FCV,
-        ...); [RULES]; controls on junction pressures and pump speeds;
-        reservoir head patterns; tank volume curves.
+        Same day: PRVs as real valves (setting = elevation of the node
+        below + pressure; psi at EPANET's 0.4333 psi/ft; open loss from the
+        valve's minor loss and diameter), between two lengths of pipe of
+        the valve's diameter (V-A10).
+        Not yet: the wave-speed sidecar; other valves as devices (PSV,
+        FCV, TCV, PBV, GPV); [RULES]; controls on junction pressures,
+        valves and pump speeds; reservoir head patterns; tank volume
+        curves.
 
 epanet-rs (Vitens)                                              [ASSESS]
   ROLE  Candidate for steady-state initial conditions and .inp parsing.

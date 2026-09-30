@@ -36,7 +36,12 @@
 //!     h(Q) = -(a0 + a1 Q + a2 Q^2), linearised with d = -dH/dQ. Its
 //!     non-return valve is settled like a check valve: shut if the flow
 //!     comes out negative, reopened if the shut-off head a0 could overcome
-//!     the head difference.
+//!     the head difference;
+//!   - pressure-reducing valve: two nodes. ACTIVE: the downstream side is
+//!     a fixed head at the setting, and a zero-conductance link carries the
+//!     flow the downstream side sends on (updated every Newton round);
+//!     OPEN: a friction link; CLOSED: no link. States settled with the
+//!     check valves (EPANET's rules; `boundary/prv.rs`).
 //!
 //! Links out of service ([`Shut`]): a closed pipe stays in the graph with
 //! no conductance (it carries nothing whatever the heads); a stopped pump
@@ -49,6 +54,7 @@
 use crate::HydraulicsError;
 use crate::boundary::check_valve::CheckValveState;
 use crate::boundary::junction::PipeEnd;
+use crate::boundary::prv::PrvState;
 use crate::boundary::pump::PumpCurve;
 use crate::moc::network::initial::SteadyState;
 use crate::model::{Network, Node, NodeId, Topology};
@@ -70,8 +76,12 @@ const ROUNDING_FACTOR: f64 = 64.0;
 /// grows with it: a frictionless pipe with a tiny floor turns head rounding
 /// into flow errors that a transient run would release as a fake wave.
 const D_FLOOR: f64 = 1e-2;
-/// Most passes allowed to settle the check valves' states.
-const MAX_CHECK_VALVE_PASSES: usize = 20;
+/// Most passes allowed to settle the check valves' and PRVs' states.
+const MAX_CHECK_VALVE_PASSES: usize = 40;
+/// Head tolerance for switching a PRV's state [m] (EPANET: 0.0005 ft).
+const PRV_HEAD_TOL: f64 = 1e-4;
+/// Reverse flow that shuts a PRV [m^3/s].
+const PRV_FLOW_TOL: f64 = 1e-9;
 
 /// How a link's head change depends on its flow.
 #[derive(Clone, Copy)]
@@ -86,6 +96,9 @@ enum Law {
     Pump(PumpCurve, f64),
     /// Out of service: no flow whatever the heads (conductance 0).
     Closed,
+    /// An active PRV: no conductance; its flow is set each round to what
+    /// its (fixed-head) downstream side sends on.
+    Regulated,
 }
 
 impl Law {
@@ -100,7 +113,7 @@ impl Law {
             Self::Pump(curve, min_slope) => {
                 (-curve.head(q, 1.0), (-curve.slope(q, 1.0)).max(min_slope))
             }
-            Self::Closed => (0.0, f64::INFINITY),
+            Self::Closed | Self::Regulated => (0.0, f64::INFINITY),
         }
     }
 }
@@ -131,15 +144,19 @@ struct Graph {
     valve_link: Vec<Option<(usize, f64)>>,
     /// Link of each running (delivering) pump node.
     pump_link: Vec<Option<usize>>,
+    /// Link of each PRV node that is ACTIVE or OPEN.
+    prv_link: Vec<Option<usize>>,
     /// Solver nodes cut off from every source, with no demand: their heads
     /// are unknown (their fixed head of 0 is a placeholder).
     isolated: Vec<bool>,
 }
 
 impl Graph {
+    #[allow(clippy::too_many_lines)] // one graph, device by device
     fn build(
         network: &Network,
         states: &[CheckValveState],
+        prvs: &[Option<PrvState>],
         shut: &Shut,
     ) -> Result<Self, HydraulicsError> {
         let mut graph = Self {
@@ -151,6 +168,7 @@ impl Graph {
             down_side: Vec::new(),
             valve_link: vec![None; network.nodes().len()],
             pump_link: vec![None; network.nodes().len()],
+            prv_link: vec![None; network.nodes().len()],
             isolated: Vec::new(),
         };
         let add = |g: &mut Self, fixed: Option<f64>, demand: f64, origin: usize| {
@@ -163,15 +181,22 @@ impl Graph {
             let (fixed, demand) = match node {
                 Node::Reservoir { head } => (Some(network.source_head(n, *head, Time::ZERO)), 0.0),
                 Node::Junction { demand } => (None, demand.value()),
-                Node::Valve { .. } | Node::CheckValve | Node::Pump { .. } => (None, 0.0),
+                Node::Valve { .. }
+                | Node::CheckValve
+                | Node::Pump { .. }
+                | Node::PressureReducingValve { .. } => (None, 0.0),
             };
             let up = add(&mut graph, fixed, demand, n);
-            let split = matches!(node, Node::Pump { .. })
+            let split = matches!(node, Node::Pump { .. } | Node::PressureReducingValve { .. })
                 || (matches!(node, Node::CheckValve) && states[n] == CheckValveState::Closed);
-            let down = if split {
-                add(&mut graph, None, 0.0, n)
-            } else {
-                up
+            let down = match node {
+                Node::PressureReducingValve { setting, .. }
+                    if prvs[n] == Some(PrvState::Active) =>
+                {
+                    add(&mut graph, Some(setting.value()), 0.0, n)
+                }
+                _ if split => add(&mut graph, None, 0.0, n),
+                _ => up,
             };
             graph.up_side.push(up);
             graph.down_side.push(down);
@@ -234,9 +259,28 @@ impl Graph {
                 });
                 graph.pump_link[n] = Some(graph.links.len() - 1);
             }
+            if let Node::PressureReducingValve {
+                open_resistance, ..
+            } = node
+            {
+                let law = match prvs[n] {
+                    Some(PrvState::Active) => Some(Law::Regulated),
+                    Some(PrvState::Open) => Some(Law::Friction(*open_resistance)),
+                    _ => None,
+                };
+                if let Some(law) = law {
+                    graph.links.push(Link {
+                        from: graph.up_side[n],
+                        to: graph.down_side[n],
+                        law,
+                        initial_flow: 0.0,
+                    });
+                    graph.prv_link[n] = Some(graph.links.len() - 1);
+                }
+            }
         }
         graph.isolated = vec![false; graph.fixed_head.len()];
-        if !shut.is_empty() {
+        if !shut.is_empty() || prvs.contains(&Some(PrvState::Closed)) {
             graph.isolate()?;
         }
         Ok(graph)
@@ -267,8 +311,8 @@ impl Graph {
         for i in (0..n).filter(|&i| !reached[i]) {
             if self.demand[i] > 0.0 {
                 return Err(HydraulicsError::InvalidNetwork(format!(
-                    "heads cannot be determined near node {}: closed pipes or stopped \
-                     pumps cut it off from every source, and it draws water",
+                    "heads cannot be determined near node {}: closed pipes, stopped \
+                     pumps or shut valves cut it off from every source, and it draws water",
                     self.origin[i]
                 )));
             }
@@ -353,6 +397,33 @@ fn newton(graph: &Graph, options: &SteadyOptions) -> Result<Solved, Failure> {
     let mut y = vec![0.0; graph.links.len()];
     let mut rhs = vec![0.0; m];
     let mut pump_badness = vec![f64::NEG_INFINITY; graph.links.len()];
+    // Each active PRV's flow is what its downstream side sends on: the
+    // other links there, with their signs (+ leaving, - arriving).
+    let regulated: Vec<(usize, Vec<(usize, f64)>)> = graph
+        .links
+        .iter()
+        .enumerate()
+        .filter(|(_, l)| matches!(l.law, Law::Regulated))
+        .map(|(j, l)| {
+            let d = l.to;
+            let others = graph
+                .links
+                .iter()
+                .enumerate()
+                .filter(|&(k, _)| k != j)
+                .filter_map(|(k, o)| {
+                    if o.from == d {
+                        Some((k, 1.0))
+                    } else if o.to == d {
+                        Some((k, -1.0))
+                    } else {
+                        None
+                    }
+                })
+                .collect();
+            (j, others)
+        })
+        .collect();
 
     for iteration in 1..=options.max_iterations {
         matrix.clear();
@@ -421,6 +492,10 @@ fn newton(graph: &Graph, options: &SteadyOptions) -> Result<Solved, Failure> {
                 pump_badness[j] = pump_badness[j].max(excess).max(-q_new * 1e6);
             }
         }
+        for (j, others) in &regulated {
+            new_flows[*j] = others.iter().map(|&(k, sign)| sign * new_flows[k]).sum();
+            scale = scale.max(new_flows[*j].abs());
+        }
         let tol = options.tolerance * scale.max(1e-3);
         let converged = new_flows
             .iter()
@@ -469,9 +544,13 @@ pub(crate) fn solve_shut(
             _ => CheckValveState::Closed,
         })
         .collect();
+    let mut prvs: Vec<Option<PrvState>> = nodes
+        .iter()
+        .map(|node| matches!(node, Node::PressureReducingValve { .. }).then_some(PrvState::Active))
+        .collect();
 
     for _ in 0..MAX_CHECK_VALVE_PASSES {
-        let graph = Graph::build(network, &states, shut)?;
+        let graph = Graph::build(network, &states, &prvs, shut)?;
         let solved = match newton(&graph, options) {
             Ok(solved) => solved,
             Err(Failure::Error(e)) => return Err(e),
@@ -531,13 +610,46 @@ pub(crate) fn solve_shut(
                 }
             }
         }
+        for (n, node) in nodes.iter().enumerate() {
+            let (Node::PressureReducingValve { setting, .. }, Some(state)) = (node, prvs[n]) else {
+                continue;
+            };
+            let (up, down) = (
+                solved.heads[graph.up_side[n]],
+                solved.heads[graph.down_side[n]],
+            );
+            let q = graph.prv_link[n].map_or(0.0, |j| solved.flows[j]);
+            let set = setting.value();
+            let next = prv_next(state, up, down, q, set);
+            if next != state {
+                prvs[n] = Some(next);
+                changed = true;
+            }
+        }
         if !changed {
-            return assemble(network, topo, &graph, &solved, states);
+            return assemble(network, topo, &graph, &solved, states, &prvs);
         }
     }
     Err(HydraulicsError::InvalidNetwork(
-        "check valves or pumps keep switching: no consistent steady state".into(),
+        "check valves, pumps or pressure-reducing valves keep switching: no consistent \
+         steady state"
+            .into(),
     ))
+}
+
+/// A PRV's next state from its heads (upstream, downstream), its flow and
+/// its setting - EPANET 2.2's rules (prvstatus) [VERIFY against its
+/// source].
+fn prv_next(state: PrvState, up: f64, down: f64, q: f64, set: f64) -> PrvState {
+    let tol = PRV_HEAD_TOL;
+    match state {
+        PrvState::Active | PrvState::Open if q < -PRV_FLOW_TOL => PrvState::Closed,
+        PrvState::Active if up < set - tol => PrvState::Open,
+        PrvState::Open if down > set + tol => PrvState::Active,
+        PrvState::Closed if up > set + tol && down < set - tol => PrvState::Active,
+        PrvState::Closed if up < set - tol && up > down + tol => PrvState::Open,
+        s => s,
+    }
 }
 
 #[allow(clippy::too_many_lines)] // one assembly, kept together for clarity
@@ -547,6 +659,7 @@ fn assemble(
     graph: &Graph,
     solved: &Solved,
     states: Vec<CheckValveState>,
+    prvs: &[Option<PrvState>],
 ) -> Result<(SteadySolution, SteadyState), HydraulicsError> {
     let nodes = network.nodes();
     let pipes = network.pipes();
@@ -567,6 +680,11 @@ fn assemble(
         matches!(node, Node::CheckValve | Node::Pump { .. })
             && states[*n] == CheckValveState::Closed
     }) {
+        for &(p, _) in &topo[n] {
+            pipe_flows[p.0] = 0.0;
+        }
+    }
+    for n in (0..nodes.len()).filter(|&n| prvs[n] == Some(PrvState::Closed)) {
         for &(p, _) in &topo[n] {
             pipe_flows[p.0] = 0.0;
         }
@@ -593,6 +711,18 @@ fn assemble(
             }
         }
     }
+    // A PRV passing flow: its flow and head drop, so a transient can hold
+    // it at that opening (a drop a hair below 0 within the state tolerance
+    // is no drop).
+    for (n, link) in graph.prv_link.iter().enumerate() {
+        if let Some(j) = *link {
+            let q0 = solved.flows[j];
+            if q0 > PRV_FLOW_TOL {
+                let drop = head_of(graph.up_side[n]) - head_of(graph.down_side[n]);
+                valve_steady[n] = (q0, drop.max(0.0));
+            }
+        }
+    }
 
     // How well the answer satisfies the equations it solved.
     let g = network.gravity();
@@ -614,7 +744,7 @@ fn assemble(
     for (n, node) in nodes.iter().enumerate() {
         let demand = match node {
             Node::Junction { demand } => demand.value(),
-            Node::Pump { .. } | Node::CheckValve => 0.0,
+            Node::Pump { .. } | Node::CheckValve | Node::PressureReducingValve { .. } => 0.0,
             Node::Reservoir { .. } | Node::Valve { .. } => continue,
         };
         let net: f64 = topo[n]
@@ -663,6 +793,11 @@ fn assemble(
         closed_check_valves,
         idle_pumps,
         pump_lifts,
+        prvs: prvs
+            .iter()
+            .enumerate()
+            .filter_map(|(n, s)| s.map(|s| (NodeId(n), s)))
+            .collect(),
     };
     let state = SteadyState {
         node_heads,
