@@ -6,9 +6,17 @@ use jk_hydraulics::{Network, Node, NodeId, Pipe, TankStorage};
 use jk_kernel::{Area, Flow, Head, Length};
 
 use super::friction::{Headloss, darcy_factor};
+use super::operations::{self, Context, Operations};
+use super::pumps::{self, Curves, Fitted};
 use super::sections::{Line, Section, split};
 use super::units::FlowUnits;
 use super::{InpNetwork, InpOptions, Note};
+
+/// Longest station pipework put either side of a pump [m] (never longer
+/// than the file's shortest pipe, so the transient time step is unchanged).
+const CONNECTOR_LENGTH: f64 = 10.0;
+/// Darcy friction factor of that pipework (its loss is a few cm).
+const CONNECTOR_FRICTION: f64 = 0.01;
 use crate::error::ReadError;
 
 /// What `[OPTIONS]` sets.
@@ -17,6 +25,8 @@ struct Settings {
     headloss: Headloss,
     demand_multiplier: f64,
     viscosity: f64,
+    /// Option PATTERN: the default demand pattern.
+    default_pattern: Option<String>,
 }
 
 /// A node as the file gives it (file units).
@@ -24,6 +34,8 @@ enum NodeKind {
     Junction {
         elevation: f64,
         demand: f64,
+        /// Demand pattern ID, if the junction names one.
+        pattern: Option<String>,
     },
     Reservoir {
         head: f64,
@@ -55,7 +67,16 @@ enum LinkKind {
         roughness: f64,
         minor_loss: f64,
     },
-    Pump,
+    Pump {
+        /// Head curve ID (keyword HEAD).
+        curve: Option<String>,
+        /// Relative speed (keyword SPEED; 1 if absent).
+        speed: f64,
+        /// Given as constant power (keyword POWER) instead of a curve.
+        power: bool,
+        /// Has a speed pattern (keyword PATTERN).
+        pattern: bool,
+    },
     Valve {
         kind: String,
     },
@@ -119,6 +140,7 @@ fn some_ids(ids: &[String]) -> String {
     }
 }
 
+#[allow(clippy::too_many_lines)] // the reading order, told once
 pub(super) fn build(text: &str, options: &InpOptions) -> Result<InpNetwork, ReadError> {
     let sections = split(text)?;
     let mut notes = Vec::new();
@@ -128,12 +150,39 @@ pub(super) fn build(text: &str, options: &InpOptions) -> Result<InpNetwork, Read
         .collect::<Vec<_>>()
         .join(" ");
     let (mut nodes, index) = read_nodes(&sections, &mut notes)?;
-    read_demands(&sections, &index, &mut nodes, &mut notes)?;
+    let categories = read_demands(&sections, &index, &mut nodes, &mut notes)?;
     let mut links = read_links(&sections, &index)?;
     read_status(&sections, &mut links, &mut notes)?;
+    let curves = read_curves(&sections)?;
+    let fitted = fit_pumps(&links, &curves, &settings, &mut notes);
+    let unused_curves: Vec<String> = {
+        let mut ids: Vec<String> = curves
+            .keys()
+            .filter(|c| {
+                !links.iter().any(|k| {
+                    fitted.contains_key(&k.id)
+                        && matches!(&k.kind, LinkKind::Pump { curve: Some(x), .. } if x == *c)
+                })
+            })
+            .cloned()
+            .collect();
+        ids.sort();
+        ids
+    };
+    if !unused_curves.is_empty() {
+        note(
+            &mut notes,
+            None,
+            format!(
+                "{} curve(s) not used (efficiency, volume, valve or unmodelled pump curves): {}",
+                unused_curves.len(),
+                some_ids(&unused_curves)
+            ),
+        );
+    }
     unused_sections(&sections, &mut notes);
     let coordinates = read_coordinates(&sections, &index)?;
-    assemble(
+    let (mut inp, map) = assemble(
         &sections,
         options,
         &settings,
@@ -141,8 +190,81 @@ pub(super) fn build(text: &str, options: &InpOptions) -> Result<InpNetwork, Read
         &nodes,
         &links,
         &coordinates,
+        &fitted,
         notes,
-    )
+    )?;
+
+    // How the file runs the network over time.
+    let mut op_notes = Vec::new();
+    let times =
+        operations::read_times(&operations::lines(&sections, Section::Times), &mut op_notes)?;
+    let patterns = operations::read_patterns(&operations::lines(&sections, Section::Patterns))?;
+    let mut demands: HashMap<NodeId, Vec<(f64, Option<String>)>> = HashMap::new();
+    for (i, n) in nodes.iter().enumerate() {
+        if let NodeKind::Junction {
+            demand, pattern, ..
+        } = &n.kind
+        {
+            let entry = demands.entry(map.node_of_raw[i]).or_default();
+            match categories.get(&i) {
+                Some(c) => entry.extend(c.iter().cloned()),
+                None => entry.push((*demand, pattern.clone())),
+            }
+        }
+    }
+    let node_of: HashMap<String, (NodeId, Option<f64>)> = nodes
+        .iter()
+        .enumerate()
+        .map(|(i, n)| {
+            let tank = match n.kind {
+                NodeKind::Tank { elevation, .. } => Some(elevation),
+                _ => None,
+            };
+            (n.id.clone(), (map.node_of_raw[i], tank))
+        })
+        .collect();
+    let closed_pumps: Vec<String> = links
+        .iter()
+        .filter(|k| matches!(k.kind, LinkKind::Pump { .. }) && k.status == Status::Closed)
+        .map(|k| k.id.clone())
+        .collect();
+    let operations: Operations = {
+        let ctx = Context {
+            network: &inp.network,
+            length: settings.units.length(),
+            pipe_of: &map.pipe_of,
+            pump_of: &map.pump_of,
+            not_switchable: &map.not_switchable,
+            node_of: &node_of,
+            closed_pumps: &closed_pumps,
+            demands: &demands,
+            default_pattern: settings.default_pattern.as_deref(),
+        };
+        operations::build(
+            &ctx,
+            times,
+            &patterns,
+            &operations::lines(&sections, Section::Controls),
+            &mut op_notes,
+        )?
+    };
+    for (line, text) in op_notes {
+        note(&mut inp.notes, line, text);
+    }
+    inp.operations = operations;
+    Ok(inp)
+}
+
+/// Where file IDs ended up in the engine's network.
+struct Mapping {
+    /// Engine node of each file node.
+    node_of_raw: Vec<NodeId>,
+    /// Engine pipe index of each pipe kept, by file ID.
+    pipe_of: HashMap<String, usize>,
+    /// Pump node of each modelled pump, by file ID.
+    pump_of: HashMap<String, NodeId>,
+    /// Links a control cannot switch, and why, by file ID.
+    not_switchable: HashMap<String, String>,
 }
 
 fn read_options(sections: &Sections, notes: &mut Vec<Note>) -> Result<Settings, ReadError> {
@@ -151,6 +273,7 @@ fn read_options(sections: &Sections, notes: &mut Vec<Note>) -> Result<Settings, 
         headloss: Headloss::HazenWilliams,
         demand_multiplier: 1.0,
         viscosity: 1.0,
+        default_pattern: None,
     };
     let mut units_given = false;
     let mut unused = Vec::new();
@@ -174,6 +297,7 @@ fn read_options(sections: &Sections, notes: &mut Vec<Note>) -> Result<Settings, 
                 s.demand_multiplier = number(l, 2, "demand multiplier")?;
             }
             ("VISCOSITY", _) => s.viscosity = number(l, 1, "viscosity")?,
+            ("PATTERN", _) => s.default_pattern = Some(field(l, 1, "pattern ID")?.to_string()),
             ("SPECIFIC", Some("GRAVITY")) => {
                 let sg = number(l, 2, "specific gravity")?;
                 if (sg - 1.0).abs() > 1e-9 {
@@ -236,8 +360,8 @@ fn read_nodes(
                     let kind = NodeKind::Junction {
                         elevation: number(l, 1, "elevation")?,
                         demand: optional(l, 2, "base demand")?.unwrap_or(0.0),
+                        pattern: l.fields.get(3).cloned(),
                     };
-                    patterned += usize::from(l.fields.len() > 3);
                     add_node(&mut nodes, &mut index, l, kind)?;
                 }
                 Section::Reservoirs => {
@@ -280,12 +404,16 @@ fn read_nodes(
             notes,
             None,
             format!(
-                "{patterned} junction or reservoir pattern(s) not used: demands and heads are taken at their base values"
+                "{patterned} reservoir head pattern(s) not used: reservoirs hold their base head"
             ),
         );
     }
     Ok((nodes, index))
 }
+
+/// Demand categories of the junctions listed in `[DEMANDS]`: (demand,
+/// pattern ID) per category, by file node.
+type Categories = HashMap<usize, Vec<(f64, Option<String>)>>;
 
 /// `[DEMANDS]`: a junction listed there takes the sum of its entries,
 /// replacing its `[JUNCTIONS]` base demand (EPANET's rule [VERIFY]).
@@ -294,21 +422,27 @@ fn read_demands(
     index: &HashMap<String, usize>,
     nodes: &mut [RawNode],
     notes: &mut Vec<Note>,
-) -> Result<(), ReadError> {
+) -> Result<Categories, ReadError> {
     let mut sums: HashMap<usize, f64> = HashMap::new();
+    let mut categories = Categories::new();
     for l in records(sections, Section::Demands) {
         let id = field(l, 0, "junction ID")?;
         let &n = index
             .get(id)
             .ok_or_else(|| ReadError::at(l.number, format!("demand for unknown node '{id}'")))?;
-        *sums.entry(n).or_insert(0.0) += number(l, 1, "demand")?;
+        let demand = number(l, 1, "demand")?;
+        *sums.entry(n).or_insert(0.0) += demand;
+        categories
+            .entry(n)
+            .or_default()
+            .push((demand, l.fields.get(2).cloned()));
     }
     if !sums.is_empty() {
         note(
             notes,
             None,
             format!(
-                "[DEMANDS] gives {} junction(s) several demand categories: their sum is used, at base values",
+                "[DEMANDS] gives {} junction(s) several demand categories: their sum is used",
                 sums.len()
             ),
         );
@@ -318,7 +452,7 @@ fn read_demands(
             *demand = total;
         }
     }
-    Ok(())
+    Ok(categories)
 }
 
 fn read_links(
@@ -336,7 +470,7 @@ fn read_links(
                     roughness: number(l, 5, "roughness")?,
                     minor_loss: optional(l, 6, "minor loss")?.unwrap_or(0.0),
                 },
-                Section::Pumps => LinkKind::Pump,
+                Section::Pumps => pump_kind(l)?,
                 Section::Valves => LinkKind::Valve {
                     kind: field(l, 4, "valve type")?.to_ascii_uppercase(),
                 },
@@ -380,6 +514,124 @@ fn read_links(
     Ok(links)
 }
 
+/// A `[PUMPS]` record's properties: keyword-value pairs after the nodes.
+fn pump_kind(l: &Line) -> Result<LinkKind, ReadError> {
+    let (mut curve, mut speed, mut power, mut pattern) = (None, 1.0, false, false);
+    let mut i = 3;
+    while i < l.fields.len() {
+        let key = l.fields[i].to_ascii_uppercase();
+        let value = field(l, i + 1, &format!("value of pump {key}"))?;
+        match key.as_str() {
+            "HEAD" => curve = Some(value.to_string()),
+            "SPEED" => speed = number(l, i + 1, "pump speed")?,
+            "POWER" => power = true,
+            "PATTERN" => pattern = true,
+            _ => {
+                return Err(ReadError::at(
+                    l.number,
+                    format!("unknown pump keyword '{}'", l.fields[i]),
+                ));
+            }
+        }
+        i += 2;
+    }
+    Ok(LinkKind::Pump {
+        curve,
+        speed,
+        power,
+        pattern,
+    })
+}
+
+/// `[CURVES]`: points by curve ID, in file order and file units.
+fn read_curves(sections: &Sections) -> Result<Curves, ReadError> {
+    let mut out = Curves::new();
+    for l in records(sections, Section::Curves) {
+        let id = field(l, 0, "curve ID")?.to_string();
+        let point = (number(l, 1, "curve X")?, number(l, 2, "curve Y")?);
+        out.entry(id).or_default().push(point);
+    }
+    Ok(out)
+}
+
+/// Fits every pump with a usable head curve; notes the rest (they become
+/// plain connections).
+fn fit_pumps(
+    links: &[RawLink],
+    curves: &Curves,
+    s: &Settings,
+    notes: &mut Vec<Note>,
+) -> HashMap<String, Fitted> {
+    let (lu, fu) = (s.units.length(), s.units.to_m3s());
+    let mut out = HashMap::new();
+    for k in links {
+        let LinkKind::Pump {
+            curve,
+            speed,
+            power,
+            pattern,
+        } = &k.kind
+        else {
+            continue;
+        };
+        let why_not = if *power {
+            Err("is given as constant power, not a head curve".to_string())
+        } else if let Some(c) = curve {
+            match curves.get(c) {
+                None => Err(format!("names curve '{c}', which is not in [CURVES]")),
+                Some(points) => {
+                    let si: Vec<(f64, f64)> =
+                        points.iter().map(|(q, h)| (q * fu, h * lu)).collect();
+                    pumps::fit(&si, *speed).map_err(|e| format!("cannot be modelled: {e}"))
+                }
+            }
+        } else {
+            Err("has no head curve".to_string())
+        };
+        match why_not {
+            Ok(fitted) => {
+                note(
+                    notes,
+                    Some(k.line),
+                    format!(
+                        "pump '{}': {}; efficiency {:.0}%, {:.0} rpm and inertia (Thorley) \
+                         assumed - they matter only for pump trips [VERIFY]",
+                        k.id,
+                        fitted.how,
+                        pumps::ASSUMED_EFFICIENCY * 100.0,
+                        pumps::ASSUMED_SPEED_RPM
+                    ),
+                );
+                if (*speed - 1.0).abs() > 1e-12 {
+                    note(
+                        notes,
+                        Some(k.line),
+                        format!(
+                            "pump '{}' runs at relative speed {speed}: curve scaled by the \
+                             affinity laws",
+                            k.id
+                        ),
+                    );
+                }
+                if *pattern {
+                    note(
+                        notes,
+                        Some(k.line),
+                        format!("pump '{}': speed pattern not used (constant speed)", k.id),
+                    );
+                }
+                out.insert(k.id.clone(), fitted);
+            }
+            Err(why) => note(
+                notes,
+                Some(k.line),
+                format!("pump '{}' {why}: modelled as a plain connection", k.id),
+            ),
+        }
+    }
+    out
+}
+
 fn read_status(
     sections: &Sections,
     links: &mut [RawLink],
@@ -411,19 +663,13 @@ fn read_status(
 
 fn unused_sections(sections: &Sections, notes: &mut Vec<Note>) {
     let why = |s: Section| match s {
-        Section::Patterns => "time patterns (demands and heads are taken at base values)",
-        Section::Curves => {
-            "pump, valve and tank curves (pumps and valves are modelled as connections)"
-        }
-        Section::Controls | Section::Rules => {
-            "operating rules (the engine takes the network as it stands)"
-        }
+        Section::Rules => "rule-based controls (simple [CONTROLS] are modelled; rules not yet)",
         Section::Energy => "energy prices and pump efficiency",
         Section::Emitters | Section::Leakage => "emitters and leakage",
         Section::Quality | Section::Sources | Section::Reactions | Section::Mixing => {
             "water quality"
         }
-        Section::Times | Section::Report => "simulation times and reporting",
+        Section::Report => "reporting",
         Section::Labels | Section::Backdrop => "map labels and backdrop",
         Section::Tags => "tags",
         _ => "",
@@ -462,8 +708,14 @@ fn read_coordinates(
     Ok(out)
 }
 
-/// Joins nodes connected by open pumps and valves (union-find).
-fn join(nodes: &[RawNode], links: &[RawLink], notes: &mut Vec<Note>) -> Vec<usize> {
+/// Joins nodes connected by open valves and by pumps not modelled
+/// (union-find).
+fn join(
+    nodes: &[RawNode],
+    links: &[RawLink],
+    fitted: &HashMap<String, Fitted>,
+    notes: &mut Vec<Note>,
+) -> Vec<usize> {
     fn root(parent: &mut [usize], mut i: usize) -> usize {
         while parent[i] != i {
             parent[i] = parent[parent[i]];
@@ -475,7 +727,8 @@ fn join(nodes: &[RawNode], links: &[RawLink], notes: &mut Vec<Note>) -> Vec<usiz
     for k in links {
         let what = match &k.kind {
             LinkKind::Pipe { .. } => continue,
-            LinkKind::Pump => "pump".to_string(),
+            LinkKind::Pump { .. } if fitted.contains_key(&k.id) => continue,
+            LinkKind::Pump { .. } => "pump".to_string(),
             LinkKind::Valve { kind } => format!("{kind} valve"),
         };
         let (a, b) = (&nodes[k.from].id, &nodes[k.to].id);
@@ -515,9 +768,28 @@ fn assemble(
     nodes: &[RawNode],
     links: &[RawLink],
     coordinates: &HashMap<usize, (f64, f64)>,
+    fitted: &HashMap<String, Fitted>,
     mut notes: Vec<Note>,
-) -> Result<InpNetwork, ReadError> {
-    let roots = join(nodes, links, &mut notes);
+) -> Result<(InpNetwork, Mapping), ReadError> {
+    let roots = join(nodes, links, fitted, &mut notes);
+    let mut not_switchable: HashMap<String, String> = HashMap::new();
+    for k in links {
+        match &k.kind {
+            LinkKind::Valve { kind } => {
+                not_switchable.insert(
+                    k.id.clone(),
+                    format!("is a {kind} valve (valves are modelled as connections)"),
+                );
+            }
+            LinkKind::Pump { .. } if !fitted.contains_key(&k.id) => {
+                not_switchable.insert(
+                    k.id.clone(),
+                    "is a pump without a usable head curve (modelled as a connection)".into(),
+                );
+            }
+            _ => {}
+        }
+    }
     let (lu, fu) = (s.units.length(), s.units.to_m3s());
 
     // One engine node per group of joined file nodes, in file order.
@@ -652,6 +924,10 @@ fn assemble(
         match k.status {
             Status::Closed => {
                 closed.push(k.id.clone());
+                not_switchable.insert(
+                    k.id.clone(),
+                    "is closed in the file and left out of the network".into(),
+                );
                 continue;
             }
             Status::CheckValve => checks.push(k.id.clone()),
@@ -660,6 +936,10 @@ fn assemble(
         let (a, b) = (group(k.from), group(k.to));
         if a == b {
             self_loops.push(k.id.clone());
+            not_switchable.insert(
+                k.id.clone(),
+                "was left out (both ends joined through pumps or valves)".into(),
+            );
             continue;
         }
         let d = diameter * s.units.diameter();
@@ -701,6 +981,96 @@ fn assemble(
     }
     if pipe_ids.is_empty() {
         return Err(ReadError::general("the file has no usable pipes"));
+    }
+    let pipe_of: HashMap<String, usize> = pipe_ids
+        .iter()
+        .enumerate()
+        .map(|(i, id)| (id.clone(), i))
+        .collect();
+
+    // Pumps with their curves: a pump node between two short lengths of
+    // station pipework (the engine's pump joins exactly two pipes).
+    let shortest = network
+        .pipes()
+        .iter()
+        .map(|p| p.pipe.length().value())
+        .fold(f64::INFINITY, f64::min);
+    let connector = CONNECTOR_LENGTH.min(shortest);
+    let mut largest = vec![0.0_f64; network.nodes().len()];
+    for p in network.pipes() {
+        let d = p.pipe.diameter().value();
+        for n in [p.from.index(), p.to.index()] {
+            largest[n] = largest[n].max(d);
+        }
+    }
+    let mut pump_of: HashMap<String, NodeId> = HashMap::new();
+    let mut pumps_list = Vec::new();
+    for k in links {
+        let Some(f) = fitted.get(&k.id) else {
+            continue;
+        };
+        let (a, b) = (group(k.from), group(k.to));
+        if a == b {
+            note(
+                &mut notes,
+                Some(k.line),
+                format!(
+                    "pump '{}' left out: both its ends were joined through valves",
+                    k.id
+                ),
+            );
+            not_switchable.insert(k.id.clone(), "was left out".into());
+            continue;
+        }
+        let diameter = |n: usize, other: usize| {
+            if largest[n] > 0.0 {
+                largest[n]
+            } else if largest[other] > 0.0 {
+                largest[other]
+            } else {
+                0.3
+            }
+        };
+        let station = |d: f64| {
+            Pipe::new(
+                Length::new(connector),
+                Length::new(d),
+                options.wave_speed,
+                CONNECTOR_FRICTION,
+            )
+            .map_err(|e| ReadError::at(k.line, format!("pump '{}': {e}", k.id)))
+        };
+        let node = network.add_node(Node::Pump {
+            pump: f.pump,
+            trip: None,
+        });
+        network
+            .add_pipe(ids[a], node, station(diameter(a, b))?)
+            .map_err(|e| ReadError::at(k.line, format!("pump '{}': {e}", k.id)))?;
+        network
+            .add_pipe(node, ids[b], station(diameter(b, a))?)
+            .map_err(|e| ReadError::at(k.line, format!("pump '{}': {e}", k.id)))?;
+        pipe_ids.push(format!("{}/suction", k.id));
+        pipe_ids.push(format!("{}/discharge", k.id));
+        node_ids.push(k.id.clone());
+        elevations.push(elevations[a]);
+        positions.push(match (positions[a], positions[b]) {
+            (Some(p), Some(q)) => Some((f64::midpoint(p.0, q.0), f64::midpoint(p.1, q.1))),
+            (p, q) => p.or(q),
+        });
+        pump_of.insert(k.id.clone(), node);
+        pumps_list.push((k.id.clone(), node));
+    }
+    if !pumps_list.is_empty() {
+        note(
+            &mut notes,
+            None,
+            format!(
+                "{} pump(s) modelled with their curves, each between two {connector:.1} m lengths \
+                 of station pipework (pipes 'ID/suction' and 'ID/discharge')",
+                pumps_list.len()
+            ),
+        );
     }
     note(
         &mut notes,
@@ -801,16 +1171,27 @@ fn assemble(
         }
     }
 
-    Ok(InpNetwork {
-        title,
-        units: s.units,
-        headloss: s.headloss,
-        network,
-        node_ids,
-        pipe_ids,
-        elevations,
-        positions,
-        vertices,
-        notes,
-    })
+    let node_of_raw = (0..nodes.len()).map(|i| ids[group(i)]).collect();
+    Ok((
+        InpNetwork {
+            title,
+            units: s.units,
+            headloss: s.headloss,
+            network,
+            node_ids,
+            pipe_ids,
+            elevations,
+            positions,
+            vertices,
+            pumps: pumps_list,
+            operations: Operations::default(),
+            notes,
+        },
+        Mapping {
+            node_of_raw,
+            pipe_of,
+            pump_of,
+            not_switchable,
+        },
+    ))
 }

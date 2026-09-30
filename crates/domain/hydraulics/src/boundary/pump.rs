@@ -88,6 +88,24 @@ impl PumpCurve {
         Ok(Self { a0: h0, a1, a2 })
     }
 
+    /// A curve from its coefficients, H = a0 + a1 Q + a2 Q^2 (e.g. fitted
+    /// to a curve in a network file).
+    ///
+    /// # Errors
+    /// A shut-off head a0 that is not positive, non-finite coefficients, or
+    /// a curve that does not droop (a2 >= 0).
+    pub fn from_coefficients(a0: f64, a1: f64, a2: f64) -> Result<Self, HydraulicsError> {
+        positive("pump shut-off head a0", a0)?;
+        if !(a1.is_finite() && a2.is_finite() && a2 < 0.0) {
+            return Err(HydraulicsError::invalid(
+                "pump curve a2",
+                a2,
+                "< 0 (a drooping curve), a1 finite",
+            ));
+        }
+        Ok(Self { a0, a1, a2 })
+    }
+
     /// Head added at flow `q` [m^3/s] and speed ratio `alpha` (affinity laws).
     #[must_use]
     #[inline]

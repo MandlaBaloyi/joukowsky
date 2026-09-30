@@ -2,6 +2,7 @@
 
 use jk_files::epanet::{InpOptions, parse};
 use jk_hydraulics::Node;
+use jk_hydraulics::steady::controls::{Condition, Control, Target};
 use jk_localisation::placement::{PlacementOptions, coverage};
 use jk_tests::estate::estate;
 use jk_tests::{check, check_close};
@@ -99,15 +100,42 @@ fn us_units_give_the_same_network_as_si_units() {
 }
 
 #[test]
+#[allow(clippy::too_many_lines)] // one file, every mapping checked in turn
 fn everything_approximated_is_reported_never_dropped() {
     let net = fixture("loud.inp");
     print_notes(&net);
     let says = |what: &str| net.notes.iter().any(|n| n.text.contains(what));
-    check(
-        "the pump became a connection: node 'J1=J2'",
-        net.node_ids.iter().any(|id| id == "J1=J2"),
+    let (_, pump) = net
+        .pumps
+        .iter()
+        .find(|(id, _)| id == "PU1")
+        .expect("PU1 is modelled as a pump");
+    let Node::Pump { pump: p, .. } = net.network.nodes()[pump.index()] else {
+        panic!("PU1's node is a pump");
+    };
+    check_close(
+        "pump PU1, one-point curve 10 l/s at 40 m: shut-off head 4/3 x 40 [m]",
+        p.curve.head(0.0, 1.0),
+        40.0 * 4.0 / 3.0,
+        1e-12,
     );
-    check("  ... and says so", says("pump 'PU1' between J1 and J2"));
+    check_close(
+        "  ... and 40 m at 10 l/s [m]",
+        p.curve.head(0.010, 1.0),
+        40.0,
+        1e-12,
+    );
+    check(
+        "  J1 and J2 stay apart, joined by the pump and its station pipework",
+        net.node_ids.iter().any(|id| id == "J1")
+            && net.node_ids.iter().any(|id| id == "J2")
+            && net.pipe_ids.iter().any(|id| id == "PU1/suction")
+            && net.pipe_ids.iter().any(|id| id == "PU1/discharge"),
+    );
+    check(
+        "  ... and says what was assumed",
+        says("pump 'PU1': one-point curve"),
+    );
     check(
         "the closed valve does not connect J4 and J5",
         says("PRV valve 'V1' is closed"),
@@ -121,6 +149,7 @@ fn everything_approximated_is_reported_never_dropped() {
         says("check-valve pipe(s) kept") && net.pipe_ids.iter().any(|p| p == "A3"),
     );
     let tank = net.node_ids.iter().position(|id| id == "TK").unwrap();
+    let tank_node = tank;
     check(
         "the tank is a fixed head at 30 + 4 = 34 m (in transients)",
         matches!(net.network.nodes()[tank], Node::Reservoir { head } if (head.value() - 34.0).abs() < 1e-12),
@@ -139,12 +168,41 @@ fn everything_approximated_is_reported_never_dropped() {
         "[DEMANDS] replaces J4's demand: 0.5 + 0.7 = 1.2 l/s",
         matches!(net.network.nodes()[j4], Node::Junction { demand } if (demand.value() - 0.0012).abs() < 1e-12),
     );
-    for section in ["[PATTERNS]", "[CURVES]", "[CONTROLS]", "[TIMES]"] {
-        check(&format!("{section} listed as not used"), says(section));
-    }
+    let period = &net.operations.period;
+    check_close(
+        "[TIMES] duration 24:00 [h]",
+        period.duration.value() / 3600.0,
+        24.0,
+        1e-12,
+    );
+    let j1 = net.node_ids.iter().position(|id| id == "J1").unwrap();
+    check(
+        "[PATTERNS] J1 follows its own pattern 'daily' (1.0 1.2 0.8)",
+        period.node_patterns.len() == 1
+            && period.node_patterns[0].multipliers == [1.0, 1.2, 0.8]
+            && period.node_patterns[0]
+                .nodes
+                .iter()
+                .any(|n| n.index() == j1),
+    );
+    check(
+        "  ... the others have no pattern (no option PATTERN, no pattern '1')",
+        period.pattern.is_empty(),
+    );
+    let a2 = net.pipe_ids.iter().position(|p| p == "A2").unwrap();
+    check(
+        "[CONTROLS] A2 closes when tank TK is above 5 m of water: head 30 + 5 = 35 m",
+        matches!(
+            period.controls.as_slice(),
+            [Control {
+                target: Target::Pipe(p),
+                open: false,
+                when: Condition::LevelAbove { tank, level },
+            }] if p.index() == a2 && tank.index() == tank_node && (level.value() - 35.0).abs() < 1e-12
+        ),
+    );
     check("the unused option is listed", says("Quality None"));
     check("the minor loss is listed", says("minor-loss"));
-    check("the pattern on J1 is listed", says("pattern(s) not used"));
     let a5 = net.pipe_ids.iter().position(|p| p == "A5").unwrap();
     check(
         "pipe A5 keeps its bend at (400, 120)",

@@ -32,8 +32,22 @@ EPANET .inp format                                               [ADOPT]
         placement score on a file network equals the in-code network
         exactly. No real file has been read yet - the first one is chosen
         with the owner (no downloads without approval).
-        Not yet: the wave-speed sidecar; pumps, valves and tanks as real
-        devices; demand patterns.
+        2026-09-30: tanks with storage (extended runs); pumps with a head
+        curve as real pumps (epanet/pumps.rs: 1-point curve exact, 3-point
+        quadratic through the points - the note gives the gap to EPANET's
+        power law - other counts least squares; efficiency, speed and
+        inertia assumed; a pump node between two <= 10 m lengths of station
+        pipework, never shorter than the file's shortest pipe so the
+        transient time step is unchanged); [TIMES], [PATTERNS] (default and
+        per-junction, pattern start, start clock time) and simple
+        [CONTROLS] (tank level, time, clock time) into the options of an
+        extended-period run (epanet/operations.rs); pumps the file starts
+        closed are shut. `jk network FILE` runs the file's own schedule and
+        lists the switches. Proved on the V-A9 system written as a file:
+        pump switches within 5e-6 of the independent reference.
+        Not yet: the wave-speed sidecar; valves as real devices (PRV, FCV,
+        ...); [RULES]; controls on junction pressures and pump speeds;
+        reservoir head patterns; tank volume curves.
 
 epanet-rs (Vitens)                                              [ASSESS]
   ROLE  Candidate for steady-state initial conditions and .inp parsing.

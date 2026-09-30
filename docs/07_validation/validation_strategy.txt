@@ -29,6 +29,9 @@ Rung 1  Analytical: results that must match closed-form physics.
         inlet shut; load-shedding windows; daily clock switches; a closed
         pipe = the pipe removed (2026-09-30: switches within 0.05 s over
         48 h with 5-min steps, 2.4 s with 15-min steps; closed pipe 1e-12 m).
+        The same system written as an EPANET file (pump curve, controls,
+        times) and read by jk-files: switches within 5e-6 of the reference
+        (tests/adapters/analytical/epanet_operations.rs).
   V-A8  Storage tanks (extended period): draining tank vs the exact
         sqrt-law; empty time vs volume / demand (2026-09-30: 0.12 mm over
         12 h, second order; empty time exact).

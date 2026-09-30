@@ -59,8 +59,12 @@ pub struct PeriodOptions {
     /// Total time to cover. The run starts at midnight.
     pub duration: Time,
     /// Demand multipliers, one per `pattern_step`, repeating (e.g. 24 hourly
-    /// factors for a day). Empty: demands stay as given.
+    /// factors for a day), for every junction not in `node_patterns`.
+    /// Empty: demands stay as given.
     pub pattern: Vec<f64>,
+    /// Patterns of their own for some junctions (homes, a factory, a
+    /// hospital follow different days), same `pattern_step`.
+    pub node_patterns: Vec<NodePattern>,
     /// Length of each pattern entry. Default one hour.
     pub pattern_step: Time,
     /// Settings of each steady solve.
@@ -82,12 +86,23 @@ impl Default for PeriodOptions {
             step: Time::new(300.0),
             duration: Time::new(86_400.0),
             pattern: Vec::new(),
+            node_patterns: Vec::new(),
             pattern_step: Time::new(3600.0),
             steady: SteadyOptions::default(),
             controls: Vec::new(),
             power_cuts: Vec::new(),
         }
     }
+}
+
+/// A demand pattern followed by some junctions.
+#[derive(Debug, Clone, PartialEq)]
+pub struct NodePattern {
+    /// Demand multipliers, one per `pattern_step`, repeating. Empty: the
+    /// demands stay as given.
+    pub multipliers: Vec<f64>,
+    /// The junctions that follow it.
+    pub nodes: Vec<NodeId>,
 }
 
 /// Something that happened to the supply.
@@ -271,16 +286,24 @@ impl Network {
         positive("step", options.step.value())?;
         positive("duration", options.duration.value())?;
         positive("pattern_step", options.pattern_step.value())?;
-        if options
-            .pattern
-            .iter()
-            .any(|m| !(m.is_finite() && *m >= 0.0))
-        {
-            return Err(HydraulicsError::invalid(
-                "demand pattern",
-                f64::NAN,
-                "finite multipliers >= 0",
-            ));
+        let patterns = std::iter::once(&options.pattern)
+            .chain(options.node_patterns.iter().map(|p| &p.multipliers));
+        for pattern in patterns {
+            if pattern.iter().any(|m| !(m.is_finite() && *m >= 0.0)) {
+                return Err(HydraulicsError::invalid(
+                    "demand pattern",
+                    f64::NAN,
+                    "finite multipliers >= 0",
+                ));
+            }
+        }
+        for n in options.node_patterns.iter().flat_map(|p| &p.nodes) {
+            if !matches!(self.nodes().get(n.index()), Some(Node::Junction { .. })) {
+                return Err(HydraulicsError::InvalidNetwork(format!(
+                    "node {} given a demand pattern is not a junction",
+                    n.index()
+                )));
+            }
         }
         controls::check(self, &options.controls, &options.power_cuts)?;
         let mut tanks: Vec<TankState> = self
@@ -479,7 +502,13 @@ impl Network {
         options: &PeriodOptions,
     ) -> Result<SteadySolution, HydraulicsError> {
         let mut net = self.clone();
-        let m = multiplier(options, pattern_time);
+        let mut m = vec![multiplier(&options.pattern, options, pattern_time); self.nodes().len()];
+        for p in &options.node_patterns {
+            let own = multiplier(&p.multipliers, options, pattern_time);
+            for n in &p.nodes {
+                m[n.index()] = own;
+            }
+        }
         for (n, node) in self.nodes().iter().enumerate() {
             match *node {
                 Node::Reservoir { head } => net.set_node(
@@ -488,7 +517,12 @@ impl Network {
                         head: Head::new(self.source_head(n, head, Time::new(t))),
                     },
                 ),
-                Node::Junction { demand } => net.set_node(n, Node::Junction { demand: demand * m }),
+                Node::Junction { demand } => net.set_node(
+                    n,
+                    Node::Junction {
+                        demand: demand * m[n],
+                    },
+                ),
                 _ => {}
             }
         }
@@ -612,7 +646,12 @@ fn next_boundary(options: &PeriodOptions, t: f64) -> f64 {
             }
         }
     }
-    if !options.pattern.is_empty() {
+    let patterned = !options.pattern.is_empty()
+        || options
+            .node_patterns
+            .iter()
+            .any(|p| !p.multipliers.is_empty());
+    if patterned {
         let ps = options.pattern_step.value();
         let mut edge = ((t / ps).floor() + 1.0) * ps;
         if edge <= t + TIME_TOL {
@@ -713,12 +752,12 @@ fn lost(mut run: PeriodRun, t: f64, e: &HydraulicsError) -> PeriodRun {
     run
 }
 
-/// The demand multiplier in force at time `t`.
-fn multiplier(options: &PeriodOptions, t: f64) -> f64 {
-    if options.pattern.is_empty() {
+/// The multiplier of `pattern` in force at time `t`.
+fn multiplier(pattern: &[f64], options: &PeriodOptions, t: f64) -> f64 {
+    if pattern.is_empty() {
         return 1.0;
     }
     #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)] // t >= 0
     let k = (t / options.pattern_step.value()).floor() as usize;
-    options.pattern[k % options.pattern.len()]
+    pattern[k % pattern.len()]
 }

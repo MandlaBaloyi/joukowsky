@@ -18,15 +18,21 @@
 //! - tanks: fixed-head nodes at their initial level in transients; with
 //!   their minimum/maximum levels and diameter given, also storage tanks
 //!   whose level extended-period runs move (volume curves not read);
-//! - pumps and open valves: their two nodes are joined into one - the
-//!   network stays connected for locating bursts, but the device's own
-//!   hydraulics are not modelled;
-//! - closed pipes, pumps and valves: left out (the two sides are not
-//!   connected); check-valve pipes: kept as plain pipes.
+//! - pumps with a head curve: a pump node with the curve fitted
+//!   ([`pumps`]), between two short lengths of station pipework (the
+//!   engine's pump joins exactly two pipes); efficiency, speed and inertia
+//!   assumed. Pumps without a usable curve, and open valves: their two
+//!   nodes are joined into one - the network stays connected for locating
+//!   bursts, but the device's own hydraulics are not modelled;
+//! - closed pipes and valves: left out (the two sides are not connected);
+//!   pumps the file starts closed: kept, and shut at the start
+//!   ([`Operations::shut`]); check-valve pipes: kept as plain pipes;
+//! - [TIMES], [PATTERNS] and [CONTROLS]: options for extended-period runs
+//!   ([`operations`]); controls on junction pressures, valves and speeds
+//!   noted and not modelled.
 //!
-//! What is not used (patterns, curves, controls, rules, energy, quality,
-//! ...) is listed section by section. Anything not in the EPANET format
-//! is an error, never skipped.
+//! What is not used (rules, energy, quality, ...) is listed section by
+//! section. Anything not in the EPANET format is an error, never skipped.
 //!
 //! - [`sections`]: splitting the text into sections and records.
 //! - [`units`]: US customary and SI units to SI.
@@ -34,17 +40,20 @@
 
 mod build;
 pub mod friction;
+pub mod operations;
+pub mod pumps;
 pub mod sections;
 pub mod units;
 
 use std::path::Path;
 
-use jk_hydraulics::Network;
+use jk_hydraulics::{Network, NodeId};
 use jk_kernel::{Acceleration, Length, STANDARD_GRAVITY, Velocity, WaveSpeed};
 
 use crate::error::ReadError;
 pub use crate::note::Note;
 pub use friction::Headloss;
+pub use operations::Operations;
 pub use units::FlowUnits;
 
 /// Choices the file cannot make.
@@ -90,6 +99,12 @@ pub struct InpNetwork {
     pub positions: Vec<Option<(f64, f64)>>,
     /// Bends of each pipe between its ends, in the same plan units.
     pub vertices: Vec<Vec<(f64, f64)>>,
+    /// Pumps modelled with their curves: file ID and pump node.
+    pub pumps: Vec<(String, NodeId)>,
+    /// How the file runs the network over time: extended-period options
+    /// from [TIMES], [PATTERNS] and [CONTROLS], and the pumps it starts
+    /// closed.
+    pub operations: Operations,
     /// Everything approximated or not used.
     pub notes: Vec<Note>,
 }
