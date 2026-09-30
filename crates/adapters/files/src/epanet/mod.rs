@@ -21,10 +21,10 @@
 //! - pumps with a head curve: a pump node with the curve fitted
 //!   ([`pumps`]), between two short lengths of station pipework (the
 //!   engine's pump joins exactly two pipes); efficiency, speed and inertia
-//!   assumed; pressure-reducing valves feeding a junction: a PRV node
-//!   holding elevation + setting downstream, between two lengths of pipe
-//!   of the valve's diameter (frozen at their steady opening in
-//!   transients). Pumps without a usable curve, and other open valves:
+//!   assumed; control valves (PRV, PSV, FCV, TCV): a valve node - a PRV
+//!   holding elevation + setting downstream, a PSV upstream, an FCV its
+//!   flow, a TCV its loss - between two lengths of pipe of the valve's
+//!   diameter (frozen at their steady opening in transients). Pumps without a usable curve, and other open valves:
 //!   their two nodes are joined into one - the network stays connected
 //!   for locating bursts, but the device's own hydraulics are not
 //!   modelled;
@@ -105,8 +105,9 @@ pub struct InpNetwork {
     pub vertices: Vec<Vec<(f64, f64)>>,
     /// Pumps modelled with their curves: file ID and pump node.
     pub pumps: Vec<(String, NodeId)>,
-    /// Pressure-reducing valves modelled as valves: file ID and node.
-    pub prvs: Vec<(String, NodeId)>,
+    /// Control valves (PRV, PSV, FCV, TCV) modelled as valves: file ID and
+    /// node.
+    pub valves: Vec<(String, NodeId)>,
     /// How the file runs the network over time: extended-period options
     /// from [TIMES], [PATTERNS] and [CONTROLS], and the pumps it starts
     /// closed.

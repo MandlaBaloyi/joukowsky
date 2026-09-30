@@ -69,9 +69,20 @@ pub fn page(event: &EventModel) -> Page {
             Node::Valve { .. } => ("valve", "-".into()),
             Node::CheckValve => ("check valve", "-".into()),
             Node::Pump { .. } => ("pump", "-".into()),
-            Node::PressureReducingValve { setting, .. } => (
-                "pressure-reducing valve",
-                format!("holds {:.1} m", setting.value()),
+            Node::ControlValve { mode, .. } => (
+                "control valve",
+                match mode {
+                    jk_hydraulics::ValveMode::Prv { setting } => {
+                        format!("PRV, holds {:.1} m below", setting.value())
+                    }
+                    jk_hydraulics::ValveMode::Psv { setting } => {
+                        format!("PSV, keeps {:.1} m above", setting.value())
+                    }
+                    jk_hydraulics::ValveMode::Fcv { flow } => {
+                        format!("FCV, at most {:.1} l/s", flow.value() * 1000.0)
+                    }
+                    jk_hydraulics::ValveMode::Tcv => "TCV, fixed throttle".into(),
+                },
             ),
         };
         let logger = demo.loggers.iter().any(|l| l.index() == n);

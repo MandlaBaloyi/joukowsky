@@ -14,6 +14,7 @@
 //! 50 m: the valve shuts, S1 hears nothing, and no route runs through it.
 //! Last, a running pump: r = -dH/dQ, the droop of its curve.
 
+use jk_hydraulics::ValveMode;
 use jk_hydraulics::boundary::leak;
 use jk_hydraulics::{
     Burst, BurstOpening, GridOptions, InitialCondition, Network, Node, NodeId, Probe, Pump,
@@ -54,8 +55,10 @@ fn zone(split: bool, second: bool) -> (Network, [NodeId; 2], Option<NodeId>) {
         head: Head::new(80.0),
     });
     let s1 = net.add_node(j0());
-    let v = net.add_node(Node::PressureReducingValve {
-        setting: Head::new(50.0),
+    let v = net.add_node(Node::ControlValve {
+        mode: ValveMode::Prv {
+            setting: Head::new(50.0),
+        },
         open_resistance: 0.0,
     });
     let s2 = net.add_node(j0());
@@ -181,7 +184,7 @@ fn a_shut_prv_passes_no_wave_and_no_route() {
     let s = sim.steady_state(&SteadyOptions::default()).unwrap();
     println!(
         "A second source at 60 m holds the zone: the valve is {:?}",
-        s.prvs[0].1
+        s.valves[0].1
     );
     let head = s.node_heads[hole.unwrap().index()].value();
     let flow = burst(&mut sim, hole.unwrap(), head, b);

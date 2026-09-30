@@ -22,7 +22,7 @@ use jk_kernel::Time;
 use crate::HydraulicsError;
 use crate::boundary::check_valve;
 use crate::boundary::junction::{self, Arrival, PipeEnd};
-use crate::boundary::{leak, prv, pump, valve};
+use crate::boundary::{control_valve, leak, pump, valve};
 use crate::error::positive;
 use crate::moc::characteristics::Characteristics;
 use crate::moc::grid::MAX_STEPS;
@@ -183,7 +183,7 @@ impl Network {
                         PipeEnd::Upstream => -steady.pipe_flows[pid.0],
                     })
                     .sum(),
-                Node::CheckValve | Node::PressureReducingValve { .. } => 0.0,
+                Node::CheckValve | Node::ControlValve { .. } => 0.0,
                 Node::Pump { .. } => pump_suction_flow(&topo[n], &steady.pipe_flows),
             })
             .collect();
@@ -332,8 +332,11 @@ impl Network {
                         node_outflow[n] = 0.0;
                         continue;
                     }
-                    Node::PressureReducingValve { .. } => {
-                        // Frozen at its steady opening (see boundary/prv.rs).
+                    Node::ControlValve {
+                        mode,
+                        open_resistance,
+                    } => {
+                        // Frozen at its steady opening (boundary/control_valve.rs).
                         let pos = |e: PipeEnd| {
                             arrivals
                                 .iter()
@@ -343,9 +346,14 @@ impl Network {
                         let (i_in, i_out) = (pos(PipeEnd::Downstream), pos(PipeEnd::Upstream));
                         let (a_in, a_out) = (arrivals[i_in], arrivals[i_out]);
                         let (q0, drop) = steady.valve_steady[n];
-                        let r = (q0 > 0.0).then(|| drop / (q0 * q0));
-                        let s = prv::step(
+                        let r = if mode.one_way() {
+                            (q0 > 0.0).then(|| drop / (q0 * q0))
+                        } else {
+                            Some(open_resistance)
+                        };
+                        let s = control_valve::step(
                             r,
+                            mode.one_way(),
                             a_in.characteristic,
                             a_in.impedance,
                             a_out.characteristic,

@@ -6,11 +6,11 @@
 //! va2_, ...), so a log line traces straight back to the claim it proves.
 
 mod boundaries;
+mod control_valves;
 mod controls;
 mod joukowsky;
 mod network;
 mod plastic_front;
-mod prv;
 mod pumps;
 mod single_pipe;
 mod sources;

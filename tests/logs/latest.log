@@ -1,18 +1,17 @@
 joukowsky test run
-  when     2026-09-30 13:21:49
+  when     2026-09-30 13:39:59
   suite    full
-  commit   2c57fd4 (with uncommitted changes)
+  commit   4a710ef (with uncommitted changes)
   rust     rustc 1.98.1 (48a229cea 2026-09-01)
   command  cargo test --workspace --no-fail-fast -- --nocapture --test-threads=1 --include-ignored
 ==============================================================================
    Compiling jk-application v0.1.0 (C:\Users\HP\Desktop\joukowsky\crates\application)
-   Compiling jk-sim v0.1.0 (C:\Users\HP\Desktop\joukowsky\crates\sim)
-   Compiling jk-localisation v0.1.0 (C:\Users\HP\Desktop\joukowsky\crates\domain\localisation)
-   Compiling jk-tests v0.1.0 (C:\Users\HP\Desktop\joukowsky\tests)
-   Compiling jk-files v0.1.0 (C:\Users\HP\Desktop\joukowsky\crates\adapters\files)
-   Compiling jk-hydraulics v0.1.0 (C:\Users\HP\Desktop\joukowsky\crates\domain\hydraulics)
    Compiling jk-cli v0.1.0 (C:\Users\HP\Desktop\joukowsky\crates\interfaces\cli)
-    Finished `test` profile [unoptimized + debuginfo] target(s) in 16.87s
+   Compiling jk-tests v0.1.0 (C:\Users\HP\Desktop\joukowsky\tests)
+   Compiling jk-sim v0.1.0 (C:\Users\HP\Desktop\joukowsky\crates\sim)
+   Compiling jk-files v0.1.0 (C:\Users\HP\Desktop\joukowsky\crates\adapters\files)
+   Compiling jk-localisation v0.1.0 (C:\Users\HP\Desktop\joukowsky\crates\domain\localisation)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 7.48s
      Running unittests src\lib.rs (target\debug\deps\jk_application-31ec11ad23313301.exe)
 
 running 3 tests
@@ -104,20 +103,21 @@ test result: ok. 22 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; fin
 
      Running unittests src\lib.rs (target\debug\deps\jk_hydraulics-c42e47dfc771fa13.exe)
 
-running 52 tests
+running 53 tests
 test boundary::check_valve::tests::open_valve_passes_forward_flow_like_a_plain_joint ... ok
 test boundary::check_valve::tests::reversing_flow_shuts_it_and_each_side_becomes_a_dead_end ... ok
 test boundary::check_valve::tests::stays_shut_until_upstream_pushes_harder_then_reopens ... ok
 test boundary::closure::tests::openings ... ok
 test boundary::closure::tests::rejects_bad_power_closures ... ok
+test boundary::control_valve::tests::a_throttle_passes_both_ways ... ok
+test boundary::control_valve::tests::one_way_never_backwards_and_shut_is_shut ... ok
+test boundary::control_valve::tests::orifice_balances_both_characteristics ... ok
 test boundary::dead_end::tests::no_flow_and_head_from_the_characteristic ... ok
 test boundary::junction::tests::a_single_pipe_without_outflow_is_a_dead_end ... ok
 test boundary::junction::tests::flows_balance_and_every_pipe_satisfies_its_characteristic ... ok
 test boundary::leak::tests::a_zero_coefficient_is_no_leak ... ok
 test boundary::leak::tests::below_the_outside_head_water_is_drawn_in ... ok
 test boundary::leak::tests::outflow_obeys_the_orifice_law_and_continuity ... ok
-test boundary::prv::tests::never_backwards_and_shut_is_shut ... ok
-test boundary::prv::tests::orifice_balances_both_characteristics ... ok
 test boundary::pump::tests::curve_passes_through_its_three_points_and_scales_with_speed ... ok
 test boundary::pump::tests::non_return_valve_shuts_when_the_pump_cannot_push ... ok
 test boundary::pump::tests::rated_torque_is_power_over_speed ... ok
@@ -158,7 +158,7 @@ test pipe::viscoelastic::tests::without_creep_a_characteristic_is_unchanged ... 
 test steady::controls::tests::daily_times_repeat_and_land_exactly ... ok
 test steady::controls::tests::once_is_once ... ok
 
-test result: ok. 52 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s
+test result: ok. 53 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s
 
      Running unittests src\lib.rs (target\debug\deps\jk_kernel-eccabcc9e10cd5d2.exe)
 
@@ -177,7 +177,7 @@ test units::tests::same_type_arithmetic ... ok
 test units::tests::velocity_flow_area ... ok
 test units::tests::wave_travel_time_and_distance_round_trip ... ok
 
-test result: ok. 13 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+test result: ok. 13 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s
 
      Running unittests src\lib.rs (target\debug\deps\jk_localisation-b57d917c3efe0d09.exe)
 
@@ -190,7 +190,7 @@ test posterior::score::tests::a_wrong_candidate_is_penalised ... ok
 test posterior::score::tests::with_independent_errors_the_correlated_score_matches_the_simple_one ... ok
 test size::tests::exact_fronts_give_back_the_flow ... ok
 
-test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
 
      Running unittests src\lib.rs (target\debug\deps\jk_sim-cdf9363ef8ace4d0.exe)
 
@@ -221,7 +221,7 @@ test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; fini
 
      Running adapters\main.rs (target\debug\deps\adapters-0b7a076242e7529e.exe)
 
-running 12 tests
+running 13 tests
 test analytical::epanet::broken_files_are_refused_with_the_line_number ...   refused: line 4: link 'P1' joins unknown node 'B'
   line 4: 'unknown node 'B''                   yes
   refused: line 3: node ID 'A' is used twice
@@ -300,7 +300,7 @@ ok
 test analytical::epanet_operations::a_prv_in_a_file_holds_elevation_plus_setting_in_either_units ... SI (m) units:
   reader's notes (5):
     - line 12: PRV 'V': holds 50.00 m downstream (elevation of J + setting); frozen at its steady opening in transients (its response over seconds is not modelled)
-    - 1 pressure-reducing valve(s) modelled, each between two 10.0 m lengths of pipe of its own diameter (pipes 'ID/in' and 'ID/out')
+    - 1 control valve(s) modelled, each between two 10.0 m lengths of pipe of its own diameter (pipes 'ID/in' and 'ID/out')
     - .inp files carry no wave speeds: every pipe is given 1000 m/s [VERIFY - real wave speeds, by material, are needed to locate bursts well]
     - Darcy-Weisbach roughness turned into one Darcy friction factor per pipe, equal head loss at 1.0 m/s: f from 0.0189 to 0.0189
     - DURATION 0 (a single steady state in EPANET): extended-period runs default to 24 h
@@ -333,13 +333,28 @@ The file's run: 48 h in 5-minute steps, 2 controls
       ... that way round                       yes
     at least four switches in 48 h             yes
 ok
+test analytical::epanet_operations::psv_fcv_and_tcv_in_a_file_become_valves_with_their_settings ...   reader's notes (9):
+    - 1 curve(s) not used (efficiency, volume, valve or unmodelled pump curves): 1
+    - line 17: PSV 'S': holds 72.00 m upstream (elevation of A + setting); frozen at its steady opening in transients (its response over seconds is not modelled)
+    - line 18: FCV 'F': passes at most 8.00 l/s; frozen at its steady opening in transients (its response over seconds is not modelled)
+    - line 19: TCV 'T': a fixed throttle, loss coefficient 5; frozen at its steady opening in transients (its response over seconds is not modelled)
+    - line 20: GPV valve 'G' between A and L: modelled as a plain connection (the two nodes are joined); its own hydraulics are not
+    - 3 control valve(s) modelled, each between two 10.0 m lengths of pipe of its own diameter (pipes 'ID/in' and 'ID/out')
+    - .inp files carry no wave speeds: every pipe is given 1000 m/s [VERIFY - real wave speeds, by material, are needed to locate bursts well]
+    - Darcy-Weisbach roughness turned into one Darcy friction factor per pipe, equal head loss at 1.0 m/s: f from 0.0203 to 0.0203
+    - DURATION 0 (a single steady state in EPANET): extended-period runs default to 24 h
+    PSV S keeps elevation of A (60) + 12 = 72 m upstream yes
+    FCV F passes at most 8 l/s                 yes
+    TCV T: loss coefficient 5 on DN150 -> R = K / (2 g A^2) [s^2/m^5] got     816.346498   expected     816.346498   rel.err 0.0e0
+    the GPV stays a plain connection, and says so yes
+ok
 test analytical::epanet_operations::times_patterns_and_controls_in_every_form_are_mapped_or_noted ...   reader's notes (14):
     - line 17: pump 'PU1': one-point curve, taken exactly (EPANET's own form); efficiency 75%, 1450 rpm and inertia (Thorley) assumed - they matter only for pump trips [VERIFY]
     - line 18: pump 'PU2' is given as constant power, not a head curve: modelled as a plain connection
     - line 25: PRV 'V1': holds 30.00 m downstream (elevation of D + setting); frozen at its steady opening in transients (its response over seconds is not modelled)
     - line 18: pump 'PU2' between S3 and B: modelled as a plain connection (the two nodes are joined); its own hydraulics are not
     - 1 tank(s) with storage: fixed heads in transients, their level simulated in extended-period runs (cylinders of the given diameter)
-    - 1 pressure-reducing valve(s) modelled, each between two 10.0 m lengths of pipe of its own diameter (pipes 'ID/in' and 'ID/out')
+    - 1 control valve(s) modelled, each between two 10.0 m lengths of pipe of its own diameter (pipes 'ID/in' and 'ID/out')
     - 1 pump(s) modelled with their curves, each between two 10.0 m lengths of station pipework (pipes 'ID/suction' and 'ID/discharge')
     - .inp files carry no wave speeds: every pipe is given 1000 m/s [VERIFY - real wave speeds, by material, are needed to locate bursts well]
     - Darcy-Weisbach roughness turned into one Darcy friction factor per pipe, equal head loss at 1.0 m/s: f from 0.0189 to 0.0203
@@ -428,7 +443,7 @@ test simulation::logger_files::a_burst_recorded_in_logger_files_raises_one_alarm
   at 10:15:03 - seconds past 10:15:00          got       2.998747   expected       3.000000   rel.err 4.2e-4
 ok
 
-test result: ok. 12 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.43s
+test result: ok. 13 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.49s
 
      Running balance\main.rs (target\debug\deps\balance-f50430771254bd71.exe)
 
@@ -453,7 +468,7 @@ test simulation::night_watch::the_detection_curve_matches_the_cusum_arithmetic .
   at the arithmetic's size: caught at least a third of the time yes
 ok
 
-test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.14s
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.34s
 
      Running classification\main.rs (target\debug\deps\classification-31daad1fdce9861c.exe)
 
@@ -549,7 +564,7 @@ test simulation::scenarios::power_data_settles_the_slow_burst ... The same slow 
   burst                                        yes
 ok
 
-test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.82s
+test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.94s
 
      Running detection\main.rs (target\debug\deps\detection-f716915457d43300.exe)
 
@@ -625,11 +640,11 @@ test simulation::burst_location::vs1_location_error_versus_sampling_rate_and_noi
   128 S/s with 2 cm noise locates to under 1 m RMS yes
 ok
 
-test result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 2.64s
+test result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 3.46s
 
      Running hydraulics\main.rs (target\debug\deps\hydraulics-8605ea72ea8561e1.exe)
 
-running 48 tests
+running 51 tests
 test analytical::boundaries::burst::a_10mm_hole_at_60m_head ... DN150 AC main at 60 m head, 0.5 m/s; a 10 mm hole opens (Cd 0.6):
   water lost              1.555 l/s  (134 m^3 per day)
   head step at the burst  -4.486 m
@@ -680,6 +695,50 @@ test analytical::boundaries::reflections::va3_tee_of_identical_pipes_transmits_t
   reflected R (docs: -1/3)                     got      -0.333333   expected      -0.333333   rel.err 1.5e-15
   matches the closed-form formula              got       0.666667   expected       0.666667   rel.err 8.3e-16
   => each tee cuts the front by a third: waves fade fast in branched networks.
+ok
+test analytical::control_valves::va10_a_prv_holds_its_setting_opens_when_it_cannot_and_shuts_against_backflow ... ACTIVE: source at 80 m, setting 50 m, 20 l/s drawn
+    the valve is active                        yes
+    junction head = setting - R2 Q^2 [m]       got      49.173449   expected      49.173449   rel.err 1.4e-16
+    head just upstream = 80 - R1 Q^2 [m]       got      78.966811   expected      78.966811   rel.err 1.8e-16
+OPEN: source at 45 m, below the setting
+    the valve is fully open                    yes
+    junction head = 45 - (R1 + Rv + R2) Q^2 [m] got      43.036942   expected      43.036942   rel.err 1.8e-15
+CLOSED: a second source at 60 m holds the zone above the setting
+    the valve is shut                          yes
+    nothing passes it                          yes
+    junction fed from the second source alone: 60 - R3 Q^2 [m] got      59.346923   expected      59.346923   rel.err 1.0e-12
+...until the zone draws 50 l/s: the second source alone would give
+   43.7 m, below the setting - the PRV opens and shares
+    the valve is active                        yes
+    head just below it = setting [m] (junction + R2 q^2) got      50.000000   expected      50.000000   rel.err 0.0e0
+  the PRV passes 10.4 l/s, the second source 39.6 l/s
+    continuity and energy hold (residuals)     yes
+ok
+test analytical::control_valves::va10_a_wave_passes_a_prv_in_the_share_the_orifice_law_gives ... A 0.5 m wave meets a PRV dropping 30 m at 50 l/s (frozen orifice, 2 R Q0 = 1200 s/m^2, pipe impedance B = 1443 s/m^2):
+  steady head below the valve 50.0000 m (= the setting)
+    head below before the wave [m]             got      50.000000   expected      50.000000   rel.err 1.4e-11
+    wave passed on [m] (orifice law)           got       0.352875   expected       0.352875   rel.err 6.1e-10
+  = 71% of the wave (small-wave formula: 0.3531 m, 71%) - the rest is reflected
+ok
+test analytical::control_valves::va11_a_psv_keeps_the_high_zone_up_and_opens_when_it_need_not ... PSV set to 70 m between a high zone (5 l/s) and a low reservoir at 20 m:
+    the valve is active                        yes
+    head just above it = setting [m]           got      70.000000   expected      70.000000   rel.err 0.0e0
+    what it lets through to the low reservoir [l/s] got      15.309753   expected      15.309753   rel.err 4.8e-15
+    the high zone's head [m]                   got      71.020492   expected      71.020492   rel.err 2.0e-16
+...and with the low reservoir at 72 m, above the setting: no need to throttle
+    the valve is fully open                    yes
+    flow as through plain pipes [l/s]          got      12.102980   expected      12.102980   rel.err 5.5e-14
+ok
+test analytical::control_valves::va11_a_tcv_is_a_fixed_loss_both_ways ... TCV (K = 5 on DN200) between reservoirs at 80 m and 20 m, then 20 m and 80 m:
+    forward flow sqrt(60 / sum R) [l/s]        got      42.697009   expected      42.697009   rel.err 5.7e-15
+    the same flow backwards [l/s]              got     -42.697009   expected     -42.697009   rel.err 6.0e-15
+ok
+test analytical::control_valves::va11_an_fcv_passes_its_setting_and_no_more ... FCV between a source at 80 m and a reservoir at 20 m; fully open it would pass          42.7 l/s
+    set to 10 l/s: active                      yes
+    passes exactly 10 l/s [l/s]                got      10.000000   expected      10.000000   rel.err 4.4e-15
+    head above it: 80 - (R1 + R2) q^2 [m]      got      77.387691   expected      77.387691   rel.err 9.2e-16
+    set to 100 l/s: fully open                 yes
+    passes what it can [l/s]                   got      42.697009   expected      42.697009   rel.err 5.8e-15
 ok
 test analytical::controls::va9_a_float_valve_on_the_inlet_closes_when_full_and_opens_when_low ... A float valve on a tank's inlet: the reservoir at 80 m delivers 95.2 l/s at 57 m, 79.4 l/s at 64 m.
     valve closes at [h]                        got       9.319321   expected       9.319277   rel.err 4.7e-6
@@ -780,30 +839,6 @@ test analytical::plastic_front::va6_a_sharp_front_in_plastic_pipe_shrinks_as_the
     600 m from the valve: jump 0.158 m, theory 0.149 m (+5.4%)
   front damping rate kappa [1/m]               got       0.006573   expected       0.006667   rel.err 1.4e-2
   the front has lost over half its height 200 m on yes
-ok
-test analytical::prv::va10_a_prv_holds_its_setting_opens_when_it_cannot_and_shuts_against_backflow ... ACTIVE: source at 80 m, setting 50 m, 20 l/s drawn
-    the valve is active                        yes
-    junction head = setting - R2 Q^2 [m]       got      49.173449   expected      49.173449   rel.err 1.4e-16
-    head just upstream = 80 - R1 Q^2 [m]       got      78.966811   expected      78.966811   rel.err 1.8e-16
-OPEN: source at 45 m, below the setting
-    the valve is fully open                    yes
-    junction head = 45 - (R1 + Rv + R2) Q^2 [m] got      43.036942   expected      43.036942   rel.err 1.8e-15
-CLOSED: a second source at 60 m holds the zone above the setting
-    the valve is shut                          yes
-    nothing passes it                          yes
-    junction fed from the second source alone: 60 - R3 Q^2 [m] got      59.346923   expected      59.346923   rel.err 1.0e-12
-...until the zone draws 50 l/s: the second source alone would give
-   43.7 m, below the setting - the PRV opens and shares
-    the valve is active                        yes
-    head just below it = setting [m] (junction + R2 q^2) got      50.000000   expected      50.000000   rel.err 0.0e0
-  the PRV passes 10.4 l/s, the second source 39.6 l/s
-    continuity and energy hold (residuals)     yes
-ok
-test analytical::prv::va10_a_wave_passes_a_prv_in_the_share_the_orifice_law_gives ... A 0.5 m wave meets a PRV dropping 30 m at 50 l/s (frozen orifice, 2 R Q0 = 1200 s/m^2, pipe impedance B = 1443 s/m^2):
-  steady head below the valve 50.0000 m (= the setting)
-    head below before the wave [m]             got      50.000000   expected      50.000000   rel.err 1.4e-11
-    wave passed on [m] (orifice law)           got       0.352875   expected       0.352875   rel.err 6.1e-10
-  = 71% of the wave (small-wave formula: 0.3531 m, 71%) - the rest is reflected
 ok
 test analytical::pumps::inertia::inertia_of_the_station_pump ... Pump + motor for 79.5 kW at 1450 rpm:
   estimated inertia 2.46 kg m^2
@@ -1018,7 +1053,7 @@ test invariants::steady_state::an_undisturbed_pipe_stays_steady ... Steady state
   valve holds steady                           yes
 ok
 
-test result: ok. 48 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 13.28s
+test result: ok. 51 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 34.16s
 
      Running kernel\main.rs (target\debug\deps\kernel-d5a37fe190909055.exe)
 
@@ -1134,7 +1169,7 @@ Recommended 6 (after swaps): a1 block A1, c1 block C1, b1 block B1, c2 block C2,
     B-b2               90 m   typical region  155 m
     C-c1              150 m   typical region   20 m
     C-c2              220 m   typical region   25 m
-  (advice took 3 s on this machine)
+  (advice took 6 s on this machine)
 Would a sudden 1 l/s burst be felt? By at least one logger on 100% of the pipe, by two (so located) on 100%. Smallest burst locatable anywhere on each pipe (upper bound: no plastic-wall damping yet):
     R-M connection     0.09 l/s
     M-A ring           0.04 l/s
@@ -1380,7 +1415,7 @@ test simulation::valve_fronts::a_shut_prv_passes_no_wave_and_no_route ... A seco
     and no route from S1 reaches the zone: the locator cannot place a burst there from S1 yes
 ok
 
-test result: ok. 32 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 113.95s
+test result: ok. 32 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 186.28s
 
      Running pipeline\main.rs (target\debug\deps\pipeline-d11d8b6223a66c52.exe)
 
@@ -1601,7 +1636,7 @@ test simulation::valves_by_hour::at_noon_the_valve_is_active_and_both_loggers_lo
     and it is not dismissed                    yes
 ok
 
-test result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 15.00s
+test result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 9.67s
 
    Doc-tests jk_application
 
@@ -1670,9 +1705,9 @@ running 0 tests
 test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
 
 ==============================================================================
-  passed   261
+  passed   266
   failed   0
   skipped  0 slow test(s) not in this suite
   filtered 0 test(s) outside -Only/-Filter
-  time     170.9 s (including compile)
+  time     249.7 s (including compile)
   result   ALL PASSED

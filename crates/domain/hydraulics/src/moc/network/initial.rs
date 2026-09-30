@@ -88,12 +88,13 @@ impl InitialCondition {
         let n_nodes = network.nodes().len();
         let bad = |why: String| Err(HydraulicsError::InconsistentInitialState(why));
         if !matches!(self, Self::Steady(_))
-            && let Some(n) = network.nodes().iter().position(|node| {
-                matches!(node, Node::Pump { .. } | Node::PressureReducingValve { .. })
-            })
+            && let Some(n) = network
+                .nodes()
+                .iter()
+                .position(|node| matches!(node, Node::Pump { .. } | Node::ControlValve { .. }))
         {
             return bad(format!(
-                "node {n} is a pump or a pressure-reducing valve: its head change is only \
+                "node {n} is a pump or a control valve: its head change is only \
                  known from a steady solve - use InitialCondition::Steady"
             ));
         }
@@ -182,7 +183,7 @@ fn from_pipe_flows(
         match node {
             // Pumps and PRVs never get here: they need a steady solve
             // (refused above).
-            Node::Reservoir { .. } | Node::Pump { .. } | Node::PressureReducingValve { .. } => {}
+            Node::Reservoir { .. } | Node::Pump { .. } | Node::ControlValve { .. } => {}
             Node::Junction { demand } => {
                 let imbalance = inflow - outflow - demand.value();
                 if imbalance.abs() > tol {

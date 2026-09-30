@@ -18,10 +18,10 @@
 
 pub mod check_valve;
 pub mod closure;
+pub mod control_valve;
 pub mod dead_end;
 pub mod junction;
 pub mod leak;
-pub mod prv;
 pub mod pump;
 pub mod reservoir;
 pub mod valve;

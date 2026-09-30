@@ -49,8 +49,9 @@ EPANET .inp format                                               [ADOPT]
         below + pressure; psi at EPANET's 0.4333 psi/ft; open loss from the
         valve's minor loss and diameter), between two lengths of pipe of
         the valve's diameter (V-A10).
-        Not yet: the wave-speed sidecar; other valves as devices (PSV,
-        FCV, TCV, PBV, GPV); [RULES]; controls on junction pressures,
+        Then PSV (setting on the node above), FCV (a flow) and TCV (a loss
+        coefficient) as valves too.
+        Not yet: the wave-speed sidecar; PBV and GPV as devices; [RULES]; controls on junction pressures,
         valves and pump speeds; reservoir head patterns; tank volume
         curves.
 

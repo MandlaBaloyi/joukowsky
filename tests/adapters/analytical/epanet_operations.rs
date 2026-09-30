@@ -290,7 +290,7 @@ fn prv_file(us: bool) -> String {
 
 #[test]
 fn a_prv_in_a_file_holds_elevation_plus_setting_in_either_units() {
-    use jk_hydraulics::boundary::prv::PrvState;
+    use jk_hydraulics::boundary::control_valve::ValveState;
     use jk_hydraulics::{GridOptions, InitialCondition, Probe, SteadyOptions};
     for us in [false, true] {
         let inp = parse(&prv_file(us), &InpOptions::default()).unwrap();
@@ -298,8 +298,12 @@ fn a_prv_in_a_file_holds_elevation_plus_setting_in_either_units() {
         if !us {
             print_notes(&inp);
         }
-        let (_, v) = inp.prvs[0];
-        let Node::PressureReducingValve { setting, .. } = inp.network.nodes()[v.index()] else {
+        let (_, v) = inp.valves[0];
+        let Node::ControlValve {
+            mode: jk_hydraulics::ValveMode::Prv { setting },
+            ..
+        } = inp.network.nodes()[v.index()]
+        else {
             panic!("V is a PRV node");
         };
         check_close(
@@ -311,9 +315,9 @@ fn a_prv_in_a_file_holds_elevation_plus_setting_in_either_units() {
         let s = inp.network.steady_state(&SteadyOptions::default()).unwrap();
         check(
             "  it is active in the steady state",
-            s.prvs
+            s.valves
                 .iter()
-                .any(|(n, st)| *n == v && *st == PrvState::Active),
+                .any(|(n, st)| *n == v && *st == ValveState::Active),
         );
         let out = inp.pipe_ids.iter().position(|p| p == "V/out").unwrap();
         let q = s.pipe_flows[out].value();
@@ -348,4 +352,69 @@ fn a_prv_in_a_file_holds_elevation_plus_setting_in_either_units() {
             hi - lo < 1e-6,
         );
     }
+}
+
+#[test]
+fn psv_fcv_and_tcv_in_a_file_become_valves_with_their_settings() {
+    use jk_hydraulics::ValveMode;
+    let text = "\
+[RESERVOIRS]
+R 80
+L 20
+[JUNCTIONS]
+A 60 5
+B 15 0
+C 10 0
+D 12 0
+E 12 0
+[PIPES]
+P1 R A 1000 150 0.1
+P2 B L 300 150 0.1
+P3 A C 200 150 0.1
+P4 D L 200 150 0.1
+P5 A E 100 150 0.1
+[VALVES]
+S A B 150 PSV 12 0
+F C D 150 FCV 8 0
+T E L 150 TCV 5 0
+G A L 150 GPV 1 0
+[CURVES]
+1 0 0
+1 10 1
+[OPTIONS]
+Units LPS
+Headloss D-W
+";
+    let inp = parse(text, &InpOptions::default()).unwrap();
+    print_notes(&inp);
+    let mode = |id: &str| {
+        let (_, n) = inp.valves.iter().find(|(x, _)| x == id).unwrap();
+        match inp.network.nodes()[n.index()] {
+            Node::ControlValve {
+                mode,
+                open_resistance,
+            } => (mode, open_resistance),
+            _ => panic!("{id} is a valve"),
+        }
+    };
+    check(
+        "  PSV S keeps elevation of A (60) + 12 = 72 m upstream",
+        matches!(mode("S").0, ValveMode::Psv { setting } if (setting.value() - 72.0).abs() < 1e-12),
+    );
+    check(
+        "  FCV F passes at most 8 l/s",
+        matches!(mode("F").0, ValveMode::Fcv { flow } if (flow.value() - 0.008).abs() < 1e-15),
+    );
+    let a = std::f64::consts::PI * 0.25 * 0.15 * 0.15;
+    check_close(
+        "  TCV T: loss coefficient 5 on DN150 -> R = K / (2 g A^2) [s^2/m^5]",
+        mode("T").1,
+        5.0 / (2.0 * jk_kernel::STANDARD_GRAVITY.value() * a * a),
+        1e-9,
+    );
+    check(
+        "  the GPV stays a plain connection, and says so",
+        !inp.valves.iter().any(|(x, _)| x == "G")
+            && inp.notes.iter().any(|n| n.text.contains("GPV valve 'G'")),
+    );
 }

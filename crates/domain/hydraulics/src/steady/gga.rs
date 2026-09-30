@@ -37,11 +37,13 @@
 //!     non-return valve is settled like a check valve: shut if the flow
 //!     comes out negative, reopened if the shut-off head a0 could overcome
 //!     the head difference;
-//!   - pressure-reducing valve: two nodes. ACTIVE: the downstream side is
-//!     a fixed head at the setting, and a zero-conductance link carries the
-//!     flow the downstream side sends on (updated every Newton round);
-//!     OPEN: a friction link; CLOSED: no link. States settled with the
-//!     check valves (EPANET's rules; `boundary/prv.rs`).
+//!   - control valve: two nodes (`boundary/control_valve.rs`). ACTIVE PRV:
+//!     the downstream side is a fixed head at the setting, and a
+//!     zero-conductance link carries the flow the downstream side sends on
+//!     (updated every Newton round); ACTIVE PSV: the same with the UPSTREAM
+//!     side fixed, the link carrying what arrives there; ACTIVE FCV: a link
+//!     of fixed flow; OPEN (and a TCV, always): a friction link; CLOSED: no
+//!     link. States settled with the check valves (EPANET's rules).
 //!
 //! Links out of service ([`Shut`]): a closed pipe stays in the graph with
 //! no conductance (it carries nothing whatever the heads); a stopped pump
@@ -53,8 +55,8 @@
 
 use crate::HydraulicsError;
 use crate::boundary::check_valve::CheckValveState;
+use crate::boundary::control_valve::{ValveMode, ValveState};
 use crate::boundary::junction::PipeEnd;
-use crate::boundary::prv::PrvState;
 use crate::boundary::pump::PumpCurve;
 use crate::moc::network::initial::SteadyState;
 use crate::model::{Network, Node, NodeId, Topology};
@@ -78,10 +80,12 @@ const ROUNDING_FACTOR: f64 = 64.0;
 const D_FLOOR: f64 = 1e-2;
 /// Most passes allowed to settle the check valves' and PRVs' states.
 const MAX_CHECK_VALVE_PASSES: usize = 40;
-/// Head tolerance for switching a PRV's state [m] (EPANET: 0.0005 ft).
-const PRV_HEAD_TOL: f64 = 1e-4;
-/// Reverse flow that shuts a PRV [m^3/s].
-const PRV_FLOW_TOL: f64 = 1e-9;
+/// Head tolerance for switching a control valve's state [m] (EPANET:
+/// 0.0005 ft).
+const VALVE_HEAD_TOL: f64 = 1e-4;
+/// Reverse flow that shuts a one-way valve, and the margin by which an
+/// open FCV must exceed its setting to become active [m^3/s].
+const VALVE_FLOW_TOL: f64 = 1e-9;
 
 /// How a link's head change depends on its flow.
 #[derive(Clone, Copy)]
@@ -96,9 +100,13 @@ enum Law {
     Pump(PumpCurve, f64),
     /// Out of service: no flow whatever the heads (conductance 0).
     Closed,
-    /// An active PRV: no conductance; its flow is set each round to what
-    /// its (fixed-head) downstream side sends on.
-    Regulated,
+    /// An active PRV or PSV: no conductance; its flow is set each round
+    /// from the other links at its fixed-head side `at`: `sign` times what
+    /// they carry away from it (PRV +1: what the downstream side sends on;
+    /// PSV -1: what arrives at the upstream side).
+    Regulated { at: usize, sign: f64 },
+    /// An active FCV: its flow is its setting (the link's initial flow).
+    FixedFlow,
 }
 
 impl Law {
@@ -113,7 +121,7 @@ impl Law {
             Self::Pump(curve, min_slope) => {
                 (-curve.head(q, 1.0), (-curve.slope(q, 1.0)).max(min_slope))
             }
-            Self::Closed | Self::Regulated => (0.0, f64::INFINITY),
+            Self::Closed | Self::Regulated { .. } | Self::FixedFlow => (0.0, f64::INFINITY),
         }
     }
 }
@@ -156,9 +164,10 @@ impl Graph {
     fn build(
         network: &Network,
         states: &[CheckValveState],
-        prvs: &[Option<PrvState>],
+        valves: &[Option<ValveState>],
         shut: &Shut,
     ) -> Result<Self, HydraulicsError> {
+        let active = |n: usize| valves[n] == Some(ValveState::Active);
         let mut graph = Self {
             fixed_head: Vec::new(),
             demand: Vec::new(),
@@ -181,20 +190,23 @@ impl Graph {
             let (fixed, demand) = match node {
                 Node::Reservoir { head } => (Some(network.source_head(n, *head, Time::ZERO)), 0.0),
                 Node::Junction { demand } => (None, demand.value()),
+                Node::ControlValve {
+                    mode: ValveMode::Psv { setting },
+                    ..
+                } if active(n) => (Some(setting.value()), 0.0),
                 Node::Valve { .. }
                 | Node::CheckValve
                 | Node::Pump { .. }
-                | Node::PressureReducingValve { .. } => (None, 0.0),
+                | Node::ControlValve { .. } => (None, 0.0),
             };
             let up = add(&mut graph, fixed, demand, n);
-            let split = matches!(node, Node::Pump { .. } | Node::PressureReducingValve { .. })
+            let split = matches!(node, Node::Pump { .. } | Node::ControlValve { .. })
                 || (matches!(node, Node::CheckValve) && states[n] == CheckValveState::Closed);
             let down = match node {
-                Node::PressureReducingValve { setting, .. }
-                    if prvs[n] == Some(PrvState::Active) =>
-                {
-                    add(&mut graph, Some(setting.value()), 0.0, n)
-                }
+                Node::ControlValve {
+                    mode: ValveMode::Prv { setting },
+                    ..
+                } if active(n) => add(&mut graph, Some(setting.value()), 0.0, n),
                 _ if split => add(&mut graph, None, 0.0, n),
                 _ => up,
             };
@@ -259,28 +271,44 @@ impl Graph {
                 });
                 graph.pump_link[n] = Some(graph.links.len() - 1);
             }
-            if let Node::PressureReducingValve {
-                open_resistance, ..
+            if let Node::ControlValve {
+                mode,
+                open_resistance,
             } = node
             {
-                let law = match prvs[n] {
-                    Some(PrvState::Active) => Some(Law::Regulated),
-                    Some(PrvState::Open) => Some(Law::Friction(*open_resistance)),
+                let (up, down) = (graph.up_side[n], graph.down_side[n]);
+                let law = match (valves[n], mode) {
+                    (Some(ValveState::Active), ValveMode::Prv { .. }) => Some((
+                        Law::Regulated {
+                            at: down,
+                            sign: 1.0,
+                        },
+                        0.0,
+                    )),
+                    (Some(ValveState::Active), ValveMode::Psv { .. }) => {
+                        Some((Law::Regulated { at: up, sign: -1.0 }, 0.0))
+                    }
+                    (Some(ValveState::Active), ValveMode::Fcv { flow }) => {
+                        Some((Law::FixedFlow, flow.value()))
+                    }
+                    (Some(ValveState::Open), _) | (_, ValveMode::Tcv) => {
+                        Some((Law::Friction(*open_resistance), 0.0))
+                    }
                     _ => None,
                 };
-                if let Some(law) = law {
+                if let Some((law, initial_flow)) = law {
                     graph.links.push(Link {
-                        from: graph.up_side[n],
-                        to: graph.down_side[n],
+                        from: up,
+                        to: down,
                         law,
-                        initial_flow: 0.0,
+                        initial_flow,
                     });
                     graph.prv_link[n] = Some(graph.links.len() - 1);
                 }
             }
         }
         graph.isolated = vec![false; graph.fixed_head.len()];
-        if !shut.is_empty() || prvs.contains(&Some(PrvState::Closed)) {
+        if !shut.is_empty() || valves.contains(&Some(ValveState::Closed)) {
             graph.isolate()?;
         }
         Ok(graph)
@@ -397,15 +425,17 @@ fn newton(graph: &Graph, options: &SteadyOptions) -> Result<Solved, Failure> {
     let mut y = vec![0.0; graph.links.len()];
     let mut rhs = vec![0.0; m];
     let mut pump_badness = vec![f64::NEG_INFINITY; graph.links.len()];
-    // Each active PRV's flow is what its downstream side sends on: the
-    // other links there, with their signs (+ leaving, - arriving).
+    // Each active PRV's or PSV's flow follows from the other links at its
+    // fixed-head side (+ leaving, - arriving), times its sign.
     let regulated: Vec<(usize, Vec<(usize, f64)>)> = graph
         .links
         .iter()
         .enumerate()
-        .filter(|(_, l)| matches!(l.law, Law::Regulated))
-        .map(|(j, l)| {
-            let d = l.to;
+        .filter_map(|(j, l)| match l.law {
+            Law::Regulated { at, sign } => Some((j, at, sign)),
+            _ => None,
+        })
+        .map(|(j, d, sign)| {
             let others = graph
                 .links
                 .iter()
@@ -413,9 +443,9 @@ fn newton(graph: &Graph, options: &SteadyOptions) -> Result<Solved, Failure> {
                 .filter(|&(k, _)| k != j)
                 .filter_map(|(k, o)| {
                     if o.from == d {
-                        Some((k, 1.0))
+                        Some((k, sign))
                     } else if o.to == d {
-                        Some((k, -1.0))
+                        Some((k, -sign))
                     } else {
                         None
                     }
@@ -546,13 +576,20 @@ pub(crate) fn solve_shut(
             _ => CheckValveState::Closed,
         })
         .collect();
-    let mut prvs: Vec<Option<PrvState>> = nodes
+    let mut valves: Vec<Option<ValveState>> = nodes
         .iter()
-        .map(|node| matches!(node, Node::PressureReducingValve { .. }).then_some(PrvState::Active))
+        .map(|node| match node {
+            Node::ControlValve {
+                mode: ValveMode::Tcv,
+                ..
+            } => Some(ValveState::Open),
+            Node::ControlValve { .. } => Some(ValveState::Active),
+            _ => None,
+        })
         .collect();
 
     for _ in 0..MAX_CHECK_VALVE_PASSES {
-        let graph = Graph::build(network, &states, &prvs, shut)?;
+        let graph = Graph::build(network, &states, &valves, shut)?;
         let solved = match newton(&graph, options) {
             Ok(solved) => solved,
             Err(Failure::Error(e)) => return Err(e),
@@ -563,7 +600,7 @@ pub(crate) fn solve_shut(
                 // backwards (e.g. a second source holding its zone above
                 // the setting through pipes with no friction). Shut the
                 // worst one and retry.
-                let active = |n: usize| prvs[n] == Some(PrvState::Active);
+                let active = |n: usize| valves[n] == Some(ValveState::Active);
                 let culprit = graph
                     .pump_link
                     .iter()
@@ -577,7 +614,7 @@ pub(crate) fn solve_shut(
                     if k < nodes.len() {
                         states[k] = CheckValveState::Closed;
                     } else {
-                        prvs[k - nodes.len()] = Some(PrvState::Closed);
+                        valves[k - nodes.len()] = Some(ValveState::Closed);
                     }
                     continue;
                 }
@@ -623,7 +660,7 @@ pub(crate) fn solve_shut(
             }
         }
         for (n, node) in nodes.iter().enumerate() {
-            let (Node::PressureReducingValve { setting, .. }, Some(state)) = (node, prvs[n]) else {
+            let (Node::ControlValve { mode, .. }, Some(state)) = (node, valves[n]) else {
                 continue;
             };
             let (up, down) = (
@@ -631,35 +668,67 @@ pub(crate) fn solve_shut(
                 solved.heads[graph.down_side[n]],
             );
             let q = graph.prv_link[n].map_or(0.0, |j| solved.flows[j]);
-            let set = setting.value();
-            let next = prv_next(state, up, down, q, set);
+            let next = match mode {
+                ValveMode::Prv { setting } => prv_next(state, up, down, q, setting.value()),
+                ValveMode::Psv { setting } => psv_next(state, up, down, q, setting.value()),
+                ValveMode::Fcv { flow } => fcv_next(state, up, down, q, flow.value()),
+                ValveMode::Tcv => state,
+            };
             if next != state {
-                prvs[n] = Some(next);
+                valves[n] = Some(next);
                 changed = true;
             }
         }
         if !changed {
-            return assemble(network, topo, &graph, &solved, states, &prvs);
+            return assemble(network, topo, &graph, &solved, states, &valves);
         }
     }
     Err(HydraulicsError::InvalidNetwork(
-        "check valves, pumps or pressure-reducing valves keep switching: no consistent \
-         steady state"
-            .into(),
+        "check valves, pumps or control valves keep switching: no consistent steady state".into(),
     ))
 }
 
 /// A PRV's next state from its heads (upstream, downstream), its flow and
 /// its setting - EPANET 2.2's rules (prvstatus) [VERIFY against its
 /// source].
-fn prv_next(state: PrvState, up: f64, down: f64, q: f64, set: f64) -> PrvState {
-    let tol = PRV_HEAD_TOL;
+fn prv_next(state: ValveState, up: f64, down: f64, q: f64, set: f64) -> ValveState {
+    let tol = VALVE_HEAD_TOL;
     match state {
-        PrvState::Active | PrvState::Open if q < -PRV_FLOW_TOL => PrvState::Closed,
-        PrvState::Active if up < set - tol => PrvState::Open,
-        PrvState::Open if down > set + tol => PrvState::Active,
-        PrvState::Closed if up > set + tol && down < set - tol => PrvState::Active,
-        PrvState::Closed if up < set - tol && up > down + tol => PrvState::Open,
+        ValveState::Active | ValveState::Open if q < -VALVE_FLOW_TOL => ValveState::Closed,
+        ValveState::Active if up < set - tol => ValveState::Open,
+        ValveState::Open if down > set + tol => ValveState::Active,
+        ValveState::Closed if up > set + tol && down < set - tol => ValveState::Active,
+        ValveState::Closed if up < set - tol && up > down + tol => ValveState::Open,
+        s => s,
+    }
+}
+
+/// A PSV's next state - the mirror of a PRV: it holds the head UPSTREAM
+/// at `set`, and needs no throttling once the head downstream is above it
+/// (EPANET 2.2's psvstatus) [VERIFY against its source].
+fn psv_next(state: ValveState, up: f64, down: f64, q: f64, set: f64) -> ValveState {
+    let tol = VALVE_HEAD_TOL;
+    match state {
+        ValveState::Active | ValveState::Open if q < -VALVE_FLOW_TOL => ValveState::Closed,
+        ValveState::Active if down > set + tol => ValveState::Open,
+        ValveState::Open if up < set - tol => ValveState::Active,
+        ValveState::Closed if down > set + tol && up > down + tol => ValveState::Open,
+        ValveState::Closed if up > set + tol && up > down + tol => ValveState::Active,
+        s => s,
+    }
+}
+
+/// An FCV's next state: active it passes exactly `flow`; if that would
+/// need the head to rise across it, it cannot - fully open, it passes what
+/// it can; open, it becomes active once it would pass more than `flow`;
+/// it never passes flow backwards [VERIFY against EPANET's fcvstatus].
+fn fcv_next(state: ValveState, up: f64, down: f64, q: f64, flow: f64) -> ValveState {
+    let tol = VALVE_HEAD_TOL;
+    match state {
+        ValveState::Active if up < down - tol => ValveState::Open,
+        ValveState::Open if q < -VALVE_FLOW_TOL => ValveState::Closed,
+        ValveState::Open if q > flow + VALVE_FLOW_TOL => ValveState::Active,
+        ValveState::Closed if up > down + tol => ValveState::Open,
         s => s,
     }
 }
@@ -671,7 +740,7 @@ fn assemble(
     graph: &Graph,
     solved: &Solved,
     states: Vec<CheckValveState>,
-    prvs: &[Option<PrvState>],
+    valves: &[Option<ValveState>],
 ) -> Result<(SteadySolution, SteadyState), HydraulicsError> {
     let nodes = network.nodes();
     let pipes = network.pipes();
@@ -696,7 +765,7 @@ fn assemble(
             pipe_flows[p.0] = 0.0;
         }
     }
-    for n in (0..nodes.len()).filter(|&n| prvs[n] == Some(PrvState::Closed)) {
+    for n in (0..nodes.len()).filter(|&n| valves[n] == Some(ValveState::Closed)) {
         for &(p, _) in &topo[n] {
             pipe_flows[p.0] = 0.0;
         }
@@ -723,13 +792,13 @@ fn assemble(
             }
         }
     }
-    // A PRV passing flow: its flow and head drop, so a transient can hold
-    // it at that opening (a drop a hair below 0 within the state tolerance
-    // is no drop).
+    // A control valve passing flow: its flow and head drop, so a transient
+    // can hold it at that opening (a drop a hair below 0 within the state
+    // tolerance is no drop).
     for (n, link) in graph.prv_link.iter().enumerate() {
         if let Some(j) = *link {
             let q0 = solved.flows[j];
-            if q0 > PRV_FLOW_TOL {
+            if q0 > VALVE_FLOW_TOL {
                 let drop = head_of(graph.up_side[n]) - head_of(graph.down_side[n]);
                 valve_steady[n] = (q0, drop.max(0.0));
             }
@@ -756,7 +825,7 @@ fn assemble(
     for (n, node) in nodes.iter().enumerate() {
         let demand = match node {
             Node::Junction { demand } => demand.value(),
-            Node::Pump { .. } | Node::CheckValve | Node::PressureReducingValve { .. } => 0.0,
+            Node::Pump { .. } | Node::CheckValve | Node::ControlValve { .. } => 0.0,
             Node::Reservoir { .. } | Node::Valve { .. } => continue,
         };
         let net: f64 = topo[n]
@@ -805,7 +874,7 @@ fn assemble(
         closed_check_valves,
         idle_pumps,
         pump_lifts,
-        prvs: prvs
+        valves: valves
             .iter()
             .enumerate()
             .filter_map(|(n, s)| s.map(|s| (NodeId(n), s)))

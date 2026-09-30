@@ -23,6 +23,11 @@ Rung 1  Analytical: results that must match closed-form physics.
         reservoir-pipe-valve system vs the exact complex-frequency
         solution; first-order convergence, extrapolated within 0.5%
         (2026-09-29: +0.1% at 400 reaches after FN-021).
+  V-A11 Other control valves: a PSV holding a high zone at 70 m while it
+        feeds a low reservoir (bisection of the energy balance), fully open
+        when the reservoir is above its setting; an FCV passing exactly its
+        setting, fully open above the natural flow; a TCV as sqrt(dH /
+        sum R) both ways (2026-09-30: all to 1e-8 or better).
   V-A10 Pressure-reducing valves: ACTIVE / OPEN / CLOSED heads in closed
         form, and a closed PRV reopening to share when a second source
         cannot hold the zone; a wave crossing the frozen valve vs the

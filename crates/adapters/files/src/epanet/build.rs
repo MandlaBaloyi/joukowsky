@@ -2,6 +2,7 @@
 
 use std::collections::HashMap;
 
+use jk_hydraulics::ValveMode;
 use jk_hydraulics::{Network, Node, NodeId, Pipe, TankStorage};
 use jk_kernel::{Area, Flow, Head, Length};
 
@@ -212,7 +213,9 @@ pub(super) fn build(text: &str, options: &InpOptions) -> Result<InpNetwork, Read
             (id, device)
         })
         .collect();
-    devices.extend(prv_devices(&links, &nodes, &settings, options, &mut notes));
+    devices.extend(valve_devices(
+        &links, &nodes, &settings, options, &mut notes,
+    ));
     let (mut inp, map) = assemble(
         &sections,
         options,
@@ -666,10 +669,13 @@ fn fit_pumps(
     out
 }
 
-/// Pressure-reducing valves that can be modelled as devices: not closed,
-/// and feeding a junction (whose elevation turns the pressure setting into
-/// a head). The rest stay plain connections, with a note.
-fn prv_devices(
+/// Control valves that can be modelled as devices: PRV, PSV, FCV and TCV,
+/// not closed. A PRV's pressure setting stands on the elevation of the node
+/// below it, a PSV's on the node above (a junction there, or it stays a
+/// plain connection); an FCV's setting is a flow, a TCV's a loss
+/// coefficient. PBV and GPV stay plain connections.
+#[allow(clippy::too_many_lines)] // four valve kinds, each with its note
+fn valve_devices(
     links: &[RawLink],
     nodes: &[RawNode],
     s: &Settings,
@@ -677,6 +683,7 @@ fn prv_devices(
     notes: &mut Vec<Note>,
 ) -> HashMap<String, Device> {
     let mut out = HashMap::new();
+    let g = options.gravity.value();
     for k in links {
         let LinkKind::Valve {
             kind,
@@ -687,39 +694,83 @@ fn prv_devices(
         else {
             continue;
         };
-        if kind != "PRV" || k.status == Status::Closed {
+        if !matches!(kind.as_str(), "PRV" | "PSV" | "FCV" | "TCV") || k.status == Status::Closed {
             continue;
         }
-        let NodeKind::Junction { elevation, .. } = nodes[k.to].kind else {
-            note(
-                notes,
-                Some(k.line),
-                format!(
-                    "PRV '{}' feeds a tank or reservoir directly: its setting has no \
-                     elevation to stand on",
-                    k.id
-                ),
-            );
-            continue;
-        };
         let d = diameter * s.units.diameter();
-        let area = std::f64::consts::PI * 0.25 * d * d;
         if d.is_nan() || d <= 0.0 {
             note(
                 notes,
                 Some(k.line),
-                format!("PRV '{}' has no diameter", k.id),
+                format!("{kind} '{}' has no diameter", k.id),
             );
             continue;
         }
-        let head = elevation * s.units.length() + setting * s.units.pressure();
+        let area = std::f64::consts::PI * 0.25 * d * d;
+        let loss = |coefficient: f64| coefficient.max(0.0) / (2.0 * g * area * area);
+        // The node a pressure setting stands on.
+        let base = |n: usize| match nodes[n].kind {
+            NodeKind::Junction { elevation, .. } => Some(elevation * s.units.length()),
+            _ => None,
+        };
+        let head = |n: usize| base(n).map(|z| z + setting * s.units.pressure());
+        let (mode, open_resistance, words) = match kind.as_str() {
+            "PRV" | "PSV" => {
+                let (n, side) = if kind == "PRV" {
+                    (k.to, "downstream")
+                } else {
+                    (k.from, "upstream")
+                };
+                let Some(h) = head(n) else {
+                    note(
+                        notes,
+                        Some(k.line),
+                        format!(
+                            "{kind} '{}' is next to a tank or reservoir: its setting has no \
+                             elevation to stand on - modelled as a plain connection",
+                            k.id
+                        ),
+                    );
+                    continue;
+                };
+                let mode = if kind == "PRV" {
+                    ValveMode::Prv {
+                        setting: Head::new(h),
+                    }
+                } else {
+                    ValveMode::Psv {
+                        setting: Head::new(h),
+                    }
+                };
+                (
+                    mode,
+                    loss(*minor_loss),
+                    format!(
+                        "holds {h:.2} m {side} (elevation of {} + setting)",
+                        nodes[n].id
+                    ),
+                )
+            }
+            "FCV" => {
+                let q = setting * s.units.to_m3s();
+                (
+                    ValveMode::Fcv { flow: Flow::new(q) },
+                    loss(*minor_loss),
+                    format!("passes at most {:.2} l/s", q * 1000.0),
+                )
+            }
+            _ => (
+                ValveMode::Tcv,
+                loss(*setting),
+                format!("a fixed throttle, loss coefficient {setting}"),
+            ),
+        };
         out.insert(
             k.id.clone(),
             Device {
-                node: Node::PressureReducingValve {
-                    setting: Head::new(head),
-                    open_resistance: minor_loss.max(0.0)
-                        / (2.0 * options.gravity.value() * area * area),
+                node: Node::ControlValve {
+                    mode,
+                    open_resistance,
                 },
                 diameter: Some(d),
                 ends: ("in", "out"),
@@ -729,9 +780,9 @@ fn prv_devices(
             notes,
             Some(k.line),
             format!(
-                "PRV '{}': holds {head:.2} m downstream (elevation of {} + setting); frozen at \
-                 its steady opening in transients (its response over seconds is not modelled)",
-                k.id, nodes[k.to].id
+                "{kind} '{}': {words}; frozen at its steady opening in transients (its \
+                 response over seconds is not modelled)",
+                k.id
             ),
         );
     }
@@ -1117,7 +1168,7 @@ fn assemble(
         }
     }
     let mut pump_of: HashMap<String, NodeId> = HashMap::new();
-    let (mut pumps_list, mut prvs_list) = (Vec::new(), Vec::new());
+    let (mut pumps_list, mut valves_list) = (Vec::new(), Vec::new());
     for k in links {
         let Some(device) = devices.get(&k.id) else {
             continue;
@@ -1174,17 +1225,17 @@ fn assemble(
             pump_of.insert(k.id.clone(), node);
             pumps_list.push((k.id.clone(), node));
         } else {
-            prvs_list.push((k.id.clone(), node));
+            valves_list.push((k.id.clone(), node));
         }
     }
-    if !prvs_list.is_empty() {
+    if !valves_list.is_empty() {
         note(
             &mut notes,
             None,
             format!(
-                "{} pressure-reducing valve(s) modelled, each between two {connector:.1} m \
-                 lengths of pipe of its own diameter (pipes 'ID/in' and 'ID/out')",
-                prvs_list.len()
+                "{} control valve(s) modelled, each between two {connector:.1} m lengths of \
+                 pipe of its own diameter (pipes 'ID/in' and 'ID/out')",
+                valves_list.len()
             ),
         );
     }
@@ -1311,7 +1362,7 @@ fn assemble(
             positions,
             vertices,
             pumps: pumps_list,
-            prvs: prvs_list,
+            valves: valves_list,
             operations: Operations::default(),
             notes,
         },

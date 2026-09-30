@@ -24,9 +24,10 @@
 //! solved (e.g. an end valve without a flow coefficient), every device is
 //! taken as a straight run - the behaviour before this module.
 
-use jk_hydraulics::boundary::prv::PrvState;
+use jk_hydraulics::boundary::control_valve::ValveState;
 use jk_hydraulics::joukowsky::junction_transmission;
 use jk_hydraulics::{Network, Node, SteadyOptions, SteadySolution};
+use jk_kernel::Flow;
 
 /// Per node: shut, and the resistance a small wave meets crossing it.
 #[derive(Debug, Clone, PartialEq)]
@@ -45,7 +46,7 @@ impl Devices {
         let any = network.nodes().iter().any(|node| {
             matches!(
                 node,
-                Node::CheckValve | Node::Pump { .. } | Node::PressureReducingValve { .. }
+                Node::CheckValve | Node::Pump { .. } | Node::ControlValve { .. }
             )
         });
         match network.steady_state(&SteadyOptions::default()) {
@@ -86,19 +87,36 @@ impl Devices {
                 Node::Pump { pump, .. } if !d.shut[i] => {
                     d.resistance[i] = (-pump.curve.slope(through(i), 1.0)).max(0.0);
                 }
-                Node::PressureReducingValve {
-                    setting,
+                Node::ControlValve {
+                    mode,
                     open_resistance,
                 } => {
-                    let state = s.prvs.iter().find(|(v, _)| v.index() == i).map(|p| p.1);
+                    let state = s.valves.iter().find(|(v, _)| v.index() == i).map(|p| p.1);
                     let q = through(i);
-                    let drop = match state {
-                        Some(PrvState::Active) => s.node_heads[i].value() - setting.value(),
-                        Some(PrvState::Open) => open_resistance * q * q,
-                        _ => f64::NAN,
-                    };
-                    if q > 0.0 && drop.is_finite() {
-                        d.resistance[i] = 2.0 * drop.max(0.0) / q;
+                    if !mode.one_way() {
+                        // A throttle: r = d(R Q|Q|)/dQ = 2 R |Q|.
+                        d.resistance[i] = 2.0 * open_resistance * q.abs();
+                    } else if q > 0.0 && state != Some(ValveState::Closed) {
+                        // Frozen orifice: r = 2 dH0 / Q0, dH0 across it (the
+                        // head at the start of its downstream pipe from the
+                        // pipe's far end and its friction).
+                        let down = network
+                            .pipes()
+                            .iter()
+                            .position(|p| p.from.index() == i)
+                            .map_or(f64::NAN, |k| {
+                                let p = &network.pipes()[k];
+                                s.node_heads[p.to.index()].value()
+                                    + p.pipe
+                                        .friction_head_loss(Flow::new(q), network.gravity())
+                                        .value()
+                            });
+                        let drop = s.node_heads[i].value() - down;
+                        if drop.is_finite() {
+                            d.resistance[i] = 2.0 * drop.max(0.0) / q;
+                        } else {
+                            d.shut[i] = true;
+                        }
                     } else {
                         d.shut[i] = true; // shut, or passing nothing: held shut
                     }

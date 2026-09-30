@@ -122,3 +122,15 @@ in V-A10. Limits: the valve's own response over seconds (it opens to
 feed a burst downstream) is not modelled - a burst below a PRV draws
 more than the frozen opening gives after the first seconds; a PRV closed
 at the start stays closed. Gap G-19.
+
+Same day, the other EPANET control valves (boundary/control_valve.rs,
+one node kind with four modes; V-A11):
+  PSV (pressure-sustaining) holds the head just UPSTREAM at least at its
+      setting - the mirror of a PRV (its fixed-head side is upstream; it
+      needs no throttling once the head downstream is above the setting);
+  FCV (flow-control) passes at most its setting's flow: ACTIVE is a link
+      of fixed flow; if that would need the head to rise across it, it
+      opens fully and passes what it can;
+  TCV (throttle) is a fixed loss R Q|Q| both ways (K from the file).
+PRV, PSV and FCV are one-way. All are frozen orifices in transients (a TCV
+at its own R). PBV and GPV (rare) stay plain connections.

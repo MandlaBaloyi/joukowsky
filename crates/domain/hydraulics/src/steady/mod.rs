@@ -69,8 +69,8 @@ pub struct SteadySolution {
     pub idle_pumps: Vec<NodeId>,
     /// Head each pump adds (discharge minus suction head).
     pub pump_lifts: Vec<(NodeId, Head)>,
-    /// What each pressure-reducing valve is doing.
-    pub prvs: Vec<(NodeId, crate::boundary::prv::PrvState)>,
+    /// What each control valve is doing.
+    pub valves: Vec<(NodeId, crate::boundary::control_valve::ValveState)>,
 }
 
 /// Links out of service for a steady solve: pipes closed (a shut

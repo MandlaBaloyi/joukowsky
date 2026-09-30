@@ -175,5 +175,5 @@ G-19  Valves: PRV response over seconds; states by time of day     OPEN
   ("a fault in S2"); with it, the alert says the valve is shut and the
   other logger's silence means nothing. Waiting and fusion still use the
   base state (they only wait a little longer than needed).
-  Other valve types (PSV, FCV, TCV, PBV, GPV) and [RULES] remain plain
-  connections / unread.
+  Same day: PSV, FCV and TCV are devices too (V-A11), read from files;
+  PBV and GPV (rare) remain plain connections; [RULES] unread (next).

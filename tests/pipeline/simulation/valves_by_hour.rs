@@ -20,6 +20,7 @@
 
 use jk_application::{Level, Schedule, Site};
 use jk_classification::Context;
+use jk_hydraulics::ValveMode;
 use jk_hydraulics::steady::extended::PeriodOptions;
 use jk_hydraulics::{InitialCondition, Network, Node, NodeId, SteadyOptions};
 use jk_kernel::{Flow, Head, STANDARD_GRAVITY, Time};
@@ -40,8 +41,10 @@ fn zone(demand: f64, split: bool) -> (Network, [NodeId; 2], Option<NodeId>) {
         head: Head::new(80.0),
     });
     let s1 = net.add_node(j0());
-    let v = net.add_node(Node::PressureReducingValve {
-        setting: Head::new(50.0),
+    let v = net.add_node(Node::ControlValve {
+        mode: ValveMode::Prv {
+            setting: Head::new(50.0),
+        },
         open_resistance: 0.0,
     });
     let s2 = net.add_node(j0());
@@ -103,7 +106,7 @@ fn site(schedule: bool) -> Site {
 /// A 10 mm hole at 4 s into a 15 s record of the zone drawing `demand`.
 fn burst_records(demand: f64) -> (Vec<Vec<f64>>, f64) {
     let (mut net, sensors, h) = zone(demand, true);
-    let valve = net.steady_state(&SteadyOptions::default()).unwrap().prvs[0].1;
+    let valve = net.steady_state(&SteadyOptions::default()).unwrap().valves[0].1;
     println!(
         "The zone drawing {:.0} l/s: the PRV is {valve:?}",
         demand * 1000.0

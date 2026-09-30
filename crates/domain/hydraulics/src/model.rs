@@ -8,6 +8,7 @@
 
 use jk_kernel::{Acceleration, Area, Flow, Head, Time};
 
+use crate::boundary::control_valve::ValveMode;
 use crate::boundary::junction::PipeEnd;
 use crate::boundary::pump::Pump;
 use crate::error::{finite, positive};
@@ -77,15 +78,16 @@ pub enum Node {
         /// the steady state assumes the pump is running.
         trip: Option<Time>,
     },
-    /// A pressure-reducing valve joining exactly two pipes: the upstream
-    /// pipe ends here, the downstream pipe starts here. Holds the head just
-    /// downstream at `setting` while the head upstream allows; never passes
-    /// flow backwards. Frozen at its steady opening in transients
-    /// ([`crate::boundary::prv`]).
-    PressureReducingValve {
-        /// The head it holds downstream [m].
-        setting: Head,
-        /// Fully open: head loss = `open_resistance` Q|Q| [s^2/m^5].
+    /// A control valve joining exactly two pipes: the upstream pipe ends
+    /// here, the downstream pipe starts here. Pressure-reducing,
+    /// pressure-sustaining, flow-control or throttle
+    /// ([`crate::boundary::control_valve`]); frozen at its steady opening
+    /// in transients.
+    ControlValve {
+        /// What it does.
+        mode: ValveMode,
+        /// Fully open: head loss = `open_resistance` Q|Q| [s^2/m^5] (a
+        /// throttle valve's loss at its setting).
         open_resistance: f64,
     },
 }
@@ -442,6 +444,7 @@ impl Network {
 
     /// Checks the rules every node must satisfy and returns, for each
     /// node, the pipes touching it.
+    #[allow(clippy::too_many_lines)] // one check per kind of node
     pub(crate) fn topology(&self) -> Result<Topology, HydraulicsError> {
         positive("gravity", self.gravity.value())?;
         if self.pipes.is_empty() {
@@ -499,22 +502,35 @@ impl Network {
                         );
                     }
                 }
-                Node::PressureReducingValve {
-                    setting,
+                Node::ControlValve {
+                    mode,
                     open_resistance,
                 } => {
-                    finite("PRV setting", setting.value())?;
+                    match mode {
+                        ValveMode::Prv { setting } | ValveMode::Psv { setting } => {
+                            finite("valve setting", setting.value())?;
+                        }
+                        ValveMode::Fcv { flow } => {
+                            if !(flow.value().is_finite() && flow.value() >= 0.0) {
+                                return Err(HydraulicsError::invalid(
+                                    "FCV flow",
+                                    flow.value(),
+                                    "finite and >= 0",
+                                ));
+                            }
+                        }
+                        ValveMode::Tcv => {}
+                    }
                     if !(open_resistance.is_finite() && *open_resistance >= 0.0) {
                         return Err(HydraulicsError::invalid(
-                            "PRV open_resistance",
+                            "valve open_resistance",
                             *open_resistance,
                             "finite and >= 0",
                         ));
                     }
                     if !(ending == 1 && starting == 1) {
                         return fail(
-                            "a pressure-reducing valve must join one pipe ending and one \
-                             starting here",
+                            "a control valve must join one pipe ending and one starting here",
                         );
                     }
                 }
