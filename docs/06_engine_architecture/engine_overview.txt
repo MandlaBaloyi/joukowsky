@@ -151,3 +151,14 @@ time axis, with the time differences the engine located from); logger
 records drawn in the browser - presets, drag to zoom, one crosshair and
 tooltip across all loggers. Map labels keep clear of each other. Checked by
 rendering every page in headless Edge (light, dark, narrow).
+Viewer, Supply & leaks (2026-09-30): two pages for the work that is not a
+wave. Tanks & supply - an estate's 400 m^2 tank through a bulk-supply
+outage (extended-period run, V-A8): the level falls fastest at the 07:00 and
+19:00 peaks, the run marks "tank empty" and "supply lost" (38.4 h here) and
+the head at the far end shows what residents feel. Night watch - a metered
+zone over 90 days (jk-balance): night flows 02:00-04:00 with the normal
+level and the smallest leak caught in a week drawn as reference lines, the
+CUSUM evidence under it, the leak's true start and the ALARM marked (a 1.2
+l/s leak from night 61, found as 0.98 +/- 0.20 l/s, alarm night 62); nights
+a logger lost stay empty. Charts now carry their own units (h, day, l/s),
+labelled moments and labelled levels, so any series can use them.

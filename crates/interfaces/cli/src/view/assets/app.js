@@ -148,6 +148,7 @@
           lo = Math.min(lo, h); hi = Math.max(hi, h);
         }
       }
+      for (const l of rec.lines || []) { lo = Math.min(lo, l.v); hi = Math.max(hi, l.v); }
       if (!isFinite(lo)) { lo = 0; hi = 1; }
       const pad = Math.max((hi - lo) * 0.08, 0.05);
       const yt = ticks(lo - pad, hi + pad, 4);
@@ -188,7 +189,23 @@
         }
         flush();
       }
+      for (const l of rec.lines || []) {
+        el('line', { class: 'refline', x1: left, x2: width - right, y1: sy(l.v), y2: sy(l.v) }, svg);
+        el('text', { class: 'refline-label', x: width - right - 4, y: sy(l.v) - 4, 'text-anchor': 'end' }, svg).textContent = l.label;
+      }
       el('path', { class: 'series', d }, svg);
+      // Labelled moments; a label too close to the one before drops a
+      // line so they never overlap.
+      let lastEnd = -Infinity, row = 0;
+      for (const m of rec.marks || []) {
+        if (m.t < t0 || m.t > t1) continue;
+        const x = sx(m.t);
+        el('line', { class: 'front', x1: x, x2: x, y1: top, y2: height - bottom }, svg);
+        row = x < lastEnd + 8 ? row + 1 : 0;
+        const label = el('text', { class: 'front-label', x: x + 4, y: top - 6 + row * 13 }, svg);
+        label.textContent = m.label;
+        lastEnd = x + 4 + 6.5 * m.label.length;
+      }
       for (const f of rec.fronts) {
         if (f < t0 || f > t1) continue;
         el('line', { class: 'front', x1: sx(f), x2: sx(f), y1: top, y2: height - bottom }, svg);
@@ -213,10 +230,11 @@
           o.cross.setAttribute('x1', x); o.cross.setAttribute('x2', x);
           o.cross.setAttribute('visibility', 'visible');
         }
-        const rows = [{ text: 't = ' + t.toFixed(3) + ' s', strong: true }];
+        const tunit = (charts[0] && charts[0].rec.tunit) || 's';
+        const rows = [{ text: 't = ' + t.toFixed(tunit === 's' ? 3 : 2) + ' ' + tunit, strong: true }];
         for (const o of charts) {
           const v = valueAt(o.rec, t);
-          rows.push({ label: o.rec.name, value: (v === null || !isFinite(v)) ? 'no data' : v.toFixed(2) + ' m' });
+          rows.push({ label: o.rec.name, value: (v === null || !isFinite(v)) ? 'no data' : v.toFixed(2) + ' ' + (o.rec.vunit || 'm') });
         }
         showTip(rows, e.clientX, e.clientY);
         if (drag && drag.chart === c) {
@@ -259,7 +277,8 @@
     if (bar) {
       bar.querySelectorAll('[data-range]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.range === preset)));
       const shown = bar.querySelector('.hint');
-      if (shown) shown.textContent = `showing ${range[0].toFixed(2)} - ${range[1].toFixed(2)} s` + (preset ? '' : ' (zoomed)') + ' - drag across a chart to zoom';
+      const unit = container.dataset.unit || 's';
+      if (shown) shown.textContent = `showing ${range[0].toFixed(2)} - ${range[1].toFixed(2)} ${unit}` + (preset ? '' : ' (zoomed)') + ' - drag across a chart to zoom';
     }
     render(container);
   }

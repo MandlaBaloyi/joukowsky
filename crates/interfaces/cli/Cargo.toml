@@ -20,6 +20,7 @@ jk-application.workspace = true
 jk-files.workspace = true
 jk-detection.workspace = true
 jk-sim.workspace = true
+jk-balance.workspace = true
 
 [lints]
 workspace = true

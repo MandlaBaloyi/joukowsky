@@ -34,6 +34,7 @@ name = "jk-cli"
 version = "0.1.0"
 dependencies = [
  "jk-application",
+ "jk-balance",
  "jk-classification",
  "jk-detection",
  "jk-files",

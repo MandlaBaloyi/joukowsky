@@ -16,6 +16,7 @@ mod charts;
 mod model;
 mod pages;
 mod shell;
+mod supply_model;
 mod svg;
 
 use std::path::PathBuf;
@@ -101,6 +102,7 @@ fn item(id: &'static str, label: &'static str, count: Option<usize>) -> NavItem 
 /// # Errors
 /// A failed scenario (a bug), a network file that cannot be read, or a
 /// page that cannot be written.
+#[allow(clippy::too_many_lines)] // the page assembled in menu order, in one place
 pub fn run(a: &Args) -> Result<(), String> {
     eprintln!("jk view: simulating the estate bursts and running the live engine...");
     let event = EventModel::run()?;
@@ -110,6 +112,9 @@ pub fn run(a: &Args) -> Result<(), String> {
     } else {
         None
     };
+    eprintln!("jk view: running the supply outage and the night watch...");
+    let supply = supply_model::SupplyModel::run()?;
+    let night = supply_model::NightModel::run()?;
     let mut nav = vec![
         NavGroup {
             heading: "Start",
@@ -175,6 +180,16 @@ pub fn run(a: &Args) -> Result<(), String> {
         pages.push(pages::recording::page(&files));
     }
     nav.push(NavGroup {
+        heading: "Supply & leaks",
+        site: None,
+        items: vec![
+            item("supply", "Tanks & supply", None),
+            item("leaks", "Night watch", Some(night.watch.alarms.len())),
+        ],
+    });
+    pages.push(pages::supply::page(&supply));
+    pages.push(pages::leaks::page(&night));
+    nav.push(NavGroup {
         heading: "Help",
         site: None,
         items: vec![item("about", "About the data", None)],
@@ -184,6 +199,8 @@ pub fn run(a: &Args) -> Result<(), String> {
     let data = pages::data_json(&[
         ("event", pages::event_records(&event)),
         ("rec", pages::recording::chart_records(&files)),
+        ("supply", pages::supply::records(&supply)),
+        ("night", pages::leaks::records(&night)),
     ]);
     let html = shell::document(&nav, &pages, &data);
     std::fs::write(&a.out, html).map_err(|e| format!("cannot write {}: {e}", a.out.display()))?;

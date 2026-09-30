@@ -12,11 +12,13 @@
 pub mod about;
 pub mod alerts;
 pub mod file;
+pub mod leaks;
 pub mod loggers;
 pub mod network;
 pub mod overview;
 pub mod placement;
 pub mod recording;
+pub mod supply;
 
 use std::fmt::Write as _;
 
@@ -67,7 +69,16 @@ pub struct ChartRecord<'a> {
     pub runs: Vec<(f64, &'a [f64])>,
     pub fronts: Vec<f64>,
     pub impaired: Vec<(f64, f64)>,
+    /// Units of time and value, as shown ("s" and "m" for pressure).
+    pub units: (&'static str, &'static str),
+    /// Labelled moments (vertical lines), e.g. "tank empty".
+    pub marks: Vec<(f64, String)>,
+    /// Labelled levels (horizontal lines), e.g. a tank's floor.
+    pub lines: Vec<(f64, String)>,
 }
+
+/// Units of a pressure record: seconds and metres of head.
+pub const PRESSURE: (&str, &str) = ("s", "m");
 
 /// The data the browser draws its charts from: named sets of records
 /// (full resolution), e.g. "event" for the demo, "rec" for recordings.
@@ -84,11 +95,31 @@ pub fn data_json(sets: &[(&str, Vec<ChartRecord<'_>>)]) -> String {
             }
             let _ = write!(
                 s,
-                r#"{{"name":{},"dt":{:.9},"fronts":{},"runs":["#,
+                r#"{{"name":{},"dt":{:.9},"tunit":{},"vunit":{},"fronts":{},"marks":["#,
                 json_str(&r.name),
                 r.interval,
+                json_str(r.units.0),
+                json_str(r.units.1),
                 json_numbers(&r.fronts, 4)
             );
+            for (k, (t, label)) in r.marks.iter().enumerate() {
+                let _ = write!(
+                    s,
+                    r#"{}{{"t":{t:.6},"label":{}}}"#,
+                    if k > 0 { "," } else { "" },
+                    json_str(label)
+                );
+            }
+            s.push_str(r#"],"lines":["#);
+            for (k, (v, label)) in r.lines.iter().enumerate() {
+                let _ = write!(
+                    s,
+                    r#"{}{{"v":{v:.6},"label":{}}}"#,
+                    if k > 0 { "," } else { "" },
+                    json_str(label)
+                );
+            }
+            s.push_str(r#"],"runs":["#);
             for (k, (start, h)) in r.runs.iter().enumerate() {
                 let _ = write!(
                     s,
@@ -120,6 +151,9 @@ pub fn event_records(event: &EventModel) -> Vec<ChartRecord<'_>> {
             runs: vec![(r.start, r.samples.as_slice())],
             fronts: r.fronts.iter().map(|f| f.arrival).collect(),
             impaired: r.impaired.clone(),
+            units: PRESSURE,
+            marks: Vec::new(),
+            lines: Vec::new(),
         })
         .collect()
 }

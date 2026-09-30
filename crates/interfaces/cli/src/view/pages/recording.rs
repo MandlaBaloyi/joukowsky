@@ -82,6 +82,9 @@ pub fn chart_records(files: &[FileRecording]) -> Vec<ChartRecord<'_>> {
                     .collect(),
                 fronts,
                 impaired,
+                units: super::PRESSURE,
+                marks: Vec::new(),
+                lines: Vec::new(),
             });
         }
     }

@@ -196,6 +196,9 @@ svg .axis { stroke: var(--axis); stroke-width: 1; }
 svg .impaired { fill: var(--wash); }
 svg .series { fill: none; stroke: var(--series-1); stroke-width: 1.5; stroke-linejoin: round; stroke-linecap: round; }
 svg .front { stroke: var(--text-secondary); stroke-width: 1.5; }
+svg .refline { stroke: var(--text-secondary); stroke-width: 1; stroke-dasharray: 4 4; }
+svg .refline-label { fill: var(--text-secondary); font-size: 11px; }
+svg .refline-label, svg .front-label { paint-order: stroke; stroke: var(--surface-1); stroke-width: 3px; stroke-linejoin: round; }
 svg .crosshair { stroke: var(--text-muted); stroke-width: 1; }
 svg .selection { fill: var(--select); stroke: var(--accent); stroke-width: 1; }
 svg .hit { fill: transparent; cursor: crosshair; }
