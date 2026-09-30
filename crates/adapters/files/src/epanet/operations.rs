@@ -16,14 +16,23 @@
 //!   bottom (its elevation); the engine works in heads, so it becomes
 //!   elevation + level. Controls on junction pressures, on valves and on
 //!   pump speeds are not modelled - each is noted.
+//! - Rules: `RULE id / IF ... / AND ... / OR ... / THEN ... / ELSE ... /
+//!   PRIORITY p` into the engine's rules (`steady/rules.rs`): premises on
+//!   tank levels, node heads and pressures (elevation + pressure), link
+//!   flows and statuses, system time and clock time; actions opening or
+//!   closing pipes and starting or stopping pumps. A rule with a premise the
+//!   engine cannot read (demand, fill or drain time, a setting, a valve) is
+//!   left out with a note; an action it cannot take (a setting, a valve) is
+//!   dropped with a note.
 
 use std::collections::HashMap;
 
 use jk_hydraulics::steady::Shut;
 use jk_hydraulics::steady::controls::{Condition, Control, DAY, Target};
 use jk_hydraulics::steady::extended::{NodePattern, PeriodOptions};
+use jk_hydraulics::steady::rules::{Action, Clause, Premise, Relation, Rule};
 use jk_hydraulics::{Network, NodeId};
-use jk_kernel::{Head, Time};
+use jk_kernel::{Flow, Head, Time};
 
 use super::sections::{Line, Section};
 use crate::error::ReadError;
@@ -55,6 +64,12 @@ pub(super) struct Context<'a> {
     pub network: &'a Network,
     /// Head units per file length unit (m per ft, or 1).
     pub length: f64,
+    /// m^3/s per file flow unit.
+    pub flow: f64,
+    /// Metres of head per file pressure unit.
+    pub pressure: f64,
+    /// Elevation of each junction and tank, by file node ID (file units).
+    pub elevation_of: &'a HashMap<String, f64>,
     /// Engine pipe index of each pipe kept, by file link ID.
     pub pipe_of: &'a HashMap<String, usize>,
     /// Pump node of each modelled pump, by file link ID.
@@ -183,6 +198,7 @@ pub(super) fn build(
     times: Times,
     patterns: &HashMap<String, Vec<f64>>,
     controls: &[&Line],
+    rules: &[&Line],
     notes: &mut Vec<(Option<usize>, String)>,
 ) -> Result<Operations, ReadError> {
     let mut period = PeriodOptions {
@@ -322,7 +338,290 @@ pub(super) fn build(
             ),
         ));
     }
+    period.rules = read_rules(ctx, rules, times.start_clock, notes)?;
+    if !period.rules.is_empty() {
+        notes.push((
+            None,
+            format!(
+                "{} rule(s) switch pumps and pipes in extended-period runs (IF / AND / OR / THEN \
+                 / ELSE / PRIORITY, read as EPANET does: OR binds tighter than AND)",
+                period.rules.len()
+            ),
+        ));
+    }
     Ok(Operations { period, shut })
+}
+
+/// Where a rule's lines are: in its premises, its THEN or its ELSE.
+#[derive(Clone, Copy, PartialEq)]
+enum Part {
+    If,
+    Then,
+    Else,
+}
+
+/// Reads `[RULES]`.
+///
+/// # Errors
+/// A line that is not valid EPANET: a clause or action with missing
+/// fields, an unknown node or link, a bad number or time.
+#[allow(clippy::too_many_lines)] // one grammar, clause by clause
+fn read_rules(
+    ctx: &Context,
+    lines: &[&Line],
+    start_clock: f64,
+    notes: &mut Vec<(Option<usize>, String)>,
+) -> Result<Vec<Rule>, ReadError> {
+    // One rule per RULE line: its lines and whether it can be modelled.
+    let mut out = Vec::new();
+    let mut current: Option<(Rule, Part, Option<String>, usize)> = None;
+    let finish = |current: Option<(Rule, Part, Option<String>, usize)>,
+                  out: &mut Vec<Rule>,
+                  notes: &mut Vec<(Option<usize>, String)>| {
+        if let Some((rule, _, why, line)) = current {
+            match why {
+                Some(why) => notes.push((
+                    Some(line),
+                    format!("rule {} not modelled: {why}", rule.name),
+                )),
+                None if rule.then.is_empty() && rule.otherwise.is_empty() => notes.push((
+                    Some(line),
+                    format!(
+                        "rule {} not modelled: none of its actions can be taken",
+                        rule.name
+                    ),
+                )),
+                None => out.push(rule),
+            }
+        }
+    };
+    for l in lines {
+        let up: Vec<String> = l.fields.iter().map(|f| f.to_ascii_uppercase()).collect();
+        let bad = |what: &str| ReadError::at(l.number, format!("rule: {what}"));
+        match up[0].as_str() {
+            "RULE" => {
+                finish(current.take(), &mut out, notes);
+                let name = l.fields.get(1).ok_or_else(|| bad("RULE needs a name"))?;
+                current = Some((
+                    Rule {
+                        name: name.clone(),
+                        premises: Vec::new(),
+                        then: Vec::new(),
+                        otherwise: Vec::new(),
+                        priority: f64::NEG_INFINITY,
+                    },
+                    Part::If,
+                    None,
+                    l.number,
+                ));
+            }
+            "PRIORITY" => {
+                let (rule, _, _, _) = current
+                    .as_mut()
+                    .ok_or_else(|| bad("PRIORITY before RULE"))?;
+                rule.priority = l
+                    .fields
+                    .get(1)
+                    .and_then(|v| v.parse().ok())
+                    .filter(|v: &f64| v.is_finite())
+                    .ok_or_else(|| bad("PRIORITY needs a number"))?;
+            }
+            "IF" | "AND" | "OR" | "THEN" | "ELSE" => {
+                let (rule, part, why, _) = current
+                    .as_mut()
+                    .ok_or_else(|| bad("a clause before RULE"))?;
+                match up[0].as_str() {
+                    "THEN" => *part = Part::Then,
+                    "ELSE" => *part = Part::Else,
+                    "IF" => *part = Part::If,
+                    _ => {}
+                }
+                if *part == Part::If {
+                    match premise(ctx, l, &up, start_clock)? {
+                        Ok(clause) => rule.premises.push(Premise {
+                            or: up[0] == "OR",
+                            clause,
+                        }),
+                        Err(reason) => {
+                            if why.is_none() {
+                                *why = Some(reason);
+                            }
+                        }
+                    }
+                } else {
+                    match action(ctx, l, &up)? {
+                        Ok(a) => {
+                            if *part == Part::Then {
+                                rule.then.push(a);
+                            } else {
+                                rule.otherwise.push(a);
+                            }
+                        }
+                        Err(reason) => notes.push((
+                            Some(l.number),
+                            format!("rule {}: action not taken: {reason}", rule.name),
+                        )),
+                    }
+                }
+            }
+            other => return Err(bad(&format!("'{other}' is not a rule keyword"))),
+        }
+    }
+    finish(current.take(), &mut out, notes);
+    Ok(out)
+}
+
+/// A comparison as EPANET writes it.
+fn relation(s: &str) -> Option<Relation> {
+    Some(match s {
+        "=" | "IS" => Relation::Equal,
+        "<>" | "NOT" => Relation::NotEqual,
+        "<" | "<=" | "BELOW" => Relation::Below,
+        ">" | ">=" | "ABOVE" => Relation::Above,
+        _ => return None,
+    })
+}
+
+/// A pipe or pump a rule names, or why it cannot be switched.
+fn link(ctx: &Context, l: &Line, id: &str) -> Result<Result<Target, String>, ReadError> {
+    if let Some(&p) = ctx.pipe_of.get(id) {
+        let pipe = ctx
+            .network
+            .pipe_id(p)
+            .ok_or_else(|| ReadError::at(l.number, "pipe out of range"))?;
+        Ok(Ok(Target::Pipe(pipe)))
+    } else if let Some(&n) = ctx.pump_of.get(id) {
+        Ok(Ok(Target::Pump(n)))
+    } else if let Some(why) = ctx.not_switchable.get(id) {
+        Ok(Err(format!("link '{id}' {why}")))
+    } else {
+        Err(ReadError::at(
+            l.number,
+            format!("rule: unknown link '{id}'"),
+        ))
+    }
+}
+
+/// One premise: the clause, or why the engine cannot read it.
+fn premise(
+    ctx: &Context,
+    l: &Line,
+    up: &[String],
+    start_clock: f64,
+) -> Result<Result<Clause, String>, ReadError> {
+    let bad = |what: &str| ReadError::at(l.number, format!("rule: {what}"));
+    let field = |i: usize| {
+        up.get(i)
+            .map(String::as_str)
+            .ok_or_else(|| bad("a clause is cut short"))
+    };
+    let object = field(1)?;
+    if object == "SYSTEM" {
+        let attribute = field(2)?;
+        let rel = relation(field(3)?).ok_or_else(|| bad("unknown comparison"))?;
+        return Ok(match attribute {
+            "TIME" => Ok(Clause::Time {
+                relation: rel,
+                at: Time::new(time(l, 4, "rule time")?.0),
+            }),
+            "CLOCKTIME" => Ok(Clause::ClockTime {
+                relation: rel,
+                at: Time::new((time(l, 4, "rule clock time")?.0 - start_clock).rem_euclid(DAY)),
+            }),
+            other => Err(format!("SYSTEM {other} is not read")),
+        });
+    }
+    let id = l
+        .fields
+        .get(2)
+        .ok_or_else(|| bad("a clause is cut short"))?;
+    let attribute = field(3)?;
+    let rel = relation(field(4)?).ok_or_else(|| bad("unknown comparison"))?;
+    let raw = field(5)?;
+    let number = || {
+        raw.parse::<f64>()
+            .ok()
+            .filter(|v| v.is_finite())
+            .ok_or_else(|| bad(&format!("'{raw}' is not a number")))
+    };
+    Ok(match (object, attribute) {
+        ("LINK" | "PIPE" | "PUMP" | "VALVE", "STATUS") => {
+            let open = match raw {
+                "OPEN" | "ACTIVE" => true,
+                "CLOSED" => false,
+                _ => return Err(bad(&format!("status '{raw}'"))),
+            };
+            match link(ctx, l, id)? {
+                Ok(target) => Ok(Clause::Status {
+                    target,
+                    open,
+                    is: rel != Relation::NotEqual,
+                }),
+                Err(why) => Err(why),
+            }
+        }
+        ("LINK" | "PIPE" | "PUMP" | "VALVE", "FLOW") => match link(ctx, l, id)? {
+            Ok(target) => Ok(Clause::Flow {
+                target,
+                relation: rel,
+                flow: Flow::new(number()? * ctx.flow),
+            }),
+            Err(why) => Err(why),
+        },
+        ("NODE" | "JUNCTION" | "RESERVOIR" | "TANK", "LEVEL" | "HEAD" | "PRESSURE") => {
+            let &(node, tank) = ctx
+                .node_of
+                .get(id)
+                .ok_or_else(|| bad(&format!("unknown node '{id}'")))?;
+            match attribute {
+                "LEVEL" => match tank {
+                    Some(z) if ctx.network.tanks().iter().any(|t| t.node == node) => {
+                        Ok(Clause::TankLevel {
+                            tank: node,
+                            relation: rel,
+                            level: Head::new((z + number()?) * ctx.length),
+                        })
+                    }
+                    _ => Err(format!("node '{id}' is not a storage tank")),
+                },
+                "HEAD" => Ok(Clause::Head {
+                    node,
+                    relation: rel,
+                    head: Head::new(number()? * ctx.length),
+                }),
+                _ => match ctx.elevation_of.get(id) {
+                    Some(z) => Ok(Clause::Head {
+                        node,
+                        relation: rel,
+                        head: Head::new(z * ctx.length + number()? * ctx.pressure),
+                    }),
+                    None => Err(format!("node '{id}' has no elevation for a pressure")),
+                },
+            }
+        }
+        (o, a) => Err(format!("{o} {a} is not read")),
+    })
+}
+
+/// One action: open/close a pipe or start/stop a pump, or why not.
+fn action(ctx: &Context, l: &Line, up: &[String]) -> Result<Result<Action, String>, ReadError> {
+    let bad = |what: &str| ReadError::at(l.number, format!("rule: {what}"));
+    if up.len() < 6 {
+        return Err(bad("an action is cut short"));
+    }
+    let id = &l.fields[2];
+    if up[3] != "STATUS" {
+        return Ok(Err(format!(
+            "{} {} is not taken (only STATUS)",
+            up[1], up[3]
+        )));
+    }
+    let open = match up[5].as_str() {
+        "OPEN" | "ACTIVE" => true,
+        "CLOSED" => false,
+        other => return Err(bad(&format!("status '{other}'"))),
+    };
+    Ok(link(ctx, l, id)?.map(|target| Action { target, open }))
 }
 
 /// One `[CONTROLS]` line: a control, or why the engine cannot model it.

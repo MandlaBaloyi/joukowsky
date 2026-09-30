@@ -196,6 +196,15 @@ step that does not divide the hour; closing a pipe = removing it (1e-12 m).
 Every switch is a sudden flow change - a transient. The switch events are
 the moments the transient engine should expect a pressure wave from a
 known source (clock calibration uses exactly such events).
+Rules (same day, steady/rules.rs, V-A12): EPANET's rule-based controls -
+IF premises joined by AND / OR (OR binds tighter, as the EPANET manual
+states), THEN / ELSE actions, PRIORITY (higher wins; equal: first listed;
+none: lowest). Premises: tank levels, node heads and pressures, link flows
+and statuses, time and clock time. Looked at after the simple controls at
+every step's end, at every level a rule names (the step is cut there) and
+every time it names - judged just after the instant, so a rule switches
+exactly where a level or the clock crosses its value, either way.
+
 Done the same day: the EPANET reader gives pumps with their curves,
 [TIMES], [PATTERNS] and [CONTROLS] (09_technologies/03_networks_and_
 reference_tools.txt). Next: R-4.

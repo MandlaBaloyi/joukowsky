@@ -1,0 +1,52 @@
+[TITLE]
+Pumped tank run by [RULES] - the V-A9 system, rules instead of controls (by hand, for joukowsky tests)
+
+[JUNCTIONS]
+;ID    Elev   Demand
+DIS    10     0
+TOWN   0      60
+
+[RESERVOIRS]
+;ID    Head
+SUMP   10
+
+[TANKS]
+;ID  Elev  InitLvl  MinLvl  MaxLvl  Diam          MinVol
+TK   50    10       0       16      15.957691216  0
+
+[PIPES]
+;ID    Node1  Node2  Length  Diameter  Roughness  MinorLoss  Status
+MAIN   DIS    TK     2000    300       0.05       0          Open
+OUT    TK     TOWN   300     300       0.05       0          Open
+
+[PUMPS]
+;ID  Node1  Node2  Parameters
+PU   SUMP   DIS    HEAD C1
+
+[CURVES]
+;ID  Flow  Head
+C1   0     80
+C1   100   65
+C1   150   45
+
+[RULES]
+RULE start
+IF TANK TK LEVEL BELOW 7
+THEN PUMP PU STATUS IS OPEN
+PRIORITY 1
+
+RULE stop
+IF TANK TK LEVEL ABOVE 14
+THEN PUMP PU STATUS IS CLOSED
+PRIORITY 1
+
+[TIMES]
+Duration            48:00
+Hydraulic Timestep  0:05
+Pattern Timestep    1:00
+
+[OPTIONS]
+Units     LPS
+Headloss  D-W
+
+[END]

@@ -14,6 +14,7 @@
 use jk_files::epanet::{InpOptions, parse};
 use jk_hydraulics::steady::controls::{Condition, Control, Target};
 use jk_hydraulics::steady::extended::SupplyEvent;
+use jk_hydraulics::steady::rules::Clause;
 use jk_hydraulics::{Network, Node};
 use jk_tests::{check, check_close};
 
@@ -416,5 +417,129 @@ Headloss D-W
         "  the GPV stays a plain connection, and says so",
         !inp.valves.iter().any(|(x, _)| x == "G")
             && inp.notes.iter().any(|n| n.text.contains("GPV valve 'G'")),
+    );
+}
+
+#[test]
+fn rules_in_a_file_run_the_pump_as_its_controls_did() {
+    let switches = |name: &str| {
+        let inp = fixture(name);
+        let run = inp.network.extended(&inp.operations.period).unwrap();
+        run.events
+            .iter()
+            .filter_map(|e| match e {
+                SupplyEvent::Switched { at, open, .. } => Some((at.value(), *open)),
+                _ => None,
+            })
+            .collect::<Vec<_>>()
+    };
+    let by_controls = switches("pumped_tank.inp");
+    let by_rules = switches("pumped_tank_rules.inp");
+    println!("The V-A9 file with [RULES] instead of [CONTROLS]:");
+    print_notes(&fixture("pumped_tank_rules.inp"));
+    check(
+        "  the same switches at the same moments",
+        by_controls.len() == by_rules.len()
+            && by_controls
+                .iter()
+                .zip(&by_rules)
+                .all(|(a, b)| (a.0 - b.0).abs() < 1e-6 && a.1 == b.1),
+    );
+}
+
+#[test]
+fn rules_the_engine_cannot_read_are_reported_never_dropped() {
+    let text = "\
+[RESERVOIRS]
+S 10
+[JUNCTIONS]
+D 10 0
+J 0 5
+[TANKS]
+TK 50 10 0 16 10 0
+[PIPES]
+M D TK 500 200 0.05
+O TK J 300 200 0.05
+[PUMPS]
+PU S D HEAD C1
+[CURVES]
+C1 30 60
+[VALVES]
+V TK J 200 TCV 3 0
+[RULES]
+RULE night
+IF SYSTEM CLOCKTIME >= 10 PM
+OR SYSTEM CLOCKTIME < 6 AM
+AND TANK TK LEVEL BELOW 12
+THEN PUMP PU STATUS IS OPEN
+ELSE PUMP PU STATUS IS CLOSED
+AND PUMP PU SETTING IS 0.8
+PRIORITY 3
+
+RULE demand
+IF SYSTEM DEMAND > 100
+THEN PUMP PU STATUS IS OPEN
+
+RULE valve
+IF TANK TK LEVEL ABOVE 15
+THEN VALVE V STATUS IS CLOSED
+
+RULE pressure
+IF JUNCTION J PRESSURE BELOW 20
+THEN PIPE M STATUS IS OPEN
+[TIMES]
+Start ClockTime 6 AM
+[OPTIONS]
+Units LPS
+Headloss D-W
+";
+    let inp = parse(text, &InpOptions::default()).unwrap();
+    print_notes(&inp);
+    let says = |what: &str| inp.notes.iter().any(|n| n.text.contains(what));
+    let rules = &inp.operations.period.rules;
+    let night = rules.iter().find(|r| r.name == "night");
+    check(
+        "  'night' is read: three premises (OR, AND), THEN and ELSE, priority 3",
+        night.is_some_and(|r| {
+            r.premises.len() == 3
+                && r.premises[1].or
+                && !r.premises[2].or
+                && r.then.len() == 1
+                && r.otherwise.len() == 1
+                && (r.priority - 3.0).abs() < 1e-12
+        }),
+    );
+    check(
+        "  10 PM with the run starting at 6 AM is 16:00 into the day",
+        night.is_some_and(|r| {
+            matches!(r.premises[0].clause, Clause::ClockTime { at, .. } if (at.value() - 16.0 * 3600.0).abs() < 1e-9)
+        }),
+    );
+    check(
+        "  a tank level of 12 m of water is 50 + 12 = 62 m of head",
+        night.is_some_and(|r| {
+            matches!(r.premises[2].clause, Clause::TankLevel { level, .. } if (level.value() - 62.0).abs() < 1e-12)
+        }),
+    );
+    check(
+        "  the pump SETTING action is dropped, and said",
+        says("SETTING is not taken"),
+    );
+    check(
+        "  'demand' is left out: SYSTEM DEMAND is not read",
+        says("rule demand not modelled"),
+    );
+    check(
+        "  'valve' is left out: the TCV cannot be switched",
+        says("rule valve not modelled"),
+    );
+    check(
+        "  'pressure' is read: junction pressure 20 m on elevation 0 = 20 m of head",
+        rules.iter().any(|r| r.name == "pressure"
+            && matches!(r.premises[0].clause, Clause::Head { head, .. } if (head.value() - 20.0).abs() < 1e-12)),
+    );
+    check(
+        "  and the whole thing runs",
+        inp.network.extended(&inp.operations.period).is_ok(),
     );
 }

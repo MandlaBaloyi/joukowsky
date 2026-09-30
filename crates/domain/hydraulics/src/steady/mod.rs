@@ -19,6 +19,7 @@
 pub mod controls;
 pub mod extended;
 pub mod gga;
+pub mod rules;
 
 pub(crate) use gga::solve;
 

@@ -101,6 +101,8 @@ pub enum Cause {
     PowerCut,
     /// The power came back and the controls want the pump running.
     PowerBack,
+    /// Rule number `k` in [`crate::steady::extended::PeriodOptions::rules`].
+    Rule(usize),
 }
 
 /// Time tolerance for landing on switch times [s].

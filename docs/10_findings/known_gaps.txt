@@ -176,4 +176,6 @@ G-19  Valves: PRV response over seconds; states by time of day     OPEN
   other logger's silence means nothing. Waiting and fusion still use the
   base state (they only wait a little longer than needed).
   Same day: PSV, FCV and TCV are devices too (V-A11), read from files;
-  PBV and GPV (rare) remain plain connections; [RULES] unread (next).
+  PBV and GPV (rare) remain plain connections. [RULES] read and run too
+  (V-A12); premises on demands, fill/drain times and settings, and
+  setting actions, are reported, not modelled.

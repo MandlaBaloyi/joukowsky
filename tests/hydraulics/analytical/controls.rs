@@ -18,6 +18,7 @@
 
 use jk_hydraulics::steady::controls::{Cause, Condition, Control, Target};
 use jk_hydraulics::steady::extended::{PeriodOptions, PeriodRun, SupplyEvent};
+use jk_hydraulics::steady::rules::{Action, Clause, Premise, Relation, Rule};
 use jk_hydraulics::steady::{Shut, SteadyOptions};
 use jk_hydraulics::{Network, Node, NodeId, PipeId, TankStorage};
 use jk_kernel::{Area, Flow, Head, STANDARD_GRAVITY, Time};
@@ -449,5 +450,137 @@ fn va9_closing_a_pipe_is_the_same_as_removing_it() {
     check(
         "  cutting consumers off from every source is an error (supply lost)",
         err.to_string().contains("cut it off"),
+    );
+}
+
+/// V-A12: rule-based controls (`steady/rules.rs`).
+fn level_rule(name: &str, tank: NodeId, relation: Relation, level: f64, act: Action) -> Rule {
+    Rule {
+        name: name.into(),
+        premises: vec![Premise {
+            or: false,
+            clause: Clause::TankLevel {
+                tank,
+                relation,
+                level: Head::new(level),
+            },
+        }],
+        then: vec![act],
+        otherwise: Vec::new(),
+        priority: 1.0,
+    }
+}
+
+#[test]
+fn va12_rules_that_mirror_the_level_controls_switch_at_the_same_moments() {
+    let (net, pump, tank) = pumped_tank(60.0);
+    let options = |controls: Vec<Control>, rules: Vec<Rule>| PeriodOptions {
+        duration: Time::new(48.0 * HOUR),
+        controls,
+        rules,
+        ..PeriodOptions::default()
+    };
+    let by_controls = net
+        .extended(&options(
+            Control::fill_between(Target::Pump(pump), tank, Head::new(LOW), Head::new(HIGH))
+                .to_vec(),
+            Vec::new(),
+        ))
+        .unwrap();
+    let act = |open: bool| Action {
+        target: Target::Pump(pump),
+        open,
+    };
+    let by_rules = net
+        .extended(&options(
+            Vec::new(),
+            vec![
+                level_rule("on", tank, Relation::Below, LOW, act(true)),
+                level_rule("off", tank, Relation::Above, HIGH, act(false)),
+            ],
+        ))
+        .unwrap();
+    let (a, b) = (
+        switches(&by_controls, Target::Pump(pump)),
+        switches(&by_rules, Target::Pump(pump)),
+    );
+    println!("The V-A9 pump, run by two rules instead of two controls:");
+    check("  as many switches", a.len() == b.len() && !a.is_empty());
+    let worst = a
+        .iter()
+        .zip(&b)
+        .map(|(x, y)| (x.0 - y.0).abs())
+        .fold(0.0, f64::max);
+    check(
+        &format!("  at the same moments (largest difference {worst:.1e} s)"),
+        worst < 1e-6,
+    );
+    check(
+        "  and each says a rule did it",
+        b.iter().all(|s| matches!(s.2, Cause::Rule(_))),
+    );
+}
+
+#[test]
+fn va12_a_higher_priority_rule_holds_the_pump_off_until_its_window_ends() {
+    // Peak window 01:00-04:00, priority 5: pump off. Level rules, priority
+    // 1. The tank falls to 57 m inside the window: the level rule loses
+    // until the window closes.
+    let (net, pump, tank) = pumped_tank(58.0);
+    let act = |open: bool| Action {
+        target: Target::Pump(pump),
+        open,
+    };
+    let clock = |relation: Relation, h: f64, or: bool| Premise {
+        or,
+        clause: Clause::ClockTime {
+            relation,
+            at: Time::new(h * HOUR),
+        },
+    };
+    let peak = Rule {
+        name: "peak".into(),
+        premises: vec![
+            clock(Relation::Above, 1.0, false),
+            clock(Relation::Below, 4.0, false),
+        ],
+        then: vec![act(false)],
+        otherwise: Vec::new(),
+        priority: 5.0,
+    };
+    let run = net
+        .extended(&PeriodOptions {
+            duration: Time::new(6.0 * HOUR),
+            rules: vec![
+                peak,
+                level_rule("on", tank, Relation::Below, LOW, act(true)),
+                level_rule("off", tank, Relation::Above, HIGH, act(false)),
+            ],
+            ..PeriodOptions::default()
+        })
+        .unwrap();
+    let got = switches(&run, Target::Pump(pump));
+    println!("Pump switches: {got:?}");
+    check(
+        "  01:00: the peak rule stops the pump",
+        matches!(got.first(), Some(&(t, false, Cause::Rule(0))) if (t - HOUR).abs() < 1e-6),
+    );
+    let k = run
+        .times
+        .iter()
+        .position(|t| (t.value() - HOUR).abs() < 1.0)
+        .unwrap();
+    let reaches_low = HOUR + (run.tanks[0].1[k].value() - LOW) * AREA / DEMAND;
+    println!(
+        "  the tank falls to {LOW} m at {:.2} h, inside the window",
+        reaches_low / HOUR
+    );
+    check(
+        "  the level rule wants the pump then, but has the lower priority",
+        reaches_low < 4.0 * HOUR && got.len() >= 2 && got[1].0 > reaches_low + 1.0,
+    );
+    check(
+        "  04:00: the window ends and the level rule starts the pump",
+        matches!(got.get(1), Some(&(t, true, Cause::Rule(1))) if (t - 4.0 * HOUR).abs() < 1e-6),
     );
 }

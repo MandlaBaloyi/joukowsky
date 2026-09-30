@@ -250,7 +250,7 @@ impl PumpDayModel {
                 } => {
                     let t = at.value() / HOUR;
                     match cause {
-                        Cause::Control(_) => {
+                        Cause::Control(_) | Cause::Rule(_) => {
                             events.push((t, if *open { "pump on" } else { "pump off" }.into()));
                         }
                         Cause::PowerBack => {

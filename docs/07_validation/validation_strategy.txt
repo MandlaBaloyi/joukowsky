@@ -23,6 +23,12 @@ Rung 1  Analytical: results that must match closed-form physics.
         reservoir-pipe-valve system vs the exact complex-frequency
         solution; first-order convergence, extrapolated within 0.5%
         (2026-09-29: +0.1% at 400 reaches after FN-021).
+  V-A12 Rule-based controls: two rules that copy the V-A9 level controls
+        switch the pump at the same moments (difference 0 s); a priority-5
+        clock window holds the pump off while a priority-1 level rule wants
+        it on, and the level rule wins the moment the window ends; OR binds
+        tighter than AND (EPANET 2.2 manual); the V-A9 file with [RULES]
+        instead of [CONTROLS] runs identically (2026-09-30).
   V-A11 Other control valves: a PSV holding a high zone at 70 m while it
         feeds a low reservoir (bisection of the energy balance), fully open
         when the reservoir is above its setting; an FCV passing exactly its

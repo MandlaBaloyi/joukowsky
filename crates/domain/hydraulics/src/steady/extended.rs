@@ -44,6 +44,7 @@ use crate::HydraulicsError;
 use crate::error::positive;
 use crate::model::{Network, Node, NodeId, PipeId};
 use crate::steady::controls::{self, Cause, Control, TIME_TOL, Target};
+use crate::steady::rules::{self, Clause, Rule, Situation};
 use crate::steady::{Shut, SteadyOptions, SteadySolution};
 
 /// Most sub-steps (cuts at switches) inside one reporting step before the
@@ -78,6 +79,9 @@ pub struct PeriodOptions {
     /// cut; when the power returns each pump does what the controls last
     /// asked. Also any window in which pumps must not run (peak tariff).
     pub power_cuts: Vec<(Time, Time)>,
+    /// Rule-based controls (IF ... THEN ... ELSE ..., with priorities),
+    /// looked at after the simple controls ([`rules`]).
+    pub rules: Vec<Rule>,
 }
 
 impl Default for PeriodOptions {
@@ -91,6 +95,7 @@ impl Default for PeriodOptions {
             steady: SteadyOptions::default(),
             controls: Vec::new(),
             power_cuts: Vec::new(),
+            rules: Vec::new(),
         }
     }
 }
@@ -187,6 +192,8 @@ struct TankState {
     ceiling: f64,
     level: f64,
     open: bool,
+    /// The way the level last moved: +1 rising, -1 falling, 0 still.
+    trend: f64,
 }
 
 /// Which pipes are open and which pumps are wanted, and the power.
@@ -320,6 +327,7 @@ impl Network {
             }
         }
         controls::check(self, &options.controls, &options.power_cuts)?;
+        rules::check(self, &options.rules)?;
         let mut tanks: Vec<TankState> = self
             .tanks()
             .iter()
@@ -334,6 +342,7 @@ impl Network {
                     ceiling: t.ceiling.value(),
                     level: head.value(),
                     open: true,
+                    trend: 0.0,
                 }
             })
             .collect();
@@ -360,7 +369,8 @@ impl Network {
 
         let mut t = 0.0;
         switch(options, &mut status, &tanks, t, &mut run.events);
-        let mut here = self.settle(t, &mut tanks, &status, options, &mut run.events)?;
+        let here = self.settle(t, &mut tanks, &status, options, &mut run.events)?;
+        let mut here = self.obey(options, &mut status, &mut tanks, t, here, &mut run.events)?;
         record(&mut run, t, &tanks, &status, &here);
         observe(Time::new(t), &here);
         for k in 1..=steps {
@@ -402,6 +412,7 @@ impl Network {
                         continue;
                     }
                     let rate = rates[i];
+                    tank.trend = if rate == 0.0 { 0.0 } else { rate.signum() };
                     let mut level = tank.level + h * rate;
                     if let Some(c) = crossing
                         && c.tank == i
@@ -429,7 +440,11 @@ impl Network {
                 }
                 t = target;
                 switch(options, &mut status, &tanks, t, &mut run.events);
-                here = match self.settle(t, &mut tanks, &status, options, &mut run.events) {
+                here = match self
+                    .settle(t, &mut tanks, &status, options, &mut run.events)
+                    .and_then(|s| {
+                        self.obey(options, &mut status, &mut tanks, t, s, &mut run.events)
+                    }) {
                     Ok(s) => s,
                     Err(e) => return Ok(lost(run, t, &e)),
                 };
@@ -439,6 +454,58 @@ impl Network {
             observe(Time::new(t), &here);
         }
         Ok(run)
+    }
+
+    /// Applies the rules to the state `here` at `t`; if they switch
+    /// anything, solves again. Returns the state to go on from.
+    fn obey(
+        &self,
+        options: &PeriodOptions,
+        status: &mut Status,
+        tanks: &mut [TankState],
+        t: f64,
+        here: SteadySolution,
+        events: &mut Vec<SupplyEvent>,
+    ) -> Result<SteadySolution, HydraulicsError> {
+        if options.rules.is_empty() {
+            return Ok(here);
+        }
+        let acts = rules::actions(
+            &options.rules,
+            &Now {
+                network: self,
+                t,
+                tanks,
+                here: &here,
+                status,
+            },
+        );
+        let before = status.clone();
+        let mut by = Vec::new();
+        for (a, k) in acts {
+            if status.wanted(a.target) != a.open {
+                status.set(a.target, a.open);
+                by.push((a.target, k));
+            }
+        }
+        let mut changed = false;
+        for (target, k) in by {
+            let open = status.is_open(target);
+            if open != before.is_open(target) {
+                changed = true;
+                events.push(SupplyEvent::Switched {
+                    target,
+                    open,
+                    at: Time::new(t),
+                    cause: Cause::Rule(k),
+                });
+            }
+        }
+        if changed {
+            self.settle(t, tanks, status, options, events)
+        } else {
+            Ok(here)
+        }
     }
 
     /// The steady state at `t` for the current tanks and status, reopening
@@ -642,6 +709,15 @@ fn crossing(
             consider(i, level);
         }
     }
+    // Every level a rule names: its truth may change there.
+    for p in options.rules.iter().flat_map(|r| &r.premises) {
+        if let Clause::TankLevel { tank, level, .. } = p.clause
+            && let Some(i) = tanks.iter().position(|t| t.node == tank.index())
+            && tanks[i].open
+        {
+            consider(i, level.value());
+        }
+    }
     first
 }
 
@@ -652,6 +728,11 @@ fn next_boundary(options: &PeriodOptions, t: f64) -> f64 {
     let mut next = options.duration.value();
     for c in &options.controls {
         if let Some(at) = c.when.next_time(t) {
+            next = next.min(at);
+        }
+    }
+    for p in options.rules.iter().flat_map(|r| &r.premises) {
+        if let Some(at) = p.clause.next_time(t) {
             next = next.min(at);
         }
     }
@@ -738,6 +819,57 @@ fn switch(
             at: Time::new(t),
             cause,
         });
+    }
+}
+
+/// How far past the instant rules look [s], and how far a moving level is
+/// taken on [m]: so a rule switches exactly where a level crosses its value
+/// or the clock passes its time, whichever way.
+const JUST_AFTER_S: f64 = 1e-7;
+const JUST_AFTER_M: f64 = 1e-9;
+
+/// The run at one instant, as rules see it.
+struct Now<'a> {
+    network: &'a Network,
+    t: f64,
+    tanks: &'a [TankState],
+    here: &'a SteadySolution,
+    status: &'a Status,
+}
+
+impl Situation for Now<'_> {
+    fn time(&self) -> f64 {
+        // Just after the instant looked at.
+        self.t + JUST_AFTER_S
+    }
+
+    fn level(&self, tank: NodeId) -> f64 {
+        self.tanks
+            .iter()
+            .find(|x| x.node == tank.index())
+            // Just after: a hair on in the way it is moving.
+            .map_or(f64::NAN, |x| x.level + x.trend * JUST_AFTER_M)
+    }
+
+    fn head(&self, node: NodeId) -> f64 {
+        self.here.node_heads[node.index()].value()
+    }
+
+    fn flow(&self, target: Target) -> f64 {
+        match target {
+            Target::Pipe(p) => self.here.pipe_flows[p.index()].value(),
+            // Through a pump: its discharge pipe's flow.
+            Target::Pump(n) => self
+                .network
+                .pipes()
+                .iter()
+                .position(|p| p.from == n)
+                .map_or(0.0, |k| self.here.pipe_flows[k].value()),
+        }
+    }
+
+    fn open(&self, target: Target) -> bool {
+        self.status.is_open(target)
     }
 }
 

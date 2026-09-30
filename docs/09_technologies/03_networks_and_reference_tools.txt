@@ -51,7 +51,9 @@ EPANET .inp format                                               [ADOPT]
         the valve's diameter (V-A10).
         Then PSV (setting on the node above), FCV (a flow) and TCV (a loss
         coefficient) as valves too.
-        Not yet: the wave-speed sidecar; PBV and GPV as devices; [RULES]; controls on junction pressures,
+        Then [RULES] (IF / AND / OR / THEN / ELSE / PRIORITY) into the
+        engine's rules; what it cannot read is reported per rule.
+        Not yet: the wave-speed sidecar; PBV and GPV as devices; controls on junction pressures,
         valves and pump speeds; reservoir head patterns; tank volume
         curves.
 

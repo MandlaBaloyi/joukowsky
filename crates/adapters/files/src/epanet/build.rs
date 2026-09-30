@@ -257,6 +257,15 @@ pub(super) fn build(text: &str, options: &InpOptions) -> Result<InpNetwork, Read
             (n.id.clone(), (map.node_of_raw[i], tank))
         })
         .collect();
+    let elevation_of: HashMap<String, f64> = nodes
+        .iter()
+        .filter_map(|n| match n.kind {
+            NodeKind::Junction { elevation, .. } | NodeKind::Tank { elevation, .. } => {
+                Some((n.id.clone(), elevation))
+            }
+            NodeKind::Reservoir { .. } => None,
+        })
+        .collect();
     let closed_pumps: Vec<String> = links
         .iter()
         .filter(|k| matches!(k.kind, LinkKind::Pump { .. }) && k.status == Status::Closed)
@@ -266,6 +275,9 @@ pub(super) fn build(text: &str, options: &InpOptions) -> Result<InpNetwork, Read
         let ctx = Context {
             network: &inp.network,
             length: settings.units.length(),
+            flow: settings.units.to_m3s(),
+            pressure: settings.units.pressure(),
+            elevation_of: &elevation_of,
             pipe_of: &map.pipe_of,
             pump_of: &map.pump_of,
             not_switchable: &map.not_switchable,
@@ -279,6 +291,7 @@ pub(super) fn build(text: &str, options: &InpOptions) -> Result<InpNetwork, Read
             times,
             &patterns,
             &operations::lines(&sections, Section::Controls),
+            &operations::lines(&sections, Section::Rules),
             &mut op_notes,
         )?
     };
@@ -820,7 +833,6 @@ fn read_status(
 
 fn unused_sections(sections: &Sections, notes: &mut Vec<Note>) {
     let why = |s: Section| match s {
-        Section::Rules => "rule-based controls (simple [CONTROLS] are modelled; rules not yet)",
         Section::Energy => "energy prices and pump efficiency",
         Section::Emitters | Section::Leakage => "emitters and leakage",
         Section::Quality | Section::Sources | Section::Reactions | Section::Mixing => {
