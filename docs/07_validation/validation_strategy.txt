@@ -23,6 +23,12 @@ Rung 1  Analytical: results that must match closed-form physics.
         reservoir-pipe-valve system vs the exact complex-frequency
         solution; first-order convergence, extrapolated within 0.5%
         (2026-09-29: +0.1% at 400 reaches after FN-021).
+  V-A9  Controls (extended period): a pump filling a tank between switch
+        levels, a float valve on a tank inlet - switch times vs Simpson
+        quadrature of A dh / (Q_in(h) - D) and the straight drain with the
+        inlet shut; load-shedding windows; daily clock switches; a closed
+        pipe = the pipe removed (2026-09-30: switches within 0.05 s over
+        48 h with 5-min steps, 2.4 s with 15-min steps; closed pipe 1e-12 m).
   V-A8  Storage tanks (extended period): draining tank vs the exact
         sqrt-law; empty time vs volume / demand (2026-09-30: 0.12 mm over
         12 h, second order; empty time exact).

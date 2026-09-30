@@ -37,6 +37,14 @@
 //!     non-return valve is settled like a check valve: shut if the flow
 //!     comes out negative, reopened if the shut-off head a0 could overcome
 //!     the head difference.
+//!
+//! Links out of service ([`Shut`]): a closed pipe stays in the graph with
+//! no conductance (it carries nothing whatever the heads); a stopped pump
+//! has no link, like a pump whose non-return valve is shut, and stays that
+//! way. Closing links can cut part of the network off from every source:
+//! if anyone there draws water, supply is lost there (an error, as for any
+//! part that reaches no reservoir); if not, its heads are unknown - the
+//! trapped water keeps whatever pressure it had - and are reported as NaN.
 
 use crate::HydraulicsError;
 use crate::boundary::check_valve::CheckValveState;
@@ -45,7 +53,7 @@ use crate::boundary::pump::PumpCurve;
 use crate::moc::network::initial::SteadyState;
 use crate::model::{Network, Node, NodeId, Topology};
 use crate::pipe::friction::quasi_steady;
-use crate::steady::{SteadyOptions, SteadySolution};
+use crate::steady::{Shut, SteadyOptions, SteadySolution};
 use jk_kernel::sparse::Envelope;
 use jk_kernel::{Flow, Head, Time};
 
@@ -76,6 +84,8 @@ enum Law {
     /// where the true slope has the wrong sign; since the solution does not
     /// depend on the slope used, a safe positive one is taken instead.
     Pump(PumpCurve, f64),
+    /// Out of service: no flow whatever the heads (conductance 0).
+    Closed,
 }
 
 impl Law {
@@ -90,6 +100,7 @@ impl Law {
             Self::Pump(curve, min_slope) => {
                 (-curve.head(q, 1.0), (-curve.slope(q, 1.0)).max(min_slope))
             }
+            Self::Closed => (0.0, f64::INFINITY),
         }
     }
 }
@@ -120,10 +131,17 @@ struct Graph {
     valve_link: Vec<Option<(usize, f64)>>,
     /// Link of each running (delivering) pump node.
     pump_link: Vec<Option<usize>>,
+    /// Solver nodes cut off from every source, with no demand: their heads
+    /// are unknown (their fixed head of 0 is a placeholder).
+    isolated: Vec<bool>,
 }
 
 impl Graph {
-    fn build(network: &Network, states: &[CheckValveState]) -> Result<Self, HydraulicsError> {
+    fn build(
+        network: &Network,
+        states: &[CheckValveState],
+        shut: &Shut,
+    ) -> Result<Self, HydraulicsError> {
         let mut graph = Self {
             fixed_head: Vec::new(),
             demand: Vec::new(),
@@ -133,6 +151,7 @@ impl Graph {
             down_side: Vec::new(),
             valve_link: vec![None; network.nodes().len()],
             pump_link: vec![None; network.nodes().len()],
+            isolated: Vec::new(),
         };
         let add = |g: &mut Self, fixed: Option<f64>, demand: f64, origin: usize| {
             g.fixed_head.push(fixed);
@@ -158,19 +177,24 @@ impl Graph {
             graph.down_side.push(down);
         }
         let g = network.gravity();
-        for p in network.pipes() {
+        for (k, p) in network.pipes().iter().enumerate() {
             let area = p.pipe.area().value();
+            let closed = shut.pipes.iter().any(|id| id.0 == k);
             graph.links.push(Link {
                 from: graph.down_side[p.from.0],
                 to: graph.up_side[p.to.0],
-                law: Law::Friction(quasi_steady::coefficient(
-                    p.pipe.friction_factor(),
-                    p.pipe.length(),
-                    p.pipe.diameter(),
-                    g,
-                )),
+                law: if closed {
+                    Law::Closed
+                } else {
+                    Law::Friction(quasi_steady::coefficient(
+                        p.pipe.friction_factor(),
+                        p.pipe.length(),
+                        p.pipe.diameter(),
+                        g,
+                    ))
+                },
                 // EPANET's starting guess: about 1 ft/s in every pipe.
-                initial_flow: 0.3 * area,
+                initial_flow: if closed { 0.0 } else { 0.3 * area },
             });
         }
         for (n, node) in network.nodes().iter().enumerate() {
@@ -211,7 +235,53 @@ impl Graph {
                 graph.pump_link[n] = Some(graph.links.len() - 1);
             }
         }
+        graph.isolated = vec![false; graph.fixed_head.len()];
+        if !shut.is_empty() {
+            graph.isolate()?;
+        }
         Ok(graph)
+    }
+
+    /// Finds the solver nodes that no source reaches through links in
+    /// service. Any with demand: supply is lost there (an error). The rest
+    /// get a placeholder fixed head and every link touching them is closed.
+    fn isolate(&mut self) -> Result<(), HydraulicsError> {
+        let n = self.fixed_head.len();
+        let mut neighbours: Vec<Vec<usize>> = vec![Vec::new(); n];
+        for link in &self.links {
+            if !matches!(link.law, Law::Closed) {
+                neighbours[link.from].push(link.to);
+                neighbours[link.to].push(link.from);
+            }
+        }
+        let mut reached: Vec<bool> = self.fixed_head.iter().map(Option::is_some).collect();
+        let mut queue: Vec<usize> = (0..n).filter(|&i| reached[i]).collect();
+        while let Some(i) = queue.pop() {
+            for &j in &neighbours[i] {
+                if !reached[j] {
+                    reached[j] = true;
+                    queue.push(j);
+                }
+            }
+        }
+        for i in (0..n).filter(|&i| !reached[i]) {
+            if self.demand[i] > 0.0 {
+                return Err(HydraulicsError::InvalidNetwork(format!(
+                    "heads cannot be determined near node {}: closed pipes or stopped \
+                     pumps cut it off from every source, and it draws water",
+                    self.origin[i]
+                )));
+            }
+            self.isolated[i] = true;
+            self.fixed_head[i] = Some(0.0);
+        }
+        for link in &mut self.links {
+            if self.isolated[link.from] || self.isolated[link.to] {
+                link.law = Law::Closed;
+                link.initial_flow = 0.0;
+            }
+        }
+        Ok(())
     }
 }
 
@@ -378,17 +448,30 @@ pub(crate) fn solve(
     topo: &Topology,
     options: &SteadyOptions,
 ) -> Result<(SteadySolution, SteadyState), HydraulicsError> {
+    solve_shut(network, topo, options, &Shut::default())
+}
+
+/// [`solve`] with some links out of service.
+pub(crate) fn solve_shut(
+    network: &Network,
+    topo: &Topology,
+    options: &SteadyOptions,
+    shut: &Shut,
+) -> Result<(SteadySolution, SteadyState), HydraulicsError> {
     let nodes = network.nodes();
+    let stopped = |n: usize| shut.pumps.iter().any(|id| id.0 == n);
     let mut states: Vec<CheckValveState> = nodes
         .iter()
-        .map(|n| match n {
+        .enumerate()
+        .map(|(n, node)| match node {
+            Node::Pump { .. } if stopped(n) => CheckValveState::Closed,
             Node::CheckValve | Node::Pump { .. } => CheckValveState::Open,
             _ => CheckValveState::Closed,
         })
         .collect();
 
     for _ in 0..MAX_CHECK_VALVE_PASSES {
-        let graph = Graph::build(network, &states)?;
+        let graph = Graph::build(network, &states, shut)?;
         let solved = match newton(&graph, options) {
             Ok(solved) => solved,
             Err(Failure::Error(e)) => return Err(e),
@@ -418,6 +501,7 @@ pub(crate) fn solve(
             // Head a pump could add at zero flow (0 for a check valve).
             let push = match node {
                 Node::CheckValve => 0.0,
+                Node::Pump { .. } if stopped(n) => continue,
                 Node::Pump { pump, .. } => pump.curve.coefficients().0,
                 _ => continue,
             };
@@ -467,7 +551,14 @@ fn assemble(
     let nodes = network.nodes();
     let pipes = network.pipes();
     let heads = &solved.heads;
-    let node_heads: Vec<f64> = graph.up_side.iter().map(|&s| heads[s]).collect();
+    let head_of = |s: usize| {
+        if graph.isolated[s] {
+            f64::NAN
+        } else {
+            heads[s]
+        }
+    };
+    let node_heads: Vec<f64> = graph.up_side.iter().map(|&s| head_of(s)).collect();
     let mut pipe_flows = solved.flows[..pipes.len()].to_vec();
     // A shut check valve passes nothing: that is its boundary condition, so
     // the pipes on both sides carry exactly zero - not the ~1e-11 m^3/s of
@@ -484,8 +575,8 @@ fn assemble(
         .iter()
         .map(|p| {
             (
-                heads[graph.down_side[p.from.0]],
-                heads[graph.up_side[p.to.0]],
+                head_of(graph.down_side[p.from.0]),
+                head_of(graph.up_side[p.to.0]),
             )
         })
         .collect();
@@ -506,7 +597,14 @@ fn assemble(
     // How well the answer satisfies the equations it solved.
     let g = network.gravity();
     let mut energy = 0.0_f64;
-    for (p, (q, (h_from, h_to))) in pipes.iter().zip(pipe_flows.iter().zip(&pipe_end_heads)) {
+    for (k, (p, (q, (h_from, h_to)))) in pipes
+        .iter()
+        .zip(pipe_flows.iter().zip(&pipe_end_heads))
+        .enumerate()
+    {
+        if matches!(graph.links[k].law, Law::Closed) {
+            continue; // no flow, whatever the heads either side
+        }
         let loss = p.pipe.friction_head_loss(Flow::new(*q), g).value();
         energy = energy.max((loss - (h_from - h_to)).abs());
     }
@@ -552,7 +650,7 @@ fn assemble(
         .map(|(n, _)| {
             (
                 NodeId(n),
-                Head::new(heads[graph.down_side[n]] - heads[graph.up_side[n]]),
+                Head::new(head_of(graph.down_side[n]) - head_of(graph.up_side[n])),
             )
         })
         .collect();

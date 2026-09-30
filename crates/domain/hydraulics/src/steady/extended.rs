@@ -1,7 +1,8 @@
 //! Extended-period run: hours to days as a chain of steady states, with
-//! storage tanks filling and draining in between - the supply side of the
-//! network (step R-2, `docs/02_physics_of_transients/sources_dams_rivers_
-//! canals.txt`).
+//! storage tanks filling and draining in between, and pumps and valves
+//! switched by tank levels, clock times and power cuts - the supply side of
+//! the network (step R-2, `docs/02_physics_of_transients/sources_dams_
+//! rivers_canals.txt`).
 //!
 //! Tanks drain over hours; waves cross a site in seconds. Simulating hours
 //! at wave time steps would take millions of steps, so - as EPANET does -
@@ -18,28 +19,44 @@
 //! error). Reservoirs with a level history follow it; other reservoirs hold
 //! their head.
 //!
+//! Nothing that changes suddenly is smeared across a step: a step is cut
+//! short to land exactly where a tank reaches its floor, its ceiling or a
+//! control's switching level (found from the step's own rate, then the step
+//! is redone to there), and at every clock-time switch, power-cut boundary
+//! and demand-pattern boundary. So a pump starts at the moment the tank
+//! reaches its switch-on level, whatever the step.
+//!
 //! What it warns about - the supply events:
 //! - a tank falling to its floor stops supplying: from then on it is closed
 //!   (a node with no demand), and reopens when the network would push water
 //!   back into it;
 //! - a tank rising to its ceiling overflows and holds there;
-//! - when no source can reach part of the network the run stops: supply is
-//!   lost there - exactly when a supply cut would start draining pipes, and
-//!   the refilling surge that follows (gap G-14) becomes a risk.
+//! - pumps starting and stopping, pipes opening and closing, power going
+//!   off and coming back ([`controls`](crate::steady::controls));
+//! - when no source can reach part of the network that draws water the run
+//!   stops: supply is lost there - exactly when a supply cut would start
+//!   draining pipes, and the refilling surge that follows (gap G-14)
+//!   becomes a risk.
 
 use jk_kernel::{Head, Time};
 
 use crate::HydraulicsError;
 use crate::error::positive;
-use crate::model::{Network, Node, NodeId};
-use crate::steady::{SteadyOptions, SteadySolution};
+use crate::model::{Network, Node, NodeId, PipeId};
+use crate::steady::controls::{self, Cause, Control, TIME_TOL, Target};
+use crate::steady::{Shut, SteadyOptions, SteadySolution};
+
+/// Most sub-steps (cuts at switches) inside one reporting step before the
+/// run gives up: a guard against controls that chatter.
+const MAX_SUBSTEPS: usize = 1000;
 
 /// How the extended-period run proceeds.
 #[derive(Debug, Clone, PartialEq)]
 pub struct PeriodOptions {
-    /// Time between steady states. Default 5 minutes.
+    /// Time between reported states (and the longest step). Default 5
+    /// minutes.
     pub step: Time,
-    /// Total time to cover.
+    /// Total time to cover. The run starts at midnight.
     pub duration: Time,
     /// Demand multipliers, one per `pattern_step`, repeating (e.g. 24 hourly
     /// factors for a day). Empty: demands stay as given.
@@ -48,6 +65,15 @@ pub struct PeriodOptions {
     pub pattern_step: Time,
     /// Settings of each steady solve.
     pub steady: SteadyOptions,
+    /// Pumps and pipes switched by tank levels and clock times, checked in
+    /// order: when two act on the same target at once, the later wins. At
+    /// the start every pipe is open and every pump running, as the network
+    /// stands, and then the controls are applied.
+    pub controls: Vec<Control>,
+    /// Power cuts (load-shedding), as (start, end): no pump runs during a
+    /// cut; when the power returns each pump does what the controls last
+    /// asked. Also any window in which pumps must not run (peak tariff).
+    pub power_cuts: Vec<(Time, Time)>,
 }
 
 impl Default for PeriodOptions {
@@ -58,6 +84,8 @@ impl Default for PeriodOptions {
             pattern: Vec::new(),
             pattern_step: Time::new(3600.0),
             steady: SteadyOptions::default(),
+            controls: Vec::new(),
+            power_cuts: Vec::new(),
         }
     }
 }
@@ -69,7 +97,7 @@ pub enum SupplyEvent {
     TankEmpty {
         /// The tank.
         tank: NodeId,
-        /// When (between steps: where the level crossed the floor).
+        /// When.
         at: Time,
     },
     /// An empty tank started to fill again.
@@ -86,7 +114,29 @@ pub enum SupplyEvent {
         /// When.
         at: Time,
     },
-    /// No source reaches part of the network any more: the run stops.
+    /// A pump started or stopped, or a pipe opened or closed.
+    Switched {
+        /// What switched.
+        target: Target,
+        /// Now open/running (true) or closed/stopped (false).
+        open: bool,
+        /// When.
+        at: Time,
+        /// Why.
+        cause: Cause,
+    },
+    /// The power failed: every pump stops.
+    PowerOff {
+        /// When.
+        at: Time,
+    },
+    /// The power came back.
+    PowerOn {
+        /// When.
+        at: Time,
+    },
+    /// No source reaches part of the network that draws water: the run
+    /// stops.
     SupplyLost {
         /// When.
         at: Time,
@@ -103,7 +153,11 @@ pub struct PeriodRun {
     /// Per tank (in [`Network::tanks`] order): its node and its level at
     /// each recorded time.
     pub tanks: Vec<(NodeId, Vec<Head>)>,
-    /// Head at every node, at each recorded time.
+    /// Per pump node (in node order): whether it runs at each recorded
+    /// time.
+    pub pumps: Vec<(NodeId, Vec<bool>)>,
+    /// Head at every node, at each recorded time (NaN where closed pipes
+    /// cut a part off with no demand: its pressure is unknown).
     pub node_heads: Vec<Vec<Head>>,
     /// Supply events, in time order.
     pub events: Vec<SupplyEvent>,
@@ -120,13 +174,97 @@ struct TankState {
     open: bool,
 }
 
+/// Which pipes are open and which pumps are wanted, and the power.
+#[derive(Debug, Clone, PartialEq)]
+struct Status {
+    pipe_open: Vec<bool>,
+    /// Per node: the controls want this pump running (pump nodes only).
+    pump_wanted: Vec<bool>,
+    pumps: Vec<usize>,
+    powered: bool,
+}
+
+impl Status {
+    fn new(network: &Network) -> Self {
+        let pumps: Vec<usize> = network
+            .nodes()
+            .iter()
+            .enumerate()
+            .filter(|(_, n)| matches!(n, Node::Pump { .. }))
+            .map(|(k, _)| k)
+            .collect();
+        Self {
+            pipe_open: vec![true; network.pipes().len()],
+            pump_wanted: vec![true; network.nodes().len()],
+            pumps,
+            powered: true,
+        }
+    }
+
+    /// Whether pump node `n` actually runs.
+    fn running(&self, n: usize) -> bool {
+        self.powered && self.pump_wanted[n]
+    }
+
+    /// The target's actual state.
+    fn is_open(&self, target: Target) -> bool {
+        match target {
+            Target::Pipe(p) => self.pipe_open[p.index()],
+            Target::Pump(n) => self.running(n.index()),
+        }
+    }
+
+    /// The state the controls asked for.
+    fn wanted(&self, target: Target) -> bool {
+        match target {
+            Target::Pipe(p) => self.pipe_open[p.index()],
+            Target::Pump(n) => self.pump_wanted[n.index()],
+        }
+    }
+
+    fn set(&mut self, target: Target, open: bool) {
+        match target {
+            Target::Pipe(p) => self.pipe_open[p.index()] = open,
+            Target::Pump(n) => self.pump_wanted[n.index()] = open,
+        }
+    }
+
+    fn shut(&self) -> Shut {
+        Shut {
+            pipes: self
+                .pipe_open
+                .iter()
+                .enumerate()
+                .filter(|(_, open)| !**open)
+                .map(|(p, _)| PipeId(p))
+                .collect(),
+            pumps: self
+                .pumps
+                .iter()
+                .filter(|&&n| !self.running(n))
+                .map(|&n| NodeId(n))
+                .collect(),
+        }
+    }
+}
+
+/// Where a step has to stop early: a tank reaching a level.
+#[derive(Debug, Clone, Copy)]
+struct Crossing {
+    /// Fraction of the step at which it happens (0, 1].
+    fraction: f64,
+    tank: usize,
+    level: f64,
+}
+
 impl Network {
     /// Runs the network for `options.duration` as a chain of steady states,
-    /// tanks filling and draining in between.
+    /// tanks filling and draining in between, pumps and valves switched by
+    /// the controls.
     ///
     /// # Errors
-    /// Invalid options, or a steady state that cannot be solved at the start
-    /// (later failures from lost supply end the run with a
+    /// Invalid options or controls, or a steady state that cannot be solved
+    /// at the start (later failures from lost supply end the run with a
     /// [`SupplyEvent::SupplyLost`] instead).
     #[allow(clippy::too_many_lines)] // one time loop with its supply events, kept together
     pub fn extended(&self, options: &PeriodOptions) -> Result<PeriodRun, HydraulicsError> {
@@ -144,6 +282,7 @@ impl Network {
                 "finite multipliers >= 0",
             ));
         }
+        controls::check(self, &options.controls, &options.power_cuts)?;
         let mut tanks: Vec<TankState> = self
             .tanks()
             .iter()
@@ -162,121 +301,194 @@ impl Network {
             })
             .collect();
         let dt = options.step.value();
+        let end = options.duration.value();
         #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)] // positive, bounded
-        let steps = (options.duration.value() / dt).ceil() as usize;
+        let steps = (end / dt - 1e-9).ceil() as usize;
 
+        let mut status = Status::new(self);
         let mut run = PeriodRun {
             times: Vec::with_capacity(steps + 1),
             tanks: tanks
                 .iter()
                 .map(|t| (NodeId(t.node), Vec::with_capacity(steps + 1)))
                 .collect(),
+            pumps: status
+                .pumps
+                .iter()
+                .map(|&n| (NodeId(n), Vec::with_capacity(steps + 1)))
+                .collect(),
             node_heads: Vec::with_capacity(steps + 1),
             events: Vec::new(),
         };
-        let first = self.state_at(Time::ZERO, &tanks, options)?;
-        let mut here = first;
-        for k in 0..=steps {
-            #[allow(clippy::cast_precision_loss)] // k is small
-            let t = k as f64 * dt;
-            run.times.push(Time::new(t));
-            for (i, tank) in tanks.iter().enumerate() {
-                run.tanks[i].1.push(Head::new(tank.level));
-            }
-            run.node_heads.push(here.node_heads.clone());
-            if k == steps {
-                break;
-            }
 
-            // Heun: slopes now, a predicted step, slopes there, average.
-            let slope_now = self.net_inflows(&here, &tanks);
-            let mut predicted = tanks.clone();
-            for (tank, q) in predicted.iter_mut().zip(&slope_now) {
-                if tank.open {
-                    tank.level += dt * q / tank.area;
+        let mut t = 0.0;
+        switch(options, &mut status, &tanks, t, &mut run.events);
+        let mut here = self.settle(t, &mut tanks, &status, options, &mut run.events)?;
+        record(&mut run, t, &tanks, &status, &here);
+        for k in 1..=steps {
+            #[allow(clippy::cast_precision_loss)] // k is small
+            let report = (k as f64 * dt).min(end);
+            let mut substeps = 0;
+            while t < report - TIME_TOL {
+                substeps += 1;
+                if substeps > MAX_SUBSTEPS {
+                    return Err(HydraulicsError::InvalidNetwork(format!(
+                        "more than {MAX_SUBSTEPS} switches within one step at t = {t:.0} s: \
+                         controls keep switching each other"
+                    )));
                 }
-            }
-            let t_next = Time::new(t + dt);
-            let Ok(there) = self.state_at(t_next, &predicted, options) else {
-                run.events.push(SupplyEvent::SupplyLost {
-                    at: t_next,
-                    reason: "no source reaches part of the network".into(),
-                });
-                break;
-            };
-            let slope_there = self.net_inflows(&there, &predicted);
-            for (i, tank) in tanks.iter_mut().enumerate() {
-                if !tank.open {
-                    // An empty tank reopens when the network would fill it.
-                    let head = there.node_heads[tank.node].value();
-                    if head > tank.floor {
-                        tank.open = true;
-                        run.events.push(SupplyEvent::TankRefilling {
-                            tank: NodeId(tank.node),
-                            at: t_next,
-                        });
+                // Step to the next report time or timed switch, whichever
+                // comes first...
+                let boundary = next_boundary(options, t).min(report);
+                let mut target = boundary;
+                let rates = match self.heun(&here, &tanks, &status, t, target - t, options) {
+                    Ok(r) => r,
+                    Err(e) => return Ok(lost(run, target, &e)),
+                };
+                // ...or to where a tank reaches a level that matters, redone
+                // from the start with the shorter step.
+                let mut rates = rates;
+                let crossing = crossing(&tanks, &rates, target - t, &status, options);
+                if let Some(c) = crossing
+                    && c.fraction < 1.0
+                {
+                    target = t + c.fraction * (target - t);
+                    rates = match self.heun(&here, &tanks, &status, t, target - t, options) {
+                        Ok(r) => r,
+                        Err(e) => return Ok(lost(run, target, &e)),
+                    };
+                }
+                let h = target - t;
+                for (i, tank) in tanks.iter_mut().enumerate() {
+                    if !tank.open {
+                        continue;
                     }
-                    continue;
-                }
-                let rate = f64::midpoint(slope_now[i], slope_there[i]) / tank.area;
-                let level = tank.level + dt * rate;
-                if level <= tank.floor && rate < 0.0 {
-                    let crossing = t + (tank.level - tank.floor) / -rate;
-                    tank.level = tank.floor;
-                    tank.open = false;
-                    run.events.push(SupplyEvent::TankEmpty {
-                        tank: NodeId(tank.node),
-                        at: Time::new(crossing.min(t + dt)),
-                    });
-                } else if level >= tank.ceiling && rate > 0.0 {
-                    let crossing = t + (tank.ceiling - tank.level) / rate;
-                    if tank.level < tank.ceiling {
-                        run.events.push(SupplyEvent::TankFull {
-                            tank: NodeId(tank.node),
-                            at: Time::new(crossing.min(t + dt)),
-                        });
+                    let rate = rates[i];
+                    let mut level = tank.level + h * rate;
+                    if let Some(c) = crossing
+                        && c.tank == i
+                    {
+                        level = c.level; // land on it (the redo moves it ~h^3)
                     }
-                    tank.level = tank.ceiling;
-                } else {
-                    tank.level = level;
+                    if level <= tank.floor && rate < 0.0 {
+                        tank.level = tank.floor;
+                        tank.open = false;
+                        run.events.push(SupplyEvent::TankEmpty {
+                            tank: NodeId(tank.node),
+                            at: Time::new(target),
+                        });
+                    } else if level >= tank.ceiling && rate > 0.0 {
+                        if tank.level < tank.ceiling {
+                            run.events.push(SupplyEvent::TankFull {
+                                tank: NodeId(tank.node),
+                                at: Time::new(target),
+                            });
+                        }
+                        tank.level = tank.ceiling;
+                    } else {
+                        tank.level = level;
+                    }
                 }
+                t = target;
+                switch(options, &mut status, &tanks, t, &mut run.events);
+                here = match self.settle(t, &mut tanks, &status, options, &mut run.events) {
+                    Ok(s) => s,
+                    Err(e) => return Ok(lost(run, t, &e)),
+                };
             }
-            let Ok(next) = self.state_at(t_next, &tanks, options) else {
-                run.events.push(SupplyEvent::SupplyLost {
-                    at: t_next,
-                    reason: "no source reaches part of the network".into(),
-                });
-                break;
-            };
-            here = next;
+            t = report;
+            record(&mut run, t, &tanks, &status, &here);
         }
         Ok(run)
     }
 
-    /// The steady state at time `t` with the tanks as given: each open tank
-    /// a fixed head at its level, each closed one a node with no demand;
-    /// level histories at their value at `t`; demands scaled by the pattern.
+    /// The steady state at `t` for the current tanks and status, reopening
+    /// any empty tank the network would now fill.
+    fn settle(
+        &self,
+        t: f64,
+        tanks: &mut [TankState],
+        status: &Status,
+        options: &PeriodOptions,
+        events: &mut Vec<SupplyEvent>,
+    ) -> Result<SteadySolution, HydraulicsError> {
+        loop {
+            let state = self.state_at(t, t, tanks, status, options)?;
+            let mut reopened = false;
+            for tank in tanks.iter_mut().filter(|tank| !tank.open) {
+                if state.node_heads[tank.node].value() > tank.floor {
+                    tank.open = true;
+                    reopened = true;
+                    events.push(SupplyEvent::TankRefilling {
+                        tank: NodeId(tank.node),
+                        at: Time::new(t),
+                    });
+                }
+            }
+            if !reopened {
+                return Ok(state);
+            }
+        }
+    }
+
+    /// Heun's step of length `h` from `here` (the state at `t`): the rate
+    /// of each tank's level [m/s] (0 for closed tanks). Demands are those of
+    /// the step's pattern entry at both ends (steps never cross a pattern
+    /// boundary).
+    fn heun(
+        &self,
+        here: &SteadySolution,
+        tanks: &[TankState],
+        status: &Status,
+        t: f64,
+        h: f64,
+        options: &PeriodOptions,
+    ) -> Result<Vec<f64>, HydraulicsError> {
+        let slope_now = self.net_inflows(here, tanks);
+        let mut predicted = tanks.to_vec();
+        for (tank, q) in predicted.iter_mut().zip(&slope_now) {
+            if tank.open {
+                tank.level = (tank.level + h * q / tank.area).min(tank.ceiling);
+            }
+        }
+        let there = self.state_at(t + h, t + 0.5 * h, &predicted, status, options)?;
+        let slope_there = self.net_inflows(&there, &predicted);
+        Ok(tanks
+            .iter()
+            .zip(slope_now.iter().zip(&slope_there))
+            .map(|(tank, (a, b))| {
+                if tank.open {
+                    f64::midpoint(*a, *b) / tank.area
+                } else {
+                    0.0
+                }
+            })
+            .collect())
+    }
+
+    /// The steady state at time `t` with the tanks and status as given: each
+    /// open tank a fixed head at its level, each closed one a node with no
+    /// demand; level histories at their value at `t`; demands scaled by the
+    /// pattern entry in force at `pattern_time`.
     fn state_at(
         &self,
-        t: Time,
+        t: f64,
+        pattern_time: f64,
         tanks: &[TankState],
+        status: &Status,
         options: &PeriodOptions,
     ) -> Result<SteadySolution, HydraulicsError> {
         let mut net = self.clone();
+        let m = multiplier(options, pattern_time);
         for (n, node) in self.nodes().iter().enumerate() {
             match *node {
                 Node::Reservoir { head } => net.set_node(
                     n,
                     Node::Reservoir {
-                        head: Head::new(self.source_head(n, head, t)),
+                        head: Head::new(self.source_head(n, head, Time::new(t))),
                     },
                 ),
-                Node::Junction { demand } => net.set_node(
-                    n,
-                    Node::Junction {
-                        demand: demand * multiplier(options, t),
-                    },
-                ),
+                Node::Junction { demand } => net.set_node(n, Node::Junction { demand: demand * m }),
                 _ => {}
             }
         }
@@ -295,7 +507,12 @@ impl Network {
                 },
             );
         }
-        net.steady_state(&options.steady)
+        let shut = status.shut();
+        if shut.is_empty() {
+            net.steady_state(&options.steady)
+        } else {
+            net.steady_state_shut(&options.steady, &shut)
+        }
     }
 
     /// Net flow INTO each tank [m^3/s] in `state` (0 for closed tanks).
@@ -324,12 +541,184 @@ impl Network {
     }
 }
 
-/// The demand multiplier at time `t`.
-fn multiplier(options: &PeriodOptions, t: Time) -> f64 {
+/// The first level inside a step of length `h` that some open tank
+/// reaches and that matters: its floor, its ceiling, or the level of a
+/// control that would change its target's state.
+fn crossing(
+    tanks: &[TankState],
+    rates: &[f64],
+    h: f64,
+    status: &Status,
+    options: &PeriodOptions,
+) -> Option<Crossing> {
+    let mut first: Option<Crossing> = None;
+    let mut consider = |tank: usize, level: f64| {
+        let (l0, change) = (tanks[tank].level, rates[tank] * h);
+        if change == 0.0 {
+            return;
+        }
+        let fraction = (level - l0) / change;
+        if fraction > 0.0 && fraction < 1.0 && first.is_none_or(|c| fraction < c.fraction) {
+            first = Some(Crossing {
+                fraction,
+                tank,
+                level,
+            });
+        }
+    };
+    for (i, tank) in tanks.iter().enumerate() {
+        if !tank.open {
+            continue;
+        }
+        if rates[i] < 0.0 {
+            consider(i, tank.floor);
+        } else if tank.level < tank.ceiling {
+            consider(i, tank.ceiling);
+        }
+    }
+    for c in &options.controls {
+        if status.wanted(c.target) == c.open {
+            continue;
+        }
+        let (node, level, falling) = match c.when {
+            controls::Condition::LevelBelow { tank, level } => (tank, level.value(), true),
+            controls::Condition::LevelAbove { tank, level } => (tank, level.value(), false),
+            _ => continue,
+        };
+        if let Some(i) = tanks.iter().position(|t| t.node == node.index())
+            && tanks[i].open
+            && (rates[i] < 0.0) == falling
+        {
+            consider(i, level);
+        }
+    }
+    first
+}
+
+/// The next time after `t` at which something switches on the clock: a
+/// timed control, a power-cut boundary, a demand-pattern boundary, the
+/// end of the run.
+fn next_boundary(options: &PeriodOptions, t: f64) -> f64 {
+    let mut next = options.duration.value();
+    for c in &options.controls {
+        if let Some(at) = c.when.next_time(t) {
+            next = next.min(at);
+        }
+    }
+    for (from, to) in &options.power_cuts {
+        for edge in [from.value(), to.value()] {
+            if edge > t + TIME_TOL {
+                next = next.min(edge);
+            }
+        }
+    }
+    if !options.pattern.is_empty() {
+        let ps = options.pattern_step.value();
+        let mut edge = ((t / ps).floor() + 1.0) * ps;
+        if edge <= t + TIME_TOL {
+            edge += ps;
+        }
+        next = next.min(edge);
+    }
+    next
+}
+
+/// Applies the power and the controls at time `t`, recording every
+/// actual change.
+fn switch(
+    options: &PeriodOptions,
+    status: &mut Status,
+    tanks: &[TankState],
+    t: f64,
+    events: &mut Vec<SupplyEvent>,
+) {
+    let before = status.clone();
+    status.powered = !options
+        .power_cuts
+        .iter()
+        .any(|(from, to)| from.value() - TIME_TOL <= t && t < to.value() - TIME_TOL);
+    if status.powered != before.powered {
+        events.push(if status.powered {
+            SupplyEvent::PowerOn { at: Time::new(t) }
+        } else {
+            SupplyEvent::PowerOff { at: Time::new(t) }
+        });
+    }
+    let level_of = |n: NodeId| {
+        tanks
+            .iter()
+            .find(|tank| tank.node == n.index())
+            .map_or(f64::NAN, |tank| tank.level)
+    };
+    // Which control last set each target, if any changed it.
+    let mut by: Vec<(Target, usize)> = Vec::new();
+    for (k, c) in options.controls.iter().enumerate() {
+        if c.when.holds(t, level_of) {
+            if status.wanted(c.target) != c.open {
+                by.retain(|(target, _)| *target != c.target);
+                by.push((c.target, k));
+            }
+            status.set(c.target, c.open);
+        }
+    }
+    let targets = (0..status.pipe_open.len())
+        .map(|p| Target::Pipe(PipeId(p)))
+        .chain(status.pumps.iter().map(|&n| Target::Pump(NodeId(n))));
+    for target in targets {
+        let open = status.is_open(target);
+        if open == before.is_open(target) {
+            continue;
+        }
+        let cause = by.iter().find(|(x, _)| *x == target).map_or(
+            if status.powered {
+                Cause::PowerBack
+            } else {
+                Cause::PowerCut
+            },
+            |&(_, k)| Cause::Control(k),
+        );
+        events.push(SupplyEvent::Switched {
+            target,
+            open,
+            at: Time::new(t),
+            cause,
+        });
+    }
+}
+
+/// Records the state at a report time.
+fn record(
+    run: &mut PeriodRun,
+    t: f64,
+    tanks: &[TankState],
+    status: &Status,
+    here: &SteadySolution,
+) {
+    run.times.push(Time::new(t));
+    for (i, tank) in tanks.iter().enumerate() {
+        run.tanks[i].1.push(Head::new(tank.level));
+    }
+    for (series, &n) in run.pumps.iter_mut().zip(&status.pumps) {
+        series.1.push(status.running(n));
+    }
+    run.node_heads.push(here.node_heads.clone());
+}
+
+/// Ends the run: supply lost at `t`.
+fn lost(mut run: PeriodRun, t: f64, e: &HydraulicsError) -> PeriodRun {
+    run.events.push(SupplyEvent::SupplyLost {
+        at: Time::new(t),
+        reason: format!("no source reaches part of the network ({e})"),
+    });
+    run
+}
+
+/// The demand multiplier in force at time `t`.
+fn multiplier(options: &PeriodOptions, t: f64) -> f64 {
     if options.pattern.is_empty() {
         return 1.0;
     }
     #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)] // t >= 0
-    let k = (t.value() / options.pattern_step.value()).floor() as usize;
+    let k = (t / options.pattern_step.value()).floor() as usize;
     options.pattern[k % options.pattern.len()]
 }

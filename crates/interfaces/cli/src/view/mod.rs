@@ -112,8 +112,9 @@ pub fn run(a: &Args) -> Result<(), String> {
     } else {
         None
     };
-    eprintln!("jk view: running the supply outage and the night watch...");
+    eprintln!("jk view: running the supply outage, the pump day and the night watch...");
     let supply = supply_model::SupplyModel::run()?;
+    let pump_day = supply_model::PumpDayModel::run()?;
     let night = supply_model::NightModel::run()?;
     let mut nav = vec![
         NavGroup {
@@ -187,7 +188,7 @@ pub fn run(a: &Args) -> Result<(), String> {
             item("leaks", "Night watch", Some(night.watch.alarms.len())),
         ],
     });
-    pages.push(pages::supply::page(&supply));
+    pages.push(pages::supply::page(&supply, &pump_day));
     pages.push(pages::leaks::page(&night));
     nav.push(NavGroup {
         heading: "Help",
@@ -200,6 +201,7 @@ pub fn run(a: &Args) -> Result<(), String> {
         ("event", pages::event_records(&event)),
         ("rec", pages::recording::chart_records(&files)),
         ("supply", pages::supply::records(&supply)),
+        ("pumpday", pages::supply::pump_records(&pump_day)),
         ("night", pages::leaks::records(&night)),
     ]);
     let html = shell::document(&nav, &pages, &data);

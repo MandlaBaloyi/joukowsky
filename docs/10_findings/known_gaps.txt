@@ -143,7 +143,12 @@ G-15  Guard rails are not a sandbox (FN-011)                      OPEN
 G-18  Sources are fixed heads; dams, rivers, canals not modelled  IN PROGRESS
   2026-09-30: R-1 done - reservoirs can follow a level history (V-A7).
   R-2 done - storage tanks and extended-period runs with supply warnings
-  (tank empty, supply lost) (V-A8). Next: meter balance (R-3), controls.
+  (tank empty, supply lost) (V-A8). R-3 meter balance done (jk-balance).
+  Controls done: pumps and valves switched by tank level, clock and
+  load-shedding windows (V-A9). Still open here: the EPANET reader does
+  not read [CONTROLS], [PATTERNS] or pump curves yet (pumps come in as
+  plain connections), so real models run without their operating rules;
+  R-4 open channels; R-5 draining and refilling (G-14).
   Every reservoir node holds one head forever. Right for a burst lasting
   seconds; blind to levels that change over hours, supply cuts, draining
   and refilling, and water lost between source and site. Plan R-1..R-5 in

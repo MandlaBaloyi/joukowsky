@@ -237,3 +237,12 @@ FN-027  2026-09-30  Wave simulation on four cores: 150 km from ~22 to 4.8 s
   (was ~22); 50 km barely gains (0.8 s) - a step is short and starting
   threads each step costs most of the saving; a persistent thread pool
   would recover it if needed.
+
+FN-028  2026-09-30  Extended runs smeared each hour's demand into the next
+  Heun's method takes the slope at both ends of a step. At the last step
+  of each hour the end slope was solved with the NEXT hour's demand, so
+  a jump in the pattern (e.g. 0.4 -> 1.5 at 06:00) leaked half a step
+  early. Found while adding controls, which need steps that land exactly
+  on switch times. Now steps never cross a pattern edge and both slopes
+  use the demand in force during the step. Same fix makes a pump switched
+  at a tank level start at that level, not up to a step later (V-A9).

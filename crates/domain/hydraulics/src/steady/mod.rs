@@ -16,6 +16,7 @@
 //! Friction is the same quasi-steady Darcy-Weisbach model (constant f per
 //! pipe) the transient solver uses, so steady and transient runs agree.
 
+pub mod controls;
 pub mod extended;
 pub mod gga;
 
@@ -25,7 +26,7 @@ use jk_kernel::{Flow, Head};
 
 use crate::HydraulicsError;
 use crate::error::positive;
-use crate::model::{Network, NodeId};
+use crate::model::{Network, Node, NodeId, PipeId};
 
 /// Settings for the steady solve.
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -63,11 +64,29 @@ pub struct SteadySolution {
     pub max_continuity_residual: Flow,
     /// Check valves that are shut in the steady state.
     pub closed_check_valves: Vec<NodeId>,
-    /// Pumps whose non-return valve is shut: they cannot overcome the head
-    /// against them, so they deliver nothing.
+    /// Pumps that deliver nothing: stopped ([`Shut`]), or unable to
+    /// overcome the head against them (their non-return valve shuts).
     pub idle_pumps: Vec<NodeId>,
     /// Head each pump adds (discharge minus suction head).
     pub pump_lifts: Vec<(NodeId, Head)>,
+}
+
+/// Links out of service for a steady solve: pipes closed (a shut
+/// isolation valve, a float valve on a full tank) and pumps stopped.
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+pub struct Shut {
+    /// Pipes carrying nothing.
+    pub pipes: Vec<PipeId>,
+    /// Pump nodes not running (no power, or switched off).
+    pub pumps: Vec<NodeId>,
+}
+
+impl Shut {
+    /// Nothing shut.
+    #[must_use]
+    pub fn is_empty(&self) -> bool {
+        self.pipes.is_empty() && self.pumps.is_empty()
+    }
 }
 
 impl Network {
@@ -81,6 +100,46 @@ impl Network {
         validate(options)?;
         let topo = self.topology()?;
         solve(self, &topo, options).map(|(solution, _)| solution)
+    }
+
+    /// Solves for the steady state with some links out of service. Parts of
+    /// the network cut off with no demand get NaN heads (unknown: the
+    /// trapped water keeps whatever pressure it had).
+    ///
+    /// # Errors
+    /// As [`Network::steady_state`]; also a pipe or pump in `shut` that
+    /// does not exist, and a part cut off from every source that draws
+    /// water (supply is lost there).
+    pub fn steady_state_shut(
+        &self,
+        options: &SteadyOptions,
+        shut: &Shut,
+    ) -> Result<SteadySolution, HydraulicsError> {
+        validate(options)?;
+        let topo = self.topology()?;
+        self.check_shut(shut)?;
+        gga::solve_shut(self, &topo, options, shut).map(|(solution, _)| solution)
+    }
+
+    /// Checks that every pipe and pump in `shut` exists.
+    pub(crate) fn check_shut(&self, shut: &Shut) -> Result<(), HydraulicsError> {
+        if let Some(p) = shut.pipes.iter().find(|p| p.0 >= self.pipes().len()) {
+            return Err(HydraulicsError::InvalidNetwork(format!(
+                "pipe {} to shut does not exist",
+                p.0
+            )));
+        }
+        if let Some(n) = shut
+            .pumps
+            .iter()
+            .find(|n| !matches!(self.nodes().get(n.0), Some(Node::Pump { .. })))
+        {
+            return Err(HydraulicsError::InvalidNetwork(format!(
+                "node {} to stop is not a pump",
+                n.0
+            )));
+        }
+        Ok(())
     }
 }
 

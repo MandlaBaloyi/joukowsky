@@ -1,12 +1,17 @@
 joukowsky test run
-  when     2026-09-30 08:44:49
+  when     2026-09-30 09:09:43
   suite    full
-  commit   5f719c1 (with uncommitted changes)
+  commit   9bd2195 (with uncommitted changes)
   rust     rustc 1.98.1 (48a229cea 2026-09-01)
   command  cargo test --workspace --no-fail-fast -- --nocapture --test-threads=1 --include-ignored
 ==============================================================================
+   Compiling jk-tests v0.1.0 (C:\Users\HP\Desktop\joukowsky\tests)
    Compiling jk-cli v0.1.0 (C:\Users\HP\Desktop\joukowsky\crates\interfaces\cli)
-    Finished `test` profile [unoptimized + debuginfo] target(s) in 3.43s
+   Compiling jk-application v0.1.0 (C:\Users\HP\Desktop\joukowsky\crates\application)
+   Compiling jk-localisation v0.1.0 (C:\Users\HP\Desktop\joukowsky\crates\domain\localisation)
+   Compiling jk-files v0.1.0 (C:\Users\HP\Desktop\joukowsky\crates\adapters\files)
+   Compiling jk-sim v0.1.0 (C:\Users\HP\Desktop\joukowsky\crates\sim)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 22.31s
      Running unittests src\lib.rs (target\debug\deps\jk_application-31ec11ad23313301.exe)
 
 running 3 tests
@@ -66,7 +71,7 @@ test onset::step_area::tests::a_ramp_front_is_placed_at_its_centre ... ok
 test onset::step_area::tests::declines_when_the_windows_do_not_fit ... ok
 test onset::step_area::tests::exact_for_a_sharp_step_at_any_phase ... ok
 
-test result: ok. 14 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.10s
+test result: ok. 14 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.09s
 
      Running unittests src\lib.rs (target\debug\deps\jk_files-ec39beec6edb1da0.exe)
 
@@ -92,7 +97,7 @@ test result: ok. 16 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; fin
 
      Running unittests src\lib.rs (target\debug\deps\jk_hydraulics-c42e47dfc771fa13.exe)
 
-running 48 tests
+running 50 tests
 test boundary::check_valve::tests::open_valve_passes_forward_flow_like_a_plain_joint ... ok
 test boundary::check_valve::tests::reversing_flow_shuts_it_and_each_side_becomes_a_dead_end ... ok
 test boundary::check_valve::tests::stays_shut_until_upstream_pushes_harder_then_reopens ... ok
@@ -141,8 +146,10 @@ test pipe::viscoelastic::tests::a_slow_window_softens_and_a_fast_one_damps_like_
 test pipe::viscoelastic::tests::the_new_rate_is_what_advancing_then_gives ... ok
 test pipe::viscoelastic::tests::walls_are_checked ... ok
 test pipe::viscoelastic::tests::without_creep_a_characteristic_is_unchanged ... ok
+test steady::controls::tests::daily_times_repeat_and_land_exactly ... ok
+test steady::controls::tests::once_is_once ... ok
 
-test result: ok. 48 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.03s
+test result: ok. 50 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.05s
 
      Running unittests src\lib.rs (target\debug\deps\jk_kernel-eccabcc9e10cd5d2.exe)
 
@@ -161,7 +168,7 @@ test units::tests::same_type_arithmetic ... ok
 test units::tests::velocity_flow_area ... ok
 test units::tests::wave_travel_time_and_distance_round_trip ... ok
 
-test result: ok. 13 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.03s
+test result: ok. 13 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.04s
 
      Running unittests src\lib.rs (target\debug\deps\jk_localisation-b57d917c3efe0d09.exe)
 
@@ -344,7 +351,7 @@ test simulation::logger_files::a_burst_recorded_in_logger_files_raises_one_alarm
   at 10:15:03 - seconds past 10:15:00          got       2.998747   expected       3.000000   rel.err 4.2e-4
 ok
 
-test result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.00s
+test result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.16s
 
      Running balance\main.rs (target\debug\deps\balance-f50430771254bd71.exe)
 
@@ -369,7 +376,7 @@ test simulation::night_watch::the_detection_curve_matches_the_cusum_arithmetic .
   at the arithmetic's size: caught at least a third of the time yes
 ok
 
-test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 3.93s
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 4.73s
 
      Running classification\main.rs (target\debug\deps\classification-31daad1fdce9861c.exe)
 
@@ -465,7 +472,7 @@ test simulation::scenarios::power_data_settles_the_slow_burst ... The same slow 
   burst                                        yes
 ok
 
-test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 2.95s
+test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 3.17s
 
      Running detection\main.rs (target\debug\deps\detection-f716915457d43300.exe)
 
@@ -541,11 +548,11 @@ test simulation::burst_location::vs1_location_error_versus_sampling_rate_and_noi
   128 S/s with 2 cm noise locates to under 1 m RMS yes
 ok
 
-test result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 8.54s
+test result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 10.37s
 
      Running hydraulics\main.rs (target\debug\deps\hydraulics-8605ea72ea8561e1.exe)
 
-running 41 tests
+running 46 tests
 test analytical::boundaries::burst::a_10mm_hole_at_60m_head ... DN150 AC main at 60 m head, 0.5 m/s; a 10 mm hole opens (Cd 0.6):
   water lost              1.555 l/s  (134 m^3 per day)
   head step at the burst  -4.486 m
@@ -596,6 +603,63 @@ test analytical::boundaries::reflections::va3_tee_of_identical_pipes_transmits_t
   reflected R (docs: -1/3)                     got      -0.333333   expected      -0.333333   rel.err 1.5e-15
   matches the closed-form formula              got       0.666667   expected       0.666667   rel.err 8.3e-16
   => each tee cuts the front by a third: waves fade fast in branched networks.
+ok
+test analytical::controls::va9_a_float_valve_on_the_inlet_closes_when_full_and_opens_when_low ... A float valve on a tank's inlet: the reservoir at 80 m delivers 95.2 l/s at 57 m, 79.4 l/s at 64 m.
+    valve closes at [h]                        got       9.319321   expected       9.319277   rel.err 4.7e-6
+      ... in that direction                    yes
+    valve opens at [h]                         got      15.800802   expected      15.800758   rel.err 2.8e-6
+      ... in that direction                    yes
+    valve closes at [h]                        got      30.346155   expected      30.346059   rel.err 3.2e-6
+      ... in that direction                    yes
+    three switches                             yes
+ok
+test analytical::controls::va9_a_pump_fills_its_tank_between_the_switch_levels_on_time ... A pump fills a 200 m^2 tank while the town draws 60 l/s; it starts at 57 m and stops at 64 m.
+  pump delivers 109.5 l/s at 57 m, 97.5 l/s at 64 m (lift and friction rise)
+  the pump switched 6 times in 48 h; the first four:
+    at least four switches                     yes
+    pump stops at [h]                          got       5.420888   expected       5.420875   rel.err 2.4e-6
+      ... stops, by the level control          yes
+    with 15-minute steps: 5.42 h (+1.0 s)
+    pump starts at [h]                         got      11.902370   expected      11.902357   rel.err 1.1e-6
+      ... starts, by the level control         yes
+    with 15-minute steps: 11.90 h (+1.0 s)
+    pump stops at [h]                          got      20.868184   expected      20.868132   rel.err 2.5e-6
+      ... stops, by the level control          yes
+    with 15-minute steps: 20.87 h (+2.4 s)
+    pump starts at [h]                         got      27.349666   expected      27.349613   rel.err 1.9e-6
+      ... starts, by the level control         yes
+    with 15-minute steps: 27.35 h (+2.4 s)
+  the level stayed between 57.0127 m and 63.9972 m
+    it never passes the switch levels: each step is cut where they are reached yes
+  the pump ran 60% of the time
+ok
+test analytical::controls::va9_closing_a_pipe_is_the_same_as_removing_it ... Closing pipe A-C of a loop vs building the network without it:
+    largest head difference 1.0e-12 m (rounding only) yes
+    and the closed pipe carries nothing        yes
+    a dead end closed off with no demand: its head is unknown (NaN), not invented yes
+  closing the only supply pipe: invalid network: heads cannot be determined near node 1: closed pipes or stopped pumps cut it off from every source, and it draws water
+    cutting consumers off from every source is an error (supply lost) yes
+ok
+test analytical::controls::va9_load_shedding_stops_the_pump_and_it_restarts_when_power_returns ... Load-shedding: power off 0.2-0.3 h and 5-9 h.
+  PowerOff { at: Time(720.0) }
+  Switched { target: Pump(NodeId(1)), open: false, at: Time(720.0), cause: PowerCut }
+  PowerOn { at: Time(1080.0) }
+  Switched { target: Pump(NodeId(1)), open: true, at: Time(1080.0), cause: PowerBack }
+  Switched { target: Pump(NodeId(1)), open: false, at: Time(3555.9388110033137), cause: Control(1) }
+  PowerOff { at: Time(18000.0) }
+  PowerOn { at: Time(32400.0) }
+  Switched { target: Pump(NodeId(1)), open: true, at: Time(32400.0), cause: PowerBack }
+    0.2 h: the cut stops the running pump      yes
+    0.3 h: power back, the controls still want it: it restarts yes
+    then it stops by the level control         yes
+  the tank falls to 57 m at 7.47 h, during the cut: the control asks for the pump
+    no switch while the power is off           yes
+    but the pump can only start when the power returns, at 9 h yes
+    level when power returns [m] (straight fall from 64 m) got      55.346782   expected      55.346782   rel.err 4.5e-15
+    no pump runs during the cut                yes
+ok
+test analytical::controls::va9_timed_controls_switch_on_the_clock ... Pump kept off in the morning peak: switches at [(6.0, false), (10.0, true), (30.0, false), (34.0, true)] (h, running)
+    off at 06:00, on at 10:00, off at 06:00 next day, on at 10:00 yes
 ok
 test analytical::joukowsky::burst_quantification::dn150_ac_main_2_litre_per_second_burst ... DN150 AC main, a = 1000 m/s:
   impedance B [s/m^2]                          got    5768.442835   expected    5770.000000   rel.err 2.7e-4
@@ -773,7 +837,7 @@ test analytical::tanks::va8_a_draining_tank_follows_the_exact_curve_and_empties_
 ok
 test analytical::tanks::va8_a_tank_that_is_the_only_source_runs_dry_and_supply_is_lost ... A tank alone supplying 5 l/s, 250 m^3 above its floor:
     empties at [h]                             got      13.888889   expected      13.888889   rel.err 3.8e-14
-  supply lost at 13.92 h: no source reaches part of the network
+  supply lost at 13.89 h: no source reaches part of the network (invalid network: a steady solve needs at least one reservoir)
     supply is lost within one step of emptying yes
 ok
 test analytical::viscoelastic::va5_a_creeping_wall_slows_and_damps_the_ring_as_theory_says ... Theory: rigid ring 4.000 s period; with the creeping wall 4.500 s, dying away at 0.0102 per second (amplitude x0.96 per period)
@@ -853,7 +917,7 @@ test invariants::steady_state::an_undisturbed_pipe_stays_steady ... Steady state
   valve holds steady                           yes
 ok
 
-test result: ok. 41 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 40.80s
+test result: ok. 46 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 41.63s
 
      Running kernel\main.rs (target\debug\deps\kernel-d5a37fe190909055.exe)
 
@@ -969,7 +1033,7 @@ Recommended 6 (after swaps): a1 block A1, c1 block C1, b1 block B1, c2 block C2,
     B-b2               90 m   typical region  155 m
     C-c1              150 m   typical region   20 m
     C-c2              220 m   typical region   25 m
-  (advice took 10 s on this machine)
+  (advice took 4 s on this machine)
 Would a sudden 1 l/s burst be felt? By at least one logger on 100% of the pipe, by two (so located) on 100%. Smallest burst locatable anywhere on each pipe (upper bound: no plastic-wall damping yet):
     R-M connection     0.09 l/s
     M-A ring           0.04 l/s
@@ -1201,7 +1265,7 @@ test simulation::plastic_fronts::the_front_model_with_plastic_walls_matches_the_
   but within 0.25 s S2 feels over two thirds of it yes
 ok
 
-test result: ok. 29 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 188.84s
+test result: ok. 29 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 84.94s
 
      Running pipeline\main.rs (target\debug\deps\pipeline-d11d8b6223a66c52.exe)
 
@@ -1372,7 +1436,7 @@ another on the north branch at t = 30 s:
   the second on the north branch, ~150 m       yes
 ok
 
-test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 12.53s
+test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 5.08s
 
    Doc-tests jk_application
 
@@ -1441,9 +1505,9 @@ running 0 tests
 test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
 
 ==============================================================================
-  passed   236
+  passed   243
   failed   0
   skipped  0 slow test(s) not in this suite
   filtered 0 test(s) outside -Only/-Filter
-  time     265.8 s (including compile)
+  time     181.1 s (including compile)
   result   ALL PASSED

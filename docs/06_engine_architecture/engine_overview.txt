@@ -162,3 +162,9 @@ CUSUM evidence under it, the leak's true start and the ALARM marked (a 1.2
 l/s leak from night 61, found as 0.98 +/- 0.20 l/s, alarm night 62); nights
 a logger lost stay empty. Charts now carry their own units (h, day, l/s),
 labelled moments and labelled levels, so any series can use them.
+Tanks & supply gained a second demo (2026-09-30, controls V-A9): a pump
+filling the estate's tank between 43.5 m and 46 m through two days of
+load-shedding (04:00-06:30, 18:00-20:30, shaded). Each evening the tank
+reaches the switch-on level at ~18:45, during the cut; the pump can only
+start at 20:30 - the page counts the delayed starts and the lowest level
+(2.2 m above the floor). A second chart shows the pump running (1/0).

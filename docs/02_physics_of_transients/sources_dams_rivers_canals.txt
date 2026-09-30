@@ -165,3 +165,35 @@ valves switching by tank level (controls); feeding measured levels.
 
 R-3 done (2026-09-30): water balance of metered zones and the night-flow
 leak watch - 04_detection_and_localisation/slow_leaks_and_water_balance.txt.
+
+Controls note (2026-09-30)
+--------------------------
+A site does not run "as the network stands" for a day: pumps fill tanks
+between a switch-on and a switch-off level, float (altitude) valves shut
+tank inlets as they fill, pumps are kept off in peak-tariff hours, and
+load-shedding takes the power away for 2-4 h slots, often twice a day.
+steady/controls.rs: a Control = target (pump or pipe) + open/close +
+condition (tank level at or below / at or above a level, once at a time,
+daily at a time of day - EPANET's simple controls; later in the list wins).
+Control::fill_between gives the usual pair. PeriodOptions.power_cuts: no
+pump runs during a cut; when power returns each pump does what the
+controls last asked (so a tank that fell to its switch-on level during
+load-shedding gets its pump only when the power comes back).
+The steady solver takes links out of service (steady::Shut): a closed pipe
+has no conductance, a stopped pump no link. A part cut off with demand =
+supply lost; cut off without demand = heads unknown (NaN), never invented.
+The run cuts a step exactly where a tank reaches its floor, its ceiling or
+a control's level (from the step's own rate, then the step is redone), and
+at every clock switch, power-cut edge and demand-pattern edge. Before this
+the last step of each hour used the next hour's demand at its end (Heun's
+second slope) - small, now gone.
+Validated V-A9 (tests/hydraulics/analytical/controls.rs): pump start and
+stop times over 48 h vs Simpson quadrature of A dh / (Q_pump(h) - D) within
+0.05 s (5-min steps; 2.4 s with 15-min steps); float valve within 0.16 s;
+load-shedding stops and restarts the pump at the cut edges and holds a
+start requested during the cut; daily switches land on the clock with a
+step that does not divide the hour; closing a pipe = removing it (1e-12 m).
+Every switch is a sudden flow change - a transient. The switch events are
+the moments the transient engine should expect a pressure wave from a
+known source (clock calibration uses exactly such events).
+Next: read [CONTROLS], [PATTERNS] and pump curves from EPANET files; R-4.
