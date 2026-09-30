@@ -7,8 +7,9 @@
 //! own, the baseline the engine compares measurements against.
 //!
 //! Method: the Global Gradient Algorithm of Todini & Pilati (1988), the
-//! algorithm inside EPANET, solved with our own dense Cholesky factorisation
-//! ([`jk_kernel::linalg`])
+//! algorithm inside EPANET, solved with our own sparse envelope Cholesky
+//! with reverse Cuthill-McKee ordering ([`jk_kernel::sparse`]; dense until
+//! 2026-09-30, limited to ~2000 junctions)
 //! (decision TD-011: our own solver; EPANET-based tools are cross-checks
 //! only). See [`gga`] for the equations.
 //!
@@ -74,8 +75,8 @@ impl Network {
     ///
     /// # Errors
     /// Invalid topology or options, a valve without a flow coefficient, a
-    /// part of the network that reaches no reservoir, too many nodes for
-    /// the dense solver, or no convergence.
+    /// part of the network that reaches no reservoir, a nodal matrix too
+    /// large for memory, or no convergence.
     pub fn steady_state(&self, options: &SteadyOptions) -> Result<SteadySolution, HydraulicsError> {
         validate(options)?;
         let topo = self.topology()?;

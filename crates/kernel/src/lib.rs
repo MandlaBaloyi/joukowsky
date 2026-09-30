@@ -10,10 +10,13 @@
 //!
 //! [`random`] holds the deterministic random-number generator every
 //! stochastic method uses, so results replay bit for bit (rule T3), and
-//! [`linalg`] the small dense solver (Cholesky) several contexts share.
+//! [`linalg`] the small dense solver (Cholesky) several contexts share,
+//! and [`sparse`] the envelope Cholesky for large sparse systems (the
+//! steady solver's nodal matrix).
 
 pub mod linalg;
 pub mod random;
+pub mod sparse;
 pub mod units;
 
 pub use units::{

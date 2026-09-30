@@ -1,15 +1,22 @@
 joukowsky test run
-  when     2026-09-30 08:05:13
+  when     2026-09-30 08:17:46
   suite    full
-  commit   c08d5bc (with uncommitted changes)
+  commit   33fd714 (with uncommitted changes)
   rust     rustc 1.98.1 (48a229cea 2026-09-01)
   command  cargo test --workspace --no-fail-fast -- --nocapture --test-threads=1 --include-ignored
 ==============================================================================
-   Compiling jk-application v0.1.0 (C:\Users\HP\Desktop\joukowsky\crates\application)
    Compiling jk-tests v0.1.0 (C:\Users\HP\Desktop\joukowsky\tests)
    Compiling jk-cli v0.1.0 (C:\Users\HP\Desktop\joukowsky\crates\interfaces\cli)
+   Compiling jk-application v0.1.0 (C:\Users\HP\Desktop\joukowsky\crates\application)
+   Compiling jk-files v0.1.0 (C:\Users\HP\Desktop\joukowsky\crates\adapters\files)
+   Compiling jk-sim v0.1.0 (C:\Users\HP\Desktop\joukowsky\crates\sim)
    Compiling jk-localisation v0.1.0 (C:\Users\HP\Desktop\joukowsky\crates\domain\localisation)
-    Finished `test` profile [unoptimized + debuginfo] target(s) in 6.71s
+   Compiling jk-classification v0.1.0 (C:\Users\HP\Desktop\joukowsky\crates\domain\classification)
+   Compiling jk-detection v0.1.0 (C:\Users\HP\Desktop\joukowsky\crates\domain\detection)
+   Compiling jk-balance v0.1.0 (C:\Users\HP\Desktop\joukowsky\crates\domain\balance)
+   Compiling jk-telemetry v0.1.0 (C:\Users\HP\Desktop\joukowsky\crates\domain\telemetry)
+   Compiling jk-hydraulics v0.1.0 (C:\Users\HP\Desktop\joukowsky\crates\domain\hydraulics)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 30.98s
      Running unittests src\lib.rs (target\debug\deps\jk_application-31ec11ad23313301.exe)
 
 running 3 tests
@@ -69,7 +76,7 @@ test onset::step_area::tests::a_ramp_front_is_placed_at_its_centre ... ok
 test onset::step_area::tests::declines_when_the_windows_do_not_fit ... ok
 test onset::step_area::tests::exact_for_a_sharp_step_at_any_phase ... ok
 
-test result: ok. 14 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.24s
+test result: ok. 14 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.08s
 
      Running unittests src\lib.rs (target\debug\deps\jk_files-ec39beec6edb1da0.exe)
 
@@ -143,15 +150,18 @@ test pipe::viscoelastic::tests::the_new_rate_is_what_advancing_then_gives ... ok
 test pipe::viscoelastic::tests::walls_are_checked ... ok
 test pipe::viscoelastic::tests::without_creep_a_characteristic_is_unchanged ... ok
 
-test result: ok. 46 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.04s
+test result: ok. 46 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.03s
 
      Running unittests src\lib.rs (target\debug\deps\jk_kernel-eccabcc9e10cd5d2.exe)
 
-running 10 tests
+running 13 tests
 test linalg::tests::reports_a_matrix_that_is_not_positive_definite ... ok
 test linalg::tests::solves_a_known_system ... ok
 test random::tests::normal_numbers_have_the_right_spread ... ok
 test random::tests::same_seed_same_numbers ... ok
+test sparse::tests::a_grid_gets_a_band_about_as_wide_as_its_side ... ok
+test sparse::tests::a_singular_matrix_names_its_row ... ok
+test sparse::tests::solves_what_the_dense_cholesky_solves ... ok
 test units::tests::circle_area_dn150 ... ok
 test units::tests::display_carries_unit ... ok
 test units::tests::head_pressure_round_trip ... ok
@@ -159,7 +169,7 @@ test units::tests::same_type_arithmetic ... ok
 test units::tests::velocity_flow_area ... ok
 test units::tests::wave_travel_time_and_distance_round_trip ... ok
 
-test result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+test result: ok. 13 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.03s
 
      Running unittests src\lib.rs (target\debug\deps\jk_localisation-b57d917c3efe0d09.exe)
 
@@ -342,7 +352,7 @@ test simulation::logger_files::a_burst_recorded_in_logger_files_raises_one_alarm
   at 10:15:03 - seconds past 10:15:00          got       2.998747   expected       3.000000   rel.err 4.2e-4
 ok
 
-test result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.06s
+test result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.03s
 
      Running balance\main.rs (target\debug\deps\balance-f50430771254bd71.exe)
 
@@ -367,7 +377,7 @@ test simulation::night_watch::the_detection_curve_matches_the_cusum_arithmetic .
   at the arithmetic's size: caught at least a third of the time yes
 ok
 
-test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 3.71s
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 3.79s
 
      Running classification\main.rs (target\debug\deps\classification-31daad1fdce9861c.exe)
 
@@ -539,7 +549,7 @@ test simulation::burst_location::vs1_location_error_versus_sampling_rate_and_noi
   128 S/s with 2 cm noise locates to under 1 m RMS yes
 ok
 
-test result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 9.03s
+test result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 9.17s
 
      Running hydraulics\main.rs (target\debug\deps\hydraulics-8605ea72ea8561e1.exe)
 
@@ -824,7 +834,7 @@ test invariants::network::matches_single_pipe::splitting_a_pipe_at_a_junction_ch
     junctions between identical pipes are invisible yes
 ok
 test invariants::network::steady_start::a_solved_steady_state_stays_steady_in_the_transient_solver ... Steady solve: 8 Newton rounds
-  residuals: energy 0.0e0 m, continuity 4.6e-16 m^3/s
+  residuals: energy 0.0e0 m, continuity 7.0e-16 m^3/s
   head at A             88.547 m
   head at B             87.181 m
   head at C             85.569 m
@@ -833,7 +843,7 @@ test invariants::network::steady_start::a_solved_steady_state_stays_steady_in_th
   energy equation satisfied (< 1e-9 m)         yes
   continuity satisfied (< 1e-12 m^3/s)         yes
 Transient run from that state, nothing disturbed, 221 samples:
-  largest head drift 9.9e-13 m, flow drift 1.9e-16 m^3/s
+  largest head drift 1.4e-12 m, flow drift 2.6e-16 m^3/s
   no fake transient (head drift < 1e-6 m)      yes
   flows hold (drift < 1e-9 m^3/s)              yes
 ok
@@ -851,7 +861,7 @@ test invariants::steady_state::an_undisturbed_pipe_stays_steady ... Steady state
   valve holds steady                           yes
 ok
 
-test result: ok. 41 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 42.25s
+test result: ok. 41 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 42.48s
 
      Running kernel\main.rs (target\debug\deps\kernel-d5a37fe190909055.exe)
 
@@ -1199,7 +1209,7 @@ test simulation::plastic_fronts::the_front_model_with_plastic_walls_matches_the_
   but within 0.25 s S2 feels over two thirds of it yes
 ok
 
-test result: ok. 29 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 193.04s
+test result: ok. 29 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 190.99s
 
      Running pipeline\main.rs (target\debug\deps\pipeline-d11d8b6223a66c52.exe)
 
@@ -1370,7 +1380,7 @@ another on the north branch at t = 30 s:
   the second on the north branch, ~150 m       yes
 ok
 
-test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 14.96s
+test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 14.86s
 
    Doc-tests jk_application
 
@@ -1439,9 +1449,9 @@ running 0 tests
 test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
 
 ==============================================================================
-  passed   231
+  passed   234
   failed   0
   skipped  0 slow test(s) not in this suite
   filtered 0 test(s) outside -Only/-Filter
-  time     280.6 s (including compile)
+  time     306.1 s (including compile)
   result   ALL PASSED

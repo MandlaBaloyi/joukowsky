@@ -19,7 +19,7 @@ use jk_localisation::{Arrival, LocaliseOptions, Localiser};
 use jk_sim::{Town, TownOptions, town};
 
 pub const USAGE: &str = "
-    jk scale [--km 2,10,50,100] [--seed N] [--loggers-per-km X] [--no-placement]
+    jk scale [--km 2,10,50,100] [--seed N] [--loggers-per-km X] [--no-placement] [--no-simulation]
              [--advise] [--zone-km X]
                           time every part of the engine on synthetic towns
                           of growing size (build with --release); --advise
@@ -40,6 +40,7 @@ pub struct Args {
     seed: u64,
     loggers_per_km: f64,
     placement: bool,
+    simulation: bool,
     advise: bool,
     zone_km: f64,
 }
@@ -54,6 +55,7 @@ pub fn parse(mut it: impl Iterator<Item = String>) -> Result<Args, String> {
         seed: 1,
         loggers_per_km: 1.0,
         placement: true,
+        simulation: true,
         advise: false,
         zone_km: 0.0,
     };
@@ -81,6 +83,7 @@ pub fn parse(mut it: impl Iterator<Item = String>) -> Result<Args, String> {
             }
             "--loggers-per-km" => a.loggers_per_km = number(it.next(), "--loggers-per-km")?,
             "--no-placement" => a.placement = false,
+            "--no-simulation" => a.simulation = false,
             "--advise" => a.advise = true,
             "--zone-km" => {
                 let v = it.next().ok_or("--zone-km needs a number")?;
@@ -152,7 +155,9 @@ fn study(km: f64, a: &Args) -> Result<(), String> {
     // 2. A burst in the middle of town, simulated.
     let burst_at = middle(&t);
     let loggers = nearest(net, burst_at, NEAREST_LOGGERS, &t.hydrants);
-    simulate(&t, burst_at, &loggers);
+    if a.simulation {
+        simulate(&t, burst_at, &loggers);
+    }
 
     // 3. Locating it from the nearest loggers (a live alert).
     locate(net, burst_at, &loggers);

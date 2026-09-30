@@ -124,3 +124,8 @@ affected - 75% of the rigid-pipe drop 450 m away on the HDPE estate. So
 plastic walls mostly blur the TIMING (where), not the NOTICING (whether).
 SA pipe classes (PE100, uPVC class 9/12) and temperature remain [VERIFY]. Planning at 50 km (FN-022): whole town 30.7 min,
 56 m - better than zones (60 m); zones only beyond that size.
+
+Sparse steady solver (2026-09-30, FN-026): the ~180 km ceiling is gone -
+steady state 1000 km (10 813 junctions) in 0.29 s, live location 0.1 s.
+Still slow at city scale: the burst SIMULATION (MOC, one core; 150 km ~22 s
+per simulated second) and whole-network PLANNING (zones beyond ~50 km).

@@ -46,12 +46,13 @@ use crate::moc::network::initial::SteadyState;
 use crate::model::{Network, Node, NodeId, Topology};
 use crate::pipe::friction::quasi_steady;
 use crate::steady::{SteadyOptions, SteadySolution};
-use jk_kernel::linalg::cholesky_solve;
+use jk_kernel::sparse::Envelope;
 use jk_kernel::{Flow, Head, Time};
 
-/// Largest number of free-head nodes the dense solver accepts (cost grows
-/// as n^3; 2000 nodes is about a second per round on a laptop).
-pub(crate) const MAX_UNKNOWN_HEADS: usize = 2000;
+/// Largest nodal-matrix envelope accepted (entries stored): a guard that
+/// turns a mistaken setup into an error instead of running out of memory
+/// (2e8 entries = 1.6 GB).
+const MAX_ENVELOPE: usize = 200_000_000;
 /// Flow below which a pipe's linearisation uses this flow instead [m^3/s].
 const Q_FLOOR: f64 = 1e-5;
 /// Multiple of machine epsilon allowed for rounding in a link's flow.
@@ -257,10 +258,21 @@ fn newton(graph: &Graph, options: &SteadyOptions) -> Result<Solved, Failure> {
             m += 1;
         }
     }
-    if m > MAX_UNKNOWN_HEADS {
+    // The nodal matrix couples two unknown heads only through a link
+    // between them: sparse. Its pattern is fixed, so it is set up once
+    // (reverse Cuthill-McKee, envelope storage - jk_kernel::sparse) and
+    // refilled every round.
+    let edges: Vec<(usize, usize)> = graph
+        .links
+        .iter()
+        .filter_map(|l| Some((unknown[l.from]?, unknown[l.to]?)))
+        .collect();
+    let mut matrix = Envelope::new(m, &edges);
+    if matrix.stored() > MAX_ENVELOPE {
         return Err(HydraulicsError::InvalidNetwork(format!(
-            "{m} free-head nodes; the dense steady solver handles up to \
-             {MAX_UNKNOWN_HEADS} (a sparse solver comes with municipal-scale networks)"
+            "{m} free-head nodes need a nodal matrix of {} entries - more than the {MAX_ENVELOPE} \
+             allowed",
+            matrix.stored()
         ))
         .into());
     }
@@ -269,12 +281,11 @@ fn newton(graph: &Graph, options: &SteadyOptions) -> Result<Solved, Failure> {
     let mut flows: Vec<f64> = graph.links.iter().map(|l| l.initial_flow).collect();
     let mut g = vec![0.0; graph.links.len()];
     let mut y = vec![0.0; graph.links.len()];
-    let mut matrix = vec![0.0; m * m];
     let mut rhs = vec![0.0; m];
     let mut pump_badness = vec![f64::NEG_INFINITY; graph.links.len()];
 
     for iteration in 1..=options.max_iterations {
-        matrix.fill(0.0);
+        matrix.clear();
         rhs.fill(0.0);
         for (j, link) in graph.links.iter().enumerate() {
             let q = flows[j];
@@ -283,19 +294,18 @@ fn newton(graph: &Graph, options: &SteadyOptions) -> Result<Solved, Failure> {
             y[j] = q - loss * g[j];
             let (a, b) = (link.from, link.to);
             if let Some(ia) = unknown[a] {
-                matrix[ia * m + ia] += g[j];
+                matrix.add(ia, ia, g[j]);
                 rhs[ia] -= y[j];
                 match unknown[b] {
-                    Some(ib) => matrix[ia * m + ib] -= g[j],
+                    Some(ib) => matrix.add(ia, ib, -g[j]),
                     None => rhs[ia] += g[j] * heads[b],
                 }
             }
             if let Some(ib) = unknown[b] {
-                matrix[ib * m + ib] += g[j];
+                matrix.add(ib, ib, g[j]);
                 rhs[ib] += y[j];
-                match unknown[a] {
-                    Some(ia) => matrix[ib * m + ia] -= g[j],
-                    None => rhs[ib] += g[j] * heads[a],
+                if unknown[a].is_none() {
+                    rhs[ib] += g[j] * heads[a];
                 }
             }
         }
@@ -305,7 +315,7 @@ fn newton(graph: &Graph, options: &SteadyOptions) -> Result<Solved, Failure> {
             }
         }
         if m > 0 {
-            cholesky_solve(&mut matrix, &mut rhs, m).map_err(|row| {
+            matrix.factor().map_err(|row| {
                 let node = unknown
                     .iter()
                     .position(|&u| u == Some(row))
@@ -315,6 +325,7 @@ fn newton(graph: &Graph, options: &SteadyOptions) -> Result<Solved, Failure> {
                      network does not reach any reservoir"
                 ))
             })?;
+            matrix.solve(&mut rhs);
             for (i, &u) in unknown.iter().enumerate() {
                 if let Some(k) = u {
                     heads[i] = rhs[k];

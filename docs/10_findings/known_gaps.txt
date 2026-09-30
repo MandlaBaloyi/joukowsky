@@ -96,9 +96,10 @@ G-10  Large networks                                       IN PROGRESS
   2026-09-29: synthetic towns of 2-100 km (crates/sim) and `jk scale`
   measure every part (FN-013). Live side: fine to 100 km. Planning: much
   faster (exact pruning, shared bench, 4 cores, lazy greedy - FN-014),
-  numbers in detection_range_and_scale.txt. Still open: zones for
-  hundreds of km; the steady solver's dense matrix (2000 unknown heads,
-  ~200 km); MOC time step set by the shortest pipe (dt 0.36 ms at 100 km).
+  numbers in detection_range_and_scale.txt. 2026-09-30: sparse steady
+  solver - 1000 km in 0.29 s (FN-026). Still open: planning hundreds of km
+  (zones); the MOC on one core with its time step set by the shortest pipe
+  (dt 0.36 ms at 100 km, ~20 s per simulated second at 150 km).
 
 G-16  Lazy greedy assumes diminishing returns                    OPEN
   The advisor re-checks only candidates whose last gain could still win

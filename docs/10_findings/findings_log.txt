@@ -218,3 +218,13 @@ FN-025  2026-09-30  A baseline estimated from few nights raises false alarms
   the noise. Measured grid: 28-night baseline (four whole weeks) and alarm
   at 6 -> one per ~590 nights (1.6 years), still catching a 1.2-spread
   leak within a week 72% of the time. Defaults set from the measurement.
+
+FN-026  2026-09-30  A sparse steady solver: 150 km from 30 s to 7 ms
+  The steady solver stored its nodal matrix dense (n^2, n^3 work): ~2000
+  junctions (~180 km) was the limit and 150 km took 29.6 s. The matrix has
+  one row per junction but only a few non-zeros per row (the pipes).
+  jk_kernel::sparse: reverse Cuthill-McKee ordering + envelope Cholesky,
+  pattern set up once, refilled every Newton round; checked against the
+  dense solver on random networks. `jk scale --no-simulation`: steady state
+  100 km 6 ms, 150 km 7 ms, 250 km 15 ms, 500 km 55 ms, 1000 km (10 813
+  junctions) 0.29 s; locating a burst at 1000 km 0.1 s.
