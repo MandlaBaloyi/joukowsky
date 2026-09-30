@@ -342,9 +342,9 @@ enum Failure {
     Error(HydraulicsError),
     /// No convergence. For every link, the worst evidence seen over ALL
     /// rounds that it is a pump unable to deliver (head against it above its
-    /// shut-off head, or flow driven backwards); positive = guilty. When no
-    /// solution exists Newton oscillates, so the last round alone is not a
-    /// reliable witness.
+    /// shut-off head, or flow driven backwards) or an active PRV driven
+    /// backwards; positive = guilty. When no solution exists Newton
+    /// oscillates, so the last round alone is not a reliable witness.
     NoConvergence { pump_badness: Vec<f64> },
 }
 
@@ -495,6 +495,7 @@ fn newton(graph: &Graph, options: &SteadyOptions) -> Result<Solved, Failure> {
         for (j, others) in &regulated {
             new_flows[*j] = others.iter().map(|&(k, sign)| sign * new_flows[k]).sum();
             scale = scale.max(new_flows[*j].abs());
+            pump_badness[*j] = pump_badness[*j].max(-new_flows[*j] * 1e6);
         }
         let tol = options.tolerance * scale.max(1e-3);
         let converged = new_flows
@@ -527,6 +528,7 @@ pub(crate) fn solve(
 }
 
 /// [`solve`] with some links out of service.
+#[allow(clippy::too_many_lines)] // one settling loop over every device kind
 pub(crate) fn solve_shut(
     network: &Network,
     topo: &Topology,
@@ -557,16 +559,26 @@ pub(crate) fn solve_shut(
             Err(Failure::NoConvergence { pump_badness }) => {
                 // A running pump facing more head than its shut-off head, or
                 // being driven backwards, has no forward operating point:
-                // its non-return valve shuts. Shut the worst one and retry.
+                // its non-return valve shuts. So does an active PRV driven
+                // backwards (e.g. a second source holding its zone above
+                // the setting through pipes with no friction). Shut the
+                // worst one and retry.
+                let active = |n: usize| prvs[n] == Some(PrvState::Active);
                 let culprit = graph
                     .pump_link
                     .iter()
+                    .chain(&graph.prv_link)
                     .enumerate()
-                    .filter_map(|(n, link)| link.map(|j| (n, pump_badness[j])))
+                    .filter_map(|(k, link)| link.map(|j| (k, pump_badness[j])))
+                    .filter(|&(k, _)| k < nodes.len() || active(k - nodes.len()))
                     .filter(|&(_, badness)| badness > 0.0)
                     .max_by(|a, b| a.1.total_cmp(&b.1));
-                if let Some((n, _)) = culprit {
-                    states[n] = CheckValveState::Closed;
+                if let Some((k, _)) = culprit {
+                    if k < nodes.len() {
+                        states[k] = CheckValveState::Closed;
+                    } else {
+                        prvs[k - nodes.len()] = Some(PrvState::Closed);
+                    }
                     continue;
                 }
                 return Err(HydraulicsError::InvalidNetwork(format!(

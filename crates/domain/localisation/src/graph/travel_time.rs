@@ -5,6 +5,8 @@ use std::collections::BinaryHeap;
 
 use jk_hydraulics::{Network, Node};
 
+use super::Devices;
+
 /// Fastest travel time from one source to every node, and each node's
 /// route (the pipes the wave travels along, from the node back to the
 /// source): [`TravelGraph::routes_from`].
@@ -15,7 +17,8 @@ pub(crate) type Routes = (Vec<f64>, Vec<Vec<usize>>);
 pub struct TravelGraph {
     /// For each node: (neighbour, pipe index) for every pipe touching it.
     neighbours: Vec<Vec<(usize, usize)>>,
-    /// For each node: may a wave pass through it? (false for reservoirs)
+    /// For each node: may a wave pass through it? (false for reservoirs
+    /// and shut devices)
     passes: Vec<bool>,
 }
 
@@ -41,9 +44,16 @@ impl PartialOrd for Entry {
 }
 
 impl TravelGraph {
-    /// Builds the graph of `network`.
+    /// Builds the graph of `network`, its devices as its steady state
+    /// leaves them ([`Devices::of`]).
     #[must_use]
     pub fn new(network: &Network) -> Self {
+        Self::with_devices(network, &Devices::of(network))
+    }
+
+    /// Builds the graph of `network` with `devices` already known.
+    #[must_use]
+    pub fn with_devices(network: &Network, devices: &Devices) -> Self {
         let n = network.nodes().len();
         let mut neighbours = vec![Vec::new(); n];
         for (i, p) in network.pipes().iter().enumerate() {
@@ -53,7 +63,8 @@ impl TravelGraph {
         let passes = network
             .nodes()
             .iter()
-            .map(|node| !matches!(node, Node::Reservoir { .. }))
+            .enumerate()
+            .map(|(i, node)| !matches!(node, Node::Reservoir { .. }) && !devices.is_shut(i))
             .collect();
         Self { neighbours, passes }
     }
@@ -98,7 +109,8 @@ impl TravelGraph {
             if t > best[node] {
                 continue; // a stale entry
             }
-            // A wave may leave the source, but not pass through a reservoir.
+            // A wave may leave the source, but not pass through a reservoir
+            // or a shut device.
             if node != source && !self.passes[node] {
                 continue;
             }

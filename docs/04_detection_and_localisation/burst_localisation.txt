@@ -50,8 +50,15 @@ scored by generalised least squares with t0 marginalised, including the
 log det C term. Deterministic, no sampling. Calibration over 400 random
 bursts with 3% speed errors: 92.8% inside the 90% region.
 Also implemented: first arrivals never pass THROUGH a reservoir (it
-reflects, R = -1); a timing-misfit output flags arrivals that no single
-source explains (two events, a wrong wave speed, a bad clock).
+reflects, R = -1), nor through a device the steady state leaves shut - a
+check valve or PRV held shut, a pump whose non-return valve is shut
+(2026-09-30, graph/devices.rs, FN-029); a timing-misfit output flags
+arrivals that no single source explains (two events, a wrong wave speed,
+a bad clock). Open devices are passed; how much of the wave they let
+through (T = 2 Bout / (Bin + Bout + r), r = 2 dH0 / Q0 for a PRV, the
+curve's droop for a pump) enters placement and detectability, checked
+against the full simulator within 0.25% (tests/localisation/simulation/
+valve_fronts.rs).
 
 Output: ranked list of pipe segments with probability mass; a 90%
 credible region drawn on the map.

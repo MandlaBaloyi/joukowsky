@@ -258,3 +258,12 @@ FN-029  2026-09-30  A PRV is a partial mirror for pressure waves
   should count it; (2) the localiser's routes through a shut PRV or check
   valve are wrong - such routes should be cut, as routes through
   reservoirs already are (gap G-19).
+  Acted on the same day: graph/devices.rs cuts routes through shut
+  devices and gives placement/detectability each device's share,
+  T = 2 Bout / (Bin + Bout + r) with r from the steady state (a PRV:
+  2 dH0 / Q0; a running pump: its curve's droop - 86% passed a pump
+  delivering 150 l/s). Full simulator vs quick model: PRV 0.25%, pump
+  0.02%, shut PRV nothing either way (valve_fronts.rs). Also found: the
+  steady solver could not settle an active PRV driven backwards through
+  frictionless pipes (no convergence before its state was checked); it
+  now shuts it and retries, as it does for pumps.

@@ -50,16 +50,19 @@
 //!   exp(-f V x / (2 D a)) - for f = 0.02, V = 0.5 m/s, D = 0.15 m,
 //!   a = 1000 m/s that is 3% per km, so it is ignored;
 //! - unsteady friction (milestone S5);
-//! - a valve node is treated as a dead end, and a pump or check valve as a
-//!   straight run.
+//! - a valve node (at the end of a pipe) is treated as a dead end.
+//!
+//! Devices between two pipes pass on T = 2 Bout / (Bin + Bout + r) of a
+//! wave, r their small-wave resistance in the steady state - a PRV frozen
+//! at its opening, a running pump's droop - and nothing when shut
+//! (`graph/devices.rs`, FN-029).
 
-use jk_hydraulics::joukowsky::junction_transmission;
 use jk_hydraulics::{Network, Node, NodeId};
 use jk_kernel::{Flow, Head, Length, Time};
 
 use super::coverage::PlacementOptions;
 use crate::error::LocalisationError;
-use crate::graph::{Routes, TravelGraph};
+use crate::graph::{Devices, Routes, TravelGraph};
 use crate::locate::Point;
 
 /// What a logger is taken to feel of a burst's wave.
@@ -82,6 +85,8 @@ pub(super) struct Fronts {
     /// Per node: the impedances of the pipes meeting there.
     at_node: Vec<Vec<f64>>,
     reservoir: Vec<bool>,
+    /// What pumps and valves do to a passing wave.
+    devices: Devices,
     /// Per pipe: how much of the wave it keeps per metre travelled - the
     /// plastic wall's damping [1/m] for the chosen [`Response`] (0 for rigid
     /// pipes) - and its length [m].
@@ -130,7 +135,8 @@ impl Fronts {
             .collect();
         let damping = wall_effect.iter().map(|&(d, _)| d).collect();
         let lengths = pipes.iter().map(|p| p.pipe.length().value()).collect();
-        let graph = TravelGraph::new(network);
+        let devices = Devices::of(network);
+        let graph = TravelGraph::with_devices(network, &devices);
         let routes = sensors
             .iter()
             .map(|s| graph.routes_from(s.index(), &nominal))
@@ -143,6 +149,7 @@ impl Fronts {
             impedance,
             at_node,
             reservoir,
+            devices,
             damping,
             lengths,
             routes,
@@ -168,7 +175,8 @@ impl Fronts {
             if self.reservoir[node] {
                 0.0
             } else {
-                junction_transmission(incoming, &self.at_node[node])
+                self.devices
+                    .transmission(node, incoming, &self.at_node[node])
             }
         };
         let (times, pipe_routes) = (&routes.0, &routes.1);
