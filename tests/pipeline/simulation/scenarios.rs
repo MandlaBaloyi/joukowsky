@@ -65,6 +65,32 @@ fn one_burst_gives_exactly_one_alarm_on_the_right_pipe() {
         (loc.most_likely.distance.value() - 200.0).abs() < 2.0,
     );
     check("seen by all three sensors", a.sensors.len() == 3);
+
+    // How big: the hole's flow when it opened, h0 = (B/2) k sqrt(60 - h0)
+    // solved self-consistently, Q = k sqrt(60 - h0).
+    let k = hole(b.unwrap(), 3.0).coefficient;
+    let bb = 1000.0 / (STANDARD_GRAVITY.value() * Area::of_circle(Length::new(0.15)).value());
+    let mut h0: f64 = 0.0;
+    for _ in 0..50 {
+        h0 = 0.5 * bb * k * (60.0 - h0).sqrt();
+    }
+    let truth = k * (60.0 - h0).sqrt();
+    let s = a.size.expect("a located burst is sized");
+    println!(
+        "  size: {:.2} +/- {:.2} l/s from {} loggers (the hole let out {:.2} l/s)",
+        s.flow.value() * 1000.0,
+        s.uncertainty.value() * 1000.0,
+        s.loggers,
+        truth * 1000.0
+    );
+    check(
+        "size within 2 uncertainties of the true flow",
+        (s.flow.value() - truth).abs() <= 2.0 * s.uncertainty.value(),
+    );
+    check(
+        "and within 15% of it",
+        (s.flow.value() - truth).abs() <= 0.15 * truth,
+    );
 }
 
 #[test]

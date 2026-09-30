@@ -28,6 +28,7 @@ pub mod graph;
 pub mod locate;
 pub mod placement;
 pub mod posterior;
+pub mod size;
 
 pub use clocks::{
     CalibrationEvent, ClockEstimate, DriftEstimate, estimate_drift, estimate_offsets,
@@ -35,3 +36,4 @@ pub use clocks::{
 pub use error::LocalisationError;
 pub use locate::{Arrival, Localisation, LocaliseOptions, Localiser, Point, localise};
 pub use posterior::{PipeProbability, Segment};
+pub use size::{Drop, SizeEstimate, size};

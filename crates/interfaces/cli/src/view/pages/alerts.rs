@@ -81,6 +81,13 @@ fn detail(event: &EventModel, issued: &Issued) -> String {
                     format!("{:.0} m of pipe", l.credible_length.value()),
                 )
             });
+    let size = a.size.as_ref().map_or("-".to_string(), |z| {
+        format!(
+            "about {:.2} l/s (+/- {:.2})",
+            z.flow.value() * 1000.0,
+            z.uncertainty.value() * 1000.0
+        )
+    });
     let _ = write!(
         s,
         r#"<div class="facts">
@@ -89,6 +96,7 @@ fn detail(event: &EventModel, issued: &Issued) -> String {
 <div><div class="k">Time to alert</div><div class="v">{:.1} s</div></div>
 <div><div class="k">Most likely</div><div class="v">{}</div></div>
 <div><div class="k">90% search stretch</div><div class="v">{}</div></div>
+<div><div class="k">Size (flow let out)</div><div class="v">{}</div></div>
 <div><div class="k">Seen by</div><div class="v">{}</div></div>
 </div></div>"#,
         a.time.value(),
@@ -96,6 +104,7 @@ fn detail(event: &EventModel, issued: &Issued) -> String {
         issued.data_time - a.time.value(),
         esc(&place),
         esc(&stretch),
+        esc(&size),
         esc(&a.sensors.join(", "))
     );
     if let Some(loc) = &a.location {

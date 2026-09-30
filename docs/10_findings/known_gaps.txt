@@ -69,7 +69,10 @@ G-05  No scorecard over many events                               OPEN
 
 B. Not yet BUILT
 ------------------------------------------------------------------------
-G-06  Burst size is not in the alert                              OPEN
+G-06  Burst size is not in the alert             CLOSED 2026-09-30
+  Alert.size from localisation/src/size.rs; pipeline scenario: 1.55 l/s
+  estimated for a hole letting out 1.55 l/s (tests/pipeline/simulation/
+  scenarios.rs). Open: slow openings (size a lower bound), pump trips.
   The physics exists (hydraulics/joukowsky.rs; front h0 = B/2 Q), not yet
   wired: "about 2 l/s" with an uncertainty. 07_ metric: quantification.
 

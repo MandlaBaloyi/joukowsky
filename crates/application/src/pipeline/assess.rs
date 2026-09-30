@@ -16,9 +16,9 @@
 //!   (valve closure), Review (anything unsure or uncorroborated).
 
 use jk_classification::{EventClass, Features, classify};
-use jk_detection::Event;
-use jk_kernel::Time;
-use jk_localisation::{Arrival, localise};
+use jk_detection::{Direction, Event};
+use jk_kernel::{Head, Time};
+use jk_localisation::{Arrival, Drop, localise, size};
 
 use crate::alert::{Alert, Level};
 use crate::pipeline::{PipelineConfig, Site};
@@ -168,6 +168,37 @@ pub(super) fn assess(
         EventClass::Burst | EventClass::Unknown => Level::Review,
     };
     let time = location.as_ref().map_or(first.arrival.time, |l| l.emission);
+    // How big: for a located burst, from the drops the loggers measured.
+    let size = match (&location, class) {
+        (Some(l), EventClass::Burst) if fits => {
+            let drops: Vec<Drop> = members
+                .iter()
+                .filter(|m| m.event.direction == Direction::Drop)
+                .map(|m| Drop {
+                    node: site.sensors[m.sensor].node,
+                    drop: Head::new(m.event.step.value().abs()),
+                    noise: m.event.noise,
+                })
+                .collect();
+            match size(&site.network, &drops, l.most_likely, config.speed_margin) {
+                Ok(s) => {
+                    if s.misfit > config.max_misfit {
+                        reasons.push(format!(
+                            "the loggers' drops disagree on the size (misfit {:.1}): an echo or \
+                             a second event in the window - size uncertain",
+                            s.misfit
+                        ));
+                    }
+                    Some(s)
+                }
+                Err(e) => {
+                    reasons.push(format!("not sized: {e}"));
+                    None
+                }
+            }
+        }
+        _ => None,
+    };
     Alert {
         id,
         revision,
@@ -176,6 +207,7 @@ pub(super) fn assess(
         confidence,
         time: Time::new(time.value()),
         location,
+        size,
         sensors: members
             .iter()
             .map(|m| site.sensors[m.sensor].name.clone())

@@ -10,7 +10,7 @@ use std::fmt::Write as _;
 
 use jk_classification::EventClass;
 use jk_kernel::Time;
-use jk_localisation::Localisation;
+use jk_localisation::{Localisation, SizeEstimate};
 
 /// How loudly an alert is raised.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
@@ -45,6 +45,9 @@ pub struct Alert {
     pub time: Time,
     /// Where, if at least two sensors saw it.
     pub location: Option<Localisation>,
+    /// How big: the flow a located burst lets out, from the drops the
+    /// loggers measured (`jk_localisation::size`).
+    pub size: Option<SizeEstimate>,
     /// Names of the sensors that saw it, in order of arrival.
     pub sensors: Vec<String>,
     /// Plain-language reasons: classification evidence and pipeline notes.
@@ -93,6 +96,15 @@ impl Alert {
                 }
             }
             None => out.push_str("\n  where: not located (fewer than two sensors saw it)"),
+        }
+        if let Some(s) = &self.size {
+            let _ = write!(
+                out,
+                "\n  size: about {:.2} l/s (+/- {:.2} l/s), from {} logger(s)",
+                s.flow.value() * 1000.0,
+                s.uncertainty.value() * 1000.0,
+                s.loggers
+            );
         }
         let _ = write!(out, "\n  seen by: {}", self.sensors.join(", "));
         for r in &self.reasons {

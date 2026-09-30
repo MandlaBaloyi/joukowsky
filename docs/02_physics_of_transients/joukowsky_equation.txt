@@ -101,3 +101,16 @@ Consequences for the engine:
     information (or noise) rather than new events.
   - Reflection timing is itself informative: it encodes distances to
     features (dead ends, material changes, closed valves, existing leaks).
+
+Implementation note: burst size in the alert (2026-09-30)
+--------------------------------------------------------
+crates/domain/localisation/src/size.rs inverts the front model: each
+logger's measured drop d_i = F_i Q, F_i = the first front per unit flow at
+the located point ((B/2) x junction transmissions x plastic damping), so
+Q = sum(F d / s^2) / sum(F^2 / s^2), with noise and wave-speed doubt
+(pipeline speed_margin, 10%: B is proportional to a) as its uncertainty,
+and a misfit that flags loggers disagreeing (an echo in the window).
+Located bursts carry it (Alert.size, the text summary and the viewer).
+Pipeline scenario (a 10 mm hole on the estate, 128 S/s loggers, 2 cm
+noise): "about 1.55 l/s (+/- 0.16)" - the hole let out 1.55 l/s. A burst
+that opens slowly gives smaller fronts: the size is then a lower bound.

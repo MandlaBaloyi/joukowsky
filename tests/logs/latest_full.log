@@ -1,12 +1,15 @@
 joukowsky test run
-  when     2026-09-30 07:53:19
+  when     2026-09-30 08:05:13
   suite    full
-  commit   6cab794 (with uncommitted changes)
+  commit   c08d5bc (with uncommitted changes)
   rust     rustc 1.98.1 (48a229cea 2026-09-01)
   command  cargo test --workspace --no-fail-fast -- --nocapture --test-threads=1 --include-ignored
 ==============================================================================
+   Compiling jk-application v0.1.0 (C:\Users\HP\Desktop\joukowsky\crates\application)
    Compiling jk-tests v0.1.0 (C:\Users\HP\Desktop\joukowsky\tests)
-    Finished `test` profile [unoptimized + debuginfo] target(s) in 11.78s
+   Compiling jk-cli v0.1.0 (C:\Users\HP\Desktop\joukowsky\crates\interfaces\cli)
+   Compiling jk-localisation v0.1.0 (C:\Users\HP\Desktop\joukowsky\crates\domain\localisation)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 6.71s
      Running unittests src\lib.rs (target\debug\deps\jk_application-31ec11ad23313301.exe)
 
 running 3 tests
@@ -66,7 +69,7 @@ test onset::step_area::tests::a_ramp_front_is_placed_at_its_centre ... ok
 test onset::step_area::tests::declines_when_the_windows_do_not_fit ... ok
 test onset::step_area::tests::exact_for_a_sharp_step_at_any_phase ... ok
 
-test result: ok. 14 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.08s
+test result: ok. 14 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.24s
 
      Running unittests src\lib.rs (target\debug\deps\jk_files-ec39beec6edb1da0.exe)
 
@@ -140,7 +143,7 @@ test pipe::viscoelastic::tests::the_new_rate_is_what_advancing_then_gives ... ok
 test pipe::viscoelastic::tests::walls_are_checked ... ok
 test pipe::viscoelastic::tests::without_creep_a_characteristic_is_unchanged ... ok
 
-test result: ok. 46 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.03s
+test result: ok. 46 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.04s
 
      Running unittests src\lib.rs (target\debug\deps\jk_kernel-eccabcc9e10cd5d2.exe)
 
@@ -160,15 +163,16 @@ test result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; fin
 
      Running unittests src\lib.rs (target\debug\deps\jk_localisation-b57d917c3efe0d09.exe)
 
-running 6 tests
+running 7 tests
 test graph::travel_time::tests::fastest_path_and_no_passing_through_reservoirs ... ok
 test locate::tests::golden_section_finds_a_parabola_minimum ... ok
 test posterior::bound::tests::the_determinant_terms_are_largest_without_wave_speed_doubt ... ok
 test posterior::score::tests::a_perfect_candidate_scores_zero_misfit_and_recovers_t0 ... ok
 test posterior::score::tests::a_wrong_candidate_is_penalised ... ok
 test posterior::score::tests::with_independent_errors_the_correlated_score_matches_the_simple_one ... ok
+test size::tests::exact_fronts_give_back_the_flow ... ok
 
-test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
 
      Running unittests src\lib.rs (target\debug\deps\jk_sim-cdf9363ef8ace4d0.exe)
 
@@ -326,6 +330,7 @@ test simulation::logger_files::a_burst_recorded_in_logger_files_raises_one_alarm
 [Alarm] #1 BURST (98% confident) at t = 1790676902.999 s
   where: T-S3 south branch at 199.9 m from its start; 90% within 2 m of pipe
     T-S3 south branch    100.0%
+  size: about 1.56 l/s (+/- 0.16 l/s), from 3 logger(s)
   seen by: S3 south block, S1 gatehouse, S2 north block
   because: pressure DROPPED by 9.02 m: a burst or a pump trip, not a closing valve (seen upstream)
   because: SHARP front (7 ms, 10-90%): a sudden change - a pipe splitting, a valve slamming - not a pump running down
@@ -337,7 +342,7 @@ test simulation::logger_files::a_burst_recorded_in_logger_files_raises_one_alarm
   at 10:15:03 - seconds past 10:15:00          got       2.998747   expected       3.000000   rel.err 4.2e-4
 ok
 
-test result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.16s
+test result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.06s
 
      Running balance\main.rs (target\debug\deps\balance-f50430771254bd71.exe)
 
@@ -362,7 +367,7 @@ test simulation::night_watch::the_detection_curve_matches_the_cusum_arithmetic .
   at the arithmetic's size: caught at least a third of the time yes
 ok
 
-test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 3.73s
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 3.71s
 
      Running classification\main.rs (target\debug\deps\classification-31daad1fdce9861c.exe)
 
@@ -458,7 +463,7 @@ test simulation::scenarios::power_data_settles_the_slow_burst ... The same slow 
   burst                                        yes
 ok
 
-test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 3.13s
+test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 3.10s
 
      Running detection\main.rs (target\debug\deps\detection-f716915457d43300.exe)
 
@@ -534,7 +539,7 @@ test simulation::burst_location::vs1_location_error_versus_sampling_rate_and_noi
   128 S/s with 2 cm noise locates to under 1 m RMS yes
 ok
 
-test result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 9.69s
+test result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 9.03s
 
      Running hydraulics\main.rs (target\debug\deps\hydraulics-8605ea72ea8561e1.exe)
 
@@ -846,7 +851,7 @@ test invariants::steady_state::an_undisturbed_pipe_stays_steady ... Steady state
   valve holds steady                           yes
 ok
 
-test result: ok. 41 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 41.29s
+test result: ok. 41 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 42.25s
 
      Running kernel\main.rs (target\debug\deps\kernel-d5a37fe190909055.exe)
 
@@ -962,7 +967,7 @@ Recommended 6 (after swaps): a1 block A1, c1 block C1, b1 block B1, c2 block C2,
     B-b2               90 m   typical region  155 m
     C-c1              150 m   typical region   20 m
     C-c2              220 m   typical region   25 m
-  (advice took 10 s on this machine)
+  (advice took 11 s on this machine)
 Would a sudden 1 l/s burst be felt? By at least one logger on 100% of the pipe, by two (so located) on 100%. Smallest burst locatable anywhere on each pipe (upper bound: no plastic-wall damping yet):
     R-M connection     0.09 l/s
     M-A ring           0.04 l/s
@@ -1194,7 +1199,7 @@ test simulation::plastic_fronts::the_front_model_with_plastic_walls_matches_the_
   but within 0.25 s S2 feels over two thirds of it yes
 ok
 
-test result: ok. 29 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 192.03s
+test result: ok. 29 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 193.04s
 
      Running pipeline\main.rs (target\debug\deps\pipeline-d11d8b6223a66c52.exe)
 
@@ -1206,6 +1211,7 @@ it comes back the network is still ringing:
 [Alarm] #1 BURST (98% confident) at t = 2.999 s
   where: T-S3 south branch at 199.9 m from its start; 90% within 2 m of pipe
     T-S3 south branch    100.0%
+  size: about 1.56 l/s (+/- 0.16 l/s), from 2 logger(s)
   seen by: S3 south block, S1 gatehouse
   because: pressure DROPPED by 9.01 m: a burst or a pump trip, not a closing valve (seen upstream)
   because: SHARP front (12 ms, 10-90%): a sudden change - a pipe splitting, a valve slamming - not a pump running down
@@ -1224,6 +1230,7 @@ decides without it - and revises when S2's data turns up:
 [Alarm] #1 BURST (98% confident) at t = 2.999 s
   where: T-S3 south branch at 199.9 m from its start; 90% within 2 m of pipe
     T-S3 south branch    100.0%
+  size: about 1.55 l/s (+/- 0.16 l/s), from 2 logger(s)
   seen by: S3 south block, S1 gatehouse
   because: pressure DROPPED by 9.02 m: a burst or a pump trip, not a closing valve (seen upstream)
   because: SHARP front (12 ms, 10-90%): a sudden change - a pipe splitting, a valve slamming - not a pump running down
@@ -1233,6 +1240,7 @@ decides without it - and revises when S2's data turns up:
 [Alarm] #1 (revision 1) BURST (98% confident) at t = 2.999 s
   where: T-S3 south branch at 200.0 m from its start; 90% within 2 m of pipe
     T-S3 south branch    100.0%
+  size: about 1.55 l/s (+/- 0.16 l/s), from 3 logger(s)
   seen by: S3 south block, S1 gatehouse, S2 north block
   because: pressure DROPPED by 9.02 m: a burst or a pump trip, not a closing valve (seen upstream)
   because: SHARP front (12 ms, 10-90%): a sudden change - a pipe splitting, a valve slamming - not a pump running down
@@ -1254,35 +1262,43 @@ Whole records, for comparison:
 [Alarm] #1 BURST (98% confident) at t = 2.999 s
   where: T-S3 south branch at 199.3 m from its start; 90% within 2 m of pipe
     T-S3 south branch    100.0%
+  size: about 1.30 l/s (+/- 0.13 l/s), from 3 logger(s)
   seen by: S3 south block, S1 gatehouse, S2 north block
   because: pressure DROPPED by 7.78 m: a burst or a pump trip, not a closing valve (seen upstream)
   because: SHARP front (7 ms, 10-90%): a sudden change - a pipe splitting, a valve slamming - not a pump running down
   because: pump power is not monitored: no outside evidence
+  because: the loggers' drops disagree on the size (misfit 3.0): an echo or a second event in the window - size uncertain
 [Alarm] #2 BURST (98% confident) at t = 29.999 s
   where: T-S2 north branch at 150.7 m from its start; 90% within 6 m of pipe
     T-S2 north branch    100.0%
+  size: about 1.31 l/s (+/- 0.13 l/s), from 3 logger(s)
   seen by: S2 north block, S1 gatehouse, S3 south block
   because: pressure DROPPED by 7.96 m: a burst or a pump trip, not a closing valve (seen upstream)
   because: SHARP front (8 ms, 10-90%): a sudden change - a pipe splitting, a valve slamming - not a pump running down
   because: pump power is not monitored: no outside evidence
+  because: the loggers' drops disagree on the size (misfit 17.8): an echo or a second event in the window - size uncertain
 
 Live: each sensor sends a 1 s chunk in turn:
 2 alert(s) went out:
 [Alarm] #1 BURST (98% confident) at t = 2.999 s
   where: T-S3 south branch at 199.3 m from its start; 90% within 2 m of pipe
     T-S3 south branch    100.0%
+  size: about 1.30 l/s (+/- 0.13 l/s), from 3 logger(s)
   seen by: S3 south block, S1 gatehouse, S2 north block
   because: pressure DROPPED by 7.78 m: a burst or a pump trip, not a closing valve (seen upstream)
   because: SHARP front (7 ms, 10-90%): a sudden change - a pipe splitting, a valve slamming - not a pump running down
   because: pump power is not monitored: no outside evidence
+  because: the loggers' drops disagree on the size (misfit 3.0): an echo or a second event in the window - size uncertain
   -> sent when the data had reached t = 7.00 s
 [Alarm] #2 BURST (98% confident) at t = 29.999 s
   where: T-S2 north branch at 150.7 m from its start; 90% within 6 m of pipe
     T-S2 north branch    100.0%
+  size: about 1.31 l/s (+/- 0.13 l/s), from 3 logger(s)
   seen by: S2 north block, S1 gatehouse, S3 south block
   because: pressure DROPPED by 7.96 m: a burst or a pump trip, not a closing valve (seen upstream)
   because: SHARP front (8 ms, 10-90%): a sudden change - a pipe splitting, a valve slamming - not a pump running down
   because: pump power is not monitored: no outside evidence
+  because: the loggers' drops disagree on the size (misfit 17.8): an echo or a second event in the window - size uncertain
   -> sent when the data had reached t = 34.00 s
   the same alerts as from whole records        yes
   alert 1 went out 4.00 s (data time) after its burst
@@ -1313,6 +1329,7 @@ test simulation::scenarios::one_burst_gives_exactly_one_alarm_on_the_right_pipe 
 [Alarm] #1 BURST (98% confident) at t = 2.999 s
   where: T-S3 south branch at 200.0 m from its start; 90% within 2 m of pipe
     T-S3 south branch    100.0%
+  size: about 1.55 l/s (+/- 0.16 l/s), from 3 logger(s)
   seen by: S3 south block, S1 gatehouse, S2 north block
   because: pressure DROPPED by 9.01 m: a burst or a pump trip, not a closing valve (seen upstream)
   because: SHARP front (11 ms, 10-90%): a sudden change - a pipe splitting, a valve slamming - not a pump running down
@@ -1323,6 +1340,9 @@ test simulation::scenarios::one_burst_gives_exactly_one_alarm_on_the_right_pipe 
   on the south branch (pipe 3)                 yes
   within 2 m of the truth                      yes
   seen by all three sensors                    yes
+  size: 1.55 +/- 0.16 l/s from 3 loggers (the hole let out 1.55 l/s)
+  size within 2 uncertainties of the true flow yes
+  and within 15% of it                         yes
 ok
 test simulation::scenarios::two_bursts_far_apart_give_two_alarms ... Consumers drawing 30 l/s; a hole opens on the south branch at t = 3 s,
 another on the north branch at t = 30 s:
@@ -1330,23 +1350,27 @@ another on the north branch at t = 30 s:
 [Alarm] #1 BURST (98% confident) at t = 2.999 s
   where: T-S3 south branch at 199.3 m from its start; 90% within 2 m of pipe
     T-S3 south branch    100.0%
+  size: about 1.30 l/s (+/- 0.13 l/s), from 3 logger(s)
   seen by: S3 south block, S1 gatehouse, S2 north block
   because: pressure DROPPED by 7.78 m: a burst or a pump trip, not a closing valve (seen upstream)
   because: SHARP front (7 ms, 10-90%): a sudden change - a pipe splitting, a valve slamming - not a pump running down
   because: pump power is not monitored: no outside evidence
+  because: the loggers' drops disagree on the size (misfit 3.0): an echo or a second event in the window - size uncertain
 [Alarm] #2 BURST (98% confident) at t = 29.999 s
   where: T-S2 north branch at 150.7 m from its start; 90% within 6 m of pipe
     T-S2 north branch    100.0%
+  size: about 1.31 l/s (+/- 0.13 l/s), from 3 logger(s)
   seen by: S2 north block, S1 gatehouse, S3 south block
   because: pressure DROPPED by 7.96 m: a burst or a pump trip, not a closing valve (seen upstream)
   because: SHARP front (8 ms, 10-90%): a sudden change - a pipe splitting, a valve slamming - not a pump running down
   because: pump power is not monitored: no outside evidence
+  because: the loggers' drops disagree on the size (misfit 17.8): an echo or a second event in the window - size uncertain
   two alerts, both alarms - no echo alerts     yes
   the first on the south branch, ~200 m        yes
   the second on the north branch, ~150 m       yes
 ok
 
-test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 15.03s
+test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 14.96s
 
    Doc-tests jk_application
 
@@ -1415,9 +1439,9 @@ running 0 tests
 test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
 
 ==============================================================================
-  passed   230
+  passed   231
   failed   0
   skipped  0 slow test(s) not in this suite
   filtered 0 test(s) outside -Only/-Filter
-  time     283.7 s (including compile)
+  time     280.6 s (including compile)
   result   ALL PASSED
