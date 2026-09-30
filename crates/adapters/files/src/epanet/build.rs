@@ -2,8 +2,8 @@
 
 use std::collections::HashMap;
 
-use jk_hydraulics::{Network, Node, NodeId, Pipe};
-use jk_kernel::{Flow, Head, Length};
+use jk_hydraulics::{Network, Node, NodeId, Pipe, TankStorage};
+use jk_kernel::{Area, Flow, Head, Length};
 
 use super::friction::{Headloss, darcy_factor};
 use super::sections::{Line, Section, split};
@@ -21,9 +21,19 @@ struct Settings {
 
 /// A node as the file gives it (file units).
 enum NodeKind {
-    Junction { elevation: f64, demand: f64 },
-    Reservoir { head: f64 },
-    Tank { elevation: f64, level: f64 },
+    Junction {
+        elevation: f64,
+        demand: f64,
+    },
+    Reservoir {
+        head: f64,
+    },
+    Tank {
+        elevation: f64,
+        level: f64,
+        /// Minimum and maximum level and diameter, when the file gives them.
+        storage: Option<(f64, f64, f64)>,
+    },
 }
 
 struct RawNode {
@@ -218,7 +228,7 @@ fn read_nodes(
 ) -> Result<(Vec<RawNode>, HashMap<String, usize>), ReadError> {
     let mut nodes = Vec::new();
     let mut index = HashMap::new();
-    let mut patterned = 0;
+    let (mut patterned, mut curved) = (0, 0);
     for (section, lines) in sections {
         for l in lines {
             match section {
@@ -238,15 +248,32 @@ fn read_nodes(
                     add_node(&mut nodes, &mut index, l, kind)?;
                 }
                 Section::Tanks => {
+                    let min = optional(l, 3, "minimum level")?;
+                    let max = optional(l, 4, "maximum level")?;
+                    let diameter = optional(l, 5, "diameter")?;
+                    curved += usize::from(l.fields.len() > 7);
                     let kind = NodeKind::Tank {
                         elevation: number(l, 1, "elevation")?,
                         level: number(l, 2, "initial level")?,
+                        storage: match (min, max, diameter) {
+                            (Some(a), Some(b), Some(d)) if a < b && d > 0.0 => Some((a, b, d)),
+                            _ => None,
+                        },
                     };
                     add_node(&mut nodes, &mut index, l, kind)?;
                 }
                 _ => {}
             }
         }
+    }
+    if curved > 0 {
+        note(
+            notes,
+            None,
+            format!(
+                "{curved} tank volume curve(s) not read: tanks are cylinders of the given diameter"
+            ),
+        );
     }
     if patterned > 0 {
         note(
@@ -506,13 +533,15 @@ fn assemble(
     let mut network = Network::new(options.gravity);
     let (mut node_ids, mut elevations, mut positions, mut ids) =
         (Vec::new(), Vec::new(), Vec::new(), Vec::<NodeId>::new());
-    let mut tanks = 0;
+    let (mut tanks, mut stored) = (0, 0);
     for group in &members {
         let fixed: Vec<f64> = group
             .iter()
             .filter_map(|&i| match nodes[i].kind {
                 NodeKind::Reservoir { head } => Some(head * lu),
-                NodeKind::Tank { elevation, level } => Some((elevation + level) * lu),
+                NodeKind::Tank {
+                    elevation, level, ..
+                } => Some((elevation + level) * lu),
                 NodeKind::Junction { .. } => None,
             })
             .collect();
@@ -546,7 +575,28 @@ fn assemble(
                 demand: Flow::new(demand * s.demand_multiplier * fu),
             }
         };
-        ids.push(network.add_node(node));
+        let id = network.add_node(node);
+        ids.push(id);
+        // A tank alone in its group, with its levels and diameter given,
+        // keeps its storage: extended-period runs move its level.
+        if let [only] = group.as_slice()
+            && let NodeKind::Tank {
+                elevation,
+                storage: Some((min, max, diameter)),
+                ..
+            } = nodes[*only].kind
+        {
+            let area = std::f64::consts::PI * 0.25 * (diameter * lu).powi(2);
+            let added = network.add_tank(TankStorage {
+                node: id,
+                area: Area::new(area),
+                floor: Head::new((elevation + min) * lu),
+                ceiling: Head::new((elevation + max) * lu),
+            });
+            if added.is_ok() {
+                stored += 1;
+            }
+        }
         node_ids.push(
             group
                 .iter()
@@ -562,12 +612,24 @@ fn assemble(
         }));
         positions.push(group.iter().find_map(|&i| coordinates.get(&i).copied()));
     }
-    if tanks > 0 {
+    if stored > 0 {
         note(
             &mut notes,
             None,
             format!(
-                "{tanks} tank(s) modelled as fixed heads at their initial level (their level is not simulated)"
+                "{stored} tank(s) with storage: fixed heads in transients, their level simulated in \
+                 extended-period runs (cylinders of the given diameter)"
+            ),
+        );
+    }
+    if tanks > stored {
+        note(
+            &mut notes,
+            None,
+            format!(
+                "{} tank(s) modelled as fixed heads at their initial level (levels or diameter \
+                 missing, or joined to another fixed head)",
+                tanks - stored
             ),
         );
     }

@@ -122,10 +122,18 @@ fn everything_approximated_is_reported_never_dropped() {
     );
     let tank = net.node_ids.iter().position(|id| id == "TK").unwrap();
     check(
-        "the tank is a fixed head at 30 + 4 = 34 m",
+        "the tank is a fixed head at 30 + 4 = 34 m (in transients)",
         matches!(net.network.nodes()[tank], Node::Reservoir { head } if (head.value() - 34.0).abs() < 1e-12),
     );
-    check("  ... and says so", says("tank(s) modelled as fixed heads"));
+    let storage = net.network.tanks().first().copied().expect("a tank");
+    check(
+        "  ... with storage: floor 30 + 1, ceiling 30 + 6, 10 m across",
+        storage.node.index() == tank
+            && (storage.floor.value() - 31.0).abs() < 1e-12
+            && (storage.ceiling.value() - 36.0).abs() < 1e-12
+            && (storage.area.value() - std::f64::consts::PI * 25.0).abs() < 1e-9,
+    );
+    check("  ... and says so", says("tank(s) with storage"));
     let j4 = net.node_ids.iter().position(|id| id == "J4").unwrap();
     check(
         "[DEMANDS] replaces J4's demand: 0.5 + 0.7 = 1.2 l/s",

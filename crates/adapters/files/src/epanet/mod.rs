@@ -15,7 +15,9 @@
 //!   pipe (1000 m/s by default) until a sidecar file supplies real ones;
 //! - friction: the file's roughness becomes one Darcy factor per pipe
 //!   ([`friction`]);
-//! - tanks: fixed-head nodes at their initial level;
+//! - tanks: fixed-head nodes at their initial level in transients; with
+//!   their minimum/maximum levels and diameter given, also storage tanks
+//!   whose level extended-period runs move (volume curves not read);
 //! - pumps and open valves: their two nodes are joined into one - the
 //!   network stays connected for locating bursts, but the device's own
 //!   hydraulics are not modelled;

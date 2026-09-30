@@ -6,7 +6,7 @@
 //! network bounded context (asset records, GIS, versions) will translate
 //! its richer model into this one.
 
-use jk_kernel::{Acceleration, Flow, Head, Time};
+use jk_kernel::{Acceleration, Area, Flow, Head, Time};
 
 use crate::boundary::junction::PipeEnd;
 use crate::boundary::pump::Pump;
@@ -168,6 +168,23 @@ impl SourceLevel {
     }
 }
 
+/// A storage tank: a reservoir node whose level rises and falls with the
+/// water it gains and loses (step R-2 of `docs/02_physics_of_transients/
+/// sources_dams_rivers_canals.txt`). Used by the extended-period run
+/// ([`crate::steady::extended`]); in a transient, which lasts seconds, a
+/// tank's level is practically fixed and it acts as a reservoir.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct TankStorage {
+    /// The reservoir node that is the tank; its head is the starting level.
+    pub node: NodeId,
+    /// Plan area of the water surface (constant with height).
+    pub area: Area,
+    /// Lowest usable level: below it the tank supplies nothing.
+    pub floor: Head,
+    /// Highest level: above it the tank overflows.
+    pub ceiling: Head,
+}
+
 /// A pipe network for transient simulation.
 #[derive(Debug, Clone, PartialEq)]
 pub struct Network {
@@ -176,6 +193,7 @@ pub struct Network {
     pipes: Vec<NetworkPipe>,
     bursts: Vec<Burst>,
     levels: Vec<SourceLevel>,
+    tanks: Vec<TankStorage>,
 }
 
 /// For each node, the pipes that touch it and which end of each.
@@ -191,6 +209,7 @@ impl Network {
             pipes: Vec::new(),
             bursts: Vec::new(),
             levels: Vec::new(),
+            tanks: Vec::new(),
         }
     }
 
@@ -309,6 +328,60 @@ impl Network {
     #[must_use]
     pub fn levels(&self) -> &[SourceLevel] {
         &self.levels
+    }
+
+    /// Makes a reservoir a storage tank: in an extended-period run its level
+    /// follows the water it gains and loses.
+    ///
+    /// # Errors
+    /// If the node is not a reservoir, already a tank or given a level
+    /// history, the area is not positive, or the floor is not below the
+    /// ceiling with the starting level between them.
+    pub fn add_tank(&mut self, tank: TankStorage) -> Result<(), HydraulicsError> {
+        let Some(Node::Reservoir { head }) = self.nodes.get(tank.node.0) else {
+            return Err(HydraulicsError::InvalidNetwork(format!(
+                "a tank must be a reservoir node (node {})",
+                tank.node.0
+            )));
+        };
+        if self.tanks.iter().any(|t| t.node == tank.node)
+            || self.levels.iter().any(|l| l.node == tank.node)
+        {
+            return Err(HydraulicsError::InvalidNetwork(format!(
+                "node {} is already a tank or follows a level history",
+                tank.node.0
+            )));
+        }
+        positive("tank area", tank.area.value())?;
+        finite("tank floor", tank.floor.value())?;
+        finite("tank ceiling", tank.ceiling.value())?;
+        if !(tank.floor < tank.ceiling && tank.floor <= *head && *head <= tank.ceiling) {
+            return Err(HydraulicsError::invalid(
+                "tank level",
+                head.value(),
+                "floor < ceiling, starting level between them",
+            ));
+        }
+        self.tanks.push(tank);
+        Ok(())
+    }
+
+    /// The storage tanks.
+    #[must_use]
+    pub fn tanks(&self) -> &[TankStorage] {
+        &self.tanks
+    }
+
+    /// Replaces node `n` (the extended-period run re-levels tanks, closes
+    /// empty ones and scales demands on its own copy of the network).
+    pub(crate) fn set_node(&mut self, n: usize, node: Node) {
+        self.nodes[n] = node;
+    }
+
+    /// Drops every level history, the heads having been written into the
+    /// reservoir nodes (the extended-period run's copy).
+    pub(crate) fn clear_levels(&mut self) {
+        self.levels.clear();
     }
 
     /// The head of reservoir node `node` (fixed head `fixed`) at time `t`:

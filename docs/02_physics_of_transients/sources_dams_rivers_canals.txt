@@ -142,3 +142,23 @@ frictionless 1 km pipe exactly as rigid-column theory, Q = g A r t^2 / (2 L)
 and a flat history reproduces a fixed reservoir bit for bit. Next: R-2
 (tanks filling and draining by volume balance), and feeding level data
 from files or SCADA into SourceLevel.
+
+Implementation note: R-2 done (2026-09-30)
+-------------------------------------------
+Storage tanks (model.rs TankStorage: a reservoir node with plan area,
+floor and ceiling) and the extended-period run (steady/extended.rs): a
+steady state every step (default 5 min) with the demands of the moment
+(hourly pattern) and every tank at its level; levels moved by net inflow
+with Heun's method (second order). Supply events: TankEmpty (at the
+floor it stops supplying and closes), TankRefilling, TankFull (holds at
+the ceiling, overflowing), SupplyLost (no source reaches part of the
+network: the run stops). The EPANET reader gives [TANKS] with levels and
+diameter their storage.
+Validated (V-A8, tests/hydraulics/analytical/tanks.rs): a tank draining
+into a reservoir 30 m below follows the exact sqrt-law curve within
+0.12 mm over 12 h (error x4 when the step doubles: second order) and
+reaches its floor at 16.224 h (exact 16.224 h); a tank alone supplying
+5 l/s empties at 13.889 h = volume / demand, and the supply-lost warning
+follows one step later.
+Next: R-3 water balance between meters (slow leaks, G-12); pumps and
+valves switching by tank level (controls); feeding measured levels.

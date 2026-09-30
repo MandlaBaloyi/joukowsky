@@ -15,6 +15,7 @@
 //! Friction is the same quasi-steady Darcy-Weisbach model (constant f per
 //! pipe) the transient solver uses, so steady and transient runs agree.
 
+pub mod extended;
 pub mod gga;
 
 pub(crate) use gga::solve;

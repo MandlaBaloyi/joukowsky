@@ -1,18 +1,18 @@
 joukowsky test run
-  when     2026-09-30 07:27:20
+  when     2026-09-30 07:39:44
   suite    full
-  commit   1a37be3 (with uncommitted changes)
+  commit   cab3289 (with uncommitted changes)
   rust     rustc 1.98.1 (48a229cea 2026-09-01)
   command  cargo test --workspace --no-fail-fast -- --nocapture --test-threads=1 --include-ignored
 ==============================================================================
-   Compiling jk-application v0.1.0 (C:\Users\HP\Desktop\joukowsky\crates\application)
-   Compiling jk-tests v0.1.0 (C:\Users\HP\Desktop\joukowsky\tests)
-   Compiling jk-cli v0.1.0 (C:\Users\HP\Desktop\joukowsky\crates\interfaces\cli)
-   Compiling jk-sim v0.1.0 (C:\Users\HP\Desktop\joukowsky\crates\sim)
-   Compiling jk-localisation v0.1.0 (C:\Users\HP\Desktop\joukowsky\crates\domain\localisation)
    Compiling jk-files v0.1.0 (C:\Users\HP\Desktop\joukowsky\crates\adapters\files)
+   Compiling jk-application v0.1.0 (C:\Users\HP\Desktop\joukowsky\crates\application)
+   Compiling jk-localisation v0.1.0 (C:\Users\HP\Desktop\joukowsky\crates\domain\localisation)
+   Compiling jk-tests v0.1.0 (C:\Users\HP\Desktop\joukowsky\tests)
+   Compiling jk-sim v0.1.0 (C:\Users\HP\Desktop\joukowsky\crates\sim)
    Compiling jk-hydraulics v0.1.0 (C:\Users\HP\Desktop\joukowsky\crates\domain\hydraulics)
-    Finished `test` profile [unoptimized + debuginfo] target(s) in 12.29s
+   Compiling jk-cli v0.1.0 (C:\Users\HP\Desktop\joukowsky\crates\interfaces\cli)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 25.98s
      Running unittests src\lib.rs (target\debug\deps\jk_application-31ec11ad23313301.exe)
 
 running 3 tests
@@ -60,7 +60,7 @@ test onset::step_area::tests::a_ramp_front_is_placed_at_its_centre ... ok
 test onset::step_area::tests::declines_when_the_windows_do_not_fit ... ok
 test onset::step_area::tests::exact_for_a_sharp_step_at_any_phase ... ok
 
-test result: ok. 14 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.03s
+test result: ok. 14 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.09s
 
      Running unittests src\lib.rs (target\debug\deps\jk_files-ec39beec6edb1da0.exe)
 
@@ -82,7 +82,7 @@ test logger::time::tests::the_usual_logger_formats ... ok
 test logger::units::tests::one_bar_is_about_ten_metres ... ok
 test logger::units::tests::units_from_headers ... ok
 
-test result: ok. 16 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+test result: ok. 16 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
 
      Running unittests src\lib.rs (target\debug\deps\jk_hydraulics-c42e47dfc771fa13.exe)
 
@@ -134,7 +134,7 @@ test pipe::viscoelastic::tests::the_new_rate_is_what_advancing_then_gives ... ok
 test pipe::viscoelastic::tests::walls_are_checked ... ok
 test pipe::viscoelastic::tests::without_creep_a_characteristic_is_unchanged ... ok
 
-test result: ok. 46 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+test result: ok. 46 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.03s
 
      Running unittests src\lib.rs (target\debug\deps\jk_kernel-eccabcc9e10cd5d2.exe)
 
@@ -150,7 +150,7 @@ test units::tests::same_type_arithmetic ... ok
 test units::tests::velocity_flow_area ... ok
 test units::tests::wave_travel_time_and_distance_round_trip ... ok
 
-test result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+test result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
 
      Running unittests src\lib.rs (target\debug\deps\jk_localisation-b57d917c3efe0d09.exe)
 
@@ -162,7 +162,7 @@ test posterior::score::tests::a_perfect_candidate_scores_zero_misfit_and_recover
 test posterior::score::tests::a_wrong_candidate_is_penalised ... ok
 test posterior::score::tests::with_independent_errors_the_correlated_score_matches_the_simple_one ... ok
 
-test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
 
      Running unittests src\lib.rs (target\debug\deps\jk_sim-cdf9363ef8ace4d0.exe)
 
@@ -172,7 +172,7 @@ test town::tests::every_junction_is_reachable_and_the_town_has_loops_and_dead_en
 test town::tests::the_length_is_exactly_the_target ... ok
 test town::tests::the_same_seed_gives_the_same_town ... ok
 
-test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
 
      Running unittests src\lib.rs (target\debug\deps\jk_telemetry-c8a96417b1d674bc.exe)
 
@@ -215,7 +215,7 @@ test analytical::epanet::everything_approximated_is_reported_never_dropped ...  
     - [TIMES]: 1 record(s) not used - simulation times and reporting
     - line 30: pump 'PU1' between J1 and J2: modelled as a plain connection (the two nodes are joined); its own hydraulics are not
     - line 34: PRV valve 'V1' is closed: J4 and J5 are not connected through it
-    - 1 tank(s) modelled as fixed heads at their initial level (their level is not simulated)
+    - 1 tank(s) with storage: fixed heads in transients, their level simulated in extended-period runs (cylinders of the given diameter)
     - .inp files carry no wave speeds: every pipe is given 1000 m/s [VERIFY - real wave speeds, by material, are needed to locate bursts well]
     - Darcy-Weisbach roughness turned into one Darcy friction factor per pipe, equal head loss at 1.0 m/s: f from 0.0212 to 0.0253
     - 1 closed pipe(s) left out: A4
@@ -226,7 +226,8 @@ test analytical::epanet::everything_approximated_is_reported_never_dropped ...  
   the closed valve does not connect J4 and J5  yes
   the closed pipe is left out                  yes
   the check-valve pipe is kept, and flagged    yes
-  the tank is a fixed head at 30 + 4 = 34 m    yes
+  the tank is a fixed head at 30 + 4 = 34 m (in transients) yes
+    ... with storage: floor 30 + 1, ceiling 30 + 6, 10 m across yes
     ... and says so                            yes
   [DEMANDS] replaces J4's demand: 0.5 + 0.7 = 1.2 l/s yes
   [PATTERNS] listed as not used                yes
@@ -330,7 +331,7 @@ test simulation::logger_files::a_burst_recorded_in_logger_files_raises_one_alarm
   at 10:15:03 - seconds past 10:15:00          got       2.998747   expected       3.000000   rel.err 4.2e-4
 ok
 
-test result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.32s
+test result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.13s
 
      Running classification\main.rs (target\debug\deps\classification-4a848a22bad9e255.exe)
 
@@ -426,7 +427,7 @@ test simulation::scenarios::power_data_settles_the_slow_burst ... The same slow 
   burst                                        yes
 ok
 
-test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.96s
+test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 3.31s
 
      Running detection\main.rs (target\debug\deps\detection-5fb88cfa3a816592.exe)
 
@@ -502,11 +503,11 @@ test simulation::burst_location::vs1_location_error_versus_sampling_rate_and_noi
   128 S/s with 2 cm noise locates to under 1 m RMS yes
 ok
 
-test result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 2.89s
+test result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 9.03s
 
      Running hydraulics\main.rs (target\debug\deps\hydraulics-20d714b021436fba.exe)
 
-running 39 tests
+running 41 tests
 test analytical::boundaries::burst::a_10mm_hole_at_60m_head ... DN150 AC main at 60 m head, 0.5 m/s; a 10 mm hole opens (Cd 0.6):
   water lost              1.555 l/s  (134 m^3 per day)
   head step at the burst  -4.486 m
@@ -722,6 +723,21 @@ test analytical::steady::three_reservoirs::three_reservoirs_meeting_at_one_junct
   water balances at the junction               yes
   solved in 9 Newton rounds
 ok
+test analytical::tanks::va8_a_draining_tank_follows_the_exact_curve_and_empties_on_time ... Tank draining into a reservoir 30 m below, level vs the exact curve:
+    level at 2 h [m]                           got      44.764104   expected      44.764084   rel.err 4.5e-7
+    level at 4 h [m]                           got      40.029956   expected      40.029916   rel.err 1.0e-6
+    level at 8 h [m]                           got      32.066902   expected      32.066822   rel.err 2.5e-6
+    level at 12 h [m]                          got      26.110840   expected      26.110720   rel.err 4.6e-6
+  largest error: 1.20e-4 m with 5-minute steps, 4.84e-4 m with 10-minute steps
+  halving the step cuts the error at least threefold (second order) yes
+    tank reaches its floor at [h]              got      16.224080   expected      16.223718   rel.err 2.2e-5
+    and the reservoir below keeps the network supplied yes
+ok
+test analytical::tanks::va8_a_tank_that_is_the_only_source_runs_dry_and_supply_is_lost ... A tank alone supplying 5 l/s, 250 m^3 above its floor:
+    empties at [h]                             got      13.888889   expected      13.888889   rel.err 3.8e-14
+  supply lost at 13.92 h: no source reaches part of the network
+    supply is lost within one step of emptying yes
+ok
 test analytical::viscoelastic::va5_a_creeping_wall_slows_and_damps_the_ring_as_theory_says ... Theory: rigid ring 4.000 s period; with the creeping wall 4.500 s, dying away at 0.0102 per second (amplitude x0.96 per period)
   100 reaches: decay 0.010268 per second, +0.4% from theory
   200 reaches: decay 0.010242 per second, +0.1% from theory
@@ -799,7 +815,7 @@ test invariants::steady_state::an_undisturbed_pipe_stays_steady ... Steady state
   valve holds steady                           yes
 ok
 
-test result: ok. 39 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 12.77s
+test result: ok. 41 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 41.47s
 
      Running kernel\main.rs (target\debug\deps\kernel-5b9e09cb13e50ac8.exe)
 
@@ -915,7 +931,7 @@ Recommended 6 (after swaps): a1 block A1, c1 block C1, b1 block B1, c2 block C2,
     B-b2               90 m   typical region  155 m
     C-c1              150 m   typical region   20 m
     C-c2              220 m   typical region   25 m
-  (advice took 3 s on this machine)
+  (advice took 11 s on this machine)
 Would a sudden 1 l/s burst be felt? By at least one logger on 100% of the pipe, by two (so located) on 100%. Smallest burst locatable anywhere on each pipe (upper bound: no plastic-wall damping yet):
     R-M connection     0.09 l/s
     M-A ring           0.04 l/s
@@ -1147,7 +1163,7 @@ test simulation::plastic_fronts::the_front_model_with_plastic_walls_matches_the_
   but within 0.25 s S2 feels over two thirds of it yes
 ok
 
-test result: ok. 29 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 70.32s
+test result: ok. 29 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 190.80s
 
      Running pipeline\main.rs (target\debug\deps\pipeline-c326c19a150f67d8.exe)
 
@@ -1299,7 +1315,7 @@ another on the north branch at t = 30 s:
   the second on the north branch, ~150 m       yes
 ok
 
-test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 4.95s
+test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 14.90s
 
    Doc-tests jk_application
 
@@ -1362,9 +1378,9 @@ running 0 tests
 test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
 
 ==============================================================================
-  passed   219
+  passed   221
   failed   0
   skipped  0 slow test(s) not in this suite
   filtered 0 test(s) outside -Only/-Filter
-  time     110.7 s (including compile)
+  time     295.0 s (including compile)
   result   ALL PASSED
