@@ -1,9 +1,10 @@
 # Rust
 /target/
 
-# Personal Claude Code config (voice hook etc.)
-.claude/settings.local.json
-.claude/hooks/
+# Machine-local config, never on GitHub (owner, 2026-10-01): Claude Code
+# settings and guard rails (.claude/), Cargo settings (.cargo/)
+.claude/
+.cargo/
 
 # Test logs: every run stays local (tests/logs/runs/); latest_*.log and history.csv are tracked
 tests/logs/runs/

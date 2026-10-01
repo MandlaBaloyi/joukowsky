@@ -108,7 +108,9 @@ TD-019 | 2026-09-29 | THE DEVELOPMENT VIEWER IS OUR OWN SVG, NO CHART
        front-end toolchain until the product UI is designed. |
 
 TD-020 | 2026-09-29 | GUARD RAILS FOR THE PC AND PERSONAL DATA, in layers.
-       (1) Claude Code permissions: .claude/settings.json (shared) makes
+       2026-10-01 (owner): .claude/ and .cargo/ are machine-local, never
+       on GitHub - both git-ignored; the rails below stay on this machine.
+       (1) Claude Code permissions: .claude/settings.json (this PC) makes
        every internet action ASK first - WebFetch, WebSearch, curl/wget,
        Invoke-WebRequest/RestMethod, git clone/fetch/pull, package installs
        (pip, npm, cargo install/add, rustup, winget) - and git push asks
