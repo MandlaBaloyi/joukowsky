@@ -47,6 +47,7 @@ dependencies = [
  "jk-classification",
  "jk-detection",
  "jk-files",
+ "jk-health",
  "jk-hydraulics",
  "jk-kernel",
  "jk-localisation",

@@ -129,7 +129,7 @@ pub fn value(m: &PlacementModel) -> Page {
     let mut s = String::from(
         r#"<div class="cols"><div class="card"><h2>Average search stretch</h2><p class="note">With 2, 3, ... loggers, each added where it helps most.</p>"#,
     );
-    s.push_str(&columns(&items, "m", 520.0, 300.0));
+    s.push_str(&columns(&items, "m", 520.0, 300.0, "loggers"));
     s.push_str(r#"</div><div class="card"><h2>Step by step</h2><div class="table-wrap"><table><thead><tr><th class="num">Loggers</th><th>Added</th><th class="num">Average search</th><th class="num">Pinpointed</th></tr></thead><tbody>"#);
     let mut previous: Vec<NodeId> = Vec::new();
     for c in &m.advice.steps {

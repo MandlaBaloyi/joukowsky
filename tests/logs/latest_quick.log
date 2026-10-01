@@ -1,14 +1,15 @@
 joukowsky test run
-  when     2026-10-01 15:44:29
+  when     2026-10-01 16:53:40
   suite    quick
-  commit   6609f98 (with uncommitted changes)
+  commit   131a39f (with uncommitted changes)
   rust     rustc 1.98.1 (48a229cea 2026-09-01)
   command  cargo test --workspace --no-fail-fast -- --nocapture --test-threads=1
 ==============================================================================
+   Compiling jk-application v0.1.0 (C:\Users\HP\Desktop\joukowsky\crates\application)
    Compiling jk-cli v0.1.0 (C:\Users\HP\Desktop\joukowsky\crates\interfaces\cli)
    Compiling jk-tests v0.1.0 (C:\Users\HP\Desktop\joukowsky\tests)
-   Compiling jk-application v0.1.0 (C:\Users\HP\Desktop\joukowsky\crates\application)
-    Finished `test` profile [unoptimized + debuginfo] target(s) in 10.24s
+   Compiling jk-health v0.1.0 (C:\Users\HP\Desktop\joukowsky\crates\domain\health)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 10.32s
      Running unittests src\lib.rs (target\debug\deps\jk_application-6f0d1c56f055322e.exe)
 
 running 3 tests
@@ -52,7 +53,7 @@ test features::low::tests::noise_around_zero_is_not_negative_pressure ... ok
 
 test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
 
-     Running unittests src\main.rs (target\debug\deps\jk-25a151a187389166.exe)
+     Running unittests src\main.rs (target\debug\deps\jk-029b9293e74d239d.exe)
 
 running 4 tests
 test view::svg::tests::escapes_markup ... ok
@@ -114,7 +115,7 @@ test logger::time::tests::the_usual_logger_formats ... ok
 test logger::units::tests::one_bar_is_about_ten_metres ... ok
 test logger::units::tests::units_from_headers ... ok
 
-test result: ok. 22 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+test result: ok. 22 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
 
      Running unittests src\lib.rs (target\debug\deps\jk_health-0684ebb074877a31.exe)
 
@@ -197,7 +198,7 @@ test steady::controls::tests::once_is_once ... ok
 test steady::rules::tests::or_binds_tighter_than_and_as_in_epanet ... ok
 test vapour::tests::the_coast_boils_lower_than_the_highveld ... ok
 
-test result: ok. 67 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.03s
+test result: ok. 67 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.04s
 
      Running unittests src\lib.rs (target\debug\deps\jk_kernel-eccabcc9e10cd5d2.exe)
 
@@ -229,7 +230,7 @@ test posterior::score::tests::a_wrong_candidate_is_penalised ... ok
 test posterior::score::tests::with_independent_errors_the_correlated_score_matches_the_simple_one ... ok
 test size::tests::exact_fronts_give_back_the_flow ... ok
 
-test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
 
      Running unittests src\lib.rs (target\debug\deps\jk_sim-cdf9363ef8ace4d0.exe)
 
@@ -527,7 +528,7 @@ test simulation::logger_files::a_burst_recorded_in_logger_files_raises_one_alarm
   at 10:15:03 - seconds past 10:15:00          got       2.998747   expected       3.000000   rel.err 4.2e-4
 ok
 
-test result: ok. 16 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.56s
+test result: ok. 16 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.91s
 
      Running balance\main.rs (target\debug\deps\balance-6053ff28598bb67b.exe)
 
@@ -552,7 +553,7 @@ test simulation::night_watch::the_detection_curve_matches_the_cusum_arithmetic .
   at the arithmetic's size: caught at least a third of the time yes
 ok
 
-test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.20s
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.29s
 
      Running channels\main.rs (target\debug\deps\channels-175755f932f77680.exe)
 
@@ -641,7 +642,7 @@ test simulation::feed::when_the_canal_stops_the_sump_runs_down_and_the_town_runs
     the sump's change = in - drawn, within 1.27% of the water drawn (draw read every 5 min) yes
 ok
 
-test result: ok. 11 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 12.08s
+test result: ok. 11 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 31.19s
 
      Running classification\main.rs (target\debug\deps\classification-8d93599e4834ddf8.exe)
 
@@ -824,7 +825,7 @@ test simulation::scenarios::power_data_settles_the_slow_burst ... The same slow 
   burst                                        yes
 ok
 
-test result: ok. 11 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.22s
+test result: ok. 11 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.40s
 
      Running detection\main.rs (target\debug\deps\detection-06bc763b1e2f0d6d.exe)
 
@@ -887,7 +888,7 @@ Loggers: 128 S/s, integrating, random clock phase, 2 cm noise:
 ok
 test simulation::burst_location::vs1_location_error_versus_sampling_rate_and_noise ... ignored, full suite: 150 recorded sensor pairs across rates and noise levels
 
-test result: ok. 8 passed; 0 failed; 2 ignored; 0 measured; 0 filtered out; finished in 1.19s
+test result: ok. 8 passed; 0 failed; 2 ignored; 0 measured; 0 filtered out; finished in 1.38s
 
      Running health\main.rs (target\debug\deps\health-33db47b6d2615aa3.exe)
 
@@ -1479,7 +1480,7 @@ test invariants::steady_state::an_undisturbed_pipe_stays_steady ... Steady state
   valve holds steady                           yes
 ok
 
-test result: ok. 66 passed; 0 failed; 1 ignored; 0 measured; 0 filtered out; finished in 9.15s
+test result: ok. 66 passed; 0 failed; 1 ignored; 0 measured; 0 filtered out; finished in 24.95s
 
      Running kernel\main.rs (target\debug\deps\kernel-49d3448634a34a07.exe)
 
@@ -1797,11 +1798,41 @@ test simulation::valve_fronts::a_shut_prv_passes_no_wave_and_no_route ... A seco
     and no route from S1 reaches the zone: the locator cannot place a burst there from S1 yes
 ok
 
-test result: ok. 29 passed; 0 failed; 3 ignored; 0 measured; 0 filtered out; finished in 36.86s
+test result: ok. 29 passed; 0 failed; 3 ignored; 0 measured; 0 filtered out; finished in 81.77s
 
      Running pipeline\main.rs (target\debug\deps\pipeline-7d4a991ed5c74f28.exe)
 
-running 14 tests
+running 15 tests
+test simulation::fatigue::vs7_a_peak_over_the_rating_late_in_the_ringing_comes_by_one_revision ... The flat main's pump trip, its pipes PN10 (102.2 m); the pressure at the pump peaks          at 104.6 m, about 20 s after the front - long after the alert:
+2 alert(s) went out:
+[Warning] #1 PUMP TRIP (100% confident) at t = 2.993 s
+  where: suction at 1.8 m from its start; 90% within 18 m of pipe
+    suction              100.0%
+    main 1                 0.0%
+  seen by: S1 pump, S2 mid-main
+  because: pressure DROPPED by 59.44 m: a burst or a pump trip, not a closing valve (seen upstream) or a refill
+  because: DRAWN-OUT front (685 ms, 10-90%): a gradual change - a pump running down, a valve closing slowly, or a burst opening slowly
+  because: DEEP drop: 81% of the pressure - a stopping pump collapses the head
+  because: the pipe was under pressure before (73.4 m): not refilling
+  because: pump power was LOST just before the front arrived
+  -> sent when the data had reached t = 7.00 s
+[Warning] #1 (revision 1) PUMP TRIP (100% confident) at t = 2.993 s
+  where: suction at 1.8 m from its start; 90% within 18 m of pipe
+    suction              100.0%
+    main 1                 0.0%
+  seen by: S1 pump, S2 mid-main
+  because: pressure DROPPED by 59.44 m: a burst or a pump trip, not a closing valve (seen upstream) or a refill
+  because: DRAWN-OUT front (685 ms, 10-90%): a gradual change - a pump running down, a valve closing slowly, or a burst opening slowly
+  because: DEEP drop: 81% of the pressure - a stopping pump collapses the head
+  because: the pipe was under pressure before (73.4 m): not refilling
+  because: pump power was LOST just before the front arrived
+  because: S1 pump: in the 30 s after the front the pressure peaked at 104.6 m - 1.4 times the 73.4 m before it
+  because: S2 mid-main: in the 30 s after the front the pressure peaked at 101.8 m - 1.5 times the 66.7 m before it
+  because: S1 pump: OVER RATING - the surge took the pressure to 104.6 m, 1.02 times the 102.2 m the pipes there are rated for: inspect them for damage; each such event also spends their fatigue life
+  -> sent when the data had reached t = 35.00 s
+    the first alert goes out within seconds, without it yes
+    ONE revision then adds it, once every logger's 30 s are in yes
+ok
 test simulation::fatigue::vs8_the_monitor_counts_each_sensors_fatigue_loading_live ... The flat main's pump trip, 40 s of two loggers, counted live:
   S1 pump: 14.0 cycles counted, the largest swing 94.8 m
       equivalent 50 m swings, live vs the whole record at once got      34.406731   expected      34.406731   rel.err 0.0e0
@@ -1940,10 +1971,11 @@ The light-flywheel trip again, the main's pipes PN10 (102.2 m):
   because: the pipe was under pressure before (118.2 m): not refilling
   because: pump power was LOST just before the front arrived
   because: arrival times do not fit one source (misfit 32.5): two events at once, a wrong wave speed or a bad clock - location not trusted
+  because: S1 pump: in the 30 s after the front the pressure peaked at 272.2 m - 2.3 times the 118.2 m before it
   because: S2 knee: COLUMN SEPARATION - the pressure sat at the vapour floor (-10.1 m) for 2.95 s of the 3 s after the front: the water boiled and the column split. When it rejoins, the collapse can reach about twice the usual surge (FN-035) - check the pipe's pressure rating
   because: S2 knee: NEGATIVE pressure for 2.95 s, down to -10.2 m: water outside the pipe can be drawn in through leaks and joints - a water-quality risk (intrusion)
   because: S2 knee: in the 30 s after the front the pressure peaked at 148.8 m - 2.5 times the 59.1 m before it
-  because: S1 pump: OVER RATING IN NORMAL OPERATION - the pressure already stood at 118.2 m before the event, above the 102.2 m the pipes there are rated for; the event took it to 118.2 m
+  because: S1 pump: OVER RATING IN NORMAL OPERATION - the pressure already stood at 118.2 m before the event, above the 102.2 m the pipes there are rated for; the event took it to 272.2 m
   because: S2 knee: OVER RATING - the surge took the pressure to 148.8 m, 1.46 times the 102.2 m the pipes there are rated for: inspect them for damage; each such event also spends their fatigue life
     the pump's own pipes run over PN10 every day (118 m): said as such, not blamed on the surge yes
   true highest pressure at the knee: 152.1 m
@@ -1961,9 +1993,11 @@ The light-flywheel trip again, the main's pipes PN16 (163.4 m):
   because: the pipe was under pressure before (118.2 m): not refilling
   because: pump power was LOST just before the front arrived
   because: arrival times do not fit one source (misfit 32.5): two events at once, a wrong wave speed or a bad clock - location not trusted
+  because: S1 pump: in the 30 s after the front the pressure peaked at 272.2 m - 2.3 times the 118.2 m before it
   because: S2 knee: COLUMN SEPARATION - the pressure sat at the vapour floor (-10.1 m) for 2.95 s of the 3 s after the front: the water boiled and the column split. When it rejoins, the collapse can reach about twice the usual surge (FN-035) - check the pipe's pressure rating
   because: S2 knee: NEGATIVE pressure for 2.95 s, down to -10.2 m: water outside the pipe can be drawn in through leaks and joints - a water-quality risk (intrusion)
   because: S2 knee: in the 30 s after the front the pressure peaked at 148.8 m - 2.5 times the 59.1 m before it
+  because: S1 pump: OVER RATING - the surge took the pressure to 272.2 m, 1.67 times the 163.4 m the pipes there are rated for: inspect them for damage; each such event also spends their fatigue life
   true highest pressure at the knee: 152.1 m
     not flagged at the knee                    yes
 ok
@@ -2283,7 +2317,7 @@ test simulation::valves_by_hour::at_noon_the_valve_is_active_and_both_loggers_lo
     and it is not dismissed                    yes
 ok
 
-test result: ok. 14 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 8.88s
+test result: ok. 15 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 29.09s
 
    Doc-tests jk_application
 
@@ -2364,9 +2398,9 @@ running 0 tests
 test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
 
 ==============================================================================
-  passed   333
+  passed   334
   failed   0
   skipped  6 slow test(s) not in this suite (run -Suite full)
   filtered 0 test(s) outside -Only/-Filter
-  time     85.5 s (including compile)
+  time     198.4 s (including compile)
   result   ALL PASSED

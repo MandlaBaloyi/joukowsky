@@ -102,3 +102,10 @@ for plastics), S-N exponents per material [VERIFY: m for uPVC, PE, AC,
 cast iron], loading per PIPE (between sensors, from the simulator),
 monthly windows and storage, a report page.
 Do not count fatigue from SIMULATED boiling zones (FN-038).
+
+Shown (2026-10-01): jk view, "Pipe health" - a pump station on
+load-shedding (2 km DN300 rising main, PN10): the three loggers through
+one trip, the swings each counted (by size), equivalent 50 m swings per
+trip and per year at 2 trips a day (L1 pump 34.4 per trip, about 25 000 a
+year; near the reservoir 1.0), and the engine's alert - revised with the
+over-rating peak that came in the ringing (FN-040).

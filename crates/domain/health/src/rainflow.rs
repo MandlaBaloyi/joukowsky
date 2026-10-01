@@ -206,7 +206,7 @@ mod tests {
             .iter()
             .filter(|c| (c.range - range).abs() < 1e-12)
             .map(|c| c.count)
-            .sum()
+            .fold(0.0, |a, n| a + n)
     }
 
     #[test]

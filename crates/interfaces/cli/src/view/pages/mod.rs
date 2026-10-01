@@ -7,11 +7,13 @@
 //! - [`placement`]: where loggers should go (three pages).
 //! - [`file`]: a network read from an EPANET `.inp` file, with the reader's notes.
 //! - [`recording`]: logger recordings read from files - real pressure data.
+//! - [`health`]: a pump trip's fatigue loading on a rising main.
 //! - [`about`]: what the data is and what the viewer does not show yet.
 
 pub mod about;
 pub mod alerts;
 pub mod file;
+pub mod health;
 pub mod leaks;
 pub mod loggers;
 pub mod network;

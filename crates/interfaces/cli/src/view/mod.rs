@@ -4,7 +4,8 @@
 //! browser; nothing is installed, served or downloaded (TD-019). Until the
 //! data readers exist, it shows the engine on simulated sites.
 //!
-//! - [`model`]: the engine run once on the demo sites.
+//! - [`model`]: the engine run once on the demo sites ([`health_model`]:
+//!   the pump station for the pipe-health page).
 //! - [`pages`]: one page per menu entry.
 //! - [`shell`]: the frame - sidebar, title bar, theme; `assets/` holds its
 //!   stylesheet and script, built into the binary.
@@ -13,6 +14,7 @@
 //! - [`svg`]: escaping, scales, ticks, JSON.
 
 mod charts;
+mod health_model;
 mod model;
 mod pages;
 mod shell;
@@ -116,6 +118,8 @@ pub fn run(a: &Args) -> Result<(), String> {
     let supply = supply_model::SupplyModel::run()?;
     let pump_day = supply_model::PumpDayModel::run()?;
     let night = supply_model::NightModel::run()?;
+    eprintln!("jk view: tripping the pump station and counting its fatigue loading...");
+    let health = health_model::HealthModel::run()?;
     let mut nav = vec![
         NavGroup {
             heading: "Start",
@@ -191,6 +195,12 @@ pub fn run(a: &Args) -> Result<(), String> {
     pages.push(pages::supply::page(&supply, &pump_day));
     pages.push(pages::leaks::page(&night));
     nav.push(NavGroup {
+        heading: "Pipe health",
+        site: Some("pump station".into()),
+        items: vec![item("health", "Fatigue loading", None)],
+    });
+    pages.push(pages::health::page(&health));
+    nav.push(NavGroup {
         heading: "Help",
         site: None,
         items: vec![item("about", "About the data", None)],
@@ -203,6 +213,7 @@ pub fn run(a: &Args) -> Result<(), String> {
         ("supply", pages::supply::records(&supply)),
         ("pumpday", pages::supply::pump_records(&pump_day)),
         ("night", pages::leaks::records(&night)),
+        ("health", pages::health::records(&health)),
     ]);
     let html = shell::document(&nav, &pages, &data);
     std::fs::write(&a.out, html).map_err(|e| format!("cannot write {}: {e}", a.out.display()))?;

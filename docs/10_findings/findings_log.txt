@@ -424,3 +424,17 @@ FN-039  2026-10-01  A fading ring closes no rainflow cycle
   the open swings as half cycles (Counter::open: what the end of the
   record would count), so live and whole-record loading agree exactly.
   Lesson: in rainflow, "not yet closed" is not "not yet counted".
+
+FN-040  2026-10-01  The worst pressure comes in the ringing, after the alert
+  Building the pipe-health page (jk view: a pump trip on a PN10 rising
+  main): the highest pressure, 104.5 m against a 102.2 m rating, came
+  about 20 s after the front, as the main rang - long after the alert's
+  3 s window. The alert said nothing about it: the 30 s follow-up only
+  ran for events that went below zero. Fix: a sensor whose pipes carry a
+  rating is always followed up; its alert is revised with the peak.
+  Second: that made 5 revisions of one alert (each sensor's follow-up and
+  late features separately) - noise for an operator. Now low-pressure
+  news from a late sensor still revises at once, but follow-up peaks are
+  gathered: ONE revision when every sensor's 30 s are in (V-S7, live:
+  alert at 7 s of data, revision at 35 s). Also: Rust's float sum of
+  nothing is -0.0, shown on the page as "-0.0"; sums now start at +0.

@@ -93,6 +93,19 @@ pub fn station_rated(
 /// Never for the fixed main (a test bug otherwise).
 #[must_use]
 pub fn flat_main(trip: f64, inertia_share: f64) -> (Network, NodeId, NodeId) {
+    flat_main_rated(trip, inertia_share, None)
+}
+
+/// As [`flat_main`], every pipe rated for `rating` (gauge head), if given.
+///
+/// # Panics
+/// Never for the fixed main (a test bug otherwise).
+#[must_use]
+pub fn flat_main_rated(
+    trip: f64,
+    inertia_share: f64,
+    rating: Option<Head>,
+) -> (Network, NodeId, NodeId) {
     let power = 998.2 * STANDARD_GRAVITY.value() * 0.10 * 65.0 / 0.8 / 1000.0;
     let pump = Pump {
         curve: PumpCurve::from_points(
@@ -118,11 +131,15 @@ pub fn flat_main(trip: f64, inertia_share: f64) -> (Network, NodeId, NodeId) {
     let top = net.add_node(Node::Reservoir {
         head: Head::new(60.0),
     });
-    net.add_pipe(sump, p, pipe(20.0, 0.3, 1000.0, 0.018))
+    let rated = |pipe: jk_hydraulics::Pipe| match rating {
+        Some(r) => pipe.with_rating(r).expect("a positive rating"),
+        None => pipe,
+    };
+    net.add_pipe(sump, p, rated(pipe(20.0, 0.3, 1000.0, 0.018)))
         .expect("valid");
-    net.add_pipe(p, mid, pipe(1000.0, 0.3, 1000.0, 0.018))
+    net.add_pipe(p, mid, rated(pipe(1000.0, 0.3, 1000.0, 0.018)))
         .expect("valid");
-    net.add_pipe(mid, top, pipe(1000.0, 0.3, 1000.0, 0.018))
+    net.add_pipe(mid, top, rated(pipe(1000.0, 0.3, 1000.0, 0.018)))
         .expect("valid");
     net.set_vapour_floor(Some(Head::new(-10.1))).expect("valid");
     (net, p, mid)

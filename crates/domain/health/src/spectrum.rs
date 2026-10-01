@@ -57,7 +57,7 @@ impl Spectrum {
     /// All cycles counted.
     #[must_use]
     pub fn total(&self) -> f64 {
-        self.counts.iter().sum()
+        self.counts.iter().fold(0.0, |a, n| a + n)
     }
 
     /// The cycles of `reference_range` doing the same damage, for S-N
@@ -66,7 +66,7 @@ impl Spectrum {
     pub fn equivalent_cycles(&self, reference_range: f64, exponent: f64) -> f64 {
         self.bins()
             .map(|(r, n)| n * (r / reference_range).powf(exponent))
-            .sum()
+            .fold(0.0, |a, n| a + n)
     }
 }
 

@@ -45,7 +45,7 @@ pub fn miner(cycles: &[Cycle], curve: &SnCurve) -> f64 {
         .iter()
         .filter(|c| c.range > 0.0)
         .map(|c| c.count / curve.cycles_to_failure(c.range))
-        .sum()
+        .fold(0.0, |a, n| a + n)
 }
 
 /// The cycles of `reference_range` that would do the same damage as
@@ -55,5 +55,5 @@ pub fn equivalent_cycles(cycles: &[Cycle], reference_range: f64, exponent: f64) 
     cycles
         .iter()
         .map(|c| c.count * (c.range / reference_range).powf(exponent))
-        .sum()
+        .fold(0.0, |a, n| a + n)
 }

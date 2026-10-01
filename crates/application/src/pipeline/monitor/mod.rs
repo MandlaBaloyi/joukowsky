@@ -51,8 +51,10 @@ struct Issued {
     id: u32,
     revision: u32,
     members: Vec<Found>,
-    /// Something new was measured for it (a follow-up): revise.
+    /// A late sensor brought low-pressure news: revise now.
     stale: bool,
+    /// A follow-up peak was measured: revise once all are in.
+    followed: bool,
 }
 
 /// Watches one site live.
@@ -64,6 +66,10 @@ pub struct Monitor {
     /// Fastest wave travel time between every pair of sensors [s], with
     /// the devices as at base demand (for waiting and fusion).
     travel: Vec<Vec<f64>>,
+    /// Whether each sensor's node touches a pipe with a pressure rating:
+    /// its events are followed up for their peak (it may come later, in
+    /// the ringing).
+    rated: Vec<bool>,
     /// Pumps and valves hour by hour (for locating and corroborating).
     hours: Hours,
     clocks: Vec<ClockEstimate>,
@@ -115,6 +121,16 @@ impl Monitor {
                 sensor: "(configuration)".into(),
                 error,
             })?;
+        let rated = site
+            .sensors
+            .iter()
+            .map(|s| {
+                site.network
+                    .pipes()
+                    .iter()
+                    .any(|p| (p.from == s.node || p.to == s.node) && p.pipe.rating().is_some())
+            })
+            .collect();
         let hours = Hours::of(&site)?;
         let travel = hours.travel[0].clone();
         let clocks = site.sensors.iter().filter_map(|s| s.clock).collect();
@@ -128,6 +144,7 @@ impl Monitor {
             config,
             detector,
             travel,
+            rated,
             hours,
             clocks,
             sensors,
@@ -467,8 +484,11 @@ impl Monitor {
                 .is_finite()
                 .then(|| (Head::new(highest), Time::new(span)))
         };
+        let rated = self.rated[sensor];
         let due = |found: &Found| {
-            found.sensor == sensor && found.peak_after.is_none() && found.wants_follow_up()
+            found.sensor == sensor
+                && found.peak_after.is_none()
+                && (found.wants_follow_up() || (rated && matches!(found.features, Some(Ok(_)))))
         };
         for found in self.pending.iter_mut().filter(|f| due(f)) {
             if ended || until >= found.event.arrival.value() + follow {
@@ -481,7 +501,7 @@ impl Monitor {
             for found in issued.members.iter_mut().filter(|f| due(f)) {
                 if ended || until >= found.event.arrival.value() + follow {
                     found.peak_after = peak(found);
-                    issued.stale |= found.peak_after.is_some();
+                    issued.followed |= found.peak_after.is_some();
                 } else {
                     keep_from = keep_from.min(found.event.arrival.value() - before);
                 }
@@ -499,10 +519,17 @@ impl Monitor {
     ) -> Result<Vec<Alert>, ApplicationError> {
         let mut alerts = Vec::new();
 
-        // Follow-ups measured since: revise those alerts.
+        // News since: low pressure from a late sensor at once; follow-up
+        // peaks together, once every member's is in (one revision).
         for g in 0..self.issued.len() {
-            if self.issued[g].stale {
+            let pending = self.issued[g]
+                .members
+                .iter()
+                .any(|m| self.follow_up_pending(m));
+            let issued = &self.issued[g];
+            if issued.stale || (issued.followed && (!pending || all_final)) {
                 self.issued[g].stale = false;
+                self.issued[g].followed = false;
                 self.issued[g].revision += 1;
                 let (id, revision) = (self.issued[g].id, self.issued[g].revision);
                 let alert = self.alert(&self.issued[g].members, id, revision);
@@ -574,6 +601,7 @@ impl Monitor {
                 revision: 0,
                 members,
                 stale: false,
+                followed: false,
             });
         }
 
@@ -602,6 +630,16 @@ impl Monitor {
             id,
             revision,
         )
+    }
+
+    /// Whether a detection still waits for its follow-up peak.
+    fn follow_up_pending(&self, found: &Found) -> bool {
+        found.peak_after.is_none()
+            && match &found.features {
+                Some(Ok(_)) => found.wants_follow_up() || self.rated[found.sensor],
+                Some(Err(_)) => false,
+                None => true,
+            }
     }
 
     /// Sensors not among `members` whose data is not yet final up to the

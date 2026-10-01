@@ -383,8 +383,9 @@ fn point_marks(plan: &Plan<'_>, markers: &[Marker], taken: &[LabelBox], s: &mut 
     }
 }
 
-/// A column chart of one series, value on every cap (few columns).
-pub fn columns(items: &[(String, f64)], unit: &str, width: f64, height: f64) -> String {
+/// A column chart of one series, value on every cap (few columns); `tip`
+/// names what a column's label counts, for its tooltip ("loggers").
+pub fn columns(items: &[(String, f64)], unit: &str, width: f64, height: f64, tip: &str) -> String {
     let (left, right, top, bottom) = (48.0, 12.0, 22.0, 30.0);
     let max = items.iter().map(|(_, v)| *v).fold(0.0, f64::max);
     let (y_ticks, y_step) = ticks(0.0, max * 1.1, 4);
@@ -411,8 +412,9 @@ pub fn columns(items: &[(String, f64)], unit: &str, width: f64, height: f64) -> 
         let r = 4.0_f64.min((base - y) / 2.0).max(0.0);
         let _ = write!(
             s,
-            r#"<path class="bar" data-tip="{} loggers|{v:.0} {unit}" d="M{x:.1},{base:.1} L{x:.1},{:.1} Q{x:.1},{y:.1} {:.1},{y:.1} L{:.1},{y:.1} Q{:.1},{y:.1} {:.1},{:.1} L{:.1},{base:.1} Z"/>"#,
+            r#"<path class="bar" data-tip="{} {}|{v:.0} {unit}" d="M{x:.1},{base:.1} L{x:.1},{:.1} Q{x:.1},{y:.1} {:.1},{y:.1} L{:.1},{y:.1} Q{:.1},{y:.1} {:.1},{:.1} L{:.1},{base:.1} Z"/>"#,
             esc(label),
+            esc(tip),
             y + r,
             x + r,
             x + w - r,

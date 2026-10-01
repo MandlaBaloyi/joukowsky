@@ -164,8 +164,9 @@ Rung 3  Simulation studies.
         0-16 bar logger at the knee: "held at the logger's minimum ...
         cannot be ruled out", no claim of negative pressure. Ratings: PN10
         pipes -> OVER RATING at the knee (148.8 m, 1.46x), and at the pump
-        "IN NORMAL OPERATION" (118 m before the trip); PN16 -> nothing
-        (2026-10-01).
+        "IN NORMAL OPERATION" (118 m before the trip); PN16 -> nothing.
+        Live, rated flat main: the over-rating peak 20 s into the ringing
+        comes by ONE revision at 35 s of data (FN-040) (2026-10-01).
   V-S8  Fatigue loading live (pipeline/simulation/fatigue.rs): pump trip
         on a flat 2 km main (pressure stays above 0): equivalent 50 m
         swings independent of the grid (1.4%, 0.9%); the monitor's live

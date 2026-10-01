@@ -14,6 +14,7 @@ path = "src/main.rs"
 [dependencies]
 jk-kernel.workspace = true
 jk-hydraulics.workspace = true
+jk-health.workspace = true
 jk-classification.workspace = true
 jk-localisation.workspace = true
 jk-application.workspace = true

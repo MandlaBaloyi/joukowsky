@@ -16,7 +16,7 @@ use jk_classification::Context;
 use jk_health::{Spectrum, rainflow};
 use jk_hydraulics::{GridOptions, InitialCondition, Probe, SteadyOptions};
 use jk_kernel::Time;
-use jk_tests::knee::flat_main;
+use jk_tests::knee::{flat_main, flat_main_rated};
 use jk_tests::{check, check_close};
 
 use crate::{RATE, record};
@@ -139,5 +139,49 @@ fn vs8_the_monitor_counts_each_sensors_fatigue_loading_live() {
         "  the pump's discharge - where the down-surge starts, furthest from the reservoir that \
          holds the head - took the most",
         ranking[0].0 == "S1 pump",
+    );
+}
+
+#[test]
+fn vs7_a_peak_over_the_rating_late_in_the_ringing_comes_by_one_revision() {
+    use jk_hydraulics::pipe::pn;
+    let (truths, dt) = records(4);
+    let truth_peak = truths[0].iter().copied().fold(f64::MIN, f64::max);
+    let (net, pump, mid) = flat_main_rated(3.0, 1.0, Some(pn(10.0)));
+    let site = Site {
+        network: net,
+        sensors: [(pump, "S1 pump"), (mid, "S2 mid-main")]
+            .iter()
+            .map(|&(node, name)| SensorSite {
+                node,
+                name: name.into(),
+                clock: None,
+                uncalibrated_clock: Time::new(1e-6),
+                range: None,
+            })
+            .collect(),
+        pipe_names: vec!["suction".into(), "main 1".into(), "main 2".into()],
+        context: Context::power_lost_at(&[Time::new(3.0)]),
+        schedule: None,
+    };
+    println!(
+        "The flat main's pump trip, its pipes PN10 ({:.1} m); the pressure at the pump peaks          at {truth_peak:.1} m, about 20 s after the front - long after the alert:",
+        pn(10.0).value()
+    );
+    let issued = crate::live(&site, &record(&truths, dt, 42), 1.0, &[], None);
+    let flagged = |a: &jk_application::Alert| {
+        a.reasons
+            .iter()
+            .any(|r| r.starts_with("S1 pump: OVER RATING - the surge"))
+    };
+    check(
+        "  the first alert goes out within seconds, without it",
+        issued
+            .first()
+            .is_some_and(|i| !flagged(&i.alert) && i.data_time < 10.0),
+    );
+    check(
+        "  ONE revision then adds it, once every logger's 30 s are in",
+        issued.len() == 2 && issued[1].alert.revision == 1 && flagged(&issued[1].alert),
     );
 }
