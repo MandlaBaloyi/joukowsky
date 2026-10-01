@@ -75,3 +75,30 @@ with PN16, 163 m, nothing.) Ratings come from the site's records - EPANET
 files carry none. Not yet: the allowable SURGE pressure, which for some
 materials and standards exceeds the PN [VERIFY SANS 966 / SANS 4427];
 the fatigue count of section 2.
+
+IMPLEMENTATION NOTE (2026-10-01): fatigue counting (section 2), first rung
+New bounded context crates/domain/health (kernel only):
+  rainflow.rs  ASTM E1049-85 three-point rainflow, live (Counter, fed in
+               pieces) or whole (rainflow); a hysteresis GATE drops
+               reversals below it (logger noise: 2 cm; default 0.5 m).
+  damage.rs    Miner's rule on a power-law S-N curve N = N_ref (S_ref/S)^m,
+               and EQUIVALENT CYCLES n_eq = sum n (S/S_ref)^m - the relative
+               ranking that needs only the exponent m, not S-N data for
+               aged pipes (frontier F7).
+  spectrum.rs  a running histogram of cycles by range (0.1 m bins): months
+               of loading in bounded memory.
+The live Monitor counts every sensor's swings (PipelineConfig.fatigue_gate,
+fatigue_bin); Monitor::loading() gives each sensor's spectrum - swings
+still open counting as half cycles - and loading_ranking(S_ref, m) ranks
+the sensors. A gap ends a stretch: a swing across it is unknown, so what
+is open then counts as half cycles (P6).
+Checked: V-A19 (the standard's worked example exactly; a steady sine;
+Miner and n_eq closed forms; live = whole; the gate keeps the swings and
+drops 2 cm noise) and V-S8 (a pump trip on a flat 2 km main: live counts
+= whole-record counts exactly; logger record 34.4 vs simulation 34.6
+equivalent 50 m swings at the pump; independent of the grid to 1.4%; the
+pump's discharge ranks above mid-main). Not yet: mean pressure (matters
+for plastics), S-N exponents per material [VERIFY: m for uPVC, PE, AC,
+cast iron], loading per PIPE (between sensors, from the simulator),
+monthly windows and storage, a report page.
+Do not count fatigue from SIMULATED boiling zones (FN-038).

@@ -25,6 +25,7 @@ mod sensor;
 
 use jk_classification::extract;
 use jk_detection::{Detector, Event, StreamOutput, SupplyWatch};
+use jk_health::{Counter, Spectrum};
 use jk_kernel::{Head, Time};
 use jk_localisation::ClockEstimate;
 use jk_localisation::clocks::correct;
@@ -117,7 +118,11 @@ impl Monitor {
         let hours = Hours::of(&site)?;
         let travel = hours.travel[0].clone();
         let clocks = site.sensors.iter().filter_map(|s| s.clock).collect();
-        let sensors = vec![SensorState::default(); site.sensors.len()];
+        let loading = Spectrum::new(config.fatigue_bin.value())
+            .map_err(|e| ApplicationError::InvalidInput(format!("fatigue bin: {e}")))?;
+        let mut fresh = SensorState::default();
+        fresh.loading = Some(loading);
+        let sensors = vec![fresh; site.sensors.len()];
         Ok(Self {
             site,
             config,
@@ -130,6 +135,45 @@ impl Monitor {
             issued: Vec::new(),
             next_id: 1,
         })
+    }
+
+    /// The fatigue loading each sensor's pipes have taken so far: every
+    /// swing counted (rainflow, gated at `fatigue_gate`), in sensor order.
+    /// Swings still open - a fading ring closes none - count as half
+    /// cycles, as the end of the record would count them.
+    #[must_use]
+    pub fn loading(&self) -> Vec<Spectrum> {
+        self.sensors
+            .iter()
+            .filter_map(|s| {
+                let mut spectrum = s.loading.clone()?;
+                if let Some(counter) = &s.rainflow {
+                    spectrum.add(&counter.open());
+                }
+                Some(spectrum)
+            })
+            .collect()
+    }
+
+    /// The sensors ranked by fatigue loading: the cycles of
+    /// `reference_range` [m] doing the same damage for S-N exponent
+    /// `exponent` (`jk_health::damage`), largest first, with names.
+    #[must_use]
+    pub fn loading_ranking(&self, reference_range: f64, exponent: f64) -> Vec<(String, f64)> {
+        let mut ranked: Vec<(String, f64)> = self
+            .site
+            .sensors
+            .iter()
+            .zip(self.loading())
+            .map(|(s, l)| {
+                (
+                    s.name.clone(),
+                    l.equivalent_cycles(reference_range, exponent),
+                )
+            })
+            .collect();
+        ranked.sort_by(|a, b| b.1.total_cmp(&a.1));
+        ranked
     }
 
     /// The site being watched.
@@ -235,13 +279,26 @@ impl Monitor {
                                 sensor: name.clone(),
                                 error,
                             })?;
+                        let counter =
+                            Counter::new(self.config.fatigue_gate.value()).map_err(|e| {
+                                ApplicationError::InvalidInput(format!("fatigue gate: {e}"))
+                            })?;
                         let state = &mut self.sensors[sensor];
                         state.stream = Some(stream);
                         state.supply = Some(supply);
+                        state.rainflow = Some(counter);
                         state.start_stretch(start.value());
                     }
                     let state = &mut self.sensors[sensor];
                     state.append(samples);
+                    if let (Some(counter), Some(loading)) =
+                        (state.rainflow.as_mut(), state.loading.as_mut())
+                    {
+                        counter
+                            .push(samples)
+                            .map_err(|e| ApplicationError::InvalidInput(format!("{name}: {e}")))?;
+                        loading.add(&counter.take_closed());
+                    }
                     if let Some(watch) = state.supply.as_mut() {
                         let ended =
                             watch
@@ -297,6 +354,12 @@ impl Monitor {
         // A spell still open at a gap: whether the supply came back during
         // it is not known (P6).
         self.sensors[sensor].supply = None;
+        // A swing across a gap is not known either: what is still open
+        // counts as half cycles.
+        let state = &mut self.sensors[sensor];
+        if let (Some(counter), Some(loading)) = (state.rainflow.take(), state.loading.as_mut()) {
+            loading.add(&counter.finish());
+        }
         if let Some(stream) = self.sensors[sensor].stream.take() {
             let out = stream.finish();
             self.absorb(sensor, out);

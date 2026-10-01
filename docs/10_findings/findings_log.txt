@@ -391,3 +391,36 @@ FN-037  2026-10-01  Live alerts lost what their later sensors measured
   alert when they bring low-pressure news (ordinary events: no extra
   revision, so live and whole-record alerts still agree). Lesson: every
   feature added to alerts needs a live test, not only a whole-record one.
+
+FN-038  2026-10-01  Boiling zones: the cavity models' pulses are numerical
+  Counting the fatigue loading of the knee station's pump trip (its
+  rising main boils along 70% of its length) gave hundreds of swings of
+  10-50 m in 40 s. Probed: single grid cells along the main open and
+  close their vapour cavity up to 126 times; every flip sends a spike.
+  The count follows the grid - 1228 / 696 / 404 cycles at the pump for
+  dt 5 / 10 / 20 ms - so it is numerical, not physical; free gas (DGCM,
+  alpha0 up to 1e-5) does not remove it. The known weakness of discrete
+  cavity models in distributed (vaporous) cavitation zones (Bergant,
+  Simpson & Tijsseling 2006: DVCM behaves on coarse grids, ~16 reaches).
+  What survives: the collapse PEAK at the knee moves only 152 / 165 /
+  168 m - FN-035's "about twice linear theory" stands to about 10%.
+  Consequences: never count fatigue cycles from a simulated boiling zone
+  (count them on measured records - the counter's real job); a model for
+  vaporous zones is needed before simulated cycle counts there mean
+  anything (G-21). Fatigue validation uses a main that stays above
+  atmospheric (V-S8).
+  Also found: a pump stopping in one or two steps (1/20 of the usual
+  flywheel) slams its non-return action and the 20 m suction pipe rings
+  at ~12 Hz - real check-valve chatter, but grid-dependent (28%); a
+  logger at 128 S/s averages most of it away.
+
+FN-039  2026-10-01  A fading ring closes no rainflow cycle
+  First live fatigue count (V-S8) reported 1.3 equivalent 50 m swings at
+  the pump where the whole record held 34. After a pump trip the main
+  rings slowly, each swing smaller than the last; rainflow closes a cycle
+  only when a LARGER swing follows, so a fading ring closes none - all
+  its damage waits on the counter's stack until the record ends. The
+  monitor had reported closed cycles only. Fix: Monitor::loading() adds
+  the open swings as half cycles (Counter::open: what the end of the
+  record would count), so live and whole-record loading agree exactly.
+  Lesson: in rainflow, "not yet closed" is not "not yet counted".

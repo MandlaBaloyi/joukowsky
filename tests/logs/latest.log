@@ -1,20 +1,15 @@
 joukowsky test run
-  when     2026-10-01 15:31:30
+  when     2026-10-01 15:44:29
   suite    quick
-  commit   9a6fb27 (with uncommitted changes)
+  commit   6609f98 (with uncommitted changes)
   rust     rustc 1.98.1 (48a229cea 2026-09-01)
   command  cargo test --workspace --no-fail-fast -- --nocapture --test-threads=1
 ==============================================================================
-   Compiling jk-application v0.1.0 (C:\Users\HP\Desktop\joukowsky\crates\application)
-   Compiling jk-tests v0.1.0 (C:\Users\HP\Desktop\joukowsky\tests)
    Compiling jk-cli v0.1.0 (C:\Users\HP\Desktop\joukowsky\crates\interfaces\cli)
-   Compiling jk-classification v0.1.0 (C:\Users\HP\Desktop\joukowsky\crates\domain\classification)
-   Compiling jk-localisation v0.1.0 (C:\Users\HP\Desktop\joukowsky\crates\domain\localisation)
-   Compiling jk-sim v0.1.0 (C:\Users\HP\Desktop\joukowsky\crates\sim)
-   Compiling jk-files v0.1.0 (C:\Users\HP\Desktop\joukowsky\crates\adapters\files)
-   Compiling jk-hydraulics v0.1.0 (C:\Users\HP\Desktop\joukowsky\crates\domain\hydraulics)
-    Finished `test` profile [unoptimized + debuginfo] target(s) in 17.15s
-     Running unittests src\lib.rs (target\debug\deps\jk_application-a6f8696c1e4119f9.exe)
+   Compiling jk-tests v0.1.0 (C:\Users\HP\Desktop\joukowsky\tests)
+   Compiling jk-application v0.1.0 (C:\Users\HP\Desktop\joukowsky\crates\application)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 10.24s
+     Running unittests src\lib.rs (target\debug\deps\jk_application-6f0d1c56f055322e.exe)
 
 running 3 tests
 test pipeline::fusion::tests::arrivals_too_far_apart_for_the_pipes_are_not_one_event ... ok
@@ -57,7 +52,7 @@ test features::low::tests::noise_around_zero_is_not_negative_pressure ... ok
 
 test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
 
-     Running unittests src\main.rs (target\debug\deps\jk-40170446bfdb3c37.exe)
+     Running unittests src\main.rs (target\debug\deps\jk-25a151a187389166.exe)
 
 running 4 tests
 test view::svg::tests::escapes_markup ... ok
@@ -91,7 +86,7 @@ test supply::tests::a_slam_swinging_back_to_the_floor_still_marks_the_return ...
 test supply::tests::live_in_pieces_gives_the_same_spells ... ok
 test supply::tests::still_empty_at_the_end_is_said ... ok
 
-test result: ok. 20 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.04s
+test result: ok. 20 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.03s
 
      Running unittests src\lib.rs (target\debug\deps\jk_files-ec39beec6edb1da0.exe)
 
@@ -120,6 +115,16 @@ test logger::units::tests::one_bar_is_about_ten_metres ... ok
 test logger::units::tests::units_from_headers ... ok
 
 test result: ok. 22 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+     Running unittests src\lib.rs (target\debug\deps\jk_health-0684ebb074877a31.exe)
+
+running 4 tests
+test rainflow::tests::a_fading_ring_closes_nothing_and_stays_open ... ok
+test rainflow::tests::a_ripple_inside_a_big_swing_leaves_the_swing_whole ... ok
+test rainflow::tests::the_gate_drops_the_noise ... ok
+test spectrum::tests::bins_stand_for_their_centres ... ok
+
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
 
      Running unittests src\lib.rs (target\debug\deps\jk_hydraulics-c42e47dfc771fa13.exe)
 
@@ -192,7 +197,7 @@ test steady::controls::tests::once_is_once ... ok
 test steady::rules::tests::or_binds_tighter_than_and_as_in_epanet ... ok
 test vapour::tests::the_coast_boils_lower_than_the_highveld ... ok
 
-test result: ok. 67 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.04s
+test result: ok. 67 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.03s
 
      Running unittests src\lib.rs (target\debug\deps\jk_kernel-eccabcc9e10cd5d2.exe)
 
@@ -224,7 +229,7 @@ test posterior::score::tests::a_wrong_candidate_is_penalised ... ok
 test posterior::score::tests::with_independent_errors_the_correlated_score_matches_the_simple_one ... ok
 test size::tests::exact_fronts_give_back_the_flow ... ok
 
-test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
 
      Running unittests src\lib.rs (target\debug\deps\jk_sim-cdf9363ef8ace4d0.exe)
 
@@ -246,14 +251,14 @@ test assembly::tests::overlaps_and_interval_changes_are_refused_and_change_nothi
 
 test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
 
-     Running unittests common\lib.rs (target\debug\deps\jk_tests-cb6edf71623bd169.exe)
+     Running unittests common\lib.rs (target\debug\deps\jk_tests-03e8940456127617.exe)
 
 running 1 test
 test sensor::tests::averaging_a_step_gives_the_covered_fraction ... ok
 
 test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
 
-     Running adapters\main.rs (target\debug\deps\adapters-9ce014cc325c8aab.exe)
+     Running adapters\main.rs (target\debug\deps\adapters-137a855a6ab78fd3.exe)
 
 running 16 tests
 test analytical::epanet::broken_files_are_refused_with_the_line_number ...   refused: line 4: link 'P1' joins unknown node 'B'
@@ -522,9 +527,9 @@ test simulation::logger_files::a_burst_recorded_in_logger_files_raises_one_alarm
   at 10:15:03 - seconds past 10:15:00          got       2.998747   expected       3.000000   rel.err 4.2e-4
 ok
 
-test result: ok. 16 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.59s
+test result: ok. 16 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.56s
 
-     Running balance\main.rs (target\debug\deps\balance-728b54a33b8a3084.exe)
+     Running balance\main.rs (target\debug\deps\balance-6053ff28598bb67b.exe)
 
 running 3 tests
 test simulation::night_watch::a_one_litre_per_second_leak_is_caught_dated_and_sized ... Night flow baseline 2.54 l/s, nights vary by 0.29 l/s; a week catches leaks over 0.40 l/s
@@ -547,9 +552,9 @@ test simulation::night_watch::the_detection_curve_matches_the_cusum_arithmetic .
   at the arithmetic's size: caught at least a third of the time yes
 ok
 
-test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.18s
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.20s
 
-     Running channels\main.rs (target\debug\deps\channels-c97e6a381f8a602a.exe)
+     Running channels\main.rs (target\debug\deps\channels-175755f932f77680.exe)
 
 running 11 tests
 test analytical::backwater::va14_a_steady_backwater_profile_lies_on_the_direct_step_curve ... Normal depth 1.413 m; the outlet held at 2.260 m. Depth along the canal (solver after 24 h vs direct step):
@@ -636,9 +641,9 @@ test simulation::feed::when_the_canal_stops_the_sump_runs_down_and_the_town_runs
     the sump's change = in - drawn, within 1.27% of the water drawn (draw read every 5 min) yes
 ok
 
-test result: ok. 11 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 11.82s
+test result: ok. 11 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 12.08s
 
-     Running classification\main.rs (target\debug\deps\classification-7090793340b9d59f.exe)
+     Running classification\main.rs (target\debug\deps\classification-8d93599e4834ddf8.exe)
 
 running 11 tests
 test simulation::refill::vs6_a_refill_against_trapped_air_is_called_a_refill ... Supply returns to the drained pipe; a 5 mm air valve keeps most of the air in, so the logger at the end sees it squeezed over a minute - too slow for a front:
@@ -819,9 +824,9 @@ test simulation::scenarios::power_data_settles_the_slow_burst ... The same slow 
   burst                                        yes
 ok
 
-test result: ok. 11 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.24s
+test result: ok. 11 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.22s
 
-     Running detection\main.rs (target\debug\deps\detection-e23fac69caef8598.exe)
+     Running detection\main.rs (target\debug\deps\detection-06bc763b1e2f0d6d.exe)
 
 running 10 tests
 test analytical::delay::delay_follows_the_cusum_formula ... Sharp drops at t = 3 s, noise-free signal with a 2 cm noise floor set:
@@ -882,9 +887,39 @@ Loggers: 128 S/s, integrating, random clock phase, 2 cm noise:
 ok
 test simulation::burst_location::vs1_location_error_versus_sampling_rate_and_noise ... ignored, full suite: 150 recorded sensor pairs across rates and noise levels
 
-test result: ok. 8 passed; 0 failed; 2 ignored; 0 measured; 0 filtered out; finished in 1.23s
+test result: ok. 8 passed; 0 failed; 2 ignored; 0 measured; 0 filtered out; finished in 1.19s
 
-     Running hydraulics\main.rs (target\debug\deps\hydraulics-2a8e28d011452c5f.exe)
+     Running health\main.rs (target\debug\deps\health-33db47b6d2615aa3.exe)
+
+running 5 tests
+test analytical::rainflow::va19_a_steady_sine_is_n_cycles_of_twice_its_amplitude ... 50 periods of a 10 m sine:
+    cycles of 20 m: n - 1/2                    got      49.500000   expected      49.500000   rel.err 0.0e0
+    and of 10 m: the two half-swings at the ends got       1.000000   expected       1.000000   rel.err 0.0e0
+    Miner's damage = sum n / N(S), N(10 m) = 16 N(20 m) [-] got       0.000050   expected       0.000050   rel.err 1.8e-15
+ok
+test analytical::rainflow::va19_equivalent_cycles_rank_by_the_exponent ... 1000 swings of 10 m and 10 of 50 m, as swings of 10 m (m = 4):
+    equivalent cycles = 1000 + 10 x 5^4        got    7250.000000   expected    7250.000000   rel.err 0.0e0
+ok
+test analytical::rainflow::va19_live_in_pieces_counts_the_same_as_the_whole_record ...     6227 cycles, identical whole and live (128-sample pieces) yes
+ok
+test analytical::rainflow::va19_the_gate_keeps_the_swings_and_drops_the_noise ... A 10 m sine with 2 cm of logger noise:
+  without a gate: 89 cycles counted
+    gated at 0.2 m: 55 cycles, all within noise of 20 m or 10 m yes
+    the 20 m cycles: n - 1/2                   got      49.500000   expected      49.500000   rel.err 0.0e0
+ok
+test analytical::rainflow::va19_the_standards_worked_example ... ASTM E1049 example: -2, 1, -3, 5, -1, 3, -4, 4, -2
+  range   counted   the standard
+        3                                      got       0.500000   expected       0.500000   rel.err 0.0e0
+        4                                      got       1.500000   expected       1.500000   rel.err 0.0e0
+        6                                      got       0.500000   expected       0.500000   rel.err 0.0e0
+        8                                      got       1.000000   expected       1.000000   rel.err 0.0e0
+        9                                      got       0.500000   expected       0.500000   rel.err 0.0e0
+    total cycles                               got       4.000000   expected       4.000000   rel.err 0.0e0
+ok
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+     Running hydraulics\main.rs (target\debug\deps\hydraulics-bfd504be08ac9765.exe)
 
 running 67 tests
 test analytical::boundaries::burst::a_10mm_hole_at_60m_head ... DN150 AC main at 60 m head, 0.5 m/s; a 10 mm hole opens (Cd 0.6):
@@ -1444,9 +1479,9 @@ test invariants::steady_state::an_undisturbed_pipe_stays_steady ... Steady state
   valve holds steady                           yes
 ok
 
-test result: ok. 66 passed; 0 failed; 1 ignored; 0 measured; 0 filtered out; finished in 8.96s
+test result: ok. 66 passed; 0 failed; 1 ignored; 0 measured; 0 filtered out; finished in 9.15s
 
-     Running kernel\main.rs (target\debug\deps\kernel-8eea161e1918dc58.exe)
+     Running kernel\main.rs (target\debug\deps\kernel-49d3448634a34a07.exe)
 
 running 5 tests
 test conversions::dn150_area ... Cross-section of a DN150 pipe:
@@ -1471,7 +1506,7 @@ ok
 
 test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
 
-     Running localisation\main.rs (target\debug\deps\localisation-e801408e48e80f21.exe)
+     Running localisation\main.rs (target\debug\deps\localisation-84651f3fa54118d7.exe)
 
 running 32 tests
 test analytical::branched::two_sensors_see_a_whole_branch_three_sensors_see_the_point ... Sensors S1 and S2 only (burst 200 m along branch T-S3):
@@ -1762,11 +1797,27 @@ test simulation::valve_fronts::a_shut_prv_passes_no_wave_and_no_route ... A seco
     and no route from S1 reaches the zone: the locator cannot place a burst there from S1 yes
 ok
 
-test result: ok. 29 passed; 0 failed; 3 ignored; 0 measured; 0 filtered out; finished in 32.49s
+test result: ok. 29 passed; 0 failed; 3 ignored; 0 measured; 0 filtered out; finished in 36.86s
 
-     Running pipeline\main.rs (target\debug\deps\pipeline-0a591d8df4220b73.exe)
+     Running pipeline\main.rs (target\debug\deps\pipeline-7d4a991ed5c74f28.exe)
 
-running 12 tests
+running 14 tests
+test simulation::fatigue::vs8_the_monitor_counts_each_sensors_fatigue_loading_live ... The flat main's pump trip, 40 s of two loggers, counted live:
+  S1 pump: 14.0 cycles counted, the largest swing 94.8 m
+      equivalent 50 m swings, live vs the whole record at once got      34.406731   expected      34.406731   rel.err 0.0e0
+  S2 mid-main: 21.0 cycles counted, the largest swing 96.6 m
+      equivalent 50 m swings, live vs the whole record at once got      27.445031   expected      27.445031   rel.err 0.0e0
+  ranked by equivalent 50 m swings (m = 4):
+    S1 pump         34.41
+    S2 mid-main     27.45
+    the pump's discharge - where the down-surge starts, furthest from the reservoir that holds the head - took the most yes
+ok
+test simulation::fatigue::vs8_without_boiling_the_count_does_not_depend_on_the_grid ... The flat main's pump trip on two grids (dt 5 ms and 20 ms):
+  S1 pump: lowest pressure 9.9 m (never below atmospheric)
+      equivalent 50 m swings, coarse grid against fine got      34.114617   expected      34.595348   rel.err 1.4e-2
+  S2 mid-main: lowest pressure 5.3 m (never below atmospheric)
+      equivalent 50 m swings, coarse grid against fine got      27.213019   expected      27.470739   rel.err 9.4e-3
+ok
 test simulation::live::a_power_cut_at_a_sensor_is_reported_not_taken_for_silence ... A burst at t = 3 s while load-shedding has cut S2's gateway from
 t = 2.5 s to t = 6 s: S2's samples for that time never arrive, and when
 it comes back the network is still ringing:
@@ -2232,7 +2283,7 @@ test simulation::valves_by_hour::at_noon_the_valve_is_active_and_both_loggers_lo
     and it is not dismissed                    yes
 ok
 
-test result: ok. 12 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 8.06s
+test result: ok. 14 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 8.88s
 
    Doc-tests jk_application
 
@@ -2265,6 +2316,12 @@ running 0 tests
 test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
 
    Doc-tests jk_files
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+   Doc-tests jk_health
 
 running 0 tests
 
@@ -2307,9 +2364,9 @@ running 0 tests
 test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
 
 ==============================================================================
-  passed   322
+  passed   333
   failed   0
   skipped  6 slow test(s) not in this suite (run -Suite full)
   filtered 0 test(s) outside -Only/-Filter
-  time     88.7 s (including compile)
+  time     85.5 s (including compile)
   result   ALL PASSED

@@ -82,3 +82,48 @@ pub fn station_rated(
     net.set_free_gas(gas).expect("valid");
     (net, p, knee)
 }
+
+/// A flat pump main that stays above atmospheric when its pump trips:
+/// sump 10 m -> pump (65 m at 0.10 m^3/s, trips at `trip` s, inertia
+/// `inertia_share` x Thorley) -> 1000 m -> a junction mid-main -> 1000 m
+/// -> reservoir 60 m, DN300, a = 1000 m/s, f = 0.018. Returns the network,
+/// the pump and the mid-main junction.
+///
+/// # Panics
+/// Never for the fixed main (a test bug otherwise).
+#[must_use]
+pub fn flat_main(trip: f64, inertia_share: f64) -> (Network, NodeId, NodeId) {
+    let power = 998.2 * STANDARD_GRAVITY.value() * 0.10 * 65.0 / 0.8 / 1000.0;
+    let pump = Pump {
+        curve: PumpCurve::from_points(
+            Head::new(80.0),
+            (Flow::new(0.10), Head::new(65.0)),
+            (Flow::new(0.15), Head::new(45.0)),
+        )
+        .expect("a falling curve"),
+        rated_flow: Flow::new(0.10),
+        rated_efficiency: 0.8,
+        rated_speed_rpm: 1450.0,
+        inertia: inertia_share * thorley_inertia(power, 1450.0),
+    };
+    let mut net = Network::new(STANDARD_GRAVITY);
+    let sump = net.add_node(Node::Reservoir {
+        head: Head::new(10.0),
+    });
+    let p = net.add_node(Node::Pump {
+        pump,
+        trip: Some(Time::new(trip)),
+    });
+    let mid = net.add_node(Node::Junction { demand: Flow::ZERO });
+    let top = net.add_node(Node::Reservoir {
+        head: Head::new(60.0),
+    });
+    net.add_pipe(sump, p, pipe(20.0, 0.3, 1000.0, 0.018))
+        .expect("valid");
+    net.add_pipe(p, mid, pipe(1000.0, 0.3, 1000.0, 0.018))
+        .expect("valid");
+    net.add_pipe(mid, top, pipe(1000.0, 0.3, 1000.0, 0.018))
+        .expect("valid");
+    net.set_vapour_floor(Some(Head::new(-10.1))).expect("valid");
+    (net, p, mid)
+}

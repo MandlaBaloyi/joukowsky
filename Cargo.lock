@@ -9,6 +9,7 @@ dependencies = [
  "jk-channels",
  "jk-classification",
  "jk-detection",
+ "jk-health",
  "jk-hydraulics",
  "jk-kernel",
  "jk-localisation",
@@ -68,6 +69,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "jk-health"
+version = "0.1.0"
+dependencies = [
+ "jk-kernel",
+]
+
+[[package]]
 name = "jk-hydraulics"
 version = "0.1.0"
 dependencies = [
@@ -111,6 +119,7 @@ dependencies = [
  "jk-classification",
  "jk-detection",
  "jk-files",
+ "jk-health",
  "jk-hydraulics",
  "jk-kernel",
  "jk-localisation",

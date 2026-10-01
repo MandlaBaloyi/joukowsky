@@ -1,6 +1,7 @@
 //! What the monitor keeps per sensor.
 
 use jk_detection::{DetectorStream, Series, SupplyWatch};
+use jk_health::{Counter, Spectrum};
 use jk_kernel::Time;
 use jk_telemetry::Assembler;
 
@@ -21,6 +22,10 @@ pub(super) struct SensorState {
     /// Recent times (its own clock) when supply returned to its empty
     /// pipe [s].
     pub supply_returns: Vec<f64>,
+    /// Fatigue counting over the current continuous stretch ...
+    pub rainflow: Option<Counter>,
+    /// ... and every cycle counted so far (created with the monitor).
+    pub loading: Option<Spectrum>,
     /// Recent valid samples of the current stretch (for classification):
     /// sample i is sample `dropped + i` of the stretch.
     history: Vec<f64>,

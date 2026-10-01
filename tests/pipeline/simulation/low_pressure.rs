@@ -23,7 +23,7 @@ use crate::{live, record, run_pipeline};
 /// loggers' true records (gauge), their time step and the true highest
 /// pressure at the knee. The knee's logger has measuring `range` (it reads
 /// nothing beyond it), if given.
-fn scenario(inertia_share: f64, range: Option<(f64, f64)>) -> (Site, Vec<Vec<f64>>, f64, f64) {
+pub fn scenario(inertia_share: f64, range: Option<(f64, f64)>) -> (Site, Vec<Vec<f64>>, f64, f64) {
     scenario_rated(inertia_share, range, None)
 }
 

@@ -23,6 +23,12 @@ Rung 1  Analytical: results that must match closed-form physics.
         reservoir-pipe-valve system vs the exact complex-frequency
         solution; first-order convergence, extrapolated within 0.5%
         (2026-09-29: +0.1% at 400 reaches after FN-021).
+  V-A19 Rainflow and fatigue (health/analytical/rainflow.rs): ASTM
+        E1049-85's worked example (-2, 1, -3, 5, -1, 3, -4, 4, -2) gives
+        its table exactly (3: 0.5, 4: 1.5, 6: 0.5, 8: 1.0, 9: 0.5); a
+        steady 10 m sine of n periods: n - 1/2 cycles of 20 m; Miner and
+        equivalent cycles to their closed forms; live in pieces = whole;
+        a 0.2 m gate keeps the swings and drops 2 cm noise (2026-10-01).
   V-A18 Free gas (DGCM, 02_/column_separation_and_intrusion.txt section
         6): as alpha0 -> 0 (1e-7 .. 1e-13) V-A17's collapse surge and
         cavity come back, difference falling as sqrt(alpha0) to 1.2e-5;
@@ -159,6 +165,12 @@ Rung 3  Simulation studies.
         cannot be ruled out", no claim of negative pressure. Ratings: PN10
         pipes -> OVER RATING at the knee (148.8 m, 1.46x), and at the pump
         "IN NORMAL OPERATION" (118 m before the trip); PN16 -> nothing
+        (2026-10-01).
+  V-S8  Fatigue loading live (pipeline/simulation/fatigue.rs): pump trip
+        on a flat 2 km main (pressure stays above 0): equivalent 50 m
+        swings independent of the grid (1.4%, 0.9%); the monitor's live
+        count = the whole record's exactly; logger 34.4 vs simulation
+        34.6 at the pump; the pump's discharge ranks above mid-main
         (2026-10-01).
   V-S4  Scale: synthetic towns of 10 / 50 / 100 km - time the simulator,
         live engine and advisor (10_findings/detection_range_and_scale.txt,

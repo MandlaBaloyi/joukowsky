@@ -18,6 +18,7 @@ jk-detection.workspace = true
 jk-localisation.workspace = true
 jk-classification.workspace = true
 jk-channels.workspace = true
+jk-health.workspace = true
 
 [lints]
 workspace = true

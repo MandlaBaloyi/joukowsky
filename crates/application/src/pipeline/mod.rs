@@ -109,6 +109,11 @@ pub struct PipelineConfig {
     /// long to keep watching for what follows - the collapse when separated
     /// columns rejoin - before revising its alert with the peak.
     pub follow_up: Time,
+    /// Fatigue counting at each sensor: swings smaller than this are not
+    /// counted (logger noise is about 2 cm) ...
+    pub fatigue_gate: Head,
+    /// ... and counted swings are kept in range bins this wide.
+    pub fatigue_bin: Head,
 }
 
 impl Default for PipelineConfig {
@@ -125,6 +130,8 @@ impl Default for PipelineConfig {
             max_misfit: 3.0,
             max_wait: Time::new(10.0),
             follow_up: Time::new(30.0),
+            fatigue_gate: Head::new(0.5),
+            fatigue_bin: Head::new(0.1),
         }
     }
 }

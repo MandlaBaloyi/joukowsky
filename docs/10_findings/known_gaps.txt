@@ -223,10 +223,21 @@ G-21  Cavitation: off by default; devices vapour-only               OPEN
   day (V-A18). Still open: gas at two-sided devices; gas released from
   solution during a long down-surge (alpha0 is fixed); the
   floor's temperature (vapour pressure at 20 C only); turning the floor on
-  by default once every analytical test states its floor. Column
+  by default once every analytical test states its floor; distributed
+  (vaporous) cavitation zones - the discrete models' cells flip and send
+  numerical pulses (FN-038). Column
   separation in alerts: done as an attribute (V-S7, FN-036), with the
   collapse peak by revision 30 s on and loggers' ranges (P2) the same
   day (FN-037). Open there: locating events whose fronts are shaped by
   boiling (the localiser assumes elastic waves). Pipe pressure ratings:
   done the same day (peaks compared per sensor, V-S7); open: allowable
-  surge pressure per material/standard, and the fatigue count.
+  surge pressure per material/standard; fatigue: see G-22.
+
+G-22  Fatigue loading: counted per sensor, not yet per pipe        OPEN
+  2026-10-01: rainflow + equivalent cycles built (crates/domain/health,
+  V-A19), counted live per sensor and ranked (V-S8, FN-039). Open: mean
+  pressure in the damage; S-N exponents per material [VERIFY]; loading
+  per PIPE between sensors (needs the simulator to fill the gaps);
+  monthly windows and storage; a report page; a model for simulated
+  vaporous cavitation zones before simulated cycle counts there are used
+  (FN-038).
