@@ -57,3 +57,21 @@ fatigue design data and standards]
   - rainflow cycle spectrum         (fatigue)
   - number of events per day        (operational stability)
 These are the core "health" features for the learning system.
+
+IMPLEMENTATION NOTE (2026-10-01): overpressure ratio in alerts
+Pipes may carry a pressure rating (hydraulics Pipe::with_rating; pn(bar)
+converts a PN class: PN10 = 102.2 m, PN16 = 163.4 m of water). Every
+event measures the highest pressure after its front (features low.rs),
+and the collapse peak when it is followed up; the alert compares them,
+per sensor, with the LOWEST rating among the pipes at the sensor's node:
+  "S2 knee: OVER RATING - the surge took the pressure to 148.8 m, 1.46
+   times the 102.2 m the pipes there are rated for: inspect them for
+   damage; each such event also spends their fatigue life"
+and keeps apart pipes that run over their rating every day:
+  "S1 pump: OVER RATING IN NORMAL OPERATION - the pressure already stood
+   at 118.2 m before the event ..."
+(V-S7: the knee station with PN10 pipes flagged at the knee and the pump;
+with PN16, 163 m, nothing.) Ratings come from the site's records - EPANET
+files carry none. Not yet: the allowable SURGE pressure, which for some
+materials and standards exceeds the PN [VERIFY SANS 966 / SANS 4427];
+the fatigue count of section 2.

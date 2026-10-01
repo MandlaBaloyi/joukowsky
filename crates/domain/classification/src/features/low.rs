@@ -17,11 +17,14 @@
 
 use jk_kernel::{Head, Time};
 
-/// What the pressure did below zero over a window.
+/// How low (and how high) the pressure went over a window.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct LowPressure {
     /// The lowest pressure head [m].
     pub lowest: Head,
+    /// The highest pressure head [m] - for comparing with the pipes'
+    /// rating.
+    pub highest: Head,
     /// Time spent below the negative threshold (meaningfully under
     /// atmospheric - not sensor noise around 0).
     pub below_zero: Time,
@@ -35,6 +38,7 @@ pub struct LowPressure {
 #[must_use]
 pub fn low_pressure(window: &[f64], dt: f64, floor: f64, band: f64, negative: f64) -> LowPressure {
     let lowest = window.iter().copied().fold(f64::INFINITY, f64::min);
+    let highest = window.iter().copied().fold(f64::NEG_INFINITY, f64::max);
     let count = |pred: &dyn Fn(f64) -> bool| {
         #[allow(clippy::cast_precision_loss)] // window lengths are small
         let n = window.iter().filter(|&&x| pred(x)).count() as f64;
@@ -42,6 +46,7 @@ pub fn low_pressure(window: &[f64], dt: f64, floor: f64, band: f64, negative: f6
     };
     LowPressure {
         lowest: Head::new(if lowest.is_finite() { lowest } else { 0.0 }),
+        highest: Head::new(if highest.is_finite() { highest } else { 0.0 }),
         below_zero: count(&|x| x < negative),
         at_floor: count(&|x| x <= floor + band),
     }
@@ -69,6 +74,7 @@ mod tests {
         x.extend(vec![5.0; 50]);
         let low = low_pressure(&x, dt, -10.1, 1.0, -1.0);
         assert!((low.lowest.value() + 10.0).abs() < 1e-12);
+        assert!((low.highest.value() - 20.0).abs() < 1e-12);
         assert!((low.below_zero.value() - 1.5).abs() < 1e-9);
         assert!((low.at_floor.value() - 1.0).abs() < 1e-9);
     }

@@ -13,6 +13,17 @@ use crate::error::positive;
 use crate::{HydraulicsError, joukowsky};
 use viscoelastic::ViscoelasticWall;
 
+/// A PN pressure class as a gauge pressure head: `bar` x 10^5 Pa / (rho g),
+/// water at 20 C - PN10 = 102.1 m, PN16 = 163.4 m. (A pipe's allowable
+/// surge pressure may exceed its PN, depending on the material and the
+/// standard [VERIFY per material: SANS 966 uPVC, SANS 4427 PE].)
+#[must_use]
+pub fn pn(bar: f64) -> Head {
+    Head::new(
+        bar * 1e5 / (crate::boundary::pump::WATER_DENSITY * jk_kernel::STANDARD_GRAVITY.value()),
+    )
+}
+
 /// One pipe: geometry, wave speed and quasi-steady Darcy friction; a
 /// plastic pipe also has a viscoelastic wall.
 ///
@@ -27,6 +38,7 @@ pub struct Pipe {
     wave_speed: WaveSpeed,
     friction_factor: f64,
     wall: Option<ViscoelasticWall>,
+    rating: Option<Head>,
 }
 
 impl Pipe {
@@ -58,6 +70,7 @@ impl Pipe {
             wave_speed,
             friction_factor,
             wall: None,
+            rating: None,
         })
     }
 
@@ -68,6 +81,28 @@ impl Pipe {
             wall: Some(wall),
             ..self
         }
+    }
+
+    /// The same pipe with a pressure rating: the highest gauge pressure head
+    /// it is made to carry (its class - [`pn`] for a PN rating). Not used by
+    /// the physics; events compare their peaks with it
+    /// (`docs/02_physics_of_transients/pressure_leakage_and_fatigue.txt`
+    /// section 3).
+    ///
+    /// # Errors
+    /// A rating that is not finite and positive.
+    pub fn with_rating(self, rating: Head) -> Result<Self, HydraulicsError> {
+        positive("pressure rating", rating.value())?;
+        Ok(Self {
+            rating: Some(rating),
+            ..self
+        })
+    }
+
+    /// The pressure rating, if known.
+    #[must_use]
+    pub fn rating(&self) -> Option<Head> {
+        self.rating
     }
 
     /// The viscoelastic wall, if the pipe is plastic.
@@ -154,6 +189,13 @@ impl Pipe {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn pn_classes_in_metres_of_water() {
+        // 10 bar = 1e6 Pa; / (998.2 x 9.80665) = 102.16 m.
+        assert!((pn(10.0).value() - 102.16).abs() < 0.01);
+        assert!((pn(16.0).value() - 163.45).abs() < 0.01);
+    }
 
     #[test]
     fn rejects_non_physical_values() {

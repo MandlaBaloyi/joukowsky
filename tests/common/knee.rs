@@ -27,6 +27,21 @@ pub fn station(
     floor: Option<f64>,
     gas: Option<FreeGas>,
 ) -> (Network, NodeId, NodeId) {
+    station_rated(trip, inertia_share, floor, gas, None)
+}
+
+/// As [`station`], every pipe rated for `rating` (gauge head), if given.
+///
+/// # Panics
+/// Never for the fixed station (a test bug otherwise).
+#[must_use]
+pub fn station_rated(
+    trip: f64,
+    inertia_share: f64,
+    floor: Option<f64>,
+    gas: Option<FreeGas>,
+    rating: Option<Head>,
+) -> (Network, NodeId, NodeId) {
     let power = 998.2 * STANDARD_GRAVITY.value() * 0.10 * 120.0 / 0.8 / 1000.0;
     let pump = Pump {
         curve: PumpCurve::from_points(
@@ -52,8 +67,12 @@ pub fn station(
     let top = net.add_node(Node::Reservoir {
         head: Head::new(100.0),
     });
-    let main = || pipe(1000.0, 0.3, 1000.0, 0.018);
-    net.add_pipe(sump, p, pipe(20.0, 0.3, 1000.0, 0.018))
+    let rated = |pipe: jk_hydraulics::Pipe| match rating {
+        Some(r) => pipe.with_rating(r).expect("a positive rating"),
+        None => pipe,
+    };
+    let main = || rated(pipe(1000.0, 0.3, 1000.0, 0.018));
+    net.add_pipe(sump, p, rated(pipe(20.0, 0.3, 1000.0, 0.018)))
         .expect("valid");
     net.add_pipe(p, knee, main()).expect("valid");
     net.add_pipe(knee, top, main()).expect("valid");

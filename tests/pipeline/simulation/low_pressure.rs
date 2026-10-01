@@ -15,7 +15,7 @@ use jk_classification::Context;
 use jk_hydraulics::{GridOptions, InitialCondition, Probe, SteadyOptions};
 use jk_kernel::{Head, Time};
 use jk_tests::check;
-use jk_tests::knee::{KNEE, station};
+use jk_tests::knee::{KNEE, station, station_rated};
 
 use crate::{live, record, run_pipeline};
 
@@ -24,6 +24,15 @@ use crate::{live, record, run_pipeline};
 /// pressure at the knee. The knee's logger has measuring `range` (it reads
 /// nothing beyond it), if given.
 fn scenario(inertia_share: f64, range: Option<(f64, f64)>) -> (Site, Vec<Vec<f64>>, f64, f64) {
+    scenario_rated(inertia_share, range, None)
+}
+
+/// As [`scenario`], the site's pipes rated for `rating`.
+fn scenario_rated(
+    inertia_share: f64,
+    range: Option<(f64, f64)>,
+    rating: Option<Head>,
+) -> (Site, Vec<Vec<f64>>, f64, f64) {
     let (net, pump, knee) = station(3.0, inertia_share, Some(-10.1), None);
     let run = net
         .simulate(
@@ -44,7 +53,7 @@ fn scenario(inertia_share: f64, range: Option<(f64, f64)>) -> (Site, Vec<Vec<f64
         Some((lo, hi)) => at_knee.iter().map(|x| x.clamp(lo, hi)).collect(),
         None => at_knee,
     };
-    let (site_net, pump, knee) = station(3.0, inertia_share, None, None);
+    let (site_net, pump, knee) = station_rated(3.0, inertia_share, None, None, rating);
     let site = Site {
         network: site_net,
         sensors: [(pump, "S1 pump"), (knee, "S2 knee")]
@@ -161,4 +170,36 @@ fn vs7_column_separation_and_negative_pressure_are_reported() {
         "  no alert mentions column separation or negative pressure",
         !said(&bursts, "COLUMN SEPARATION") && !said(&bursts, "NEGATIVE pressure"),
     );
+}
+
+#[test]
+fn vs7_a_peak_above_the_pipes_rating_is_flagged() {
+    use jk_hydraulics::pipe::pn;
+    for (class, bar) in [("PN10", 10.0), ("PN16", 16.0)] {
+        println!(
+            "\nThe light-flywheel trip again, the main's pipes {class} ({:.1} m):",
+            pn(bar).value()
+        );
+        let (site, truths, dt, highest) = scenario_rated(0.05, None, Some(pn(bar)));
+        let alerts = run_pipeline(&site, &truths, dt, 35);
+        let over = said(&alerts, "S2 knee: OVER RATING - the surge");
+        if bar < 12.0 {
+            check(
+                "  the pump's own pipes run over PN10 every day (118 m): said as such, not blamed on the surge",
+                said(&alerts, "S1 pump: OVER RATING IN NORMAL OPERATION"),
+            );
+        }
+        println!("  true highest pressure at the knee: {highest:.1} m");
+        check(
+            &format!(
+                "  {} at the knee",
+                if highest > pn(bar).value() {
+                    "flagged OVER RATING"
+                } else {
+                    "not flagged"
+                }
+            ),
+            over == (highest > pn(bar).value()),
+        );
+    }
 }

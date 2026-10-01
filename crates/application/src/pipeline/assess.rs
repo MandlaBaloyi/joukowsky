@@ -115,6 +115,49 @@ fn low_pressure_reasons(site: &Site, config: &PipelineConfig, members: &[Found])
     reasons
 }
 
+/// What each member sensor saw against the pressure rating of the pipes
+/// at its node (the lowest of them): the highest pressure after the front,
+/// or the collapse peak if measured since.
+fn rating_reasons(site: &Site, members: &[Found]) -> Vec<String> {
+    let mut reasons = Vec::new();
+    for m in members {
+        let Some(Ok(f)) = &m.features else { continue };
+        let sensor = &site.sensors[m.sensor];
+        let rating = site
+            .network
+            .pipes()
+            .iter()
+            .filter(|p| p.from == sensor.node || p.to == sensor.node)
+            .filter_map(|p| p.pipe.rating())
+            .map(Head::value)
+            .fold(f64::INFINITY, f64::min);
+        if !rating.is_finite() {
+            continue;
+        }
+        let highest = m.peak_after.map_or(f.low.highest.value(), |(p, _)| {
+            p.value().max(f.low.highest.value())
+        });
+        let before = f.level_before.value();
+        if before > rating {
+            reasons.push(format!(
+                "{}: OVER RATING IN NORMAL OPERATION - the pressure already stood at {before:.1} m \
+                 before the event, above the {rating:.1} m the pipes there are rated for; the \
+                 event took it to {highest:.1} m",
+                sensor.name
+            ));
+        } else if highest > rating {
+            reasons.push(format!(
+                "{}: OVER RATING - the surge took the pressure to {highest:.1} m, {:.2} times the \
+                 {rating:.1} m the pipes there are rated for: inspect them for damage; each such \
+                 event also spends their fatigue life",
+                sensor.name,
+                highest / rating
+            ));
+        }
+    }
+    reasons
+}
+
 /// A sensor whose data was not waited for: its index, and the time of its
 /// last sample (None if it has sent nothing).
 pub(super) type Unheard = (usize, Option<Time>);
@@ -248,8 +291,10 @@ pub(super) fn assess(
         EventClass::ValveClosure => Level::Info,
         EventClass::Burst | EventClass::Unknown => Level::Review,
     };
-    // Below zero: whatever the class, a danger of its own.
-    let low = low_pressure_reasons(site, config, members);
+    // Below zero, or above the pipes' rating: whatever the class, dangers
+    // of their own.
+    let mut low = low_pressure_reasons(site, config, members);
+    low.extend(rating_reasons(site, members));
     let level = if low.is_empty() || !corroborated {
         level
     } else {
