@@ -9,6 +9,7 @@
 
 use jk_classification::EventClass;
 use jk_kernel::Time;
+use jk_kernel::clock::stamp;
 
 use crate::alert::{Alert, Level};
 
@@ -61,15 +62,17 @@ impl Incident {
                 .all(|m| (m.confirmed - confirmed).abs() <= GROUP)
     }
 
-    /// The alert as it stands, sensors named by `names`.
-    pub fn alert(&self, names: &[String]) -> Alert {
+    /// The alert as it stands, sensors named by `names`, times on the
+    /// site's clock (`utc_offset` [s], or UTC).
+    pub fn alert(&self, names: &[String], utc_offset: Option<f64>) -> Alert {
+        let at = |t: f64| stamp(t, utc_offset);
         let minutes = |a: f64, b: f64| (b - a) / 60.0;
         let mut reasons = Vec::new();
         for m in &self.members {
             let name = &names[m.sensor];
             let since = m.from.map_or_else(
                 || "since before its data began".to_string(),
-                |f| format!("since t = {f:.0} s"),
+                |f| format!("since {}", at(f)),
             );
             reasons.push(format!(
                 "{name}: the pressure has stood at about 0 {since} - its pipe is EMPTY: supply lost"
@@ -80,14 +83,16 @@ impl Incident {
                     |f| format!("{:.0} min", minutes(f, back)),
                 );
                 reasons.push(format!(
-                    "{name}: supply RETURNED at t = {back:.0} s, after {off} - the pipes refill; \
-                     expect refill surges"
+                    "{name}: supply RETURNED at {}, after {off} - the pipes refill; expect refill \
+                     surges",
+                    at(back)
                 ));
             }
             if let Some(stop) = m.data_stopped {
                 reasons.push(format!(
-                    "{name}: its data stopped at t = {stop:.0} s while the pipe was still empty - \
-                     whether the supply has come back since is not known"
+                    "{name}: its data stopped at {} while the pipe was still empty - whether the \
+                     supply has come back since is not known",
+                    at(stop)
                 ));
             }
         }
@@ -125,6 +130,7 @@ impl Incident {
                 .map(|m| names[m.sensor].clone())
                 .collect(),
             reasons,
+            utc_offset: utc_offset.map(Time::new),
         }
     }
 }

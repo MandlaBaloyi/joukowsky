@@ -17,6 +17,7 @@
 
 use jk_classification::{EventClass, Features, classify};
 use jk_detection::{Direction, Event};
+use jk_kernel::clock::stamp;
 use jk_kernel::{Head, Time};
 use jk_localisation::{Arrival, Devices, Drop, localise_with, size_with};
 
@@ -274,9 +275,9 @@ pub(super) fn assess(
         let name = &site.sensors[j].name;
         reasons.push(match last {
             Some(t) => format!(
-                "{name}: no data after t = {:.1} s - not waited for longer; it could not confirm \
-                 or help locate this event",
-                t.value()
+                "{name}: no data after {} - not waited for longer; it could not confirm or help \
+                 locate this event",
+                stamp(t.value(), site.utc_offset())
             ),
             None => {
                 format!("{name}: no data at all - it could not confirm or help locate this event")
@@ -353,5 +354,6 @@ pub(super) fn assess(
             .map(|m| site.sensors[m.sensor].name.clone())
             .collect(),
         reasons,
+        utc_offset: site.schedule.as_ref().map(|s| s.utc_offset),
     }
 }

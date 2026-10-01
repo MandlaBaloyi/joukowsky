@@ -12,8 +12,10 @@
 //! stochastic method uses, so results replay bit for bit (rule T3), and
 //! [`linalg`] the small dense solver (Cholesky) several contexts share,
 //! and [`sparse`] the envelope Cholesky for large sparse systems (the
-//! steady solver's nodal matrix).
+//! steady solver's nodal matrix). [`clock`]: dates from seconds since 1970,
+//! and how a moment is written for people.
 
+pub mod clock;
 pub mod linalg;
 pub mod random;
 pub mod sparse;

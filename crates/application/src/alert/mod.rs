@@ -10,6 +10,7 @@ use std::fmt::Write as _;
 
 use jk_classification::EventClass;
 use jk_kernel::Time;
+use jk_kernel::clock::stamp;
 use jk_localisation::{Localisation, SizeEstimate};
 
 /// How loudly an alert is raised.
@@ -52,6 +53,9 @@ pub struct Alert {
     pub sensors: Vec<String>,
     /// Plain-language reasons: classification evidence and pipeline notes.
     pub reasons: Vec<String>,
+    /// The site's local time minus UTC, if known (from its schedule): times
+    /// are shown as its local clock, else as UTC.
+    pub utc_offset: Option<Time>,
 }
 
 impl Alert {
@@ -70,12 +74,12 @@ impl Alert {
             String::new()
         };
         let mut out = format!(
-            "[{:?}] #{}{revision} {} ({:.0}% confident) at t = {:.3} s",
+            "[{:?}] #{}{revision} {} ({:.0}% confident) at {}",
             self.level,
             self.id,
             self.class.to_string().to_uppercase(),
             self.confidence * 100.0,
-            self.time.value()
+            stamp(self.time.value(), self.utc_offset.map(Time::value))
         );
         match &self.location {
             Some(loc) => {

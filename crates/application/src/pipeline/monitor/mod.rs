@@ -418,6 +418,7 @@ impl Monitor {
         all_final: bool,
     ) -> Result<Vec<Alert>, ApplicationError> {
         let names: Vec<String> = self.site.sensors.iter().map(|s| s.name.clone()).collect();
+        let offset = self.site.utc_offset();
         let lead = self.lead().map_or(f64::NEG_INFINITY, Time::value);
         let reached: Vec<f64> = self
             .sensors
@@ -433,7 +434,7 @@ impl Monitor {
                 .all(|&r| r >= incident.changed_at || lead - r > max_wait);
             if incident.stale && (heard || all_final) {
                 incident.stale = false;
-                let alert = incident.alert(&names);
+                let alert = incident.alert(&names, offset);
                 incident.revision += 1;
                 sink.send(&alert).map_err(ApplicationError::Delivery)?;
                 alerts.push(alert);

@@ -186,3 +186,8 @@ stops while its pipe is still empty ("whether the supply has come back
 since is not known", P6). A change is sent once every logger's data has
 passed it (or a logger lags beyond max_wait), so loggers that empty or
 refill together give ONE alert or revision, not one each (FN-041).
+Times in alerts (2026-10-01): records carry seconds since 1970 (UTC) -
+the logger reader makes them; alerts now write such a time as a date and
+clock time, in the site's zone when its schedule gives one ("2026-10-01
+14:02:36.0 UTC+02:00"), else marked UTC; simulations (time from 0) keep
+"t = 156.0 s" (kernel clock.rs; V-S9 on dated records).

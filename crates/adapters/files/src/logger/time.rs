@@ -21,18 +21,7 @@ pub struct Stamp {
     pub zoned: bool,
 }
 
-/// Days from 1970-01-01 to the given date (proleptic Gregorian).
-#[must_use]
-pub fn days_from_civil(year: i64, month: u32, day: u32) -> i64 {
-    let y = if month <= 2 { year - 1 } else { year };
-    let era = if y >= 0 { y } else { y - 399 } / 400;
-    let yoe = y - era * 400;
-    let m = i64::from(month);
-    let mp = if m > 2 { m - 3 } else { m + 9 };
-    let doy = (153 * mp + 2) / 5 + i64::from(day) - 1;
-    let doe = yoe * 365 + yoe / 4 - yoe / 100 + doy;
-    era * 146_097 + doe - 719_468
-}
+pub use jk_kernel::clock::days_from_civil;
 
 fn days_in_month(year: i64, month: u32) -> u32 {
     match month {

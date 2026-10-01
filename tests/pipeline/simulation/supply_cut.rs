@@ -125,3 +125,35 @@ fn vs9_data_stopping_while_empty_is_said() {
         }),
     );
 }
+
+#[test]
+fn vs9_on_real_records_the_alert_reads_in_clock_time() {
+    // The same cut, the records starting 2026-10-01 12:00:00 UTC.
+    let t0 = 86_400.0 * 20_727.0 + 12.0 * 3600.0;
+    let site = estate_site(Context::unknown());
+    println!("The same cut on records dated 2026-10-01, from 12:00:00 UTC:");
+    let truths = vec![truth(true), truth(true), truth(false)];
+    let mut recorded = record(&truths, DT, 54);
+    for r in &mut recorded {
+        r.start += t0;
+    }
+    let issued = live(&site, &recorded, 1.0, &[], None);
+    let cut = issued
+        .iter()
+        .rev()
+        .find(|i| i.alert.class == EventClass::SupplyCut)
+        .map(|i| i.alert.clone());
+    let text = cut.map(|a| a.render(&site.pipe_names)).unwrap_or_default();
+    check(
+        "  the cut began 12:02:36 UTC (156 s in) - written so",
+        text.contains("at 2026-10-01 12:02:36") && text.contains("since 2026-10-01 12:02:36"),
+    );
+    check(
+        "  and the water came back at 12:07:40.7 (460.7 s in)",
+        text.contains("supply RETURNED at 2026-10-01 12:07:40.7"),
+    );
+    check(
+        "  no zone known for the site: said to be UTC",
+        text.contains(" UTC"),
+    );
+}

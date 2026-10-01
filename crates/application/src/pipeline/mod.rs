@@ -57,6 +57,14 @@ pub struct Site {
     pub schedule: Option<Schedule>,
 }
 
+impl Site {
+    /// Local time minus UTC [s], if the site's schedule gives it.
+    #[must_use]
+    pub fn utc_offset(&self) -> Option<f64> {
+        self.schedule.as_ref().map(|s| s.utc_offset.value())
+    }
+}
+
 /// How a site runs over a day: which pumps and valves stand where at each
 /// hour follows from it (gap G-19).
 #[derive(Debug, Clone, PartialEq)]
