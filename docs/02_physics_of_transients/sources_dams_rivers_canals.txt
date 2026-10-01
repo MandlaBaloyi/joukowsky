@@ -208,3 +208,9 @@ exactly where a level or the clock crosses its value, either way.
 Done the same day: the EPANET reader gives pumps with their curves,
 [TIMES], [PATTERNS] and [CONTROLS] (09_technologies/03_networks_and_
 reference_tools.txt). Next: R-4.
+
+R-4 done (2026-10-01): canals and rivers - a 1-D Saint-Venant solver
+(new bounded context crates/domain/channels; method and results in
+open_channels.txt; V-A14). Next: hand a canal's end level to the pipe
+network as a reservoir's level history (R-1's SourceLevel), then R-5
+(pipes draining and refilling, G-14).

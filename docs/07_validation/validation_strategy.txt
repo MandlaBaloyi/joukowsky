@@ -23,6 +23,14 @@ Rung 1  Analytical: results that must match closed-form physics.
         reservoir-pipe-valve system vs the exact complex-frequency
         solution; first-order convergence, extrapolated within 0.5%
         (2026-09-29: +0.1% at 400 reaches after FN-021).
+  V-A14 Open channels (02_/open_channels.txt): normal depth satisfies
+        Manning and uniform flow stays uniform (2e-16 m over 2 h); flow
+        started elsewhere settles at it; the steady backwater (M1) profile
+        vs the direct-step method (within 2.1 mm, 0.25% of the rise);
+        small-wave speed vs sqrt(g h) (0.13%); Ritter's dam-break onto a
+        dry bed (mean depth error 0.22% of h0; 4/9 h0 at the dam to 0.7%;
+        front at 5 cm depth 0.06%, 1 cm 2%; the 1 mm edge lags 7%, a
+        first-order limit); water conserved to 1e-14 (2026-10-01).
   V-A13 Valves that move: tau -> infinity is the frozen valve (1e-8 m);
         after a 25 mm burst below a PRV the frozen valve leaves the head
         below at 14 m while tau 3 s and 10 s both restore 50.000 m; the

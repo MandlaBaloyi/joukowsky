@@ -1,0 +1,17 @@
+[package]
+name = "jk-channels"
+description = "Channels bounded context: open-channel flow in canals and rivers (1-D Saint-Venant)"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+publish.workspace = true
+license.workspace = true
+
+[lib]
+name = "jk_channels"
+
+[dependencies]
+jk-kernel.workspace = true
+
+[lints]
+workspace = true

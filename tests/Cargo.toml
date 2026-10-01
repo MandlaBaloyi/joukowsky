@@ -49,6 +49,10 @@ path = "adapters/main.rs"
 name = "balance"
 path = "balance/main.rs"
 
+[[test]]
+name = "channels"
+path = "channels/main.rs"
+
 [dependencies]
 jk-kernel.workspace = true
 jk-hydraulics.workspace = true
@@ -59,6 +63,7 @@ jk-application.workspace = true
 jk-files.workspace = true
 jk-sim.workspace = true
 jk-balance.workspace = true
+jk-channels.workspace = true
 
 [lints]
 workspace = true

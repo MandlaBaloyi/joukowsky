@@ -1,0 +1,78 @@
+OPEN CHANNELS: CANALS AND RIVERS (R-4)
+STATUS: DRAFT v0.1 (2026-10-01) - method built (crates/domain/channels)
+and validated on four analytical cases (V-A14); field data not yet seen
+
+Why (sources_dams_rivers_canals.txt, R-4)
+------------------------------------------------------------------------
+Much of South Africa's raw water reaches treatment works and sites along
+canals and rivers. A canal is not a pipe: its water has a free surface,
+waves move at a few metres a second (not 1000), and a change at one end
+takes minutes to hours to arrive at the other. The pipe engine sees a
+canal's end as a SOURCE whose level moves slowly - this solver supplies
+that level, and the times things arrive.
+
+1. Equations: 1-D Saint-Venant, prismatic channel
+------------------------------------------------------------------------
+Unknowns per cross-section: wetted area A and flow Q.
+    dA/dt + dQ/dx = 0
+    dQ/dt + d(Q^2/A + g I1)/dx = g A (S0 - Sf)
+  I1  = hydrostatic pressure term, integral of (h - eta) b(eta) d eta
+        (rectangle b h^2/2; trapezoid of bottom width b, side slope m
+        horizontal per vertical: b h^2/2 + m h^3/3)
+  S0  = bed slope (positive down the channel)
+  Sf  = n^2 Q|Q| / (A^2 R^(4/3))   Manning, R = A / wetted perimeter
+  c   = sqrt(g A / T)              small-wave celerity, T = top width
+  Fr  = |Q| / (A c)                Froude number: < 1 subcritical
+Trapezoid: A = (b + m h) h, T = b + 2 m h, P = b + 2 h sqrt(1 + m^2);
+depth from area: h = (-b + sqrt(b^2 + 4 m A)) / (2 m) (m > 0), A / b
+(rectangle).
+Normal depth h_n (uniform flow): Q = (1/n) A R^(2/3) sqrt(S0).
+Critical depth h_c: Q^2 T / (g A^3) = 1.
+
+2. Method: finite volumes, HLL flux, explicit
+------------------------------------------------------------------------
+Cells of length dx; per cell the averages (A, Q). Each step:
+  U_i <- U_i - dt/dx (F_{i+1/2} - F_{i-1/2}) + dt (0, g A_i S0)
+then friction, semi-implicitly (stable at small depths):
+  Q_i <- Q_i / (1 + dt g n^2 |Q_i| / (A_i^2 R_i^(4/3)) A_i)
+Interface flux: HLL (Harten-Lax-van Leer; Toro, "Riemann Solvers and
+Numerical Methods for Fluid Dynamics", ch. 10) with wave speeds
+  S_L = min(u_L - c_L, u_R - c_R),  S_R = max(u_L + c_L, u_R + c_R)
+and, against a dry bed, the dry-front speeds u + 2c (Toro, ch. 10 for
+the shallow-water equations): it keeps depths non-negative and moves a
+wet-dry front at the right speed - what a dam-break needs.
+Time step: dt = CFL dx / max(|u| + c), CFL 0.9.
+First order: fronts are smeared over a few cells; profiles converge as
+dx shrinks. Bed source pointwise: exact for uniform flow (fluxes equal,
+g A (S0 - Sf) = 0 at normal depth); small O(dx) error for still water on
+a slope (a pool behind a weir) - adequate for canals at our purposes.
+Boundaries by ghost cells:
+  upstream   given inflow Q(t) (depth copied from the first cell), or a
+             given water level (a reservoir or dam outlet);
+  downstream given depth (a pool, a gate held at a level), or free
+             outfall (zero gradient: water leaves as it arrives).
+
+3. Validation (V-A14, tests/channels/analytical)
+------------------------------------------------------------------------
+  a. Uniform flow: the normal depth satisfies Manning; started at it, a
+     channel stays there (to rounding); started elsewhere, it goes there.
+  b. Backwater (M1): a downstream pool above normal depth; the steady
+     profile vs the standard direct-step method (gradually varied flow,
+     dE/dx = S0 - Sf, E = h + Q^2 / (2 g A^2)).
+  c. Celerity: a small hump on still water travels at sqrt(g h).
+  d. Ritter's dam-break onto a dry bed (1892): for |x| < 2 c0 t,
+     h = (2 c0 - x/t)^2 / (9 g), c0 = sqrt(g h0); front at x = 2 c0 t.
+
+Results (tests/channels): uniform flow stays put to 2e-16 m; the backwater
+profile within 2.1 mm of the direct step; wave speed within 0.13% of
+sqrt(g h); Ritter's profile within 0.22% of h0 on average - its vanishing
+edge (1 mm deep) lags 7%, the price of a first-order scheme; water
+conserved to rounding (1e-14).
+
+4. Limits
+------------------------------------------------------------------------
+Prismatic channels (one cross-section shape along a reach); no lateral
+inflow yet; no gates, weirs or structures inside a reach; no coupling to
+the pipe network yet (next: a canal's end level as a reservoir's
+SourceLevel). Natural rivers with surveyed sections, flood plains and
+sediment are out of scope until asked.

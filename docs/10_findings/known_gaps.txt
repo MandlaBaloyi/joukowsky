@@ -148,8 +148,10 @@ G-18  Sources are fixed heads; dams, rivers, canals not modelled  IN PROGRESS
   load-shedding windows (V-A9). The EPANET reader now brings pumps (with
   their curves), [TIMES], [PATTERNS] and simple [CONTROLS] (2026-09-30),
   so a real model runs as its owner operates it; still missing there:
-  valves as devices, [RULES], pressure conditions. Still open: R-4 open
-  channels; R-5 draining and refilling (G-14).
+  valves as devices, [RULES], pressure conditions (since done: V-A10 to
+  V-A12). R-4 open channels done 2026-10-01 (crates/domain/channels,
+  V-A14) - not yet coupled to the pipe network. Still open: a canal's end
+  level as a reservoir's level history; R-5 draining and refilling (G-14).
   Every reservoir node holds one head forever. Right for a burst lasting
   seconds; blind to levels that change over hours, supply cuts, draining
   and refilling, and water lost between source and site. Plan R-1..R-5 in

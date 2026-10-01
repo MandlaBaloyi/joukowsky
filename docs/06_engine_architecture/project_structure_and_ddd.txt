@@ -88,6 +88,8 @@ Context map (who may use whom, inside domain/)
   detection      <- localisation, classification
   localisation   <- classification
   balance        (water balance, slow leaks: kernel only, 2026-09-30)
+  channels       (canals and rivers, 1-D Saint-Venant: kernel only,
+                  2026-10-01; feeds sources' levels to hydraulics later)
   (arrow = "is used by"; everything may use kernel)
 
 Ubiquitous language (terms mean the same thing in code and docs)
@@ -97,7 +99,9 @@ Ubiquitous language (terms mean the same thing in code and docs)
   source (where an event originated), data tier (0/1/2), credible region,
   probe (a known event used for calibration), zone (an area bounded by
   flow meters), balance, night flow, leak alarm (04_/slow_leaks_and_
-  water_balance.txt). New terms are added to docs before they appear in
+  water_balance.txt), reach (in channels: a stretch of canal of one
+  section, slope and roughness), normal depth, critical depth, backwater
+  (02_/open_channels.txt). New terms are added to docs before they appear in
   code.
 
 Mapping from the earlier sketch (engine_overview.txt)

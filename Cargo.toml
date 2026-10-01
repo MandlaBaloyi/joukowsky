@@ -8,6 +8,7 @@ members = [
     "crates/domain/localisation",
     "crates/domain/classification",
     "crates/domain/balance",
+    "crates/domain/channels",
     "crates/application",
     "crates/adapters/files",
     "crates/sim",
@@ -31,6 +32,7 @@ jk-detection = { path = "crates/domain/detection" }
 jk-localisation = { path = "crates/domain/localisation" }
 jk-classification = { path = "crates/domain/classification" }
 jk-balance = { path = "crates/domain/balance" }
+jk-channels = { path = "crates/domain/channels" }
 jk-application = { path = "crates/application" }
 jk-files = { path = "crates/adapters/files" }
 jk-sim = { path = "crates/sim" }
