@@ -364,3 +364,17 @@ FN-035  2026-10-01  Linear theory halves the worst surge after a pump trip
   1e-4 gives 159-174 m at the knee, 2.1-2.3 times linear theory's worst.
   The doubling survives the gas model; laboratory data remains the last
   check [VERIFY].
+
+FN-036  2026-10-01  Column separation is an attribute, not a class
+  event_classification.txt listed column separation as a class beside
+  burst and pump trip. Building it showed why it cannot be one: it is a
+  consequence - a pump trip WITH column separation, a valve slam WITH it -
+  and a class would compete with (and hide) the cause. Built as features
+  of every event (time at the vapour floor, time below 0, lowest
+  pressure) and alert reasons + level. Second find from the same test
+  (V-S7): with the pump's usual flywheel the knee of that main still
+  separates - so "the flywheel will do" is a claim to simulate, not to
+  assume (P4). Third: when the logger's front is shaped by the boiling,
+  the arrival-time fit fails (misfit 13.9) and the location is marked
+  not trusted - right, but locating such events needs the cavitating
+  model in the localiser (G-21).

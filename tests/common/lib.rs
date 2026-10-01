@@ -4,6 +4,7 @@
 //! a test log reads like a lab notebook, not just "ok".
 
 pub mod estate;
+pub mod knee;
 pub mod refill;
 pub mod sensor;
 

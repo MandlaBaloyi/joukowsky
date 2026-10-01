@@ -40,6 +40,36 @@ pub(super) struct Found {
     pub supply_return: Option<Time>,
 }
 
+/// What each member sensor saw below zero: negative pressure (water can be
+/// drawn in) and the vapour floor (the column separated).
+fn low_pressure_reasons(site: &Site, config: &PipelineConfig, members: &[Found]) -> Vec<String> {
+    let mut reasons = Vec::new();
+    for m in members {
+        let Some(Ok(f)) = &m.features else { continue };
+        let name = &site.sensors[m.sensor].name;
+        let window = config.features.after_window.value();
+        if f.low.at_floor.value() > 0.0 {
+            reasons.push(format!(
+                "{name}: COLUMN SEPARATION - the pressure sat at the vapour floor ({:.1} m) for \
+                 {:.2} s of the {window:.0} s after the front: the water boiled and the column \
+                 split. When it rejoins, the collapse can reach about twice the usual surge \
+                 (FN-035) - check the pipe's pressure rating",
+                config.features.vapour_floor.value(),
+                f.low.at_floor.value()
+            ));
+        }
+        if f.low.below_zero.value() > 0.0 {
+            reasons.push(format!(
+                "{name}: NEGATIVE pressure for {:.2} s, down to {:.1} m: water outside the pipe \
+                 can be drawn in through leaks and joints - a water-quality risk (intrusion)",
+                f.low.below_zero.value(),
+                f.low.lowest.value()
+            ));
+        }
+    }
+    reasons
+}
+
 /// A sensor whose data was not waited for: its index, and the time of its
 /// last sample (None if it has sent nothing).
 pub(super) type Unheard = (usize, Option<Time>);
@@ -173,6 +203,14 @@ pub(super) fn assess(
         EventClass::ValveClosure => Level::Info,
         EventClass::Burst | EventClass::Unknown => Level::Review,
     };
+    // Below zero: whatever the class, a danger of its own.
+    let low = low_pressure_reasons(site, config, members);
+    let level = if low.is_empty() || !corroborated {
+        level
+    } else {
+        level.max(Level::Warning)
+    };
+    reasons.extend(low);
     let time = location.as_ref().map_or(first.arrival.time, |l| l.emission);
     // How big: for a located burst, from the drops the loggers measured.
     let size = match (&location, class) {

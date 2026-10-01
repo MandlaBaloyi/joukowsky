@@ -148,6 +148,12 @@ Rung 3  Simulation studies.
         back) -> refill 98%, 99%. Control: the same slam on a pipe under
         pressure -> valve closure. Live monitor, 1 s chunks, 5/20/100 mm
         valves: every alert a REFILL warning, none a burst (2026-10-01).
+  V-S7  Low pressure in alerts (pipeline/simulation/low_pressure.rs):
+        pump trip on a main with a knee 50 m up, loggers at the pump and
+        the knee (gauge). Light flywheel: COLUMN SEPARATION (2.95 s at
+        the floor) and NEGATIVE pressure (down to -10.2 m) at the knee,
+        Warning. Usual flywheel: still separates (2.34 s) - reported.
+        Bursts on the estate: neither mentioned (2026-10-01).
   V-S4  Scale: synthetic towns of 10 / 50 / 100 km - time the simulator,
         live engine and advisor (10_findings/detection_range_and_scale.txt,
         gap G-10).

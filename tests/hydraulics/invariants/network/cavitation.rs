@@ -11,55 +11,18 @@
 //! the run stays finite. (The exact numbers are V-A17's.)
 
 use jk_hydraulics::vapour::FreeGas;
-use jk_hydraulics::{
-    GridOptions, InitialCondition, Network, NetworkRun, Node, Probe, Pump, PumpCurve,
-    SteadyOptions, thorley_inertia,
-};
-use jk_kernel::{Flow, Head, Length, STANDARD_GRAVITY, Time};
-use jk_tests::{check, pipe};
+use jk_hydraulics::{GridOptions, InitialCondition, NetworkRun, Probe, SteadyOptions};
+use jk_kernel::{Head, Time};
+use jk_tests::check;
+use jk_tests::knee::{KNEE, station};
 
-const KNEE: f64 = 50.0;
 const FLOOR: f64 = -10.0;
 
-/// Sump 10 m -> pump (trips at 0.01 s, inertia 1/20 of the Thorley
-/// estimate) -> 1000 m up to a knee at 50 m -> 1000 m on to a reservoir at
-/// 100 m (ground 95 m). Probes: the pump (discharge head), the knee.
+/// The knee station (`tests/common/knee.rs`), the pump tripping at 0.01 s
+/// with 1/20 of the usual flywheel. Probes: the pump (discharge head), the
+/// knee.
 fn pump_trip(floor: Option<f64>, gas: Option<FreeGas>) -> NetworkRun {
-    let power = 998.2 * STANDARD_GRAVITY.value() * 0.10 * 120.0 / 0.8 / 1000.0;
-    let station = Pump {
-        curve: PumpCurve::from_points(
-            Head::new(140.0),
-            (Flow::new(0.10), Head::new(120.0)),
-            (Flow::new(0.15), Head::new(90.0)),
-        )
-        .unwrap(),
-        rated_flow: Flow::new(0.10),
-        rated_efficiency: 0.8,
-        rated_speed_rpm: 1450.0,
-        inertia: 0.05 * thorley_inertia(power, 1450.0),
-    };
-    let mut net = Network::new(STANDARD_GRAVITY);
-    let sump = net.add_node(Node::Reservoir {
-        head: Head::new(10.0),
-    });
-    let p = net.add_node(Node::Pump {
-        pump: station,
-        trip: Some(Time::new(0.01)),
-    });
-    let knee = net.add_node(Node::Junction { demand: Flow::ZERO });
-    let top = net.add_node(Node::Reservoir {
-        head: Head::new(100.0),
-    });
-    net.add_pipe(sump, p, pipe(20.0, 0.3, 1000.0, 0.018))
-        .unwrap();
-    net.add_pipe(p, knee, pipe(1000.0, 0.3, 1000.0, 0.018))
-        .unwrap();
-    net.add_pipe(knee, top, pipe(1000.0, 0.3, 1000.0, 0.018))
-        .unwrap();
-    net.set_elevation(knee, Length::new(KNEE)).unwrap();
-    net.set_elevation(top, Length::new(95.0)).unwrap();
-    net.set_vapour_floor(floor.map(Head::new)).unwrap();
-    net.set_free_gas(gas).unwrap();
+    let (net, p, knee) = station(0.01, 0.05, floor, gas);
     net.simulate(
         &InitialCondition::Steady(SteadyOptions::default()),
         Time::new(30.0),

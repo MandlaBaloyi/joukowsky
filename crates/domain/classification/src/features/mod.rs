@@ -6,6 +6,8 @@
 //!   down over a second.
 //! - [`after`]: what the signal did next - did it stay at the new level
 //!   (persistence)?
+//! - [`low`]: how low the pressure went - below zero (intrusion risk), at
+//!   the vapour floor (column separation).
 //!
 //! Features are physics, not black-box statistics: each has a physical
 //! meaning an engineer can check (principle P1). Later: dominant period and
@@ -14,6 +16,7 @@
 
 pub mod after;
 pub mod front;
+pub mod low;
 
 use jk_detection::{Direction, Event, Series};
 use jk_kernel::{Head, Time};
@@ -29,6 +32,13 @@ pub struct FeatureConfig {
     pub front_window: Time,
     /// Record after the arrival examined for what happened next.
     pub after_window: Time,
+    /// The vapour floor as a gauge pressure head at the site
+    /// (`jk_hydraulics::vapour::vapour_floor` of its altitude; -10.1 m at
+    /// sea level, -8.2 m at 1700 m).
+    pub vapour_floor: Head,
+    /// Readings this close above the floor count as at the floor (the
+    /// vapour pressure moves with temperature, loggers have offsets).
+    pub floor_band: Head,
 }
 
 impl Default for FeatureConfig {
@@ -37,6 +47,8 @@ impl Default for FeatureConfig {
             before: Time::new(0.5),
             front_window: Time::new(1.0),
             after_window: Time::new(3.0),
+            vapour_floor: Head::new(-10.1),
+            floor_band: Head::new(1.0),
         }
     }
 }
@@ -57,6 +69,8 @@ pub struct Features {
     /// Mean deviation over the after-window as a fraction of the swing:
     /// ~1 = stayed at the new level, ~0 = came back.
     pub persistence: f64,
+    /// How low the pressure went over the after-window.
+    pub low: low::LowPressure,
 }
 
 /// Measures the features of `event` in `series`, a sensor with noise
@@ -105,6 +119,12 @@ pub fn extract(
     let swing = front::swing(&x[from..=front_end], level_before, sign);
     let rise_samples = front::rise_samples(&x[from..=front_end], level_before, swing);
     let persistence = after::persistence(&x[from..=after_end], level_before, swing);
+    let low = low::low_pressure(
+        &x[from..=after_end],
+        dt,
+        config.vapour_floor.value(),
+        config.floor_band.value(),
+    );
     Ok(Features {
         direction: event.direction,
         level_before: Head::new(level_before),
@@ -112,5 +132,6 @@ pub fn extract(
         rise_time: Time::new(rise_samples * dt),
         swing_in_noise: swing.abs() / noise.value(),
         persistence,
+        low,
     })
 }

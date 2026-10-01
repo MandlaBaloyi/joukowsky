@@ -88,3 +88,9 @@ refill is weighed against the refill. Alert level for a refill: Warning.
 Also fixed: a front already curving when the window opened was measured
 as 0 ms (SHARP); it now counts from the window's start.
 
+COLUMN SEPARATION (2026-10-01, V-S7): built as an ATTRIBUTE of every
+event, not a class (FN-036): the features measure the lowest pressure,
+the time below 0 and the time at the vapour floor after the front, and
+the alert adds COLUMN SEPARATION / NEGATIVE pressure reasons and raises
+the level to Warning. The class stays the cause (pump trip, burst, ...).
+02_/column_separation_and_intrusion.txt section 7.

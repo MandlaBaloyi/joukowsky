@@ -1,5 +1,5 @@
 COLUMN SEPARATION, CAVITATION AND INTRUSION
-STATUS: DRAFT v0.3 - sections 5-6 built and checked (V-A17, V-A18)
+STATUS: DRAFT v0.4 - sections 5-7 built and checked (V-A17, V-A18, V-S7)
 
 1. The down-surge
 -----------------
@@ -170,3 +170,28 @@ knee after the column separates, against the gas content:
 Linear theory's highest is 75.7 m. Across four decades of gas the
 collapse still reaches 2.1-2.3 times linear theory's worst: the doubling
 is not an artefact of the vapour model.
+
+7. In the alerts: low pressure as an attribute, not a class (2026-10-01)
+-------------------------------------------------------------------------
+Column separation is what a pump trip, a valve slam or a burst DOES when
+its down-surge reaches the vapour floor - not a cause competing with
+them (FN-036). So every event's features now measure, over the 3 s after
+its front (classification features/low.rs): the lowest pressure, the
+time below 0 (negative pressure: intrusion risk, section 3) and the time
+at the vapour floor (within 1 m above it; the floor from the site's
+altitude, FeatureConfig.vapour_floor, -10.1 m by default). The alert
+keeps its class and adds, per sensor:
+  "S2 knee: COLUMN SEPARATION - the pressure sat at the vapour floor
+   (-10.1 m) for 2.95 s ... the collapse can reach about twice the
+   usual surge (FN-035) - check the pipe's pressure rating"
+  "S2 knee: NEGATIVE pressure for 2.95 s, down to -10.2 m: water outside
+   the pipe can be drawn in through leaks and joints"
+and is raised to at least Warning (unless uncorroborated: one sensor
+reading -10 m could be a faulty sensor; it stays Review, with the
+reason). Checked (V-S7) on the knee station: light flywheel -> both
+reported; usual flywheel -> STILL separates at the knee (2.34 s at the
+floor): this main needs surge protection either way; bursts on the
+estate -> nothing said. Not yet: the collapse surge itself (it comes
+after the 3 s window - an alert revision could add it); loggers whose
+range stops at 0 bar g cannot show negative pressure at all (P2: the
+site's logger range must be known before claiming "no intrusion").
