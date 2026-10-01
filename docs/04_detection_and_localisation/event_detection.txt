@@ -173,3 +173,16 @@ of supply cuts.] The live Monitor runs a watch per sensor beside its
 front detector (PipelineConfig.supply); a gap ends the watch (a spell
 open at a gap: whether supply came back during it is not known, P6), and
 each event is classified with its own sensor's last return.
+
+Supply cuts as alerts (2026-10-01, V-S9). The watch now also reports the
+moment a spell has lasted min_empty (SupplyChange::Emptied), not only
+its end (Returned). The live Monitor turns these into SUPPLY CUT alerts
+(monitor/supply.rs): sensors confirming a cut within 15 min of each other
+are one incident; raised at Warning when two or more agree, at Review
+when one sensor alone reads about 0 (it could be a disconnected
+transducer - said in the alert); revised when the water returns ("after 5
+min - the pipes refill; expect refill surges"), and when a logger's data
+stops while its pipe is still empty ("whether the supply has come back
+since is not known", P6). A change is sent once every logger's data has
+passed it (or a logger lags beyond max_wait), so loggers that empty or
+refill together give ONE alert or revision, not one each (FN-041).

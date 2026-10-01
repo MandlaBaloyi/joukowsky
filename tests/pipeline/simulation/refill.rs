@@ -41,14 +41,30 @@ fn vs6_live_refills_come_out_as_refill_warnings_not_bursts() {
         println!("\nSupply returns to the drained main; {mm} mm air valve at the far end:");
         let truth = at_the_end(&refill_with(vented(mm), 300.0));
         let issued = live(&site(), &record(&[truth], DT, 21), 1.0, &[], None);
-        check("  at least one alert", !issued.is_empty());
+        let transient: Vec<_> = issued
+            .iter()
+            .filter(|i| i.alert.class != EventClass::SupplyCut)
+            .collect();
+        check("  at least one alert on the refill", !transient.is_empty());
         check(
-            "  every alert is a REFILL",
-            issued.iter().all(|i| i.alert.class == EventClass::Refill),
+            "  every one a REFILL",
+            transient
+                .iter()
+                .all(|i| i.alert.class == EventClass::Refill),
         );
         check(
             "  at WARNING level",
-            issued.iter().all(|i| i.alert.level == Level::Warning),
+            transient.iter().all(|i| i.alert.level == Level::Warning),
+        );
+        check(
+            "  and the empty pipe itself reported as a SUPPLY CUT, revised when it came back",
+            issued.iter().any(|i| {
+                i.alert.class == EventClass::SupplyCut
+                    && i.alert
+                        .reasons
+                        .iter()
+                        .any(|r| r.contains("supply RETURNED"))
+            }),
         );
     }
 }

@@ -122,7 +122,8 @@ pub fn weigh(
         refill += 5.0;
         reasons.push(format!(
             "the pipe was EMPTY before: {:.2} m of pressure - supply returning to a drained pipe; with nothing flowing there was nothing to stop or let out",
-            f.level_before.value()
+            // Rounded as shown, so a reading a hair below 0 is "0.00", not "-0.00".
+            (f.level_before.value() * 100.0).round() / 100.0 + 0.0
         ));
     } else if let Some(lag) = refilling {
         refill += 5.0;

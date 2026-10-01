@@ -16,6 +16,9 @@ pub enum EventClass {
     /// where it stopped (`docs/02_physics_of_transients/
     /// refilling_and_air_pockets.txt`).
     Refill,
+    /// Supply lost: a sensor's pipe stood empty for minutes. Reported by
+    /// the supply watch, never chosen by the classifier (not a candidate).
+    SupplyCut,
     /// The evidence does not single out one class - the classifier
     /// abstains rather than guess (principle P3).
     Unknown,
@@ -38,6 +41,7 @@ impl fmt::Display for EventClass {
             Self::ValveClosure => "valve closure",
             Self::PumpTrip => "pump trip",
             Self::Refill => "refill",
+            Self::SupplyCut => "supply cut",
             Self::Unknown => "unknown",
         })
     }

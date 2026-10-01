@@ -56,6 +56,22 @@ pub struct EmptySpell {
     pub until: Option<Time>,
 }
 
+/// What the watch noticed in a piece of record, in order.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub enum SupplyChange {
+    /// The pipe has now stood empty for `min_empty`: supply lost. `from`
+    /// is when it emptied (`None`: before this stretch of data began),
+    /// `confirmed` the sample at which it had been empty long enough.
+    Emptied {
+        /// When the pipe emptied.
+        from: Option<Time>,
+        /// When it had been empty long enough to call it.
+        confirmed: Time,
+    },
+    /// A spell ended: the supply came back.
+    Returned(EmptySpell),
+}
+
 /// The supply watch, live: one continuous stretch of a sensor's record,
 /// fed in pieces of any size - the same answers as [`empty_spells`] over
 /// the whole stretch.
@@ -68,6 +84,8 @@ pub struct SupplyWatch {
     seen: usize,
     /// The first sample of the current spell.
     current: Option<usize>,
+    /// Whether the current spell has been reported as `Emptied`.
+    announced: bool,
 }
 
 impl SupplyWatch {
@@ -95,30 +113,39 @@ impl SupplyWatch {
             interval: interval.value(),
             seen: 0,
             current: None,
+            announced: false,
         })
     }
 
-    /// Takes the next `samples`; returns the spells that ended in them
-    /// (the supply came back).
+    /// Takes the next `samples`; returns what changed in them, in order:
+    /// a pipe confirmed empty (supply lost), a spell ended (supply back).
     ///
     /// # Errors
     /// A non-finite sample (its index within `samples`); nothing is taken.
-    pub fn push(&mut self, samples: &[f64]) -> Result<Vec<EmptySpell>, DetectionError> {
+    pub fn push(&mut self, samples: &[f64]) -> Result<Vec<SupplyChange>, DetectionError> {
         if let Some(index) = samples.iter().position(|x| !x.is_finite()) {
             return Err(DetectionError::NonFiniteSample { index });
         }
         let empty = self.config.empty_below.value();
-        let mut ended = Vec::new();
+        let mut changes = Vec::new();
         for &x in samples {
             let k = self.seen;
             self.seen += 1;
             if x <= empty {
-                self.current.get_or_insert(k);
+                let first = *self.current.get_or_insert(k);
+                if !self.announced && self.span(first, k + 1) >= self.config.min_empty.value() {
+                    self.announced = true;
+                    changes.push(SupplyChange::Emptied {
+                        from: (first > 0).then(|| self.at(first)),
+                        confirmed: self.at(k),
+                    });
+                }
             } else if let Some(first) = self.current.take() {
-                ended.extend(self.spell(first, k, true));
+                self.announced = false;
+                changes.extend(self.spell(first, k, true).map(SupplyChange::Returned));
             }
         }
-        Ok(ended)
+        Ok(changes)
     }
 
     /// The stretch has ended (end of record, or a gap): the spell still
@@ -156,7 +183,14 @@ pub fn empty_spells(
     config: &SupplyConfig,
 ) -> Result<Vec<EmptySpell>, DetectionError> {
     let mut watch = SupplyWatch::new(*config, series.start, series.interval)?;
-    let mut spells = watch.push(series.samples)?;
+    let mut spells: Vec<EmptySpell> = watch
+        .push(series.samples)?
+        .into_iter()
+        .filter_map(|c| match c {
+            SupplyChange::Returned(spell) => Some(spell),
+            SupplyChange::Emptied { .. } => None,
+        })
+        .collect();
     spells.extend(watch.finish());
     Ok(spells)
 }
@@ -235,10 +269,34 @@ mod tests {
             SupplyWatch::new(SupplyConfig::default(), Time::ZERO, Time::new(1.0 / RATE)).unwrap();
         let mut live = Vec::new();
         for piece in x.chunks(7) {
-            live.extend(watch.push(piece).unwrap());
+            live.extend(
+                watch
+                    .push(piece)
+                    .unwrap()
+                    .into_iter()
+                    .filter_map(|c| match c {
+                        SupplyChange::Returned(s) => Some(s),
+                        SupplyChange::Emptied { .. } => None,
+                    }),
+            );
         }
         live.extend(watch.finish());
         assert_eq!(live, spells(&x));
+    }
+
+    #[test]
+    fn a_cut_is_announced_once_when_it_has_lasted_a_minute() {
+        let x = [hold(30.0, 10.0), hold(0.0, 100.0), hold(30.0, 10.0)].concat();
+        let mut watch =
+            SupplyWatch::new(SupplyConfig::default(), Time::ZERO, Time::new(1.0 / RATE)).unwrap();
+        let changes = watch.push(&x).unwrap();
+        assert_eq!(changes.len(), 2);
+        let SupplyChange::Emptied { from, confirmed } = changes[0] else {
+            panic!("first the cut")
+        };
+        assert!((from.unwrap().value() - 10.0).abs() < 1e-9);
+        assert!((confirmed.value() - 69.9).abs() < 1e-9, "{confirmed:?}");
+        assert!(matches!(changes[1], SupplyChange::Returned(_)));
     }
 
     #[test]

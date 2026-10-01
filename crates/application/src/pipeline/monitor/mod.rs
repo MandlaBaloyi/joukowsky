@@ -22,9 +22,10 @@
 
 mod hours;
 mod sensor;
+mod supply;
 
 use jk_classification::extract;
-use jk_detection::{Detector, Event, StreamOutput, SupplyWatch};
+use jk_detection::{Detector, Event, StreamOutput, SupplyChange, SupplyWatch};
 use jk_health::{Counter, Spectrum};
 use jk_kernel::{Head, Time};
 use jk_localisation::ClockEstimate;
@@ -34,6 +35,7 @@ use jk_telemetry::{Assembler, Chunk, Piece, TelemetryError};
 
 use self::hours::Hours;
 use self::sensor::SensorState;
+use self::supply::{Incident, Member};
 use super::assess::{Found, Unheard, assess};
 use super::fusion::{self, Candidate};
 use super::{PipelineConfig, Site};
@@ -77,6 +79,8 @@ pub struct Monitor {
     /// Detections not yet in a reported event.
     pending: Vec<Found>,
     issued: Vec<Issued>,
+    /// Supply cuts, open or recent.
+    supply_cuts: Vec<Incident>,
     next_id: u32,
 }
 
@@ -150,6 +154,7 @@ impl Monitor {
             sensors,
             pending: Vec::new(),
             issued: Vec::new(),
+            supply_cuts: Vec::new(),
             next_id: 1,
         })
     }
@@ -245,6 +250,7 @@ impl Monitor {
     /// # Errors
     /// An unknown sensor, a chunk refused by telemetry (overlap, changed
     /// rate), or an alert that could not be delivered.
+    #[allow(clippy::too_many_lines)] // one chunk through every watch, in order
     pub fn ingest(
         &mut self,
         sensor: usize,
@@ -316,8 +322,9 @@ impl Monitor {
                             .map_err(|e| ApplicationError::InvalidInput(format!("{name}: {e}")))?;
                         loading.add(&counter.take_closed());
                     }
+                    let mut changes = Vec::new();
                     if let Some(watch) = state.supply.as_mut() {
-                        let ended =
+                        changes =
                             watch
                                 .push(samples)
                                 .map_err(|error| ApplicationError::Detection {
@@ -326,8 +333,13 @@ impl Monitor {
                                 })?;
                         state
                             .supply_returns
-                            .extend(ended.iter().filter_map(|s| s.until.map(Time::value)));
+                            .extend(changes.iter().filter_map(|c| match c {
+                                SupplyChange::Returned(s) => s.until.map(Time::value),
+                                SupplyChange::Emptied { .. } => None,
+                            }));
                     }
+                    self.supply_changes(sensor, &changes);
+                    let state = &mut self.sensors[sensor];
                     let out = match state.stream.as_mut() {
                         Some(s) => {
                             s.push(samples)
@@ -369,8 +381,22 @@ impl Monitor {
     /// Ends the sensor's current continuous stretch, if any.
     fn end_stretch(&mut self, sensor: usize) {
         // A spell still open at a gap: whether the supply came back during
-        // it is not known (P6).
-        self.sensors[sensor].supply = None;
+        // it is not known (P6) - and a cut it was part of says so.
+        if self.sensors[sensor].supply.take().is_some() {
+            let stop = self.sensors[sensor].received_until();
+            for incident in &mut self.supply_cuts {
+                for m in incident
+                    .members
+                    .iter_mut()
+                    .filter(|m| m.sensor == sensor && m.open())
+                {
+                    let at = stop.unwrap_or(m.confirmed);
+                    m.data_stopped = Some(at);
+                    incident.stale = true;
+                    incident.changed_at = incident.changed_at.max(at);
+                }
+            }
+        }
         // A swing across a gap is not known either: what is still open
         // counts as half cycles.
         let state = &mut self.sensors[sensor];
@@ -381,6 +407,100 @@ impl Monitor {
             let out = stream.finish();
             self.absorb(sensor, out);
             self.update_features(sensor, true);
+        }
+    }
+
+    /// Sends the supply cuts that changed: raised when confirmed, revised
+    /// as they change. Closed ones are forgotten after a day.
+    fn send_supply_cuts(
+        &mut self,
+        sink: &mut dyn AlertSink,
+        all_final: bool,
+    ) -> Result<Vec<Alert>, ApplicationError> {
+        let names: Vec<String> = self.site.sensors.iter().map(|s| s.name.clone()).collect();
+        let lead = self.lead().map_or(f64::NEG_INFINITY, Time::value);
+        let reached: Vec<f64> = self
+            .sensors
+            .iter()
+            .map(|s| s.received_until().unwrap_or(f64::NEG_INFINITY))
+            .collect();
+        let max_wait = self.config.max_wait.value();
+        let mut alerts = Vec::new();
+        for incident in &mut self.supply_cuts {
+            // Every sensor past the change - or lagging beyond the wait.
+            let heard = reached
+                .iter()
+                .all(|&r| r >= incident.changed_at || lead - r > max_wait);
+            if incident.stale && (heard || all_final) {
+                incident.stale = false;
+                let alert = incident.alert(&names);
+                incident.revision += 1;
+                sink.send(&alert).map_err(ApplicationError::Delivery)?;
+                alerts.push(alert);
+            }
+        }
+        if let Some(lead) = self.lead() {
+            self.supply_cuts.retain(|i| {
+                i.members.iter().any(Member::open)
+                    || i.members
+                        .iter()
+                        .filter_map(|m| m.until.or(m.data_stopped))
+                        .any(|t| lead.value() - t < 86_400.0)
+            });
+        }
+        Ok(alerts)
+    }
+
+    /// Takes in what a sensor's supply watch noticed: a confirmed cut joins
+    /// (or opens) an incident; a return closes the sensor's part of it.
+    fn supply_changes(&mut self, sensor: usize, changes: &[SupplyChange]) {
+        for change in changes {
+            match *change {
+                SupplyChange::Emptied { from, confirmed } => {
+                    let member = Member {
+                        sensor,
+                        from: from.map(Time::value),
+                        confirmed: confirmed.value(),
+                        until: None,
+                        data_stopped: None,
+                    };
+                    let home = self
+                        .supply_cuts
+                        .iter()
+                        .position(|i| i.takes(member.confirmed));
+                    let at = member.confirmed;
+                    if let Some(i) = home {
+                        let incident = &mut self.supply_cuts[i];
+                        incident.members.push(member);
+                        incident.stale = true;
+                        incident.changed_at = incident.changed_at.max(at);
+                    } else {
+                        self.supply_cuts.push(Incident {
+                            id: self.next_id,
+                            revision: 0,
+                            members: vec![member],
+                            stale: true,
+                            changed_at: at,
+                        });
+                        self.next_id += 1;
+                    }
+                }
+                SupplyChange::Returned(spell) => {
+                    for incident in &mut self.supply_cuts {
+                        for m in incident
+                            .members
+                            .iter_mut()
+                            .filter(|m| m.sensor == sensor && m.open())
+                        {
+                            m.until = spell.until.map(Time::value);
+                            incident.stale = true;
+                            if let Some(back) = m.until {
+                                incident.changed_at = incident.changed_at.max(back);
+                            }
+                        }
+                    }
+                }
+            }
         }
     }
 
@@ -518,6 +638,8 @@ impl Monitor {
         all_final: bool,
     ) -> Result<Vec<Alert>, ApplicationError> {
         let mut alerts = Vec::new();
+
+        alerts.extend(self.send_supply_cuts(sink, all_final)?);
 
         // News since: low pressure from a late sensor at once; follow-up
         // peaks together, once every member's is in (one revision).

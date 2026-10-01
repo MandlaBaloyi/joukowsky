@@ -40,4 +40,4 @@ pub use detector::{
     Span, StreamOutput,
 };
 pub use error::DetectionError;
-pub use supply::{EmptySpell, SupplyConfig, SupplyWatch, empty_spells};
+pub use supply::{EmptySpell, SupplyChange, SupplyConfig, SupplyWatch, empty_spells};

@@ -1,15 +1,16 @@
 joukowsky test run
-  when     2026-10-01 16:53:40
+  when     2026-10-01 17:06:02
   suite    quick
-  commit   131a39f (with uncommitted changes)
+  commit   4e66308 (with uncommitted changes)
   rust     rustc 1.98.1 (48a229cea 2026-09-01)
   command  cargo test --workspace --no-fail-fast -- --nocapture --test-threads=1
 ==============================================================================
+   Compiling jk-classification v0.1.0 (C:\Users\HP\Desktop\joukowsky\crates\domain\classification)
+   Compiling jk-detection v0.1.0 (C:\Users\HP\Desktop\joukowsky\crates\domain\detection)
    Compiling jk-application v0.1.0 (C:\Users\HP\Desktop\joukowsky\crates\application)
-   Compiling jk-cli v0.1.0 (C:\Users\HP\Desktop\joukowsky\crates\interfaces\cli)
    Compiling jk-tests v0.1.0 (C:\Users\HP\Desktop\joukowsky\tests)
-   Compiling jk-health v0.1.0 (C:\Users\HP\Desktop\joukowsky\crates\domain\health)
-    Finished `test` profile [unoptimized + debuginfo] target(s) in 10.32s
+   Compiling jk-cli v0.1.0 (C:\Users\HP\Desktop\joukowsky\crates\interfaces\cli)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 27.97s
      Running unittests src\lib.rs (target\debug\deps\jk_application-6f0d1c56f055322e.exe)
 
 running 3 tests
@@ -65,7 +66,7 @@ test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; fini
 
      Running unittests src\lib.rs (target\debug\deps\jk_detection-ab885d9bb867d09a.exe)
 
-running 20 tests
+running 21 tests
 test baseline::brown::tests::follows_a_steady_trend_without_lag ... ok
 test baseline::brown::tests::shifting_keeps_the_trend ... ok
 test change::cusum::tests::a_clean_step_is_caught_and_its_start_found ... ok
@@ -82,12 +83,13 @@ test onset::step_area::tests::declines_when_the_windows_do_not_fit ... ok
 test onset::step_area::tests::exact_for_a_sharp_step_at_any_phase ... ok
 test supply::tests::a_brief_touch_of_zero_is_a_transient_not_an_empty_pipe ... ok
 test supply::tests::a_cut_and_a_return_are_found ... ok
+test supply::tests::a_cut_is_announced_once_when_it_has_lasted_a_minute ... ok
 test supply::tests::a_flicker_of_supply_is_a_return ... ok
 test supply::tests::a_slam_swinging_back_to_the_floor_still_marks_the_return ... ok
 test supply::tests::live_in_pieces_gives_the_same_spells ... ok
 test supply::tests::still_empty_at_the_end_is_said ... ok
 
-test result: ok. 20 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.03s
+test result: ok. 21 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.09s
 
      Running unittests src\lib.rs (target\debug\deps\jk_files-ec39beec6edb1da0.exe)
 
@@ -115,7 +117,7 @@ test logger::time::tests::the_usual_logger_formats ... ok
 test logger::units::tests::one_bar_is_about_ten_metres ... ok
 test logger::units::tests::units_from_headers ... ok
 
-test result: ok. 22 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+test result: ok. 22 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
 
      Running unittests src\lib.rs (target\debug\deps\jk_health-0684ebb074877a31.exe)
 
@@ -198,7 +200,7 @@ test steady::controls::tests::once_is_once ... ok
 test steady::rules::tests::or_binds_tighter_than_and_as_in_epanet ... ok
 test vapour::tests::the_coast_boils_lower_than_the_highveld ... ok
 
-test result: ok. 67 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.04s
+test result: ok. 67 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.09s
 
      Running unittests src\lib.rs (target\debug\deps\jk_kernel-eccabcc9e10cd5d2.exe)
 
@@ -217,7 +219,7 @@ test units::tests::same_type_arithmetic ... ok
 test units::tests::velocity_flow_area ... ok
 test units::tests::wave_travel_time_and_distance_round_trip ... ok
 
-test result: ok. 13 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+test result: ok. 13 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.04s
 
      Running unittests src\lib.rs (target\debug\deps\jk_localisation-b57d917c3efe0d09.exe)
 
@@ -230,7 +232,7 @@ test posterior::score::tests::a_wrong_candidate_is_penalised ... ok
 test posterior::score::tests::with_independent_errors_the_correlated_score_matches_the_simple_one ... ok
 test size::tests::exact_fronts_give_back_the_flow ... ok
 
-test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
 
      Running unittests src\lib.rs (target\debug\deps\jk_sim-cdf9363ef8ace4d0.exe)
 
@@ -240,7 +242,7 @@ test town::tests::every_junction_is_reachable_and_the_town_has_loops_and_dead_en
 test town::tests::the_length_is_exactly_the_target ... ok
 test town::tests::the_same_seed_gives_the_same_town ... ok
 
-test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
 
      Running unittests src\lib.rs (target\debug\deps\jk_telemetry-c8a96417b1d674bc.exe)
 
@@ -528,7 +530,7 @@ test simulation::logger_files::a_burst_recorded_in_logger_files_raises_one_alarm
   at 10:15:03 - seconds past 10:15:00          got       2.998747   expected       3.000000   rel.err 4.2e-4
 ok
 
-test result: ok. 16 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.91s
+test result: ok. 16 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.82s
 
      Running balance\main.rs (target\debug\deps\balance-6053ff28598bb67b.exe)
 
@@ -553,7 +555,7 @@ test simulation::night_watch::the_detection_curve_matches_the_cusum_arithmetic .
   at the arithmetic's size: caught at least a third of the time yes
 ok
 
-test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.29s
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 3.78s
 
      Running channels\main.rs (target\debug\deps\channels-175755f932f77680.exe)
 
@@ -642,7 +644,7 @@ test simulation::feed::when_the_canal_stops_the_sump_runs_down_and_the_town_runs
     the sump's change = in - drawn, within 1.27% of the water drawn (draw read every 5 min) yes
 ok
 
-test result: ok. 11 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 31.19s
+test result: ok. 11 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 37.71s
 
      Running classification\main.rs (target\debug\deps\classification-8d93599e4834ddf8.exe)
 
@@ -825,7 +827,7 @@ test simulation::scenarios::power_data_settles_the_slow_burst ... The same slow 
   burst                                        yes
 ok
 
-test result: ok. 11 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.40s
+test result: ok. 11 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 3.99s
 
      Running detection\main.rs (target\debug\deps\detection-06bc763b1e2f0d6d.exe)
 
@@ -888,7 +890,7 @@ Loggers: 128 S/s, integrating, random clock phase, 2 cm noise:
 ok
 test simulation::burst_location::vs1_location_error_versus_sampling_rate_and_noise ... ignored, full suite: 150 recorded sensor pairs across rates and noise levels
 
-test result: ok. 8 passed; 0 failed; 2 ignored; 0 measured; 0 filtered out; finished in 1.38s
+test result: ok. 8 passed; 0 failed; 2 ignored; 0 measured; 0 filtered out; finished in 4.19s
 
      Running health\main.rs (target\debug\deps\health-33db47b6d2615aa3.exe)
 
@@ -918,7 +920,7 @@ test analytical::rainflow::va19_the_standards_worked_example ... ASTM E1049 exam
     total cycles                               got       4.000000   expected       4.000000   rel.err 0.0e0
 ok
 
-test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s
 
      Running hydraulics\main.rs (target\debug\deps\hydraulics-bfd504be08ac9765.exe)
 
@@ -1480,7 +1482,7 @@ test invariants::steady_state::an_undisturbed_pipe_stays_steady ... Steady state
   valve holds steady                           yes
 ok
 
-test result: ok. 66 passed; 0 failed; 1 ignored; 0 measured; 0 filtered out; finished in 24.95s
+test result: ok. 66 passed; 0 failed; 1 ignored; 0 measured; 0 filtered out; finished in 29.05s
 
      Running kernel\main.rs (target\debug\deps\kernel-49d3448634a34a07.exe)
 
@@ -1798,11 +1800,11 @@ test simulation::valve_fronts::a_shut_prv_passes_no_wave_and_no_route ... A seco
     and no route from S1 reaches the zone: the locator cannot place a burst there from S1 yes
 ok
 
-test result: ok. 29 passed; 0 failed; 3 ignored; 0 measured; 0 filtered out; finished in 81.77s
+test result: ok. 29 passed; 0 failed; 3 ignored; 0 measured; 0 filtered out; finished in 81.66s
 
      Running pipeline\main.rs (target\debug\deps\pipeline-7d4a991ed5c74f28.exe)
 
-running 15 tests
+running 18 tests
 test simulation::fatigue::vs7_a_peak_over_the_rating_late_in_the_ringing_comes_by_one_revision ... The flat main's pump trip, its pipes PN10 (102.2 m); the pressure at the pump peaks          at 104.6 m, about 20 s after the front - long after the alert:
 2 alert(s) went out:
 [Warning] #1 PUMP TRIP (100% confident) at t = 2.993 s
@@ -2124,8 +2126,14 @@ Control: two bursts on the flowing estate (pressure stays well above 0):
 ok
 test simulation::refill::vs6_live_refills_come_out_as_refill_warnings_not_bursts ... 
 Supply returns to the drained main; 5 mm air valve at the far end:
-1 alert(s) went out:
-[Warning] #1 REFILL (100% confident) at t = 120.951 s
+3 alert(s) went out:
+[Review] #1 SUPPLY CUT (100% confident) at t = 59.992 s
+  where: not located (fewer than two sensors saw it)
+  seen by: S1 closed end
+  because: S1 closed end: the pressure has stood at about 0 since before its data began - its pipe is EMPTY: supply lost
+  because: seen by ONE sensor only: a supply cut - or a sensor fault (a disconnected transducer also reads about 0); a second logger on the same supply would tell
+  -> sent when the data had reached t = 59.99 s
+[Warning] #2 REFILL (100% confident) at t = 120.951 s
   where: not located (fewer than two sensors saw it)
   seen by: S1 closed end
   because: pressure ROSE by 0.28 m: a closing valve raises pressure upstream of it, returning water fills a pipe; bursts and pump trips lower it
@@ -2134,13 +2142,36 @@ Supply returns to the drained main; 5 mm air valve at the far end:
   because: pump power is not monitored: no outside evidence
   because: seen by ONE sensor only, and no other sensor that its wave could reach was watching: not located, not corroborated
   -> sent when the data had reached t = 123.99 s
-    at least one alert                         yes
-    every alert is a REFILL                    yes
+[Review] #1 (revision 1) SUPPLY CUT (100% confident) at t = 59.992 s
+  where: not located (fewer than two sensors saw it)
+  seen by: S1 closed end
+  because: S1 closed end: the pressure has stood at about 0 since before its data began - its pipe is EMPTY: supply lost
+  because: S1 closed end: supply RETURNED at t = 127 s, after at least 1 min - the pipes refill; expect refill surges
+  because: seen by ONE sensor only: a supply cut - or a sensor fault (a disconnected transducer also reads about 0); a second logger on the same supply would tell
+  because: supply back everywhere it was lost
+  -> sent when the data had reached t = 127.99 s
+    at least one alert on the refill           yes
+    every one a REFILL                         yes
     at WARNING level                           yes
+    and the empty pipe itself reported as a SUPPLY CUT, revised when it came back yes
 
 Supply returns to the drained main; 20 mm air valve at the far end:
-2 alert(s) went out:
-[Warning] #1 REFILL (95% confident) at t = 266.969 s
+4 alert(s) went out:
+[Review] #1 SUPPLY CUT (100% confident) at t = 59.992 s
+  where: not located (fewer than two sensors saw it)
+  seen by: S1 closed end
+  because: S1 closed end: the pressure has stood at about 0 since before its data began - its pipe is EMPTY: supply lost
+  because: seen by ONE sensor only: a supply cut - or a sensor fault (a disconnected transducer also reads about 0); a second logger on the same supply would tell
+  -> sent when the data had reached t = 59.99 s
+[Review] #1 (revision 1) SUPPLY CUT (100% confident) at t = 59.992 s
+  where: not located (fewer than two sensors saw it)
+  seen by: S1 closed end
+  because: S1 closed end: the pressure has stood at about 0 since before its data began - its pipe is EMPTY: supply lost
+  because: S1 closed end: supply RETURNED at t = 128 s, after at least 1 min - the pipes refill; expect refill surges
+  because: seen by ONE sensor only: a supply cut - or a sensor fault (a disconnected transducer also reads about 0); a second logger on the same supply would tell
+  because: supply back everywhere it was lost
+  -> sent when the data had reached t = 128.99 s
+[Warning] #2 REFILL (95% confident) at t = 266.969 s
   where: not located (fewer than two sensors saw it)
   seen by: S1 closed end
   because: pressure DROPPED by 4.56 m: a burst or a pump trip, not a closing valve (seen upstream) - or, in a refilling pipe, its column bouncing back off the air ahead
@@ -2151,7 +2182,7 @@ Supply returns to the drained main; 20 mm air valve at the far end:
   because: S1 closed end: COLUMN SEPARATION - the pressure sat at the vapour floor (-10.1 m) for 1.99 s of the 3 s after the front: the water boiled and the column split. When it rejoins, the collapse can reach about twice the usual surge (FN-035) - check the pipe's pressure rating
   because: S1 closed end: NEGATIVE pressure for 1.99 s, down to -10.1 m: water outside the pipe can be drawn in through leaks and joints - a water-quality risk (intrusion)
   -> sent when the data had reached t = 269.99 s
-[Warning] #1 (revision 1) REFILL (95% confident) at t = 266.969 s
+[Warning] #2 (revision 1) REFILL (95% confident) at t = 266.969 s
   where: not located (fewer than two sensors saw it)
   seen by: S1 closed end
   because: pressure DROPPED by 4.56 m: a burst or a pump trip, not a closing valve (seen upstream) - or, in a refilling pipe, its column bouncing back off the air ahead
@@ -2163,13 +2194,28 @@ Supply returns to the drained main; 20 mm air valve at the far end:
   because: S1 closed end: NEGATIVE pressure for 1.99 s, down to -10.1 m: water outside the pipe can be drawn in through leaks and joints - a water-quality risk (intrusion)
   because: S1 closed end: in the 6 s after the front the pressure peaked at 379.4 m - 16.6 times the 22.8 m before it
   -> sent when the data had reached t = 272.96 s
-    at least one alert                         yes
-    every alert is a REFILL                    yes
+    at least one alert on the refill           yes
+    every one a REFILL                         yes
     at WARNING level                           yes
+    and the empty pipe itself reported as a SUPPLY CUT, revised when it came back yes
 
 Supply returns to the drained main; 100 mm air valve at the far end:
-2 alert(s) went out:
-[Warning] #1 REFILL (100% confident) at t = 215.543 s
+4 alert(s) went out:
+[Review] #1 SUPPLY CUT (100% confident) at t = 59.992 s
+  where: not located (fewer than two sensors saw it)
+  seen by: S1 closed end
+  because: S1 closed end: the pressure has stood at about 0 since before its data began - its pipe is EMPTY: supply lost
+  because: seen by ONE sensor only: a supply cut - or a sensor fault (a disconnected transducer also reads about 0); a second logger on the same supply would tell
+  -> sent when the data had reached t = 59.99 s
+[Review] #1 (revision 1) SUPPLY CUT (100% confident) at t = 59.992 s
+  where: not located (fewer than two sensors saw it)
+  seen by: S1 closed end
+  because: S1 closed end: the pressure has stood at about 0 since before its data began - its pipe is EMPTY: supply lost
+  because: S1 closed end: supply RETURNED at t = 216 s, after at least 3 min - the pipes refill; expect refill surges
+  because: seen by ONE sensor only: a supply cut - or a sensor fault (a disconnected transducer also reads about 0); a second logger on the same supply would tell
+  because: supply back everywhere it was lost
+  -> sent when the data had reached t = 215.99 s
+[Warning] #2 REFILL (100% confident) at t = 215.543 s
   where: not located (fewer than two sensors saw it)
   seen by: S1 closed end
   because: pressure ROSE by 379.35 m: a closing valve raises pressure upstream of it, returning water fills a pipe; bursts and pump trips lower it
@@ -2180,7 +2226,7 @@ Supply returns to the drained main; 100 mm air valve at the far end:
   because: S1 closed end: COLUMN SEPARATION - the pressure sat at the vapour floor (-10.1 m) for 1.99 s of the 3 s after the front: the water boiled and the column split. When it rejoins, the collapse can reach about twice the usual surge (FN-035) - check the pipe's pressure rating
   because: S1 closed end: NEGATIVE pressure for 1.99 s, down to -10.0 m: water outside the pipe can be drawn in through leaks and joints - a water-quality risk (intrusion)
   -> sent when the data had reached t = 218.99 s
-[Warning] #1 (revision 1) REFILL (100% confident) at t = 215.543 s
+[Warning] #2 (revision 1) REFILL (100% confident) at t = 215.543 s
   where: not located (fewer than two sensors saw it)
   seen by: S1 closed end
   because: pressure ROSE by 379.35 m: a closing valve raises pressure upstream of it, returning water fills a pipe; bursts and pump trips lower it
@@ -2192,9 +2238,10 @@ Supply returns to the drained main; 100 mm air valve at the far end:
   because: S1 closed end: NEGATIVE pressure for 1.99 s, down to -10.0 m: water outside the pipe can be drawn in through leaks and joints - a water-quality risk (intrusion)
   because: S1 closed end: in the 6 s after the front the pressure peaked at 379.4 m - 11810.1 times the 0.0 m before it
   -> sent when the data had reached t = 221.53 s
-    at least one alert                         yes
-    every alert is a REFILL                    yes
+    at least one alert on the refill           yes
+    every one a REFILL                         yes
     at WARNING level                           yes
+    and the empty pipe itself reported as a SUPPLY CUT, revised when it came back yes
 ok
 test simulation::scenarios::a_faulty_sensor_is_sent_for_review_not_raised_as_an_alarm ... No event in the pipes; S2's reading jumps 3 m at t = 6 s (sensor fault):
 1 alert(s):
@@ -2263,6 +2310,131 @@ another on the north branch at t = 30 s:
   the first on the south branch, ~200 m        yes
   the second on the north branch, ~150 m       yes
 ok
+test simulation::supply_cut::vs9_a_supply_cut_is_raised_once_and_revised_when_the_water_returns ... Supply to S1 and S2 fails at 100 s and returns at 460 s; S3 stays supplied:
+4 alert(s) went out:
+[Review] #1 UNKNOWN (50% confident) at t = 99.739 s
+  where: T-S2 north branch at 106.0 m from its start; 90% within 36 m of pipe
+    T-S2 north branch    100.0%
+  seen by: S2 north block, S1 gatehouse
+  because: pressure DROPPED by 0.57 m: a burst or a pump trip, not a closing valve (seen upstream) or a refill
+  because: DRAWN-OUT front (915 ms, 10-90%): a gradual change - a pump running down, a valve closing slowly, or a burst opening slowly
+  because: SHALLOW drop: 2% of the pressure - a hole lets out a little water
+  because: the pipe was under pressure before (30.0 m): not refilling
+  because: pump power is not monitored: no outside evidence
+  -> sent when the data had reached t = 104.00 s
+[Warning] #2 SUPPLY CUT (100% confident) at t = 156.024 s
+  where: not located (fewer than two sensors saw it)
+  seen by: S1 gatehouse, S2 north block
+  because: S1 gatehouse: the pressure has stood at about 0 since t = 156 s - its pipe is EMPTY: supply lost
+  because: S2 north block: the pressure has stood at about 0 since t = 156 s - its pipe is EMPTY: supply lost
+  -> sent when the data had reached t = 217.00 s
+[Warning] #2 (revision 1) SUPPLY CUT (100% confident) at t = 156.024 s
+  where: not located (fewer than two sensors saw it)
+  seen by: S1 gatehouse, S2 north block
+  because: S1 gatehouse: the pressure has stood at about 0 since t = 156 s - its pipe is EMPTY: supply lost
+  because: S1 gatehouse: supply RETURNED at t = 461 s, after 5 min - the pipes refill; expect refill surges
+  because: S2 north block: the pressure has stood at about 0 since t = 156 s - its pipe is EMPTY: supply lost
+  because: S2 north block: supply RETURNED at t = 461 s, after 5 min - the pipes refill; expect refill surges
+  because: supply back everywhere it was lost
+  -> sent when the data had reached t = 461.00 s
+[Warning] #3 REFILL (100% confident) at t = 459.631 s
+  where: T-S2 north branch at 100.6 m from its start; 90% within 8 m of pipe
+    T-S2 north branch    100.0%
+  seen by: S2 north block, S1 gatehouse
+  because: pressure ROSE by 3.05 m: a closing valve raises pressure upstream of it, returning water fills a pipe; bursts and pump trips lower it
+  because: DRAWN-OUT front (813 ms, 10-90%): a gradual change - a pump running down, a valve closing slowly, or a burst opening slowly
+  because: the pipe was EMPTY before: 0.00 m of pressure - supply returning to a drained pipe; with nothing flowing there was nothing to stop or let out
+  because: pump power is not monitored: no outside evidence
+  -> sent when the data had reached t = 464.00 s
+    one supply-cut alert, first sent once the pipes had stood empty a minute yes
+    for S1 and S2 together, at Warning (two loggers agree), S3 not in it yes
+    revised when the water returned, saying so yes
+    the slow drain raised no burst alarm       yes
+ok
+test simulation::supply_cut::vs9_data_stopping_while_empty_is_said ... Supply to S1 and S2 fails; S2's gateway goes off at 300 s, still empty:
+5 alert(s) went out:
+[Review] #1 UNKNOWN (50% confident) at t = 99.760 s
+  where: T-S2 north branch at 87.2 m from its start; 90% within 40 m of pipe
+    T-S2 north branch    100.0%
+    T-S3 south branch      0.0%
+    S1-T spine             0.0%
+  seen by: S1 gatehouse, S2 north block
+  because: pressure DROPPED by 0.56 m: a burst or a pump trip, not a closing valve (seen upstream) or a refill
+  because: DRAWN-OUT front (855 ms, 10-90%): a gradual change - a pump running down, a valve closing slowly, or a burst opening slowly
+  because: SHALLOW drop: 2% of the pressure - a hole lets out a little water
+  because: the pipe was under pressure before (30.0 m): not refilling
+  because: pump power is not monitored: no outside evidence
+  -> sent when the data had reached t = 104.00 s
+[Warning] #2 SUPPLY CUT (100% confident) at t = 156.051 s
+  where: not located (fewer than two sensors saw it)
+  seen by: S1 gatehouse, S2 north block
+  because: S1 gatehouse: the pressure has stood at about 0 since t = 156 s - its pipe is EMPTY: supply lost
+  because: S2 north block: the pressure has stood at about 0 since t = 156 s - its pipe is EMPTY: supply lost
+  -> sent when the data had reached t = 217.00 s
+[Warning] #2 (revision 1) SUPPLY CUT (100% confident) at t = 156.051 s
+  where: not located (fewer than two sensors saw it)
+  seen by: S1 gatehouse, S2 north block
+  because: S1 gatehouse: the pressure has stood at about 0 since t = 156 s - its pipe is EMPTY: supply lost
+  because: S1 gatehouse: supply RETURNED at t = 461 s, after 5 min - the pipes refill; expect refill surges
+  because: S2 north block: the pressure has stood at about 0 since t = 156 s - its pipe is EMPTY: supply lost
+  -> sent when the data had reached t = 461.00 s
+[Review] #3 REFILL (100% confident) at t = 460.036 s
+  where: not located (fewer than two sensors saw it)
+  seen by: S1 gatehouse
+  because: pressure ROSE by 3.09 m: a closing valve raises pressure upstream of it, returning water fills a pipe; bursts and pump trips lower it
+  because: DRAWN-OUT front (831 ms, 10-90%): a gradual change - a pump running down, a valve closing slowly, or a burst opening slowly
+  because: the pipe was EMPTY before: 0.00 m of pressure - supply returning to a drained pipe; with nothing flowing there was nothing to stop or let out
+  because: pump power is not monitored: no outside evidence
+  because: seen by ONE sensor only: S3 south block watched and felt nothing, though a pressure wave from anywhere in the network would have reached them - a fault in S1 gatehouse, or an event too small or too local to travel
+  because: S2 north block: no data after t = 300.0 s - not waited for longer; it could not confirm or help locate this event
+  -> sent when the data had reached t = 471.00 s
+[Warning] #2 (revision 2) SUPPLY CUT (100% confident) at t = 156.051 s
+  where: not located (fewer than two sensors saw it)
+  seen by: S1 gatehouse, S2 north block
+  because: S1 gatehouse: the pressure has stood at about 0 since t = 156 s - its pipe is EMPTY: supply lost
+  because: S1 gatehouse: supply RETURNED at t = 461 s, after 5 min - the pipes refill; expect refill surges
+  because: S2 north block: the pressure has stood at about 0 since t = 156 s - its pipe is EMPTY: supply lost
+  because: S2 north block: its data stopped at t = 300 s while the pipe was still empty - whether the supply has come back since is not known
+  -> sent when the data had reached t = 599.99 s
+    the alert says S2's data stopped while empty - its return not known yes
+ok
+test simulation::supply_cut::vs9_one_logger_alone_is_raised_for_review ... Only S1's pressure falls to 0 (its supply - or its transducer):
+4 alert(s) went out:
+[Review] #1 UNKNOWN (50% confident) at t = 100.140 s
+  where: not located (fewer than two sensors saw it)
+  seen by: S1 gatehouse
+  because: pressure DROPPED by 0.59 m: a burst or a pump trip, not a closing valve (seen upstream) or a refill
+  because: DRAWN-OUT front (882 ms, 10-90%): a gradual change - a pump running down, a valve closing slowly, or a burst opening slowly
+  because: SHALLOW drop: 2% of the pressure - a hole lets out a little water
+  because: the pipe was under pressure before (30.0 m): not refilling
+  because: pump power is not monitored: no outside evidence
+  because: seen by ONE sensor only: S2 north block, S3 south block watched and felt nothing, though a pressure wave from anywhere in the network would have reached them - a fault in S1 gatehouse, or an event too small or too local to travel
+  -> sent when the data had reached t = 104.00 s
+[Review] #2 SUPPLY CUT (100% confident) at t = 156.023 s
+  where: not located (fewer than two sensors saw it)
+  seen by: S1 gatehouse
+  because: S1 gatehouse: the pressure has stood at about 0 since t = 156 s - its pipe is EMPTY: supply lost
+  because: seen by ONE sensor only: a supply cut - or a sensor fault (a disconnected transducer also reads about 0); a second logger on the same supply would tell
+  -> sent when the data had reached t = 217.00 s
+[Review] #2 (revision 1) SUPPLY CUT (100% confident) at t = 156.023 s
+  where: not located (fewer than two sensors saw it)
+  seen by: S1 gatehouse
+  because: S1 gatehouse: the pressure has stood at about 0 since t = 156 s - its pipe is EMPTY: supply lost
+  because: S1 gatehouse: supply RETURNED at t = 461 s, after 5 min - the pipes refill; expect refill surges
+  because: seen by ONE sensor only: a supply cut - or a sensor fault (a disconnected transducer also reads about 0); a second logger on the same supply would tell
+  because: supply back everywhere it was lost
+  -> sent when the data had reached t = 461.00 s
+[Review] #3 REFILL (100% confident) at t = 460.041 s
+  where: not located (fewer than two sensors saw it)
+  seen by: S1 gatehouse
+  because: pressure ROSE by 3.12 m: a closing valve raises pressure upstream of it, returning water fills a pipe; bursts and pump trips lower it
+  because: DRAWN-OUT front (833 ms, 10-90%): a gradual change - a pump running down, a valve closing slowly, or a burst opening slowly
+  because: the pipe was EMPTY before: 0.00 m of pressure - supply returning to a drained pipe; with nothing flowing there was nothing to stop or let out
+  because: pump power is not monitored: no outside evidence
+  because: seen by ONE sensor only: S2 north block, S3 south block watched and felt nothing, though a pressure wave from anywhere in the network would have reached them - a fault in S1 gatehouse, or an event too small or too local to travel
+  -> sent when the data had reached t = 464.00 s
+    a supply cut at Review, naming the sensor-fault possibility yes
+ok
 test simulation::valves_by_hour::a_night_burst_behind_a_shut_valve_is_not_blamed_on_the_one_logger_that_heard_it ... The zone drawing 3 l/s: the PRV is Closed
 
 -- Without the schedule (valve taken as at base demand: open):
@@ -2317,7 +2489,7 @@ test simulation::valves_by_hour::at_noon_the_valve_is_active_and_both_loggers_lo
     and it is not dismissed                    yes
 ok
 
-test result: ok. 15 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 29.09s
+test result: ok. 18 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 27.18s
 
    Doc-tests jk_application
 
@@ -2398,9 +2570,9 @@ running 0 tests
 test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
 
 ==============================================================================
-  passed   334
+  passed   338
   failed   0
   skipped  6 slow test(s) not in this suite (run -Suite full)
   filtered 0 test(s) outside -Only/-Filter
-  time     198.4 s (including compile)
+  time     226.1 s (including compile)
   result   ALL PASSED

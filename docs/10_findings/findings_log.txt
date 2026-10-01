@@ -438,3 +438,19 @@ FN-040  2026-10-01  The worst pressure comes in the ringing, after the alert
   gathered: ONE revision when every sensor's 30 s are in (V-S7, live:
   alert at 7 s of data, revision at 35 s). Also: Rust's float sum of
   nothing is -0.0, shown on the page as "-0.0"; sums now start at +0.
+
+FN-041  2026-10-01  Loggers that change together must give one alert
+  First supply-cut alerts, live (V-S9): S1's chunk arrived a moment
+  before S2's, so the cut went out for S1 alone - at Review, "a sensor
+  fault?" - and was revised a second later for both at Warning; the
+  return likewise came as two revisions in the same second. An operator
+  would get three messages where one is true. Fix: a supply change is
+  sent once every logger's data has passed the time of the change (or a
+  logger lags beyond max_wait - it is then not waited for, as with
+  transient alerts). Now: one alert at Warning, one revision at the
+  return. Also seen: where a supply fails, the start of the drain bends
+  the pressure enough for the front detector to report a weak, drawn-out
+  "unknown" event (0.6 m, Review) at its start. Left as it is - it is
+  the first sign, and honest about its doubt - but tying it to the cut
+  that follows is open (G-14). And "-0.00 m" in a refill reason: a
+  reading a hair below 0 is now rounded as shown.
