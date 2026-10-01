@@ -465,3 +465,18 @@ FN-042  2026-10-01  A cut is confirmed minutes after its first sign
   minute; other bookkeeping keeps its 70 s. Rule written down with it: a
   BURST before a cut is never explained away (a burst can drain pipes);
   only an UNKNOWN drop is lowered to Info.
+
+FN-043  2026-10-01  An undamped network remembers how a test began
+  The first cross-check of the MOC against the transfer-matrix model
+  (V-X1) disagreed by 15% at 0.61 Hz and 1.1% at 0.71 Hz. Probed: the
+  grid (30 or 60 reaches) and the source sampling changed nothing; the
+  window (30 or 60 periods) changed nothing; the length of the ease-in
+  did - 10 periods left 1% at 0.71 Hz, 30 periods 0.15%. At rest a
+  network has no damping (friction is of second order), so whatever the
+  start excites rings for ever and mixes into the forced response; near
+  a natural frequency (response 5-7x the drive) it cannot be separated
+  at all. The simulator was right; the test's start was too abrupt.
+  Kept: a 30-period ease-in, frequencies with a response above 3x
+  skipped and said so. Lesson for real data too: on a quiet network,
+  any oscillation seen may be an old event still ringing, not a new
+  one.

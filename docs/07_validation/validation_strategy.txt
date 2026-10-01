@@ -192,6 +192,14 @@ Rung 3  Simulation studies.
         at 200.1 m (truth 200), written "12:15:03.0 UTC+02:00"; vapour
         floor -8.452 m from 1450 m; ratings and ranges as given. Four
         mistaken site files refused with their line (2026-10-01).
+  V-X1  Cross-code: MOC vs the transfer-matrix model
+        (hydraulics/cross_code/transfer_matrix.rs): the estate at rest,
+        its reservoir oscillating 0.5 m, eased in over 30 periods; the
+        MOC's response at S1-S3 by Fourier projection over 60 periods vs
+        the transfer matrix on the same wave speeds: within 0.15% in
+        amplitude and phase at 7 frequencies (0.11-0.83 Hz); frequencies
+        within reach of a natural one (response > 3x) skipped and said
+        (FN-043) (2026-10-01).
   V-S4  Scale: synthetic towns of 10 / 50 / 100 km - time the simulator,
         live engine and advisor (10_findings/detection_range_and_scale.txt,
         gap G-10).

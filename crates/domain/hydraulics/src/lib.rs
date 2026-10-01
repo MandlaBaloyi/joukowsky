@@ -18,6 +18,7 @@
 
 pub mod boundary;
 mod error;
+pub mod frequency;
 pub mod joukowsky;
 pub mod moc;
 pub mod model;

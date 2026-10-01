@@ -14,7 +14,7 @@ yet played a real game.
 
 A. Not yet PROVEN (the engine exists; the evidence does not)
 ------------------------------------------------------------------------
-G-01  No independent cross-check of our simulator                 OPEN
+G-01  No independent cross-check of our simulator          IN PROGRESS
   WHY IT MATTERS  Our MOC simulator generates the data our detector and
     locator are tested on. If both share one wrong assumption, every
     test still passes. An independent code breaks that circle.
@@ -25,6 +25,13 @@ G-01  No independent cross-check of our simulator                 OPEN
     (textbook worked examples, V-A2 Michaud, V-B1 lab numbers from
     papers) as analytical tests.
   AFFECTS         Everything downstream of the simulator.
+  2026-10-01: an independent METHOD now agrees with it - the
+    frequency-domain transfer-matrix model (S9, no time steps, no grid)
+    and the MOC give the branched estate's response to within 0.15% at
+    seven frequencies (V-X1). That checks wave travel, reflections and
+    junctions. Still open: an independent CODE (TSNet - needs the owner's
+    approval to install Python), devices and friction in the frequency
+    model, and laboratory data (V-B1).
 
 G-02  Plastic pipe walls are not modelled (viscoelastic damping) IN PROGRESS
   2026-09-29: the wall model is built and validated against exact theory

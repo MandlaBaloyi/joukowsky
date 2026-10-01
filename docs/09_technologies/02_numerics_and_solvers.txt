@@ -134,6 +134,8 @@ In build order:
       one of our differentiators (11_).
   S9  Frequency-domain transfer-matrix model for small-amplitude
       analysis and frequency-response methods.
+      STATUS 2026-10-01: built for pipes, junctions and reservoirs
+      (frequency.rs); used as the independent check of the MOC (V-X1).
 Each solver ships with: analytical tests, a TSNet cross-check where TSNet
 supports the case, property tests (conservation, symmetry, reversibility
 of frictionless cases), and a benchmark.

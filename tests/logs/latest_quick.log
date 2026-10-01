@@ -1,18 +1,17 @@
 joukowsky test run
-  when     2026-10-01 17:44:10
+  when     2026-10-01 17:51:35
   suite    quick
-  commit   d87a2bd (with uncommitted changes)
+  commit   1fde1a4 (with uncommitted changes)
   rust     rustc 1.98.1 (48a229cea 2026-09-01)
   command  cargo test --workspace --no-fail-fast -- --nocapture --test-threads=1
 ==============================================================================
-   Compiling jk-application v0.1.0 (C:\Users\HP\Desktop\joukowsky\crates\application)
    Compiling jk-files v0.1.0 (C:\Users\HP\Desktop\joukowsky\crates\adapters\files)
    Compiling jk-tests v0.1.0 (C:\Users\HP\Desktop\joukowsky\tests)
    Compiling jk-cli v0.1.0 (C:\Users\HP\Desktop\joukowsky\crates\interfaces\cli)
+   Compiling jk-application v0.1.0 (C:\Users\HP\Desktop\joukowsky\crates\application)
    Compiling jk-sim v0.1.0 (C:\Users\HP\Desktop\joukowsky\crates\sim)
    Compiling jk-localisation v0.1.0 (C:\Users\HP\Desktop\joukowsky\crates\domain\localisation)
-   Compiling jk-hydraulics v0.1.0 (C:\Users\HP\Desktop\joukowsky\crates\domain\hydraulics)
-    Finished `test` profile [unoptimized + debuginfo] target(s) in 17.49s
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 7.68s
      Running unittests src\lib.rs (target\debug\deps\jk_application-6f0d1c56f055322e.exe)
 
 running 3 tests
@@ -91,7 +90,7 @@ test supply::tests::a_slam_swinging_back_to_the_floor_still_marks_the_return ...
 test supply::tests::live_in_pieces_gives_the_same_spells ... ok
 test supply::tests::still_empty_at_the_end_is_said ... ok
 
-test result: ok. 21 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.03s
+test result: ok. 21 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.04s
 
      Running unittests src\lib.rs (target\debug\deps\jk_files-abe3646623636d2b.exe)
 
@@ -134,7 +133,7 @@ test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; fini
 
      Running unittests src\lib.rs (target\debug\deps\jk_hydraulics-c42e47dfc771fa13.exe)
 
-running 67 tests
+running 68 tests
 test boundary::check_valve::tests::open_valve_passes_forward_flow_like_a_plain_joint ... ok
 test boundary::check_valve::tests::reversing_flow_shuts_it_and_each_side_becomes_a_dead_end ... ok
 test boundary::check_valve::tests::stays_shut_until_upstream_pushes_harder_then_reopens ... ok
@@ -160,6 +159,7 @@ test boundary::reservoir::tests::head_is_held_and_flow_satisfies_the_characteris
 test boundary::valve::tests::a_shut_valve_passes_nothing_and_takes_the_full_characteristic_head ... ok
 test boundary::valve::tests::fully_open_valve_passes_its_steady_flow ... ok
 test boundary::valve::tests::solves_the_orifice_law_both_ways ... ok
+test frequency::tests::a_dead_end_answers_one_over_cos ... ok
 test moc::characteristics::tests::a_steady_friction_gradient_is_a_fixed_point ... ok
 test moc::characteristics::tests::interior_solution_lies_on_both_characteristics ... ok
 test moc::grid::tests::courant_one_time_step ... ok
@@ -203,7 +203,7 @@ test steady::controls::tests::once_is_once ... ok
 test steady::rules::tests::or_binds_tighter_than_and_as_in_epanet ... ok
 test vapour::tests::the_coast_boils_lower_than_the_highveld ... ok
 
-test result: ok. 67 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.03s
+test result: ok. 68 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.03s
 
      Running unittests src\lib.rs (target\debug\deps\jk_kernel-eccabcc9e10cd5d2.exe)
 
@@ -592,7 +592,7 @@ test simulation::site_file::vs11_a_site_file_with_a_mistake_is_refused_with_its_
     an unknown section: refused, with its line yes
 ok
 
-test result: ok. 18 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.15s
+test result: ok. 18 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.09s
 
      Running balance\main.rs (target\debug\deps\balance-a2825c7f967d1b14.exe)
 
@@ -617,7 +617,7 @@ test simulation::night_watch::the_detection_curve_matches_the_cusum_arithmetic .
   at the arithmetic's size: caught at least a third of the time yes
 ok
 
-test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.15s
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.16s
 
      Running channels\main.rs (target\debug\deps\channels-ce85841cd8c293e6.exe)
 
@@ -706,7 +706,7 @@ test simulation::feed::when_the_canal_stops_the_sump_runs_down_and_the_town_runs
     the sump's change = in - drawn, within 1.27% of the water drawn (draw read every 5 min) yes
 ok
 
-test result: ok. 11 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 11.84s
+test result: ok. 11 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 11.38s
 
      Running classification\main.rs (target\debug\deps\classification-a56e11395e341787.exe)
 
@@ -889,7 +889,7 @@ test simulation::scenarios::power_data_settles_the_slow_burst ... The same slow 
   burst                                        yes
 ok
 
-test result: ok. 11 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.21s
+test result: ok. 11 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.27s
 
      Running detection\main.rs (target\debug\deps\detection-81d94b53f3b9f2e6.exe)
 
@@ -952,7 +952,7 @@ Loggers: 128 S/s, integrating, random clock phase, 2 cm noise:
 ok
 test simulation::burst_location::vs1_location_error_versus_sampling_rate_and_noise ... ignored, full suite: 150 recorded sensor pairs across rates and noise levels
 
-test result: ok. 8 passed; 0 failed; 2 ignored; 0 measured; 0 filtered out; finished in 1.18s
+test result: ok. 8 passed; 0 failed; 2 ignored; 0 measured; 0 filtered out; finished in 2.23s
 
      Running health\main.rs (target\debug\deps\health-c1dfc12b2c8dfb16.exe)
 
@@ -986,7 +986,7 @@ test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; fini
 
      Running hydraulics\main.rs (target\debug\deps\hydraulics-7b4d3b57b0036488.exe)
 
-running 67 tests
+running 68 tests
 test analytical::boundaries::burst::a_10mm_hole_at_60m_head ... DN150 AC main at 60 m head, 0.5 m/s; a 10 mm hole opens (Cd 0.6):
   water lost              1.555 l/s  (134 m^3 per day)
   head step at the burst  -4.486 m
@@ -1458,6 +1458,38 @@ test analytical::viscoelastic::va5_a_creeping_wall_slows_and_damps_the_ring_as_t
   rigid pipe, same run: fundamental 10.387 m then 10.387 m (no creep, no friction: no decay)
   rigid pipe does not decay                    got      10.386751   expected      10.386751   rel.err 5.1e-16
 ok
+test cross_code::transfer_matrix::vx1_the_simulator_and_the_transfer_matrix_agree_on_the_estate ... The estate, its reservoir oscillating by 0.5 m: response per metre at R, method of characteristics (MOC) vs transfer matrix (TM).
+  f [Hz]  logger   |MOC|    |TM|     phase MOC  phase TM   off by
+   0.11   S1       1.585    1.586       -0.0       -0.0   1.1e-3
+   0.11   S2       2.070    2.072       -0.0       -0.0   1.2e-3
+   0.11   S3       2.128    2.130       -0.0       -0.0   1.2e-3
+   0.17   near a natural frequency (response 7.1x): skipped - with no damping 
+                 at rest the network's own ringing never dies and beats with the forced response
+   0.23   S1       0.035    0.035     -179.5     -180.0   3.2e-4
+   0.23   S2       1.096    1.097     -180.0     -180.0   1.1e-3
+   0.23   S3       1.270    1.271     -180.0     -180.0   1.1e-3
+   0.29   S1       0.294    0.294       -0.0       -0.0   2.9e-4
+   0.29   S2       0.584    0.585     -180.0     -180.0   5.5e-4
+   0.29   S3       0.779    0.780     -180.0     -180.0   7.3e-4
+   0.37   S1       0.542    0.543       -0.0       -0.0   4.9e-4
+   0.37   S2       0.315    0.316     -180.0     -180.0   3.0e-4
+   0.37   S3       0.715    0.716      180.0      180.0   6.3e-4
+   0.45   near a natural frequency (response 7.4x): skipped - with no damping 
+                 at rest the network's own ringing never dies and beats with the forced response
+   0.53   S1       1.316    1.317       -0.0       -0.0   1.0e-3
+   0.53   S2       1.239    1.240     -180.0      180.0   1.0e-3
+   0.53   S3       0.281    0.282      180.0      180.0   3.2e-4
+   0.61   near a natural frequency (response 4.8x): skipped - with no damping 
+                 at rest the network's own ringing never dies and beats with the forced response
+   0.71   S1       2.039    2.042      180.0     -180.0   1.5e-3
+   0.71   S2       1.686    1.689       -0.0        0.0   1.5e-3
+   0.71   S3       1.156    1.158       -0.0        0.0   1.4e-3
+   0.83   S1       0.522    0.523     -180.0     -180.0   5.2e-4
+   0.83   S2       0.994    0.995       -0.0       -0.0   8.6e-4
+   0.83   S3       0.856    0.857       -0.0       -0.0   7.3e-4
+    7 frequencies compared (at least 5)        yes
+    the two methods agree within 0.5% (worst 1.5e-3) yes
+ok
 test invariants::grid_independence::joukowsky_peak_is_exact_on_every_grid_and_material ... ignored, full suite: 1024 simulations (run-tests.ps1 -Suite full)
 test invariants::grid_independence::joukowsky_peak_is_the_same_on_every_grid ... 1 reach(es), dt = 1.0000 s:
   peak head [m]                                got     201.971621   expected     201.971621   rel.err 1.4e-16
@@ -1544,7 +1576,7 @@ test invariants::steady_state::an_undisturbed_pipe_stays_steady ... Steady state
   valve holds steady                           yes
 ok
 
-test result: ok. 66 passed; 0 failed; 1 ignored; 0 measured; 0 filtered out; finished in 8.89s
+test result: ok. 67 passed; 0 failed; 1 ignored; 0 measured; 0 filtered out; finished in 11.70s
 
      Running kernel\main.rs (target\debug\deps\kernel-84f06cfc922db1e0.exe)
 
@@ -1862,7 +1894,7 @@ test simulation::valve_fronts::a_shut_prv_passes_no_wave_and_no_route ... A seco
     and no route from S1 reaches the zone: the locator cannot place a burst there from S1 yes
 ok
 
-test result: ok. 29 passed; 0 failed; 3 ignored; 0 measured; 0 filtered out; finished in 34.73s
+test result: ok. 29 passed; 0 failed; 3 ignored; 0 measured; 0 filtered out; finished in 31.74s
 
      Running pipeline\main.rs (target\debug\deps\pipeline-9c399a325a10643c.exe)
 
@@ -2766,7 +2798,7 @@ test simulation::valves_by_hour::at_noon_the_valve_is_active_and_both_loggers_lo
     and it is not dismissed                    yes
 ok
 
-test result: ok. 20 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 11.85s
+test result: ok. 20 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 12.13s
 
    Doc-tests jk_application
 
@@ -2847,9 +2879,9 @@ running 0 tests
 test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
 
 ==============================================================================
-  passed   345
+  passed   347
   failed   0
   skipped  6 slow test(s) not in this suite (run -Suite full)
   filtered 0 test(s) outside -Only/-Filter
-  time     95.9 s (including compile)
+  time     85.8 s (including compile)
   result   ALL PASSED

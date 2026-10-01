@@ -7,8 +7,11 @@
 //! - [`invariants`]: laws that must hold in every simulation - steady state
 //!   stays steady, the grid does not change the answer, mass is conserved.
 //!
-//! Later: `cross_code` (against `TSNet`, rung 3).
+//! - [`cross_code`]: the simulator against an independent method - the
+//!   frequency-domain transfer-matrix model (gap G-01); later `TSNet`.
+//!
 //! Run only these:  `.\tests\run-tests.ps1 -Only hydraulics`
 
 pub mod analytical;
+mod cross_code;
 mod invariants;

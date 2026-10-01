@@ -145,3 +145,22 @@ Ulanicki (J. Hydraul. Eng. 129(10), 2003); published pilot-operated PRVs
 settle in seconds to tens of seconds (one reported test 7-16 s) [VERIFY
 tau per valve: maker data or a recorded pressure step]. No pilot dead time
 is modelled. Unknown tau (files never give it): frozen, as before.
+
+7. The frequency domain: transfer matrices (S9, added 2026-10-01)
+------------------------------------------------------------------------
+For small oscillations e^{iwt} about a steady state, per unit length a
+pipe has series impedance z = R' + iw/(gA) (R' = f|Q0|/(gDA^2), friction
+linearised about the steady flow Q0) and shunt admittance y = iw gA/a^2.
+With gamma = sqrt(z y), Zc = sqrt(z/y), over length L:
+    h_down = cosh(gL) h_up - Zc sinh(gL) q_up
+    q_down = -sinh(gL)/Zc h_up + cosh(gL) q_up
+so q_up = (cosh(gL) h_up - h_down)/(Zc sinh(gL)) and q_down =
+(h_up - cosh(gL) h_down)/(Zc sinh(gL)). Flows balance at junctions,
+reservoirs hold their head (one driven with a unit oscillation): a linear
+system in the complex node heads (crates/domain/hydraulics/src/
+frequency.rs; Chaudhry ch. 12, Wylie & Streeter ch. 12). Checks: a dead
+end answers 1/cos(wL/a) exactly (unit test); the MOC agrees with it on
+the branched estate to 0.15% in amplitude and phase at seven
+frequencies (V-X1) - two independent methods, closing part of G-01.
+Not yet in it: devices (valves, pumps), demands; resonance peaks (no
+damping at rest - see FN-043).
