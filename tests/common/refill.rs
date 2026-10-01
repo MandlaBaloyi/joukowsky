@@ -18,9 +18,8 @@
 //! speeds agree. Its peak is the Joukowsky surge a v / g PLUS line
 //! packing: the column was losing its 30 m of supply head to friction
 //! along the way, and once stopped that head comes back on top. The
-//! down-surges that follow fall below the vapour limit (-10 m) in the
-//! simulation, which has no cavitation yet (S7) - not physical, so tests
-//! judge the first front only.
+//! down-surges that follow reach the vapour floor (-10 m at the coast):
+//! the water boils there and cavities open and collapse (S7, V-A17).
 
 use jk_hydraulics::refill::{Air, Refill, RefillRun, Vent, refill};
 use jk_hydraulics::{
@@ -85,7 +84,8 @@ pub fn vented(mm: f64) -> Air {
 }
 
 /// The free-discharging pipe: reservoir 30 m -> pipe -> valve open to air
-/// (fully open: 1 cm of loss), shut instantly at t = 0.
+/// (fully open: 1 cm of loss), shut instantly at t = 0; water boils at
+/// -10 m gauge.
 ///
 /// # Panics
 /// Never for the fixed pipe (a test bug otherwise).
@@ -99,6 +99,8 @@ pub fn free_discharge() -> (Network, jk_hydraulics::NodeId, jk_hydraulics::PipeI
         flow_coefficient: Some(1.0),
     });
     let p = net.add_pipe(r, v, pipe(L, D, A, F)).expect("valid pipe");
+    net.set_vapour_floor(Some(Head::new(-10.0)))
+        .expect("a valid floor");
     (net, v, p)
 }
 

@@ -215,6 +215,9 @@ pub struct Network {
     /// Ground elevation of each node [m] (0 unless set): pressure head =
     /// head - elevation, for pressure-driven demand.
     elevations: Vec<f64>,
+    /// Gauge pressure head at which water boils, if transients may
+    /// cavitate (S7).
+    vapour_floor: Option<f64>,
 }
 
 /// For each node, the pipes that touch it and which end of each.
@@ -232,7 +235,40 @@ impl Network {
             levels: Vec::new(),
             tanks: Vec::new(),
             elevations: Vec::new(),
+            vapour_floor: None,
         }
+    }
+
+    /// Lets water boil in transients: wherever the pressure head would fall
+    /// below `floor` (the vapour pressure as a gauge head - about -10 m at
+    /// the coast, see [`crate::vapour::vapour_floor`]) a vapour cavity opens
+    /// instead, and closes when the water returns (DVCM, `docs/
+    /// 02_physics_of_transients/column_separation_and_intrusion.txt`
+    /// section 5). Pressure heads are measured from each node's ground
+    /// elevation, the pipe running straight between its nodes. `None` (the
+    /// default): no floor - linear elastic theory, heads may go anywhere.
+    ///
+    /// # Errors
+    /// A floor that is not finite or not below 0 (water boils below
+    /// atmospheric pressure only).
+    pub fn set_vapour_floor(&mut self, floor: Option<Head>) -> Result<(), HydraulicsError> {
+        if let Some(f) = floor
+            && !(f.value().is_finite() && f.value() < 0.0)
+        {
+            return Err(HydraulicsError::invalid(
+                "vapour floor",
+                f.value(),
+                "finite and below 0 (gauge)",
+            ));
+        }
+        self.vapour_floor = floor.map(Head::value);
+        Ok(())
+    }
+
+    /// The vapour floor, if set.
+    #[must_use]
+    pub fn vapour_floor(&self) -> Option<Head> {
+        self.vapour_floor.map(Head::new)
     }
 
     /// Sets node `node`'s ground elevation (used where a pressure matters:

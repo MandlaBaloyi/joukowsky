@@ -28,6 +28,15 @@ pub fn downstream(c_plus: f64, head_below: f64, impedance: f64, coefficient: f64
     (c_plus - impedance * q, q)
 }
 
+/// Flow through the valve at a known `head` above it: Q|Q| = 2 Cv (H -
+/// `H_down`) (when a vapour cavity holds the head at the floor).
+#[must_use]
+#[inline]
+pub fn flow_at(head: f64, head_below: f64, coefficient: f64) -> f64 {
+    let d = head - head_below;
+    d.signum() * (2.0 * coefficient * d.abs()).sqrt()
+}
+
 /// Solves Q|Q| = 2 Cv (d - B Q) with d = `C_P` - `H_down`.
 ///
 /// Written in the form without subtractive cancellation,

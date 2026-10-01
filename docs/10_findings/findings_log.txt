@@ -333,3 +333,16 @@ FN-033  2026-10-01  A refill against trapped air has no front
   down-surge 1 s after the slam went out as BURST (82%, Review). Noise
   (2 cm) never reaches 2 m; any reading above it is water arriving. The
   2 s bridge was removed; that down-surge is now refill 98%.
+
+FN-034  2026-10-01  Cavitation: DVCM first, not DGCM
+  column_separation_and_intrusion.txt section 2 said to start with the
+  discrete GAS cavity model (more realistic with dissolved air). Built the
+  discrete VAPOUR cavity model first: (1) it has an exact elastic
+  solution to test against - with a cavity at a closed valve the volume
+  at whole round trips equals the rigid-column volume, and the collapse
+  surge is H_R + (a/g) v_in (V-A17, to 1e-11); (2) DGCM is the same code
+  with a small gas volume at each point and tends to DVCM as the gas
+  fraction goes to 0, so it is a refinement, not a rewrite. Side finding:
+  the after-slam record of the refill tests (V-S6) went to -320 m in
+  linear theory; with the floor it holds at -10 m and the 100 mm refill
+  gives one refill alert instead of two. Doc updated (section 5).

@@ -6,6 +6,7 @@
 //! va2_, ...), so a log line traces straight back to the claim it proves.
 
 mod boundaries;
+mod cavitation;
 mod control_valves;
 mod controls;
 mod joukowsky;

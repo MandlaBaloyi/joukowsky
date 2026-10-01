@@ -23,6 +23,13 @@ Rung 1  Analytical: results that must match closed-form physics.
         reservoir-pipe-valve system vs the exact complex-frequency
         solution; first-order convergence, extrapolated within 0.5%
         (2026-09-29: +0.1% at 400 reaches after FN-021).
+  V-A17 Column separation (02_/column_separation_and_intrusion.txt
+        section 5): instant valve closure on 2 m/s, frictionless 500 m
+        pipe, 30 m reservoir, vapour floor -10 m. Cavity opens at 2L/a;
+        its volume at whole round trips equals the rigid-column volume
+        (1e-11); collapse surge H_R + (a/g) v_in = 226.06 m (2e-12); no
+        head below its own floor. Highveld (-8.19 m) with the valve 15 m
+        up: same checks, 137 l vs 78 l of cavity (2026-10-01).
   V-A16 Refilling after a supply cut (02_/refilling_and_air_pockets.txt):
         rigid column into an empty 500 m DN200 pipe from 30 m of supply.
         No air in the way: speed along the pipe vs v^2 = 2gH(1 - x0/x) and

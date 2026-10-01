@@ -125,6 +125,8 @@ In build order:
   S6  Viscoelastic walls: 1-3 Kelvin-Voigt elements for PE/PVC.
       STATUS 2026-09-29: built and validated (V-A5); parameters [VERIFY].
   S7  Cavitation: DGCM (discrete gas cavity model), DVCM for comparison.
+      STATUS 2026-10-01: DVCM built first (exact solution to test, V-A17;
+      FN-034) at pipe points, junctions and valves; DGCM next.
   S8  Discrete adjoint of the network MOC - exact gradients of a data
       misfit w.r.t. wave speeds, friction, leak parameters, in one
       backward pass. Enables gradient-based ITA and HMC (05_). This is

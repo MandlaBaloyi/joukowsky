@@ -58,6 +58,15 @@ pub fn head(arrivals: &[Arrival], demand: f64, k: f64, outside_head: f64) -> (f6
     (outside_head + sign * u * u, sign * k * u)
 }
 
+/// Leak flow at a known `head` (when a vapour cavity holds the head at the
+/// floor): +k sqrt(H - `H_out`), or intrusion below `H_out`.
+#[must_use]
+#[inline]
+pub fn flow_at(head: f64, k: f64, outside_head: f64) -> f64 {
+    let d = head - outside_head;
+    d.signum() * k * d.abs().sqrt()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

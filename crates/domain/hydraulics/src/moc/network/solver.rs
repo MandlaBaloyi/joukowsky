@@ -10,6 +10,12 @@
 //!   3. plastic pipes advance each point's wall creep (S6);
 //!   4. probes are recorded.
 //!
+//! If the network has a vapour floor (S7), points and junction/valve nodes
+//! whose head would fall below it hold a vapour cavity instead
+//! ([`super::cavity`]); a point then carries two flows, its upstream side
+//! (used by the C- leaving it) and its downstream side (used by the C+).
+//! Pumps, check valves and control valves are not yet allowed to cavitate.
+//!
 //! A plastic pipe's creep is folded into every characteristic it carries
 //! (`pipe/viscoelastic.rs`): interior points and pipe ends then solve with
 //! the same code as rigid pipes.
@@ -26,6 +32,7 @@ use crate::boundary::{control_valve, leak, pump, valve};
 use crate::error::positive;
 use crate::moc::characteristics::Characteristics;
 use crate::moc::grid::MAX_STEPS;
+use crate::moc::network::cavity;
 use crate::moc::network::grid::{GridOptions, NetworkGrid};
 use crate::moc::network::initial::InitialCondition;
 use crate::moc::trace::Trace;
@@ -96,6 +103,26 @@ pub struct NetworkRun {
     pub trace: Trace,
     /// Speed ratio N / `N_rated` of every pump, one sample per time step.
     pub pump_speeds: Vec<(NodeId, Vec<f64>)>,
+    /// Vapour cavity volume [m^3] at each probe's point, one sample per
+    /// time step, in probe order - empty if the network has no vapour
+    /// floor.
+    pub cavity_volumes: Vec<Vec<f64>>,
+}
+
+/// The vapour cavities of a run (only with a vapour floor).
+struct Cavities {
+    /// Piezometric floor at every pipe grid point [m].
+    floor: Vec<Vec<f64>>,
+    /// Cavity volume at every pipe grid point (interior points only) [m^3].
+    volume: Vec<Vec<f64>>,
+    volume_new: Vec<Vec<f64>>,
+    /// Flow on the upstream side of every pipe grid point (differs from
+    /// the downstream side only at a cavity).
+    upstream: Vec<Vec<f64>>,
+    upstream_new: Vec<Vec<f64>>,
+    /// Piezometric floor and cavity volume at every node.
+    node_floor: Vec<f64>,
+    node_volume: Vec<f64>,
 }
 
 #[derive(Clone, Copy)]
@@ -150,6 +177,33 @@ impl Network {
         }
         let mut h_new = h.clone();
         let mut q_new = q.clone();
+        let mut cavities = self.vapour_floor().map(|floor| {
+            let hv = floor.value();
+            let z = |n: NodeId| self.elevation(n).value();
+            let point_floor: Vec<Vec<f64>> = self
+                .pipes()
+                .iter()
+                .zip(&h)
+                .map(|(np, hp)| {
+                    let (z0, z1) = (z(np.from), z(np.to));
+                    #[allow(clippy::cast_precision_loss)] // reach counts are small
+                    let r = (hp.len() - 1) as f64;
+                    #[allow(clippy::cast_precision_loss)]
+                    let floor_at = |i: usize| z0 + (z1 - z0) * i as f64 / r + hv;
+                    (0..hp.len()).map(floor_at).collect()
+                })
+                .collect();
+            let zeros: Vec<Vec<f64>> = h.iter().map(|hp| vec![0.0; hp.len()]).collect();
+            Cavities {
+                floor: point_floor,
+                volume: zeros.clone(),
+                volume_new: zeros,
+                upstream: q.clone(),
+                upstream_new: q.clone(),
+                node_floor: (0..self.nodes().len()).map(|n| z(NodeId(n)) + hv).collect(),
+                node_volume: vec![0.0; self.nodes().len()],
+            }
+        });
         let mut walls: Vec<Option<Wall>> = self
             .pipes()
             .iter()
@@ -234,6 +288,11 @@ impl Network {
         let groups = pipe_groups(&h);
         let mut trace = Trace::new(dt, probes.len(), steps + 1);
         record(&mut trace, &resolved, &node_head, &node_outflow, &h, &q);
+        let mut cavity_volumes: Vec<Vec<f64>> = if cavities.is_some() {
+            vec![vec![0.0]; probes.len()]
+        } else {
+            Vec::new()
+        };
         let mut arrivals: Vec<Arrival> = Vec::new();
 
         for k in 1..=steps {
@@ -243,7 +302,40 @@ impl Network {
             // 1. Pipe interiors - each pipe depends only on the old step, so
             //    on a large grid the pipes are shared out among threads; the
             //    arithmetic is the same, so the result is bit for bit the same.
-            if groups.len() > 1 {
+            if let Some(cav) = cavities.as_mut() {
+                let shared = Shared {
+                    chars: &chars,
+                    walls: &walls,
+                    h: &h,
+                    q: &q,
+                    upstream: &cav.upstream,
+                    volume: &cav.volume,
+                    floor: &cav.floor,
+                    dt: dt_si,
+                };
+                std::thread::scope(|scope| {
+                    let mut rest = (
+                        &mut h_new[..],
+                        &mut q_new[..],
+                        &mut cav.upstream_new[..],
+                        &mut cav.volume_new[..],
+                    );
+                    for &(first, end) in &groups {
+                        let n = end - first;
+                        let (hh, h_next) = rest.0.split_at_mut(n);
+                        let (qq, q_next) = rest.1.split_at_mut(n);
+                        let (uu, u_next) = rest.2.split_at_mut(n);
+                        let (vv, v_next) = rest.3.split_at_mut(n);
+                        rest = (h_next, q_next, u_next, v_next);
+                        let shared = &shared;
+                        if groups.len() > 1 {
+                            scope.spawn(move || cavitating(shared, hh, qq, uu, vv, first));
+                        } else {
+                            cavitating(shared, hh, qq, uu, vv, first);
+                        }
+                    }
+                });
+            } else if groups.len() > 1 {
                 std::thread::scope(|scope| {
                     let (mut rest_h, mut rest_q) = (&mut h_new[..], &mut q_new[..]);
                     for &(first, end) in &groups {
@@ -264,12 +356,13 @@ impl Network {
                 arrivals.clear();
                 for &(pid, end) in &topo[n] {
                     let (c, hp, qp) = (&chars[pid.0], &h[pid.0], &q[pid.0]);
+                    let qm = cavities.as_ref().map_or(qp, |cav| &cav.upstream[pid.0]);
                     let last = hp.len() - 1;
                     let (characteristic, at, foot) = match end {
                         PipeEnd::Downstream => {
                             (c.c_plus(hp[last - 1], qp[last - 1]), last, last - 1)
                         }
-                        PipeEnd::Upstream => (c.c_minus(hp[1], qp[1]), 0, 1),
+                        PipeEnd::Upstream => (c.c_minus(hp[1], qm[1]), 0, 1),
                     };
                     let (characteristic, impedance) = match &walls[pid.0] {
                         None => (characteristic, c.impedance()),
@@ -298,17 +391,29 @@ impl Network {
                     }
                     Node::Junction { .. } => {
                         let d = steady.junction_outflow[n];
-                        match burst_at[n] {
-                            Some(b) => {
-                                let (hn, leak_flow) = leak::head(
-                                    &arrivals,
-                                    d,
-                                    b.coefficient_at(t),
-                                    b.outside_head.value(),
-                                );
+                        let opening =
+                            burst_at[n].map(|b| (b.coefficient_at(t), b.outside_head.value()));
+                        let usual = match opening {
+                            Some((k, outside)) => {
+                                let (hn, leak_flow) = leak::head(&arrivals, d, k, outside);
                                 (hn, d + leak_flow)
                             }
                             None => (junction::head(&arrivals, d), d),
+                        };
+                        match cavities.as_mut() {
+                            Some(cav) => {
+                                let (hn, out, v) = cavity::node(
+                                    &arrivals,
+                                    usual,
+                                    cav.node_floor[n],
+                                    cav.node_volume[n],
+                                    dt_si,
+                                    |hh| d + opening.map_or(0.0, |(k, o)| leak::flow_at(hh, k, o)),
+                                );
+                                cav.node_volume[n] = v;
+                                (hn, out)
+                            }
+                            None => usual,
                         }
                     }
                     Node::Valve {
@@ -319,13 +424,27 @@ impl Network {
                         let a = arrivals[0];
                         let (q0, dh0) = steady.valve_steady[n];
                         let cv = valve::coefficient(closure.opening(t), q0, dh0);
-                        let (hn, qv) = valve::downstream(
+                        let usual = valve::downstream(
                             a.characteristic,
                             downstream_head.value(),
                             a.impedance,
                             cv,
                         );
-                        (hn, qv)
+                        match cavities.as_mut() {
+                            Some(cav) => {
+                                let (hn, qv, v) = cavity::node(
+                                    &arrivals,
+                                    usual,
+                                    cav.node_floor[n],
+                                    cav.node_volume[n],
+                                    dt_si,
+                                    |hh| valve::flow_at(hh, downstream_head.value(), cv),
+                                );
+                                cav.node_volume[n] = v;
+                                (hn, qv)
+                            }
+                            None => usual,
+                        }
                     }
                     Node::CheckValve => {
                         let pos = |e: PipeEnd| {
@@ -478,6 +597,25 @@ impl Network {
 
             std::mem::swap(&mut h, &mut h_new);
             std::mem::swap(&mut q, &mut q_new);
+            if let Some(cav) = cavities.as_mut() {
+                // Pipe ends belong to their nodes: one flow each.
+                for (u, qp) in cav.upstream_new.iter_mut().zip(&q) {
+                    let last = qp.len() - 1;
+                    (u[0], u[last]) = (qp[0], qp[last]);
+                }
+                std::mem::swap(&mut cav.upstream, &mut cav.upstream_new);
+                std::mem::swap(&mut cav.volume, &mut cav.volume_new);
+                for (j, probe) in resolved.iter().enumerate() {
+                    cavity_volumes[j].push(match *probe {
+                        Resolved::Node(n) => cav.node_volume[n],
+                        Resolved::Pipe(p, 0) => cav.node_volume[self.pipes()[p].from.0],
+                        Resolved::Pipe(p, i) if i + 1 == cav.volume[p].len() => {
+                            cav.node_volume[self.pipes()[p].to.0]
+                        }
+                        Resolved::Pipe(p, i) => cav.volume[p][i],
+                    });
+                }
+            }
             record(&mut trace, &resolved, &node_head, &node_outflow, &h, &q);
             for (id, history) in &mut pump_speeds {
                 history.push(pump_alpha[id.0]);
@@ -488,6 +626,7 @@ impl Network {
             grid,
             trace,
             pump_speeds,
+            cavity_volumes,
         })
     }
 
@@ -591,6 +730,52 @@ fn interiors(
                     (f64::midpoint(cp, cm), (cp - cm) / (2.0 * b))
                 }
             };
+        }
+    }
+}
+
+/// What every share of a cavitating step reads (the old step).
+struct Shared<'a> {
+    chars: &'a [Characteristics],
+    walls: &'a [Option<Wall>],
+    h: &'a [Vec<f64>],
+    q: &'a [Vec<f64>],
+    upstream: &'a [Vec<f64>],
+    volume: &'a [Vec<f64>],
+    floor: &'a [Vec<f64>],
+    dt: f64,
+}
+
+/// As [`interiors`], with vapour cavities ([`cavity::point`]): writes the
+/// head, downstream-side flow, upstream-side flow and cavity volume of the
+/// interior points of pipes `first`...
+fn cavitating(
+    s: &Shared<'_>,
+    h_new: &mut [Vec<f64>],
+    q_new: &mut [Vec<f64>],
+    upstream_new: &mut [Vec<f64>],
+    volume_new: &mut [Vec<f64>],
+    first: usize,
+) {
+    for k in 0..h_new.len() {
+        let p = first + k;
+        let (c, hp, qp, up) = (&s.chars[p], &s.h[p], &s.q[p], &s.upstream[p]);
+        for i in 1..hp.len() - 1 {
+            let cp = c.c_plus(hp[i - 1], qp[i - 1]);
+            let cm = c.c_minus(hp[i + 1], up[i + 1]);
+            let (cp, cm, b) = match &s.walls[p] {
+                None => (cp, cm, c.impedance()),
+                Some(w) => {
+                    let (cp, b) = w.fold((i - 1, hp[i - 1]), i, cp, c.impedance(), hp[i]);
+                    let (cm, _) = w.fold((i + 1, hp[i + 1]), i, cm, c.impedance(), hp[i]);
+                    (cp, cm, b)
+                }
+            };
+            let (head, qu, qd, v) = cavity::point(cp, cm, b, s.floor[p][i], s.volume[p][i], s.dt);
+            h_new[k][i] = head;
+            q_new[k][i] = qd;
+            upstream_new[k][i] = qu;
+            volume_new[k][i] = v;
         }
     }
 }

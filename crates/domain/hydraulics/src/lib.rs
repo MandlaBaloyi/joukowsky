@@ -14,6 +14,7 @@
 //! - [`steady`]: the everyday flows and pressures (steady state).
 //! - [`moc`]: the method-of-characteristics solver engine and the solvers
 //!   built on it.
+//! - [`vapour`]: the vapour floor (where water boils) at a site's altitude.
 
 pub mod boundary;
 mod error;
@@ -23,6 +24,7 @@ pub mod model;
 pub mod pipe;
 pub mod refill;
 pub mod steady;
+pub mod vapour;
 
 pub use boundary::closure::ValveClosure;
 pub use boundary::control_valve::{ValveMode, ValveState};

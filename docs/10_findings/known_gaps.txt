@@ -138,8 +138,8 @@ G-14  Refilling / air-pocket transients have no class             OPEN
   bursts (V-S6). Still open: a burst DURING a refill is weighed against
   the refill (only sharpness and size speak for it); supply cuts as
   alerts of their own ("water off at 14:02, back at 18:30"); refilling
-  inside the network solver (mixed flow, R-5 next rung); cavitation after the
-  slam (S7); several pockets; real air-valve data.
+  inside the network solver (mixed flow, R-5 next rung); several pockets;
+  real air-valve data. (Cavitation after the slam: done, V-A17.)
   Classes today: Burst, ValveClosure, PumpTrip, Unknown. Refilling after
   supply cuts is among the most violent SA transients
   (01_/the_operating_environment.txt section 2); it will come out as
@@ -213,3 +213,12 @@ G-20  Demands are fixed, whatever the pressure        IN PROGRESS
   they do not reduce the draw. Fix: pressure-driven demand (a junction
   draws demand x f(pressure), Wagner's or EPANET 2.2's PDA [VERIFY the
   form]), needed anyway for draining and refilling (R-5, G-14).
+
+G-21  Cavitation only at pipe points, junctions and valves     OPEN
+  2026-10-01: vapour cavities (DVCM) built and checked (V-A17, FN-034),
+  switched on per network (Network::set_vapour_floor; off by default).
+  Still open: pumps (suction cavitation), check valves and control valves
+  do not cavitate yet; DGCM (dissolved/free gas, softer collapses); the
+  floor's temperature (vapour pressure at 20 C only); turning the floor on
+  by default once every analytical test states its floor; a column-
+  separation class for the classifier (vapour plateau, then spikes).

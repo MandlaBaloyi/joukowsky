@@ -1,15 +1,17 @@
 joukowsky test run
-  when     2026-10-01 11:00:21
+  when     2026-10-01 14:17:18
   suite    quick
-  commit   cd21361 (with uncommitted changes)
+  commit   ae37e28 (with uncommitted changes)
   rust     rustc 1.98.1 (48a229cea 2026-09-01)
   command  cargo test --workspace --no-fail-fast -- --nocapture --test-threads=1
 ==============================================================================
-   Compiling jk-cli v0.1.0 (C:\Users\HP\Desktop\joukowsky\crates\interfaces\cli)
    Compiling jk-tests v0.1.0 (C:\Users\HP\Desktop\joukowsky\tests)
+   Compiling jk-cli v0.1.0 (C:\Users\HP\Desktop\joukowsky\crates\interfaces\cli)
    Compiling jk-application v0.1.0 (C:\Users\HP\Desktop\joukowsky\crates\application)
-   Compiling jk-classification v0.1.0 (C:\Users\HP\Desktop\joukowsky\crates\domain\classification)
-    Finished `test` profile [unoptimized + debuginfo] target(s) in 11.48s
+   Compiling jk-localisation v0.1.0 (C:\Users\HP\Desktop\joukowsky\crates\domain\localisation)
+   Compiling jk-sim v0.1.0 (C:\Users\HP\Desktop\joukowsky\crates\sim)
+   Compiling jk-files v0.1.0 (C:\Users\HP\Desktop\joukowsky\crates\adapters\files)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 18.60s
      Running unittests src\lib.rs (target\debug\deps\jk_application-a6f8696c1e4119f9.exe)
 
 running 3 tests
@@ -85,7 +87,7 @@ test supply::tests::a_slam_swinging_back_to_the_floor_still_marks_the_return ...
 test supply::tests::live_in_pieces_gives_the_same_spells ... ok
 test supply::tests::still_empty_at_the_end_is_said ... ok
 
-test result: ok. 20 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.03s
+test result: ok. 20 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.04s
 
      Running unittests src\lib.rs (target\debug\deps\jk_files-ec39beec6edb1da0.exe)
 
@@ -117,7 +119,7 @@ test result: ok. 22 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; fin
 
      Running unittests src\lib.rs (target\debug\deps\jk_hydraulics-c42e47dfc771fa13.exe)
 
-running 57 tests
+running 61 tests
 test boundary::check_valve::tests::open_valve_passes_forward_flow_like_a_plain_joint ... ok
 test boundary::check_valve::tests::reversing_flow_shuts_it_and_each_side_becomes_a_dead_end ... ok
 test boundary::check_valve::tests::stays_shut_until_upstream_pushes_harder_then_reopens ... ok
@@ -147,6 +149,9 @@ test moc::characteristics::tests::a_steady_friction_gradient_is_a_fixed_point ..
 test moc::characteristics::tests::interior_solution_lies_on_both_characteristics ... ok
 test moc::grid::tests::courant_one_time_step ... ok
 test moc::grid::tests::step_counts_and_limits ... ok
+test moc::network::cavity::tests::a_cavity_the_water_fills_collapses ... ok
+test moc::network::cavity::tests::above_the_floor_nothing_changes ... ok
+test moc::network::cavity::tests::below_the_floor_a_cavity_opens_and_takes_the_difference ... ok
 test moc::network::grid::tests::awkward_lengths_are_adjusted_within_the_bound ... ok
 test moc::network::grid::tests::commensurate_pipes_need_no_adjustment ... ok
 test moc::network::grid::tests::impossible_bound_is_an_error_not_a_hang ... ok
@@ -175,8 +180,9 @@ test refill::tests::a_vent_lets_air_out ... ok
 test steady::controls::tests::daily_times_repeat_and_land_exactly ... ok
 test steady::controls::tests::once_is_once ... ok
 test steady::rules::tests::or_binds_tighter_than_and_as_in_epanet ... ok
+test vapour::tests::the_coast_boils_lower_than_the_highveld ... ok
 
-test result: ok. 57 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.03s
+test result: ok. 61 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.03s
 
      Running unittests src\lib.rs (target\debug\deps\jk_kernel-eccabcc9e10cd5d2.exe)
 
@@ -506,7 +512,7 @@ test simulation::logger_files::a_burst_recorded_in_logger_files_raises_one_alarm
   at 10:15:03 - seconds past 10:15:00          got       2.998747   expected       3.000000   rel.err 4.2e-4
 ok
 
-test result: ok. 16 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.63s
+test result: ok. 16 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.64s
 
      Running balance\main.rs (target\debug\deps\balance-728b54a33b8a3084.exe)
 
@@ -531,7 +537,7 @@ test simulation::night_watch::the_detection_curve_matches_the_cusum_arithmetic .
   at the arithmetic's size: caught at least a third of the time yes
 ok
 
-test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.16s
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.26s
 
      Running channels\main.rs (target\debug\deps\channels-c97e6a381f8a602a.exe)
 
@@ -620,7 +626,7 @@ test simulation::feed::when_the_canal_stops_the_sump_runs_down_and_the_town_runs
     the sump's change = in - drawn, within 1.27% of the water drawn (draw read every 5 min) yes
 ok
 
-test result: ok. 11 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 11.24s
+test result: ok. 11 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 29.53s
 
      Running classification\main.rs (target\debug\deps\classification-7090793340b9d59f.exe)
 
@@ -803,7 +809,7 @@ test simulation::scenarios::power_data_settles_the_slow_burst ... The same slow 
   burst                                        yes
 ok
 
-test result: ok. 11 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.19s
+test result: ok. 11 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.34s
 
      Running detection\main.rs (target\debug\deps\detection-e23fac69caef8598.exe)
 
@@ -866,11 +872,11 @@ Loggers: 128 S/s, integrating, random clock phase, 2 cm noise:
 ok
 test simulation::burst_location::vs1_location_error_versus_sampling_rate_and_noise ... ignored, full suite: 150 recorded sensor pairs across rates and noise levels
 
-test result: ok. 8 passed; 0 failed; 2 ignored; 0 measured; 0 filtered out; finished in 1.21s
+test result: ok. 8 passed; 0 failed; 2 ignored; 0 measured; 0 filtered out; finished in 1.33s
 
      Running hydraulics\main.rs (target\debug\deps\hydraulics-2a8e28d011452c5f.exe)
 
-running 60 tests
+running 62 tests
 test analytical::boundaries::burst::a_10mm_hole_at_60m_head ... DN150 AC main at 60 m head, 0.5 m/s; a 10 mm hole opens (Cd 0.6):
   water lost              1.555 l/s  (134 m^3 per day)
   head step at the burst  -4.486 m
@@ -921,6 +927,40 @@ test analytical::boundaries::reflections::va3_tee_of_identical_pipes_transmits_t
   reflected R (docs: -1/3)                     got      -0.333333   expected      -0.333333   rel.err 1.5e-15
   matches the closed-form formula              got       0.666667   expected       0.666667   rel.err 8.3e-16
   => each tee cuts the front by a third: waves fade fast in branched networks.
+ok
+test analytical::cavitation::va17_a_cavity_opens_at_the_vapour_floor_instead_of_minus_174_m ... Valve shut instantly on 2 m/s, 500 m from a 30 m reservoir.
+Linear theory (no vapour floor): the valve end falls to -173.9 m.
+    = 30 - a V0 / g [m]                        got    -173.943243   expected    -173.943243   rel.err 2.6e-12
+With water's vapour floor at the coast (-10 m gauge):
+    the cavity opens when the wave returns, 2L/a [s] got       1.005000   expected       1.000000   rel.err 5.0e-3
+    the lowest head at the valve is its vapour floor [m] got     -10.000000   expected     -10.000000   rel.err 0.0e0
+    mid-pipe never below its own floor (-10.00 m >= -10.00 m) yes
+  cavity volume at whole round trips after it opened:
+      1 T: rigid column A (V0 t - g dH t^2 / 2L) [m^3] got       0.050508   expected       0.050508   rel.err 2.8e-12
+      2 T: rigid column A (V0 t - g dH t^2 / 2L) [m^3] got       0.076370   expected       0.076370   rel.err 3.7e-12
+      3 T: rigid column A (V0 t - g dH t^2 / 2L) [m^3] got       0.077585   expected       0.077585   rel.err 5.4e-12
+      4 T: rigid column A (V0 t - g dH t^2 / 2L) [m^3] got       0.054153   expected       0.054153   rel.err 1.0e-11
+      5 T: rigid column A (V0 t - g dH t^2 / 2L) [m^3] got       0.006074   expected       0.006074   rel.err 1.2e-10
+  it collapses at t = 6.085 s (rigid column: 6.099 s)
+    collapse surge: H_R + (a/g) v_in [m]       got     226.056757   expected     226.056757   rel.err 2.0e-12
+ok
+test analytical::cavitation::va17_on_the_highveld_and_up_a_rise_the_cavity_is_bigger ... The same closure in Johannesburg (1700 m: vapour floor -8.19 m gauge), the valve 15 m above the reservoir's datum:
+    the cavity opens when the wave returns, 2L/a [s] got       1.005000   expected       1.000000   rel.err 5.0e-3
+    the lowest head at the valve is its vapour floor [m] got       6.811012   expected       6.811012   rel.err 0.0e0
+    mid-pipe never below its own floor (3.36 m >= -0.69 m) yes
+  cavity volume at whole round trips after it opened:
+      1 T: rigid column A (V0 t - g dH t^2 / 2L) [m^3] got       0.055688   expected       0.055688   rel.err 2.5e-12
+      2 T: rigid column A (V0 t - g dH t^2 / 2L) [m^3] got       0.097087   expected       0.097087   rel.err 2.9e-12
+      3 T: rigid column A (V0 t - g dH t^2 / 2L) [m^3] got       0.124198   expected       0.124198   rel.err 3.4e-12
+      4 T: rigid column A (V0 t - g dH t^2 / 2L) [m^3] got       0.137021   expected       0.137021   rel.err 4.1e-12
+      5 T: rigid column A (V0 t - g dH t^2 / 2L) [m^3] got       0.135555   expected       0.135555   rel.err 5.2e-12
+      6 T: rigid column A (V0 t - g dH t^2 / 2L) [m^3] got       0.119801   expected       0.119801   rel.err 7.0e-12
+      7 T: rigid column A (V0 t - g dH t^2 / 2L) [m^3] got       0.089758   expected       0.089758   rel.err 1.1e-11
+      8 T: rigid column A (V0 t - g dH t^2 / 2L) [m^3] got       0.045427   expected       0.045427   rel.err 2.5e-11
+  it collapses at t = 9.775 s (rigid column: 9.795 s)
+    collapse surge: H_R + (a/g) v_in [m]       got     197.080571   expected     197.080571   rel.err 2.3e-12
+  largest cavity 137.0 litres, against 77.6 litres at the coast on the flat
+    bigger: less pressure to push the water back yes
 ok
 test analytical::control_valves::va10_a_prv_holds_its_setting_opens_when_it_cannot_and_shuts_against_backflow ... ACTIVE: source at 80 m, setting 50 m, 20 l/s drawn
     the valve is active                        yes
@@ -1350,7 +1390,7 @@ test invariants::steady_state::an_undisturbed_pipe_stays_steady ... Steady state
   valve holds steady                           yes
 ok
 
-test result: ok. 59 passed; 0 failed; 1 ignored; 0 measured; 0 filtered out; finished in 6.76s
+test result: ok. 61 passed; 0 failed; 1 ignored; 0 measured; 0 filtered out; finished in 15.68s
 
      Running kernel\main.rs (target\debug\deps\kernel-8eea161e1918dc58.exe)
 
@@ -1668,7 +1708,7 @@ test simulation::valve_fronts::a_shut_prv_passes_no_wave_and_no_route ... A seco
     and no route from S1 reaches the zone: the locator cannot place a burst there from S1 yes
 ok
 
-test result: ok. 29 passed; 0 failed; 3 ignored; 0 measured; 0 filtered out; finished in 33.64s
+test result: ok. 29 passed; 0 failed; 3 ignored; 0 measured; 0 filtered out; finished in 70.95s
 
      Running pipeline\main.rs (target\debug\deps\pipeline-0a591d8df4220b73.exe)
 
@@ -1814,7 +1854,7 @@ Supply returns to the drained main; 20 mm air valve at the far end:
     at WARNING level                           yes
 
 Supply returns to the drained main; 100 mm air valve at the far end:
-2 alert(s) went out:
+1 alert(s) went out:
 [Warning] #1 REFILL (100% confident) at t = 215.543 s
   where: not located (fewer than two sensors saw it)
   seen by: S1 closed end
@@ -1824,16 +1864,6 @@ Supply returns to the drained main; 100 mm air valve at the far end:
   because: pump power is not monitored: no outside evidence
   because: seen by ONE sensor only, and no other sensor that its wave could reach was watching: not located, not corroborated
   -> sent when the data had reached t = 218.99 s
-[Warning] #2 REFILL (98% confident) at t = 216.543 s
-  where: not located (fewer than two sensors saw it)
-  seen by: S1 closed end
-  because: pressure DROPPED by 665.37 m: a burst or a pump trip, not a closing valve (seen upstream) - or, in a refilling pipe, its column bouncing back off the air ahead
-  because: SHARP front (13 ms, 10-90%): a sudden change - a pipe splitting, a valve slamming - not a pump running down
-  because: DEEP drop: 179% of the pressure - a stopping pump collapses the head
-  because: supply RETURNED 1 s before to a pipe that had stood empty: it is still filling - the air ahead squeezed, the column bouncing on it or slamming into a closed end
-  because: pump power is not monitored: no outside evidence
-  because: seen by ONE sensor only, and no other sensor that its wave could reach was watching: not located, not corroborated
-  -> sent when the data had reached t = 219.99 s
     at least one alert                         yes
     every alert is a REFILL                    yes
     at WARNING level                           yes
@@ -1959,7 +1989,7 @@ test simulation::valves_by_hour::at_noon_the_valve_is_active_and_both_loggers_lo
     and it is not dismissed                    yes
 ok
 
-test result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 5.47s
+test result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 10.91s
 
    Doc-tests jk_application
 
@@ -2034,9 +2064,9 @@ running 0 tests
 test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
 
 ==============================================================================
-  passed   301
+  passed   307
   failed   0
   skipped  6 slow test(s) not in this suite (run -Suite full)
   filtered 0 test(s) outside -Only/-Filter
-  time     76.5 s (including compile)
+  time     157.0 s (including compile)
   result   ALL PASSED

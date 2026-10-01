@@ -6,7 +6,10 @@
 //!     reaches, which forces small, recorded wave-speed adjustments.
 //!   - [`initial`]: the steady state the transient starts from.
 //!   - [`solver`]: the time loop.
+//!   - [`cavity`]: vapour cavities where the pressure would fall below the
+//!     vapour floor (S7, when the network has one).
 
+pub mod cavity;
 pub mod grid;
 pub mod initial;
 pub mod solver;
