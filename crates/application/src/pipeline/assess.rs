@@ -38,16 +38,43 @@ pub(super) struct Found {
     /// When supply last returned to this sensor's empty pipe before the
     /// event (clock-corrected), if the supply watch saw it.
     pub supply_return: Option<Time>,
+    /// For an event that took the pressure to or below atmospheric: the
+    /// highest reading in the follow-up after it, and over how long a
+    /// record (measured later; the alert is then revised).
+    pub peak_after: Option<(Head, Time)>,
+}
+
+impl Found {
+    /// Whether this detection took the pressure to or below atmospheric,
+    /// so what follows (a collapse) is worth watching for.
+    pub fn wants_follow_up(&self) -> bool {
+        matches!(&self.features, Some(Ok(f)) if f.low.lowest.value() <= 0.0)
+    }
 }
 
 /// What each member sensor saw below zero: negative pressure (water can be
 /// drawn in) and the vapour floor (the column separated).
 fn low_pressure_reasons(site: &Site, config: &PipelineConfig, members: &[Found]) -> Vec<String> {
+    // A reading this close to an end of the logger's range may be clipped.
+    const CLIP: f64 = 0.2;
     let mut reasons = Vec::new();
     for m in members {
         let Some(Ok(f)) = &m.features else { continue };
-        let name = &site.sensors[m.sensor].name;
+        let sensor = &site.sensors[m.sensor];
+        let name = &sensor.name;
         let window = config.features.after_window.value();
+        let floor = config.features.vapour_floor.value();
+        if let Some((lowest, _)) = sensor.range
+            && f.low.lowest.value() <= lowest.value() + CLIP
+            && lowest.value() > floor + config.features.floor_band.value()
+        {
+            reasons.push(format!(
+                "{name}: the reading held at the logger's minimum ({:.1} m) - the real pressure \
+                 may have gone lower, as far as the vapour floor ({floor:.1} m): negative \
+                 pressure and column separation cannot be ruled out with this logger (P2)",
+                lowest.value()
+            ));
+        }
         if f.low.at_floor.value() > 0.0 {
             reasons.push(format!(
                 "{name}: COLUMN SEPARATION - the pressure sat at the vapour floor ({:.1} m) for \
@@ -64,6 +91,24 @@ fn low_pressure_reasons(site: &Site, config: &PipelineConfig, members: &[Found])
                  can be drawn in through leaks and joints - a water-quality risk (intrusion)",
                 f.low.below_zero.value(),
                 f.low.lowest.value()
+            ));
+        }
+        if let Some((peak, span)) = m.peak_after {
+            let before = f.level_before.value();
+            let clipped = sensor
+                .range
+                .is_some_and(|(_, highest)| peak.value() >= highest.value() - CLIP);
+            reasons.push(format!(
+                "{name}: in the {:.0} s after the front the pressure peaked at {:.1} m - {:.1} \
+                 times the {before:.1} m before it{}",
+                span.value(),
+                peak.value(),
+                peak.value() / before,
+                if clipped {
+                    " (at the logger's maximum: the real peak may have been higher)"
+                } else {
+                    ""
+                }
             ));
         }
     }

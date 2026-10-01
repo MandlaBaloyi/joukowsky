@@ -22,16 +22,18 @@ use jk_kernel::{Head, Time};
 pub struct LowPressure {
     /// The lowest pressure head [m].
     pub lowest: Head,
-    /// Time spent below 0 (atmospheric).
+    /// Time spent below the negative threshold (meaningfully under
+    /// atmospheric - not sensor noise around 0).
     pub below_zero: Time,
     /// Time spent at the vapour floor (within the band above it).
     pub at_floor: Time,
 }
 
 /// Measures `window` (one sample every `dt` s) against a vapour floor
-/// `floor` (gauge) with tolerance `band`.
+/// `floor` (gauge) with tolerance `band`; readings below `negative` count
+/// as negative pressure.
 #[must_use]
-pub fn low_pressure(window: &[f64], dt: f64, floor: f64, band: f64) -> LowPressure {
+pub fn low_pressure(window: &[f64], dt: f64, floor: f64, band: f64, negative: f64) -> LowPressure {
     let lowest = window.iter().copied().fold(f64::INFINITY, f64::min);
     let count = |pred: &dyn Fn(f64) -> bool| {
         #[allow(clippy::cast_precision_loss)] // window lengths are small
@@ -40,7 +42,7 @@ pub fn low_pressure(window: &[f64], dt: f64, floor: f64, band: f64) -> LowPressu
     };
     LowPressure {
         lowest: Head::new(if lowest.is_finite() { lowest } else { 0.0 }),
-        below_zero: count(&|x| x < 0.0),
+        below_zero: count(&|x| x < negative),
         at_floor: count(&|x| x <= floor + band),
     }
 }
@@ -50,6 +52,14 @@ mod tests {
     use super::*;
 
     #[test]
+    fn noise_around_zero_is_not_negative_pressure() {
+        let x = [0.03, -0.04, 0.01, -0.02, 0.0];
+        let low = low_pressure(&x, 0.01, -10.1, 1.0, -1.0);
+        assert!(low.below_zero.value().abs() < 1e-12);
+        assert!(low.at_floor.value().abs() < 1e-12);
+    }
+
+    #[test]
     fn a_spell_at_the_floor_is_also_below_zero() {
         // 1 s at 20 m, 0.5 s at -3 m, 1 s at the floor (-10 m), 0.5 s back up.
         let dt = 0.01;
@@ -57,7 +67,7 @@ mod tests {
         x.extend(vec![-3.0; 50]);
         x.extend(vec![-10.0; 100]);
         x.extend(vec![5.0; 50]);
-        let low = low_pressure(&x, dt, -10.1, 1.0);
+        let low = low_pressure(&x, dt, -10.1, 1.0, -1.0);
         assert!((low.lowest.value() + 10.0).abs() < 1e-12);
         assert!((low.below_zero.value() - 1.5).abs() < 1e-9);
         assert!((low.at_floor.value() - 1.0).abs() < 1e-9);

@@ -378,3 +378,16 @@ FN-036  2026-10-01  Column separation is an attribute, not a class
   the arrival-time fit fails (misfit 13.9) and the location is marked
   not trusted - right, but locating such events needs the cavitating
   model in the localiser (G-21).
+
+FN-037  2026-10-01  Live alerts lost what their later sensors measured
+  Found while testing the collapse follow-up live (V-S7): an alert goes
+  out once its FIRST detection's record (3 s after the front) is in; the
+  other sensors' detections join it, but their features were only ever
+  measured while still pending - once the alert was issued, nobody
+  measured them. From whole records every member is measured before the
+  alert, so the bug was invisible there. Live, the knee's COLUMN
+  SEPARATION and NEGATIVE pressure never reached the alert. Fix: the
+  monitor measures late members of issued events too, and revises the
+  alert when they bring low-pressure news (ordinary events: no extra
+  revision, so live and whole-record alerts still agree). Lesson: every
+  feature added to alerts needs a live test, not only a whole-record one.

@@ -153,7 +153,10 @@ Rung 3  Simulation studies.
         the knee (gauge). Light flywheel: COLUMN SEPARATION (2.95 s at
         the floor) and NEGATIVE pressure (down to -10.2 m) at the knee,
         Warning. Usual flywheel: still separates (2.34 s) - reported.
-        Bursts on the estate: neither mentioned (2026-10-01).
+        Bursts on the estate: neither mentioned. Collapse peak reported
+        150.3 m vs true 152.1 m; live, revised at 35 s of data with it. A
+        0-16 bar logger at the knee: "held at the logger's minimum ...
+        cannot be ruled out", no claim of negative pressure (2026-10-01).
   V-S4  Scale: synthetic towns of 10 / 50 / 100 km - time the simulator,
         live engine and advisor (10_findings/detection_range_and_scale.txt,
         gap G-10).

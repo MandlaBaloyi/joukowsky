@@ -39,6 +39,9 @@ pub struct FeatureConfig {
     /// Readings this close above the floor count as at the floor (the
     /// vapour pressure moves with temperature, loggers have offsets).
     pub floor_band: Head,
+    /// Readings below this count as negative pressure: clear of the noise
+    /// of a drained pipe reading about 0 [VERIFY on field loggers].
+    pub negative_below: Head,
 }
 
 impl Default for FeatureConfig {
@@ -49,6 +52,7 @@ impl Default for FeatureConfig {
             after_window: Time::new(3.0),
             vapour_floor: Head::new(-10.1),
             floor_band: Head::new(1.0),
+            negative_below: Head::new(-1.0),
         }
     }
 }
@@ -124,6 +128,7 @@ pub fn extract(
         dt,
         config.vapour_floor.value(),
         config.floor_band.value(),
+        config.negative_below.value(),
     );
     Ok(Features {
         direction: event.direction,

@@ -25,7 +25,7 @@ mod sensor;
 
 use jk_classification::extract;
 use jk_detection::{Detector, Event, StreamOutput, SupplyWatch};
-use jk_kernel::Time;
+use jk_kernel::{Head, Time};
 use jk_localisation::ClockEstimate;
 use jk_localisation::clocks::correct;
 use jk_localisation::graph::TravelGraph;
@@ -50,6 +50,8 @@ struct Issued {
     id: u32,
     revision: u32,
     members: Vec<Found>,
+    /// Something new was measured for it (a follow-up): revise.
+    stale: bool,
 }
 
 /// Watches one site live.
@@ -323,6 +325,7 @@ impl Monitor {
                 arrival,
                 features: None,
                 supply_return: None,
+                peak_after: None,
             });
         }
     }
@@ -339,23 +342,86 @@ impl Monitor {
         let after = f.after_window.value().max(f.front_window.value()) + 2.0 * dt;
         let series = state.history(dt);
         let mut keep_from = until - before - after;
+        // Measures a detection's features once the record around it is in;
+        // false if it must wait.
+        let measure = |found: &mut Found| {
+            if !(ended || until >= found.event.arrival.value() + after) {
+                return false;
+            }
+            // The clock correction applies to the return as to the arrival.
+            let shift = found.arrival.time.value() - found.event.arrival.value();
+            found.supply_return = state
+                .supply_returned_by(found.event.arrival.value())
+                .map(|back| Time::new(back + shift));
+            found.features = Some(
+                extract(&series, &found.event, found.event.noise, f).map_err(|e| e.to_string()),
+            );
+            true
+        };
         for found in self
             .pending
             .iter_mut()
             .filter(|p| p.sensor == sensor && p.features.is_none())
         {
-            if ended || until >= found.event.arrival.value() + after {
-                // The clock correction applies to the return as to the
-                // arrival.
-                let shift = found.arrival.time.value() - found.event.arrival.value();
-                found.supply_return = state
-                    .supply_returned_by(found.event.arrival.value())
-                    .map(|back| Time::new(back + shift));
-                found.features = Some(
-                    extract(&series, &found.event, found.event.noise, f).map_err(|e| e.to_string()),
-                );
+            if !measure(found) {
+                keep_from = keep_from.min(found.event.arrival.value() - before);
+            }
+        }
+        // An alert goes out once its FIRST detection is measured; the
+        // others are measured when their record is in. What they say about
+        // low pressure revises the alert.
+        for issued in &mut self.issued {
+            for found in issued
+                .members
+                .iter_mut()
+                .filter(|m| m.sensor == sensor && m.features.is_none())
+            {
+                if measure(found) {
+                    issued.stale |= found.wants_follow_up();
+                } else {
+                    keep_from = keep_from.min(found.event.arrival.value() - before);
+                }
+            }
+        }
+        // Follow-ups: events that took the pressure to or below
+        // atmospheric are watched on for the collapse that may follow.
+        let follow = self.config.follow_up.value();
+        let peak = |found: &Found| {
+            let from = found.event.arrival.value();
+            let span = (until - from).min(follow).max(0.0);
+            let first = ((from - series.start.value()) / dt).floor().max(0.0);
+            let last = ((from + span - series.start.value()) / dt).ceil();
+            #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)] // >= 0
+            let (first, last) = (
+                first as usize,
+                (last.max(0.0) as usize).min(series.samples.len()),
+            );
+            let highest = series.samples[first.min(last)..last]
+                .iter()
+                .copied()
+                .fold(f64::NEG_INFINITY, f64::max);
+            highest
+                .is_finite()
+                .then(|| (Head::new(highest), Time::new(span)))
+        };
+        let due = |found: &Found| {
+            found.sensor == sensor && found.peak_after.is_none() && found.wants_follow_up()
+        };
+        for found in self.pending.iter_mut().filter(|f| due(f)) {
+            if ended || until >= found.event.arrival.value() + follow {
+                found.peak_after = peak(found);
             } else {
                 keep_from = keep_from.min(found.event.arrival.value() - before);
+            }
+        }
+        for issued in &mut self.issued {
+            for found in issued.members.iter_mut().filter(|f| due(f)) {
+                if ended || until >= found.event.arrival.value() + follow {
+                    found.peak_after = peak(found);
+                    issued.stale |= found.peak_after.is_some();
+                } else {
+                    keep_from = keep_from.min(found.event.arrival.value() - before);
+                }
             }
         }
         self.sensors[sensor].forget_before(keep_from, dt);
@@ -369,6 +435,18 @@ impl Monitor {
         all_final: bool,
     ) -> Result<Vec<Alert>, ApplicationError> {
         let mut alerts = Vec::new();
+
+        // Follow-ups measured since: revise those alerts.
+        for g in 0..self.issued.len() {
+            if self.issued[g].stale {
+                self.issued[g].stale = false;
+                self.issued[g].revision += 1;
+                let (id, revision) = (self.issued[g].id, self.issued[g].revision);
+                let alert = self.alert(&self.issued[g].members, id, revision);
+                sink.send(&alert).map_err(ApplicationError::Delivery)?;
+                alerts.push(alert);
+            }
+        }
 
         // Late detections of events already reported: revise them.
         let mut i = 0;
@@ -432,6 +510,7 @@ impl Monitor {
                 id,
                 revision: 0,
                 members,
+                stale: false,
             });
         }
 

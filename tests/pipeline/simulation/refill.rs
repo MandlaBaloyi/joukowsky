@@ -27,6 +27,7 @@ fn site() -> Site {
             name: "S1 closed end".into(),
             clock: None,
             uncalibrated_clock: Time::new(1e-6),
+            range: None,
         }],
         pipe_names: vec!["main".into()],
         context: Context::unknown(),

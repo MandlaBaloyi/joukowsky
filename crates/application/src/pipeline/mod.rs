@@ -20,7 +20,7 @@ use jk_classification::{ClassifierConfig, Context, FeatureConfig};
 use jk_detection::{DetectorConfig, Series, SupplyConfig};
 use jk_hydraulics::steady::extended::PeriodOptions;
 use jk_hydraulics::{Network, NodeId};
-use jk_kernel::Time;
+use jk_kernel::{Head, Time};
 use jk_localisation::{ClockEstimate, LocaliseOptions};
 
 /// One sensor installed on the network.
@@ -35,6 +35,10 @@ pub struct SensorSite {
     /// Clock uncertainty assumed when it is not calibrated (e.g. 1 us for
     /// GNSS, 40 ms for NTP over cellular).
     pub uncalibrated_clock: Time,
+    /// The logger's measuring range as gauge pressure head (lowest,
+    /// highest), if known - e.g. 0 to 163 m for a 0-16 bar logger. A
+    /// reading held at an end of it may be clipped (principle P2).
+    pub range: Option<(Head, Head)>,
 }
 
 /// Everything the pipeline knows about a site.
@@ -101,6 +105,10 @@ pub struct PipelineConfig {
     /// the most) to wait for a lagging sensor's data before deciding an
     /// event without it. Its late data then REVISES the alert.
     pub max_wait: Time,
+    /// After an event that took the pressure to or below atmospheric, how
+    /// long to keep watching for what follows - the collapse when separated
+    /// columns rejoin - before revising its alert with the peak.
+    pub follow_up: Time,
 }
 
 impl Default for PipelineConfig {
@@ -116,6 +124,7 @@ impl Default for PipelineConfig {
             alarm_confidence: 0.9,
             max_misfit: 3.0,
             max_wait: Time::new(10.0),
+            follow_up: Time::new(30.0),
         }
     }
 }

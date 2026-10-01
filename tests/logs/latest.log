@@ -1,7 +1,7 @@
 joukowsky test run
-  when     2026-10-01 15:06:22
+  when     2026-10-01 15:15:53
   suite    quick
-  commit   7edaa83 (with uncommitted changes)
+  commit   5771d18 (with uncommitted changes)
   rust     rustc 1.98.1 (48a229cea 2026-09-01)
   command  cargo test --workspace --no-fail-fast -- --nocapture --test-threads=1
 ==============================================================================
@@ -9,7 +9,7 @@ joukowsky test run
    Compiling jk-cli v0.1.0 (C:\Users\HP\Desktop\joukowsky\crates\interfaces\cli)
    Compiling jk-application v0.1.0 (C:\Users\HP\Desktop\joukowsky\crates\application)
    Compiling jk-classification v0.1.0 (C:\Users\HP\Desktop\joukowsky\crates\domain\classification)
-    Finished `test` profile [unoptimized + debuginfo] target(s) in 10.15s
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 11.24s
      Running unittests src\lib.rs (target\debug\deps\jk_application-a6f8696c1e4119f9.exe)
 
 running 3 tests
@@ -41,7 +41,7 @@ test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; fini
 
      Running unittests src\lib.rs (target\debug\deps\jk_classification-ac838da961a672cc.exe)
 
-running 7 tests
+running 8 tests
 test classes::context::tests::the_latest_supply_return_within_the_window_counts ... ok
 test classes::context::tests::three_states_of_knowledge ... ok
 test features::after::tests::staying_down_is_one_and_symmetric_ringing_is_zero ... ok
@@ -49,8 +49,9 @@ test features::front::tests::a_curve_already_on_its_way_is_not_sharp ... ok
 test features::front::tests::a_linear_ramp_rises_over_eighty_percent_of_its_length ... ok
 test features::front::tests::an_integrated_step_rises_in_one_point_six_samples ... ok
 test features::low::tests::a_spell_at_the_floor_is_also_below_zero ... ok
+test features::low::tests::noise_around_zero_is_not_negative_pressure ... ok
 
-test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
 
      Running unittests src\main.rs (target\debug\deps\jk-40170446bfdb3c37.exe)
 
@@ -86,7 +87,7 @@ test supply::tests::a_slam_swinging_back_to_the_floor_still_marks_the_return ...
 test supply::tests::live_in_pieces_gives_the_same_spells ... ok
 test supply::tests::still_empty_at_the_end_is_said ... ok
 
-test result: ok. 20 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.03s
+test result: ok. 20 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.04s
 
      Running unittests src\lib.rs (target\debug\deps\jk_files-ec39beec6edb1da0.exe)
 
@@ -114,7 +115,7 @@ test logger::time::tests::the_usual_logger_formats ... ok
 test logger::units::tests::one_bar_is_about_ten_metres ... ok
 test logger::units::tests::units_from_headers ... ok
 
-test result: ok. 22 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+test result: ok. 22 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
 
      Running unittests src\lib.rs (target\debug\deps\jk_hydraulics-c42e47dfc771fa13.exe)
 
@@ -218,7 +219,7 @@ test posterior::score::tests::a_wrong_candidate_is_penalised ... ok
 test posterior::score::tests::with_independent_errors_the_correlated_score_matches_the_simple_one ... ok
 test size::tests::exact_fronts_give_back_the_flow ... ok
 
-test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
 
      Running unittests src\lib.rs (target\debug\deps\jk_sim-cdf9363ef8ace4d0.exe)
 
@@ -228,7 +229,7 @@ test town::tests::every_junction_is_reachable_and_the_town_has_loops_and_dead_en
 test town::tests::the_length_is_exactly_the_target ... ok
 test town::tests::the_same_seed_gives_the_same_town ... ok
 
-test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
 
      Running unittests src\lib.rs (target\debug\deps\jk_telemetry-c8a96417b1d674bc.exe)
 
@@ -516,7 +517,7 @@ test simulation::logger_files::a_burst_recorded_in_logger_files_raises_one_alarm
   at 10:15:03 - seconds past 10:15:00          got       2.998747   expected       3.000000   rel.err 4.2e-4
 ok
 
-test result: ok. 16 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.64s
+test result: ok. 16 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.81s
 
      Running balance\main.rs (target\debug\deps\balance-728b54a33b8a3084.exe)
 
@@ -541,7 +542,7 @@ test simulation::night_watch::the_detection_curve_matches_the_cusum_arithmetic .
   at the arithmetic's size: caught at least a third of the time yes
 ok
 
-test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.27s
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.61s
 
      Running channels\main.rs (target\debug\deps\channels-c97e6a381f8a602a.exe)
 
@@ -630,7 +631,7 @@ test simulation::feed::when_the_canal_stops_the_sump_runs_down_and_the_town_runs
     the sump's change = in - drawn, within 1.27% of the water drawn (draw read every 5 min) yes
 ok
 
-test result: ok. 11 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 30.29s
+test result: ok. 11 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 30.52s
 
      Running classification\main.rs (target\debug\deps\classification-7090793340b9d59f.exe)
 
@@ -813,7 +814,7 @@ test simulation::scenarios::power_data_settles_the_slow_burst ... The same slow 
   burst                                        yes
 ok
 
-test result: ok. 11 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.39s
+test result: ok. 11 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.51s
 
      Running detection\main.rs (target\debug\deps\detection-e23fac69caef8598.exe)
 
@@ -876,7 +877,7 @@ Loggers: 128 S/s, integrating, random clock phase, 2 cm noise:
 ok
 test simulation::burst_location::vs1_location_error_versus_sampling_rate_and_noise ... ignored, full suite: 150 recorded sensor pairs across rates and noise levels
 
-test result: ok. 8 passed; 0 failed; 2 ignored; 0 measured; 0 filtered out; finished in 1.35s
+test result: ok. 8 passed; 0 failed; 2 ignored; 0 measured; 0 filtered out; finished in 2.14s
 
      Running hydraulics\main.rs (target\debug\deps\hydraulics-2a8e28d011452c5f.exe)
 
@@ -1438,7 +1439,7 @@ test invariants::steady_state::an_undisturbed_pipe_stays_steady ... Steady state
   valve holds steady                           yes
 ok
 
-test result: ok. 66 passed; 0 failed; 1 ignored; 0 measured; 0 filtered out; finished in 21.88s
+test result: ok. 66 passed; 0 failed; 1 ignored; 0 measured; 0 filtered out; finished in 23.58s
 
      Running kernel\main.rs (target\debug\deps\kernel-8eea161e1918dc58.exe)
 
@@ -1756,7 +1757,7 @@ test simulation::valve_fronts::a_shut_prv_passes_no_wave_and_no_route ... A seco
     and no route from S1 reaches the zone: the locator cannot place a burst there from S1 yes
 ok
 
-test result: ok. 29 passed; 0 failed; 3 ignored; 0 measured; 0 filtered out; finished in 68.16s
+test result: ok. 29 passed; 0 failed; 3 ignored; 0 measured; 0 filtered out; finished in 74.15s
 
      Running pipeline\main.rs (target\debug\deps\pipeline-0a591d8df4220b73.exe)
 
@@ -1872,25 +1873,71 @@ Live: each sensor sends a 1 s chunk in turn:
 ok
 test simulation::low_pressure::vs7_column_separation_and_negative_pressure_are_reported ... Pump trip, light flywheel (1/20): the column separates at the knee.
 1 alert(s):
-[Warning] #1 PUMP TRIP (100% confident) at t = 3.004 s
-  where: main up at 1.7 m from its start; 90% within 2 m of pipe
-    main up              100.0%
+[Warning] #1 PUMP TRIP (100% confident) at t = 2.996 s
+  where: suction at 10.0 m from its start; 90% within 18 m of pipe
+    suction              100.0%
   seen by: S1 pump, S2 knee
   because: pressure DROPPED by 108.39 m: a burst or a pump trip, not a closing valve (seen upstream) or a refill
   because: front of 63 ms: neither clearly sharp nor drawn out
   because: DEEP drop: 92% of the pressure - a stopping pump collapses the head
   because: the pipe was under pressure before (118.2 m): not refilling
   because: pump power was LOST just before the front arrived
+  because: arrival times do not fit one source (misfit 20.0): two events at once, a wrong wave speed or a bad clock - location not trusted
   because: S2 knee: COLUMN SEPARATION - the pressure sat at the vapour floor (-10.1 m) for 2.95 s of the 3 s after the front: the water boiled and the column split. When it rejoins, the collapse can reach about twice the usual surge (FN-035) - check the pipe's pressure rating
   because: S2 knee: NEGATIVE pressure for 2.95 s, down to -10.2 m: water outside the pipe can be drawn in through leaks and joints - a water-quality risk (intrusion)
+  because: S2 knee: in the 30 s after the front the pressure peaked at 150.3 m - 2.5 times the 59.1 m before it
     an alert says COLUMN SEPARATION at the knee yes
     and NEGATIVE pressure there                yes
     at Warning or above                        yes
+    it reports the collapse peak at the knee, against the true highest pressure [m] got     150.300000   expected     152.149813   rel.err 1.2e-2
+
+Live, the loggers sending 1 s chunks:
+3 alert(s) went out:
+[Warning] #1 PUMP TRIP (100% confident) at t = 2.996 s
+  where: suction at 10.0 m from its start; 90% within 18 m of pipe
+    suction              100.0%
+  seen by: S1 pump, S2 knee
+  because: pressure DROPPED by 108.39 m: a burst or a pump trip, not a closing valve (seen upstream) or a refill
+  because: front of 63 ms: neither clearly sharp nor drawn out
+  because: DEEP drop: 92% of the pressure - a stopping pump collapses the head
+  because: the pipe was under pressure before (118.2 m): not refilling
+  because: pump power was LOST just before the front arrived
+  because: arrival times do not fit one source (misfit 20.0): two events at once, a wrong wave speed or a bad clock - location not trusted
+  -> sent when the data had reached t = 7.00 s
+[Warning] #1 (revision 1) PUMP TRIP (100% confident) at t = 2.996 s
+  where: suction at 10.0 m from its start; 90% within 18 m of pipe
+    suction              100.0%
+  seen by: S1 pump, S2 knee
+  because: pressure DROPPED by 108.39 m: a burst or a pump trip, not a closing valve (seen upstream) or a refill
+  because: front of 63 ms: neither clearly sharp nor drawn out
+  because: DEEP drop: 92% of the pressure - a stopping pump collapses the head
+  because: the pipe was under pressure before (118.2 m): not refilling
+  because: pump power was LOST just before the front arrived
+  because: arrival times do not fit one source (misfit 20.0): two events at once, a wrong wave speed or a bad clock - location not trusted
+  because: S2 knee: COLUMN SEPARATION - the pressure sat at the vapour floor (-10.1 m) for 2.95 s of the 3 s after the front: the water boiled and the column split. When it rejoins, the collapse can reach about twice the usual surge (FN-035) - check the pipe's pressure rating
+  because: S2 knee: NEGATIVE pressure for 2.95 s, down to -10.2 m: water outside the pipe can be drawn in through leaks and joints - a water-quality risk (intrusion)
+  -> sent when the data had reached t = 8.00 s
+[Warning] #1 (revision 2) PUMP TRIP (100% confident) at t = 2.996 s
+  where: suction at 10.0 m from its start; 90% within 18 m of pipe
+    suction              100.0%
+  seen by: S1 pump, S2 knee
+  because: pressure DROPPED by 108.39 m: a burst or a pump trip, not a closing valve (seen upstream) or a refill
+  because: front of 63 ms: neither clearly sharp nor drawn out
+  because: DEEP drop: 92% of the pressure - a stopping pump collapses the head
+  because: the pipe was under pressure before (118.2 m): not refilling
+  because: pump power was LOST just before the front arrived
+  because: arrival times do not fit one source (misfit 20.0): two events at once, a wrong wave speed or a bad clock - location not trusted
+  because: S2 knee: COLUMN SEPARATION - the pressure sat at the vapour floor (-10.1 m) for 2.95 s of the 3 s after the front: the water boiled and the column split. When it rejoins, the collapse can reach about twice the usual surge (FN-035) - check the pipe's pressure rating
+  because: S2 knee: NEGATIVE pressure for 2.95 s, down to -10.2 m: water outside the pipe can be drawn in through leaks and joints - a water-quality risk (intrusion)
+  because: S2 knee: in the 30 s after the front the pressure peaked at 150.3 m - 2.5 times the 59.1 m before it
+  -> sent when the data had reached t = 35.00 s
+    the first alert goes out within seconds, without the peak yes
+    and is REVISED with the peak once 30 s more are in (data time 35.0 s) yes
 
 The same trip with the usual flywheel: the pump runs down slowly.
 1 alert(s):
-[Warning] #1 PUMP TRIP (100% confident) at t = 2.990 s
-  where: suction at 2.1 m from its start; 90% within 18 m of pipe
+[Warning] #1 PUMP TRIP (100% confident) at t = 2.999 s
+  where: suction at 10.6 m from its start; 90% within 18 m of pipe
     suction              100.0%
   seen by: S1 pump, S2 knee
   because: pressure DROPPED by 91.56 m: a burst or a pump trip, not a closing valve (seen upstream) or a refill
@@ -1898,10 +1945,28 @@ The same trip with the usual flywheel: the pump runs down slowly.
   because: DEEP drop: 77% of the pressure - a stopping pump collapses the head
   because: the pipe was under pressure before (118.2 m): not refilling
   because: pump power was LOST just before the front arrived
-  because: arrival times do not fit one source (misfit 13.9): two events at once, a wrong wave speed or a bad clock - location not trusted
+  because: arrival times do not fit one source (misfit 19.5): two events at once, a wrong wave speed or a bad clock - location not trusted
   because: S2 knee: COLUMN SEPARATION - the pressure sat at the vapour floor (-10.1 m) for 2.34 s of the 3 s after the front: the water boiled and the column split. When it rejoins, the collapse can reach about twice the usual surge (FN-035) - check the pipe's pressure rating
-  because: S2 knee: NEGATIVE pressure for 2.58 s, down to -10.2 m: water outside the pipe can be drawn in through leaks and joints - a water-quality risk (intrusion)
+  because: S2 knee: NEGATIVE pressure for 2.55 s, down to -10.2 m: water outside the pipe can be drawn in through leaks and joints - a water-quality risk (intrusion)
+  because: S2 knee: in the 30 s after the front the pressure peaked at 128.5 m - 2.2 times the 59.1 m before it
     the column still separates at the knee - a flywheel alone does not protect this main yes
+
+The light flywheel again, the knee's logger a 0-16 bar one (0 to 163 m):
+1 alert(s):
+[Warning] #1 PUMP TRIP (100% confident) at t = 2.989 s
+  where: suction at 3.8 m from its start; 90% within 18 m of pipe
+    suction              100.0%
+  seen by: S1 pump, S2 knee
+  because: pressure DROPPED by 108.39 m: a burst or a pump trip, not a closing valve (seen upstream) or a refill
+  because: front of 63 ms: neither clearly sharp nor drawn out
+  because: DEEP drop: 92% of the pressure - a stopping pump collapses the head
+  because: the pipe was under pressure before (118.2 m): not refilling
+  because: pump power was LOST just before the front arrived
+  because: arrival times do not fit one source (misfit 106.1): two events at once, a wrong wave speed or a bad clock - location not trusted
+  because: S2 knee: the reading held at the logger's minimum (0.0 m) - the real pressure may have gone lower, as far as the vapour floor (-10.1 m): negative pressure and column separation cannot be ruled out with this logger (P2)
+  because: S2 knee: in the 30 s after the front the pressure peaked at 150.1 m - 2.5 times the 59.1 m before it
+    it says the reading held at the logger's minimum - negative pressure not ruled out yes
+    and claims no negative pressure or separation it could not see yes
 
 Control: two bursts on the flowing estate (pressure stays well above 0):
 2 alert(s):
@@ -1944,7 +2009,7 @@ Supply returns to the drained main; 5 mm air valve at the far end:
     at WARNING level                           yes
 
 Supply returns to the drained main; 20 mm air valve at the far end:
-1 alert(s) went out:
+2 alert(s) went out:
 [Warning] #1 REFILL (95% confident) at t = 266.969 s
   where: not located (fewer than two sensors saw it)
   seen by: S1 closed end
@@ -1956,12 +2021,24 @@ Supply returns to the drained main; 20 mm air valve at the far end:
   because: S1 closed end: COLUMN SEPARATION - the pressure sat at the vapour floor (-10.1 m) for 1.99 s of the 3 s after the front: the water boiled and the column split. When it rejoins, the collapse can reach about twice the usual surge (FN-035) - check the pipe's pressure rating
   because: S1 closed end: NEGATIVE pressure for 1.99 s, down to -10.1 m: water outside the pipe can be drawn in through leaks and joints - a water-quality risk (intrusion)
   -> sent when the data had reached t = 269.99 s
+[Warning] #1 (revision 1) REFILL (95% confident) at t = 266.969 s
+  where: not located (fewer than two sensors saw it)
+  seen by: S1 closed end
+  because: pressure DROPPED by 4.56 m: a burst or a pump trip, not a closing valve (seen upstream) - or, in a refilling pipe, its column bouncing back off the air ahead
+  because: SHARP front (6 ms, 10-90%): a sudden change - a pipe splitting, a valve slamming - not a pump running down
+  because: supply RETURNED 139 s before to a pipe that had stood empty: it is still filling - the air ahead squeezed, the column bouncing on it or slamming into a closed end
+  because: pump power is not monitored: no outside evidence
+  because: seen by ONE sensor only, and no other sensor that its wave could reach was watching: not located, not corroborated
+  because: S1 closed end: COLUMN SEPARATION - the pressure sat at the vapour floor (-10.1 m) for 1.99 s of the 3 s after the front: the water boiled and the column split. When it rejoins, the collapse can reach about twice the usual surge (FN-035) - check the pipe's pressure rating
+  because: S1 closed end: NEGATIVE pressure for 1.99 s, down to -10.1 m: water outside the pipe can be drawn in through leaks and joints - a water-quality risk (intrusion)
+  because: S1 closed end: in the 6 s after the front the pressure peaked at 379.4 m - 16.6 times the 22.8 m before it
+  -> sent when the data had reached t = 272.96 s
     at least one alert                         yes
     every alert is a REFILL                    yes
     at WARNING level                           yes
 
 Supply returns to the drained main; 100 mm air valve at the far end:
-1 alert(s) went out:
+2 alert(s) went out:
 [Warning] #1 REFILL (100% confident) at t = 215.543 s
   where: not located (fewer than two sensors saw it)
   seen by: S1 closed end
@@ -1973,6 +2050,18 @@ Supply returns to the drained main; 100 mm air valve at the far end:
   because: S1 closed end: COLUMN SEPARATION - the pressure sat at the vapour floor (-10.1 m) for 1.99 s of the 3 s after the front: the water boiled and the column split. When it rejoins, the collapse can reach about twice the usual surge (FN-035) - check the pipe's pressure rating
   because: S1 closed end: NEGATIVE pressure for 1.99 s, down to -10.0 m: water outside the pipe can be drawn in through leaks and joints - a water-quality risk (intrusion)
   -> sent when the data had reached t = 218.99 s
+[Warning] #1 (revision 1) REFILL (100% confident) at t = 215.543 s
+  where: not located (fewer than two sensors saw it)
+  seen by: S1 closed end
+  because: pressure ROSE by 379.35 m: a closing valve raises pressure upstream of it, returning water fills a pipe; bursts and pump trips lower it
+  because: SHARP front (14 ms, 10-90%): a sudden change - a pipe splitting, a valve slamming - not a pump running down
+  because: the pipe was EMPTY before: 0.03 m of pressure - supply returning to a drained pipe; with nothing flowing there was nothing to stop or let out
+  because: pump power is not monitored: no outside evidence
+  because: seen by ONE sensor only, and no other sensor that its wave could reach was watching: not located, not corroborated
+  because: S1 closed end: COLUMN SEPARATION - the pressure sat at the vapour floor (-10.1 m) for 1.99 s of the 3 s after the front: the water boiled and the column split. When it rejoins, the collapse can reach about twice the usual surge (FN-035) - check the pipe's pressure rating
+  because: S1 closed end: NEGATIVE pressure for 1.99 s, down to -10.0 m: water outside the pipe can be drawn in through leaks and joints - a water-quality risk (intrusion)
+  because: S1 closed end: in the 6 s after the front the pressure peaked at 379.4 m - 11810.1 times the 0.0 m before it
+  -> sent when the data had reached t = 221.53 s
     at least one alert                         yes
     every alert is a REFILL                    yes
     at WARNING level                           yes
@@ -2098,7 +2187,7 @@ test simulation::valves_by_hour::at_noon_the_valve_is_active_and_both_loggers_lo
     and it is not dismissed                    yes
 ok
 
-test result: ok. 11 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 17.60s
+test result: ok. 11 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 18.35s
 
    Doc-tests jk_application
 
@@ -2173,9 +2262,9 @@ running 0 tests
 test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
 
 ==============================================================================
-  passed   319
+  passed   320
   failed   0
   skipped  6 slow test(s) not in this suite (run -Suite full)
   filtered 0 test(s) outside -Only/-Filter
-  time     159.4 s (including compile)
+  time     170.9 s (including compile)
   result   ALL PASSED

@@ -37,6 +37,7 @@ pub fn estate_site(context: Context) -> Site {
                 name: (*name).to_string(),
                 clock: None,
                 uncalibrated_clock: Time::new(1e-6),
+                range: None,
             })
             .collect(),
         pipe_names: vec![

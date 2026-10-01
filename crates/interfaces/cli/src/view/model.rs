@@ -68,6 +68,7 @@ impl EventModel {
     ///
     /// # Errors
     /// Only if the simulation or the pipeline fails (a bug).
+    #[allow(clippy::too_many_lines)] // one demo, set up in order
     pub fn run() -> Result<Self, String> {
         let demo = flowing_estate_two_bursts()?;
         let names: Vec<String> = demo
@@ -100,6 +101,7 @@ impl EventModel {
                     name: name.clone(),
                     clock: None,
                     uncalibrated_clock: Time::new(1e-6),
+                    range: None,
                 })
                 .collect(),
             pipe_names: demo.site.drawing.pipe_names.clone(),

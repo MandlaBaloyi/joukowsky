@@ -130,6 +130,7 @@ fn a_burst_recorded_in_logger_files_raises_one_alarm_in_the_right_place() {
                 name: (*name).to_string(),
                 clock: None,
                 uncalibrated_clock: Time::new(1e-6),
+                range: None,
             })
             .collect(),
         pipe_names: vec![

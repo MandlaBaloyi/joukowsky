@@ -224,7 +224,8 @@ G-21  Cavitation: off by default; devices vapour-only               OPEN
   solution during a long down-surge (alpha0 is fixed); the
   floor's temperature (vapour pressure at 20 C only); turning the floor on
   by default once every analytical test states its floor. Column
-  separation in alerts: done as an attribute (V-S7, FN-036); open there:
-  the collapse surge after the 3 s window (an alert revision), loggers
-  clipped at 0 bar g (P2), and locating events whose fronts are shaped by
-  boiling (the localiser assumes elastic waves).
+  separation in alerts: done as an attribute (V-S7, FN-036), with the
+  collapse peak by revision 30 s on and loggers' ranges (P2) the same
+  day (FN-037). Open there: locating events whose fronts are shaped by
+  boiling (the localiser assumes elastic waves); the pipe's pressure
+  rating, to say whether a reported peak is dangerous.

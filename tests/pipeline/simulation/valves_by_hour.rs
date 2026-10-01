@@ -87,6 +87,7 @@ fn site(schedule: bool) -> Site {
                 name: name.into(),
                 clock: None,
                 uncalibrated_clock: Time::new(1e-6),
+                range: None,
             })
             .collect(),
         pipe_names: ["R-S1", "S1-PRV", "PRV-S2", "S2-J", "T-J"]
