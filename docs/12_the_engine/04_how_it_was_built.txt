@@ -1,0 +1,93 @@
+HOW THE ENGINE WAS BUILT
+STATUS: DRAFT v0.1 (2026-10-01)
+
+Who and how
+------------------------------------------------------------------------
+The owner set the mission, the principles and every decision (Rust
+first, software only, South Africa first, free-first, build the brain
+ourselves, no downloads without approval). Claude (Anthropic's AI, in
+Claude Code) wrote the code, the tests and most of the docs, in the
+owner's repository, commit by commit; the owner pushes to GitHub.
+
+The method, the same for every piece
+------------------------------------------------------------------------
+  1. Research and write it down first (folders 00-09): the physics, the
+     sources, what to build and why.
+  2. Build the smallest correct piece, in Rust, with typed units.
+  3. Prove it against an EXACT answer before anything else (rung 1 of
+     the validation ladder, 07_validation): Joukowsky's jump, a square
+     wave's period, a closed-form flow, a standard's worked example.
+  4. Then laws that must hold in every run (rung 2: conservation,
+     symmetry, steady stays steady, the grid does not change the
+     answer).
+  5. Then whole scenarios through the whole engine (rung 3: a burst on
+     an estate recorded by synthetic loggers with noise and clock
+     phase), and an independent method (cross-code).
+  6. When a test disagrees: find out WHY before changing anything. If
+     the code was wrong, fix it; if the test or the plan was wrong, fix
+     that - and write the lesson in 10_findings/findings_log.txt (FN-nnn).
+     Keep 10_findings/known_gaps.txt honest.
+  7. Commit with the evidence; all tests pass; the code checker (clippy,
+     strictest settings) is clean.
+
+The order it was built in (82 commits)
+------------------------------------------------------------------------
+27 Sep  The research and design docs (00-09); software only.
+28 Sep  The Rust workspace. The wave solver, one pipe (S1), then device
+        boundaries (S2: junctions, leaks, check valves, pumps with
+        run-down), the network wave solver (S3), the steady solver
+        (S4). Detection (noise, baseline, CUSUM, onset). Localisation
+        (the probability map). Classification (rules that abstain).
+        Clock errors. The event pipeline, live streaming, gaps. The
+        placement advisor. Detectability.
+29 Sep  The viewer (`jk view`). Readers for EPANET networks and logger
+        exports. Guard rails (nothing downloaded unasked). Big towns:
+        scale study, clock drift, planning by zones. Plastic pipe walls
+        (S6).
+30 Sep  Sources: reservoir levels, tanks, days and hours of operation.
+        Slow leaks (water balance, night watch). Burst size in alerts.
+        The sparse steady solver (1 000 km in 0.3 s). Four cores. Pumps
+        and valves switched by level, clock and load-shedding; EPANET
+        controls and rules; PRV, PSV, FCV, TCV; alerts that know the
+        devices of the hour.
+01 Oct  Valves that move. Canals and rivers (Saint-Venant). A canal
+        feeding a town. Pressure-driven demand. Refilling after a supply
+        cut; the refill class; the supply watch. Cavitation (vapour and
+        gas cavities, at pipes, junctions, valves, pumps). Column
+        separation, negative pressure, collapse peaks, logger ranges,
+        pipe ratings in alerts. Fatigue counting (rainflow). The pipe
+        health page. Supply cuts as alerts, in clock time. Site files
+        and `jk replay`. The transfer-matrix cross-check. The scorecard.
+
+What testing caught (a few of the 44 findings)
+------------------------------------------------------------------------
+Each of these would have reached a real site if the tests had not
+caught it:
+  FN-033  A refill against trapped air has no front; its later bounce was
+          called a BURST at 99.7% - a false alarm on every such refill.
+          Fixed with the supply watch.
+  FN-035  After a pump trip, the collapse of separated water columns
+          drives the pressure to about TWICE what ordinary water-hammer
+          theory predicts - a design checked the ordinary way may fail.
+  FN-037  Live alerts lost what their later loggers measured (only the
+          first logger's record was measured); invisible on whole
+          records, found by testing live.
+  FN-039  A fading ring after a pump trip closes no fatigue cycle;
+          the first live count showed 1.3 swings where there were 34.
+  FN-040  The worst pressure comes in the ringing, 20 s after the alert;
+          alerts on rated pipes now follow it up.
+  FN-041  Two loggers changing together gave three messages for one
+          supply cut; now one.
+  FN-044  Told wave speeds are exact, the engine claimed "90% sure" and
+          was right one time in five when they were 3% off; it now
+          assumes 5% doubt, and its 90% claims hold 88-95% of the time.
+Several findings corrected the plan itself (e.g. FN-036: column
+separation is an attribute of an event, not a class of its own;
+FN-034: build the vapour cavity model before the gas one).
+
+What was NOT used
+------------------------------------------------------------------------
+No outside libraries for physics, signals, statistics or maths: the
+solvers, the sparse matrix factorisation, the random numbers, the
+complex numbers, the date arithmetic are our own (decision TD-005: own
+the brain, borrow only plumbing). No real data yet; nothing downloaded.

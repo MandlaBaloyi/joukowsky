@@ -47,6 +47,11 @@ Reading order
                              hardware partners, the pilot kit, markets
                              (sites, mines, municipalities). Owner's
                              decisions.
+12_the_engine/               What was actually BUILT: the engine in plain
+                             words, how one alert is made, the code map
+                             (where the solvers and domains live), how it
+                             was built, how to run and review it, and its
+                             honest limits. Start here to review the code.
 glossary.txt                 The words we use, in plain language.
 
 These docs are hints, not limits

@@ -1,0 +1,79 @@
+HOW TO RUN IT AND REVIEW IT
+STATUS: DRAFT v0.1 (2026-10-01)
+
+Run it (from the project folder, in a terminal)
+------------------------------------------------------------------------
+  cargo run --release -p jk-cli -- view
+      Writes jk-view.html - open it in a browser. The engine at work on
+      simulated sites: alerts with maps, the loggers' records (zoom by
+      dragging), where loggers should go, tanks through an outage, a
+      slow leak found from night flows, pipe fatigue after pump trips.
+
+  cargo run --release -p jk-cli -- replay --example
+      Prints a site file to copy.
+  cargo run --release -p jk-cli -- replay SITE_FILE [--out report.txt]
+      A real site: reads its network and logger exports, replays them
+      through the live engine, prints the report (alerts, supply cuts,
+      fatigue, every assumption made).
+
+  cargo run -p jk-cli -- network FILE.inp     summarise a network file
+  cargo run -p jk-cli -- logger FILE.csv      summarise a logger export
+  cargo run -p jk-cli -- rpv                  the first solver, one pipe
+  cargo run --release -p jk-cli -- scale --km 10 --advise
+      timings on a synthetic 10 km town
+
+Test it
+------------------------------------------------------------------------
+  .\tests\run-tests.ps1                  the quick suite (about 2 min)
+  .\tests\run-tests.ps1 -Suite full      everything, slow tests too
+  .\tests\run-tests.ps1 -Only hydraulics (or detection, localisation,
+       classification, pipeline, adapters, balance, channels, health)
+  .\tests\run-tests.ps1 -Filter scorecard   tests whose name has a word
+Logs: tests/logs/latest.log (the last run, in full), tests/logs/
+history.csv (every run). Each test prints its checks:
+    peak air pressure vs the energy balance [m]  got 205.268606
+                                                 expected 205.268607
+    rel.err 6.4e-9
+"got" is what the engine computed, "expected" what exact physics says.
+
+A path through the code for a first review (someone new to Rust)
+------------------------------------------------------------------------
+Rust in three ideas for reading this code: a `struct` is a record of
+named values; `fn` is a function; `Result<T, E>` means "either the
+answer T or an error E" (the `?` after a call passes an error up).
+`#[test]` marks a test. `///` is documentation.
+
+  Day 1 - the physics
+    crates/kernel/src/units.rs              units as types
+    crates/domain/hydraulics/src/joukowsky.rs
+    crates/domain/hydraulics/src/moc/characteristics.rs
+    crates/domain/hydraulics/src/moc/single_pipe.rs
+    tests/hydraulics/analytical/joukowsky/ and single_pipe/
+    -> run: .\tests\run-tests.ps1 -Only hydraulics, read latest.log
+  Day 2 - noticing and naming
+    crates/domain/detection/src/detector/mod.rs   (the chain)
+    crates/domain/classification/src/rules/evidence.rs  (the rules, as a
+        table at the top of the file)
+    tests/classification/simulation/scenarios.rs
+  Day 3 - locating
+    crates/domain/localisation/src/locate.rs, posterior/
+    tests/localisation/
+  Day 4 - the live engine
+    crates/application/src/pipeline/monitor/mod.rs  ingest() and decide()
+    crates/application/src/pipeline/assess.rs
+    tests/pipeline/simulation/ (scenarios, live, supply_cut, scorecard)
+  Day 5 - getting real data in
+    crates/adapters/files/src/site.rs, logger/, epanet/
+    tests/adapters/simulation/site_file.rs
+Questions worth asking on the way: "which doc does this implement?"
+(every physics function names it), "which test proves this?" (search
+tests/ for the function's name), "what happens if the data is broken
+here?" (principle P6).
+
+Where decisions and lessons live
+------------------------------------------------------------------------
+  CLAUDE.md                         the project's rules and map, in short
+  docs/09_technologies/12_decision_log.txt   every technology decision
+  docs/10_findings/findings_log.txt every lesson from building (FN-nnn)
+  docs/10_findings/known_gaps.txt   every known weakness (G-nn)
+  docs/07_validation/validation_strategy.txt  every validation case

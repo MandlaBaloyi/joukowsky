@@ -1,0 +1,135 @@
+THE CODE MAP - EVERY FOLDER, WHAT IT HOLDS
+STATUS: DRAFT v0.1 (2026-10-01)
+
+The shape: domains, application, adapters, interfaces
+------------------------------------------------------------------------
+The code follows the design in 06_engine_architecture/project_structure_
+and_ddd.txt: "domain-driven design, ports and adapters". In plain words:
+
+  kernel/        the shared basics everyone uses (units, maths).
+  domain/        the BRAIN - physics, signals, statistics. Each folder is
+                 one "bounded context": one subject, its own words, its
+                 own crate. Pure: no files, no network, no clock - data
+                 in, answers out. This is what makes it testable.
+  application/   the USE CASE - the event pipeline: takes data, calls the
+                 domains in order, makes alerts. Declares PORTS (plug
+                 shapes) for the outside world, e.g. where alerts go.
+  adapters/      the PLUGS - reading files today (EPANET, logger CSV,
+                 site files); later databases, MQTT, SCADA.
+  interfaces/    the DOORS people use - today the `jk` command line.
+  sim/           synthetic towns for testing at scale (never used by the
+                 domains).
+  tests/         the validation tests, by context and rung.
+
+The rules (06_/project_structure_and_ddd.txt R1-R6): the kernel depends
+on nothing; domains only on the kernel and the domains they need (no
+cycles); the application on domains; adapters on the application;
+interfaces wire everything. No outside libraries in the brain (the
+decision log 09_technologies/12_decision_log.txt records every
+exception: so far, none in the domains). The units are types: adding a
+head [m] to a flow [m^3/s] does not compile.
+
+Each crate, folder by folder (lines of Rust, 2026-10-01)
+------------------------------------------------------------------------
+crates/kernel/  (jk-kernel, 1 000 lines)
+  units.rs      Head, Flow, Pressure, Time, Length, WaveSpeed ... as types
+  random.rs     our own random-number generator (repeatable tests)
+  linalg.rs     dense Cholesky solver;  sparse.rs  sparse Cholesky (RCM)
+  clock.rs      dates from seconds since 1970; "12:15:03 UTC+02:00"
+
+crates/domain/hydraulics/  (jk-hydraulics, 9 400 lines) - THE SOLVERS
+  joukowsky.rs  the closed forms: a V / g, wave speed, ...
+  pipe/         a pipe: length, diameter, wave speed, friction/ (quasi-
+                steady), viscoelastic.rs (plastic walls that creep, S6),
+                pressure rating (PN)
+  boundary/     what sits at pipe ends: reservoir, dead end, junction,
+                leak/burst, valve (closing), check valve, pump (curves,
+                run-down after a trip), control valves (PRV, PSV, FCV,
+                TCV - frozen or moving)
+  model.rs      the network: nodes, pipes, bursts, levels, tanks,
+                elevations, vapour floor, free gas
+  moc/          SOLVER 1 - the WAVE solver (method of characteristics):
+                single_pipe.rs (the first, reservoir-pipe-valve),
+                characteristics.rs (the two equations every solver uses),
+                network/ (many pipes, one shared time step: grid.rs,
+                initial.rs, solver.rs; cavity.rs - water boiling: vapour
+                cavities (DVCM) and free gas (DGCM), S7)
+  steady/       SOLVER 2 - the STEADY solver (everyday flows and
+                pressures; Global Gradient Algorithm, own sparse
+                Cholesky, 1 000 km in 0.3 s): gga.rs; pressure-driven
+                demand; extended.rs = SOLVER 3, hours and days (tanks
+                filling, demand patterns, supply events, live sources);
+                controls.rs, rules.rs (pumps and valves switched as
+                EPANET does)
+  refill.rs     SOLVER 4 - a pipe refilling after a cut (rigid column,
+                air pocket, air valve, slam)
+  frequency.rs  SOLVER 5 - small oscillations in the frequency domain
+                (transfer matrices, S9) - the wave solver's independent
+                check
+  vapour.rs     where water boils at a site's altitude
+
+crates/domain/channels/  (jk-channels, 850 lines)
+  SOLVER 6 - canals and rivers (1-D Saint-Venant, finite volumes, dry
+  beds): section.rs (trapezoid, normal depth), solver.rs
+
+crates/domain/telemetry/  (jk-telemetry, 370 lines)
+  assembly.rs   pieces of data -> continuous stretches + explicit gaps
+
+crates/domain/detection/  (jk-detection, 1 800 lines)
+  noise/ baseline/ change/ onset/ detector/  (step 3 of 02_), supply.rs
+
+crates/domain/classification/  (jk-classification, 870 lines)
+  features/ (front, after, low), classes/ (EventClass, Context), rules/
+
+crates/domain/localisation/  (jk-localisation, 4 400 lines)
+  graph/        travel times along the pipes; what devices pass
+  posterior/    the probability map, the 90% region, pruning
+  clocks/       clock offsets and drift from known events
+  locate.rs     localise (the Localiser);  size.rs  burst size
+  placement/    where loggers should go, what each buys, big towns by
+                zones, the smallest burst a set of loggers can feel
+
+crates/domain/balance/  (jk-balance, 560 lines)
+  zone.rs night.rs leak.rs - water balance, night flows, slow-leak watch
+
+crates/domain/health/  (jk-health, 440 lines)
+  rainflow.rs damage.rs spectrum.rs - fatigue: cycles, Miner, ranking
+
+crates/application/  (jk-application, 2 800 lines)
+  pipeline/     the event pipeline: monitor/ (the live Monitor - mod.rs;
+                sensor.rs per-logger state; supply.rs supply cuts;
+                hours.rs devices by the hour), fusion.rs, assess.rs,
+                run.rs (whole records), replay.rs (a site's recordings)
+  feed.rs       a canal feeding a network (co-simulation)
+  alert/        the Alert and its levels;  ports/  AlertSink
+
+crates/adapters/files/  (jk-files, 4 700 lines)
+  epanet/       .inp files: pipes, pumps, valves, patterns, controls,
+                rules - every approximation noted
+  logger/       logger CSV exports: units, times, zones, gaps
+  site.rs       site files
+
+crates/sim/  (jk-sim, 550 lines)       synthetic towns of any size
+crates/interfaces/cli/  (jk-cli, 4 900 lines)
+  `jk` commands: rpv, network, logger, replay, scale, view (the web page:
+  view/ - pages/, charts, assets/); sim/ (demo sites for the viewer)
+
+tests/  (13 500 lines, one test program per context)
+  <context>/<rung>/<topic>.rs - rungs: analytical/ (exact answers),
+  invariants/ (laws every run obeys), simulation/ (whole scenarios),
+  cross_code/ (an independent method). common/ holds the shared test
+  helpers (synthetic loggers, the estate, the knee station, the drained
+  main). logs/ keeps every run's output.
+
+Where to start reading code
+------------------------------------------------------------------------
+  1. crates/kernel/src/units.rs          how units are types
+  2. crates/domain/hydraulics/src/joukowsky.rs   the namesake equation
+  3. crates/domain/hydraulics/src/moc/characteristics.rs and
+     moc/single_pipe.rs                  the wave solver in 200 lines
+  4. tests/hydraulics/analytical/single_pipe/     how it is proven
+  5. crates/application/src/pipeline/monitor/mod.rs  ingest() and
+     decide(): the whole live engine in one place
+  6. crates/application/src/pipeline/assess.rs   how an alert is made
+Every physics function names the doc it implements; every test prints
+what it measured against what the physics predicts.

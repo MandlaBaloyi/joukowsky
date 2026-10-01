@@ -1,0 +1,62 @@
+HONEST LIMITS - WHAT IS PROVEN AND WHAT IS NOT
+STATUS: DRAFT v0.1 (2026-10-01) - read before any claim to a client
+
+Proven (on 2026-10-01)
+------------------------------------------------------------------------
+  The physics, against exact answers: Joukowsky's jump, wave periods,
+    friction, plastic walls, pumps, valves, tanks, canals, refilling,
+    vapour and gas cavities (V-A1 .. V-A19) - most to better than one
+    part in a million.
+  The wave solver against an independent method (transfer matrices):
+    within 0.15% on a branched network (V-X1).
+  The whole engine on simulated sites (the V-S cases built so far - V-S3,
+    a trained classifier, is still a plan): bursts of 3-12 mm
+    on an estate - detected 100%, called bursts 95-100%, located within
+    about 0.1-0.4 m (wave speeds known) or 5-7 m (3% off, declared), the
+    90% region holding the truth 88-95% of the time, sized within 1-7%;
+    no false alerts in 9 logger-hours of quiet with slow wander; pump
+    trips, valve closures, refills, supply cuts, column separation,
+    clock errors, late uploads, gaps, power cuts at the gateway.
+  Files: EPANET networks and logger exports as written by hand-made
+    realistic files; a whole site through `jk replay` (V-S11).
+
+Not proven - what real data must still show
+------------------------------------------------------------------------
+  Everything above is on SIMULATED data, from our own simulator (now
+    cross-checked by an independent method, but not yet by another
+    team's code or by laboratory measurements - gap G-01).
+  Real noise is not Gaussian, real pressure moves for many reasons
+    (users, pumps starting, valves operated, air): the false-alert rate
+    on a real network is unknown (G-05, G-11).
+  Real wave speeds are unknown until measured; with 5% doubt the 90%
+    regions are tens of metres long on long mains (FN-044).
+  Real logger files will differ from ours (formats, time zones, gaps,
+    clocks) - every reader assumption is reported, but some files will
+    need new handling.
+  Events not yet simulated cannot be classified: pump STARTS and valve
+    OPENINGS (a valve opening looks like a burst), sensor faults.
+  Big real networks: the solvers run 1 000 km in seconds, but placement
+    and location on a real municipal network are untested.
+
+Assumptions to verify (marked [VERIFY] in the code and docs)
+------------------------------------------------------------------------
+  wave-speed doubt 5%; negative pressure counted from -1 m; the empty-pipe
+  threshold 2 m for 60 s; the refill window 15 min; vapour pressure at
+  20 C; S-N exponent 4 for fatigue; PN ratings vs allowable surge per
+  material (SANS 966 / SANS 4427); free-gas content of SA supply water;
+  the collapse-peak factor of about 2 (FN-035) against lab data.
+
+Not built yet (10_findings/known_gaps.txt)
+------------------------------------------------------------------------
+  Safe action advice (what to close, how slowly - P4); feedback from
+  operators; the learning loops (per network, over time); a database
+  and live connections (MQTT, SCADA); fatigue per pipe between loggers;
+  locating events whose fronts are shaped by boiling; a model for long
+  boiling zones; cavitation on by default; unsteady friction.
+
+The next step
+------------------------------------------------------------------------
+Real data, chosen with the owner (10_findings/real_data_candidates.txt):
+EPANET example networks, published laboratory experiments, L-Town, and
+the real prize - a South African partner site with transient loggers and
+a hydrant opened at a known place and time.

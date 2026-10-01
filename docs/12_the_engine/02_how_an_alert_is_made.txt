@@ -1,0 +1,126 @@
+HOW AN ALERT IS MADE - ONE BURST, FROM THE LOGGER TO THE ALERT
+STATUS: DRAFT v0.1 (2026-10-01)
+
+A 10 mm hole opens in pipe P4. Three loggers (S1, S2, S3) hear it. This
+is what happens, step by step, with the file that does each step.
+
+Step 0  The site is read                     adapters/files/src/site.rs
+------------------------------------------------------------------------
+A site file names the network (EPANET .inp, read by adapters/files/src/
+epanet/) and each logger: the node it sits on, its export file (read by
+adapters/files/src/logger/), its measuring range and clock. Out come the
+Site (network, sensors, ratings, zone, power records) and each logger's
+record: runs of pressure on the logger's own regular clock, in metres,
+gaps kept as gaps. Every assumption becomes a note.
+
+Step 1  The data arrives                     application/src/pipeline/replay.rs
+------------------------------------------------------------------------
+The recordings are fed to the live monitor in pieces, in time order
+across loggers - exactly as a site would send them live. (Live, a
+gateway would call the same Monitor::ingest.)
+
+Step 2  Is the data continuous?              domain/telemetry/src/assembly.rs
+------------------------------------------------------------------------
+Each logger's pieces are joined into continuous stretches; a missing
+piece is a GAP, recorded and never filled (principle P6). A gap ends
+everything that needs continuity: detection restarts, a fatigue swing
+across it is counted as half, a supply spell open at it is "not known".
+
+Step 3  Did something happen?                domain/detection/src/
+------------------------------------------------------------------------
+For each logger, a chain of small pieces:
+  noise/      how much this logger jitters when nothing happens
+              (robust, from sample differences);
+  baseline/   the slowly drifting normal level (Brown's smoothing) -
+              demand changing over the day is NOT an event;
+  change/     CUSUM: adds up evidence of a lasting shift, in units of
+              the noise; past the threshold, an event;
+  onset/      WHEN exactly the front arrived, to a fraction of a sample
+              (step-area method), with its uncertainty - this is what
+              location depends on;
+  detector/   the whole chain, live, with the rules for after an event
+              (the network rings: echoes are not new events).
+Out: an event per logger - arrival time +/- uncertainty, direction
+(drop/rise), size of the step.
+Beside it, at every logger:
+  supply.rs   the supply watch: has this pipe stood empty (about 0) for
+              a minute? has the water come back? (supply cuts, refills);
+  health/     the fatigue counter: every pressure swing, counted
+              (rainflow) into the logger's loading.
+
+Step 4  Correct the clocks                   domain/localisation/src/clocks/
+------------------------------------------------------------------------
+Each logger's clock is a little off. Known offsets (from calibration on
+known events) are taken out; unknown ones become part of the timing
+uncertainty (GNSS 1 us, internet time 40 ms).
+
+Step 5  What does each logger's signal look like?
+                                             domain/classification/src/features/
+------------------------------------------------------------------------
+Around each front: which way it moved, how far (swing), how sharp (10-90%
+rise time), whether it stayed (persistence), and how low and high the
+pressure went after it (negative pressure, the vapour floor, the peak).
+
+Step 6  Which loggers heard the same event?  application/src/pipeline/fusion.rs
+------------------------------------------------------------------------
+Two loggers' fronts belong to one event only if the time between them is
+possible: no more than the fastest wave travel time between them (plus
+margin). Events are grouped so.
+
+Step 7  Wait for the others - but not forever
+                                             application/src/pipeline/monitor/mod.rs
+------------------------------------------------------------------------
+Before deciding, the monitor waits until every other logger's data has
+come in far enough to say whether the wave reached it - but at most 10 s
+behind the leading logger (a gateway off in load-shedding is not waited
+for; the alert says so, and is REVISED if its data turns up).
+
+Step 8  Assess: name it, place it, size it, grade it
+                                             application/src/pipeline/assess.rs
+------------------------------------------------------------------------
+  NAME     domain/classification/src/rules/ - transparent rules, each
+           adding evidence for or against burst / valve closure / pump
+           trip / refill (a drop or a rise? sharp or drawn out? was the
+           pipe empty before? did the supply just return? was pump power
+           lost?). Evidence becomes probabilities; below 70% the class is
+           UNKNOWN - the engine abstains rather than guess.
+  PLACE    domain/localisation/ - every point of the network (every 2 m
+           of every pipe) is scored by how well it explains the arrival
+           times, using the travel times along the pipes (graph/), with
+           pumps and valves as they stand at that hour; the wave-speed
+           doubt (5% unless the site says otherwise) and clock doubt are
+           carried in. Out: the most likely point, the probability of
+           each pipe, and the smallest set of stretches holding 90%
+           (posterior/).
+  SIZE     domain/localisation/src/size.rs - from the drops the loggers
+           measured, the flow the hole lets out (+/- uncertainty).
+  CHECK    loggers that should have heard it but did not - if they were
+           watching, it is not corroborated (Review); if they were not
+           (calibrating, a gap), the alert says so.
+  GRADE    Alarm / Warning / Review / Info; dangers raise it (negative
+           pressure, column separation, a peak above the pipe's rating).
+
+Step 9  Send it - and keep watching          application/src/ports/, alert/
+------------------------------------------------------------------------
+The alert goes to whatever AlertSink the deployment plugs in (today a
+collector; later SMS, email, a dashboard). The monitor keeps the event:
+  - late loggers revise it (more arrivals, better location);
+  - events that took the pressure to zero or below, or on rated pipes,
+    are followed for 30 s more: the collapse peak, the highest pressure
+    in the ringing - one revision when all are in;
+  - a supply cut confirmed later is tied to the drop that began it.
+Times are written on the site's clock ("12:15:03 UTC+02:00").
+
+The same steps, separately
+------------------------------------------------------------------------
+  Supply cuts   monitor/supply.rs: loggers whose pipes stood empty within
+                15 min of each other = one SUPPLY CUT alert (Warning if
+                two or more agree, Review if one), revised on return.
+  Slow leaks    domain/balance/: no waves - meter balance of a zone,
+                night flows, a CUSUM watch for a lasting rise.
+  Fatigue       Monitor::loading(): each logger's swings, ranked by the
+                equivalent number of 50 m swings.
+
+How fast: an alert goes out about 3-7 s (of data) after the burst - the
+3 s after the front that classification looks at, and the waiting for
+the other loggers.

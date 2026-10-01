@@ -1,0 +1,101 @@
+THE ENGINE IN PLAIN WORDS
+STATUS: DRAFT v0.1 (2026-10-01)
+
+1. The problem
+------------------------------------------------------------------------
+Water pipes break, and nobody knows for hours or days. Water is lost,
+streets flood, sites run dry, and the bills come later. Worse, pipes are
+damaged all the time by things nobody sees: sudden pressure shocks
+("water hammer") when a pump loses power, a valve slams shut, or the
+municipal supply comes back after a cut. Each shock is a hammer blow on
+the pipe wall. In South Africa there are more of them than almost
+anywhere: load-shedding trips pumps several times a day, municipal
+supply is cut and restored, and many pipes are 40 years old.
+
+Today's monitoring (SCADA) reads a pressure every few minutes. A pressure
+shock lasts a second or two. So it is simply never seen.
+
+2. What the engine does
+------------------------------------------------------------------------
+joukowsky is software. It listens to pressure loggers that already exist
+(we build no hardware) - loggers that measure about 128 times a second -
+and it:
+
+  NOTICES   that something happened, within seconds;
+  NAMES     what it was: a burst, a valve closing, a pump losing power, a
+            refill after a supply cut, a supply cut itself;
+  LOCATES   where it started - on which pipe, how many metres along it,
+            and how sure it is ("90% within these 6 m");
+  SIZES     a burst: how many litres a second it is losing;
+  WARNS     of dangers that come with it: pressure going negative (dirty
+            water can be sucked in), water boiling in the pipe (column
+            separation - the collapse can double the shock), a pressure
+            above what the pipe is rated for;
+  COUNTS    the wear: every swing of pressure each pipe takes (fatigue),
+            so pipes can be ranked by how hard they are worked;
+  SAYS WHY  every alert carries its reasons, in plain words, and the
+            engine says "unknown" rather than guess.
+
+It also watches the slow things the fast method cannot see: leaks that
+grow quietly (night-flow water balance), tanks running low, supply
+failing.
+
+3. How it can do that - the one idea
+------------------------------------------------------------------------
+A sudden change in a pipe sends a pressure wave along the water at about
+1 000 metres a second (the speed depends on the pipe). The wave reaches
+each logger at a slightly different moment. From those moments -
+measured to a few thousandths of a second - and the map of the pipes,
+the engine works out where the wave came from, the way you can tell
+where thunder struck from when you hear it. The size of the pressure
+drop tells how big the hole is (Joukowsky's equation, after which the
+project is named: a sudden change of flow makes a pressure jump of
+a x (change of velocity) / g).
+
+The engine also carries a full simulator of the network - it can play
+out what a burst, a pump trip or a refill would do, wave by wave. That
+simulator is how every part of the engine was tested before any real
+data, and later it lets the engine check advice before giving it.
+
+4. What comes out
+------------------------------------------------------------------------
+Alerts, like this one (from the end-to-end test, V-S11):
+
+  [Alarm] #1 BURST (100% confident) at 2026-09-29 12:15:03.0 UTC+02:00
+    where: P4 at 200.1 m from its start; 90% within 2 m of pipe
+    size: about 1.55 l/s (+/- 0.16 l/s), from 3 logger(s)
+    seen by: S3 south block, S1 gatehouse, S2 north block
+    because: pressure DROPPED by 9.02 m: a burst or a pump trip ...
+    because: SHARP front (13 ms, 10-90%): a sudden change ...
+    because: pump power is monitored and did NOT fail: not a pump trip
+
+Levels: ALARM (a confident, located burst - act now), WARNING (a
+damaging event - pump trip, refill, supply cut, column separation, a
+peak over the pipe's rating), REVIEW (unsure, or seen by one logger
+only), INFO (normal operation, or explained). An alert is REVISED when
+late data arrives - another logger's upload, the peak that followed.
+
+Besides alerts: a report per site (`jk replay`) and a web page to look
+at the engine working (`jk view`): logger records, maps, where loggers
+should be placed, tanks and supply, night flows, pipe fatigue.
+
+5. What makes it different
+------------------------------------------------------------------------
+  - Physics first. Every answer comes from the laws of water in pipes,
+    each checked against exact textbook solutions; machine learning can
+    refine it later, never replace it.
+  - Honest. It says how sure it is, and that claim is tested: when it
+    says "90% within these metres", the truth is inside about 90% of
+    the time (scorecard, FN-044). It says "unknown" rather than guess.
+    It never fills gaps in the data, and says when it could not see.
+  - Built for South African conditions: load-shedding (pump trips,
+    gateways off), supply cuts and refills, altitude (water boils at
+    -8.5 m on the Highveld, not -10 m), local times.
+  - Software only: it works with loggers a site already has, from the
+    files they export.
+
+6. What it is NOT (yet)
+------------------------------------------------------------------------
+It has not yet run on real recordings - that starts next (06_honest_
+limits.txt). It does not control anything: it watches and warns. It
+does not yet learn per network (the learning loops come with real data).
