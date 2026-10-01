@@ -86,8 +86,12 @@ at 20 C): -10.11 m at sea level, -8.19 m at 1700 m.
   of the cavity); the C+ leaving it uses the downstream one, the C- the
   upstream one. Junction nodes (dead ends, demands, bursts - a leak at the
   floor draws water IN) and valve nodes do the same with their own
-  outflow law at the floor head. Not yet: pumps, check valves and control
-  valves (G-21).
+  outflow law at the floor head. Two-sided devices - pumps, check valves,
+  control valves - may hold a cavity on either side: that side's head is
+  fixed at the floor, which to the device is a characteristic with
+  impedance 0, so every device law is used unchanged (check-valve and
+  control-valve steps rewritten to allow it); a few passes settle which
+  sides cavitate (cavity.rs two_sided).
 
 Why DVCM first, not DGCM as section 2 suggested (FN-034): DVCM has an
 exact solution to test against, and DGCM tends to it as the gas fraction
@@ -107,3 +111,20 @@ g dH / a for the round trip k it collapses in: 226.06 m, exact to 2e-12
 cycle repeats). On the Highveld with the valve 15 m up (floor 6.81 m
 piezometric) the cavity grows to 137 litres instead of 78: less
 pressure pushes the water back.
+
+Two-sided check (V-A17): a shut valve mid-line as a wall, the reservoir
+beyond it falling at once from 30 m to -8 m. The column is pulled away
+from the valve's downstream side; a cavity opens there at L/a, grows to
+55.5 l (rigid column 55.6 l), lives 19.00 s (rigid 19.00 s), and equals
+the rigid-column volume at all 19 round trips (3e-14 of the peak). The
+upstream side stays at rest.
+
+Pump trip (invariants, tests/hydraulics/invariants/network/
+cavitation.rs): a pump with 1/20 of the usual flywheel on a 2 km main that
+climbs to a knee 50 m up. Linear theory: the knee's pressure falls to
+-45.5 m. With the floor: a cavity opens at the knee at 1.06 s, grows to
+19 l and collapses at 4.92 s; the collapse drives the knee to 160 m of
+pressure - linear theory's highest was 76 m (FN-035). A stopped pump
+passes water from its sump into a down-surge at its discharge (no
+non-return valve modelled beyond the pump's own), so the discharge itself
+did not boil: the knee did, as in the field.

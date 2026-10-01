@@ -14,7 +14,8 @@
 //! whose head would fall below it hold a vapour cavity instead
 //! ([`super::cavity`]); a point then carries two flows, its upstream side
 //! (used by the C- leaving it) and its downstream side (used by the C+).
-//! Pumps, check valves and control valves are not yet allowed to cavitate.
+//! Pumps, check valves and control valves may hold a cavity on either side
+//! ([`super::cavity::two_sided`]).
 //!
 //! A plastic pipe's creep is folded into every characteristic it carries
 //! (`pipe/viscoelastic.rs`): interior points and pipe ends then solve with
@@ -120,9 +121,19 @@ struct Cavities {
     /// the downstream side only at a cavity).
     upstream: Vec<Vec<f64>>,
     upstream_new: Vec<Vec<f64>>,
-    /// Piezometric floor and cavity volume at every node.
+    /// Piezometric floor and cavity volume at every node (for a two-sided
+    /// device: its upstream side).
     node_floor: Vec<f64>,
     node_volume: Vec<f64>,
+    /// Cavity volume on the downstream side of a two-sided device.
+    node_volume_down: Vec<f64>,
+}
+
+impl Cavities {
+    /// All the vapour at node `n` (both sides of a device).
+    fn at_node(&self, n: usize) -> f64 {
+        self.node_volume[n] + self.node_volume_down[n]
+    }
 }
 
 #[derive(Clone, Copy)]
@@ -202,6 +213,7 @@ impl Network {
                 upstream_new: q.clone(),
                 node_floor: (0..self.nodes().len()).map(|n| z(NodeId(n)) + hv).collect(),
                 node_volume: vec![0.0; self.nodes().len()],
+                node_volume_down: vec![0.0; self.nodes().len()],
             }
         });
         let mut walls: Vec<Option<Wall>> = self
@@ -455,20 +467,29 @@ impl Network {
                         };
                         let (i_in, i_out) = (pos(PipeEnd::Downstream), pos(PipeEnd::Upstream));
                         let (a_in, a_out) = (arrivals[i_in], arrivals[i_out]);
-                        let s = check_valve::step(
-                            check_states[n],
-                            a_in.characteristic,
-                            a_in.impedance,
-                            a_out.characteristic,
-                            a_out.impedance,
+                        let state = check_states[n];
+                        let s = device_step(
+                            cavities.as_ref(),
+                            n,
+                            a_in,
+                            a_out,
+                            dt_si,
+                            |cu, bu, cd, bd| {
+                                let s = check_valve::step(state, cu, bu, cd, bd);
+                                (s.head_upstream, s.head_downstream, s.flow, s.state)
+                            },
                         );
-                        check_states[n] = s.state;
+                        check_states[n] = s.device;
                         let (p_in, p_out) = (topo[n][i_in].0.0, topo[n][i_out].0.0);
-                        let last = h_new[p_in].len() - 1;
-                        h_new[p_in][last] = s.head_upstream;
-                        q_new[p_in][last] = s.flow;
-                        h_new[p_out][0] = s.head_downstream;
-                        q_new[p_out][0] = s.flow;
+                        write_sides(
+                            &s,
+                            p_in,
+                            p_out,
+                            &mut h_new,
+                            &mut q_new,
+                            cavities.as_mut(),
+                            n,
+                        );
                         node_head[n] = s.head_upstream;
                         node_outflow[n] = 0.0;
                         continue;
@@ -509,20 +530,28 @@ impl Network {
                             None if mode.one_way() => (q0 > 0.0).then(|| drop / (q0 * q0)),
                             None => Some(open_resistance),
                         };
-                        let s = control_valve::step(
-                            r,
-                            mode.one_way(),
-                            a_in.characteristic,
-                            a_in.impedance,
-                            a_out.characteristic,
-                            a_out.impedance,
+                        let one_way = mode.one_way();
+                        let s = device_step(
+                            cavities.as_ref(),
+                            n,
+                            a_in,
+                            a_out,
+                            dt_si,
+                            |cu, bu, cd, bd| {
+                                let s = control_valve::step(r, one_way, cu, bu, cd, bd);
+                                (s.head_upstream, s.head_downstream, s.flow, ())
+                            },
                         );
                         let (p_in, p_out) = (topo[n][i_in].0.0, topo[n][i_out].0.0);
-                        let last = h_new[p_in].len() - 1;
-                        h_new[p_in][last] = s.head_upstream;
-                        q_new[p_in][last] = s.flow;
-                        h_new[p_out][0] = s.head_downstream;
-                        q_new[p_out][0] = s.flow;
+                        write_sides(
+                            &s,
+                            p_in,
+                            p_out,
+                            &mut h_new,
+                            &mut q_new,
+                            cavities.as_mut(),
+                            n,
+                        );
                         node_head[n] = s.head_upstream;
                         node_outflow[n] = 0.0;
                         continue;
@@ -536,15 +565,12 @@ impl Network {
                         };
                         let (i_in, i_out) = (pos(PipeEnd::Downstream), pos(PipeEnd::Upstream));
                         let (a_in, a_out) = (arrivals[i_in], arrivals[i_out]);
+                        let cav = cavities.as_ref();
                         let solve = |alpha: f64| {
-                            pump::step(
-                                &pump.curve,
-                                alpha,
-                                a_in.characteristic,
-                                a_in.impedance,
-                                a_out.characteristic,
-                                a_out.impedance,
-                            )
+                            device_step(cav, n, a_in, a_out, dt_si, |cu, bu, cd, bd| {
+                                let s = pump::step(&pump.curve, alpha, cu, bu, cd, bd);
+                                (s.head_suction, s.head_discharge, s.flow, s.flow)
+                            })
                         };
                         let tripped = trip.is_some_and(|at| t > at);
                         let alpha = if tripped {
@@ -553,22 +579,26 @@ impl Network {
                             let a_old = pump_alpha[n];
                             let dec_old = pump.deceleration(pump_flow[n], a_old, g_si);
                             let a_pred = (a_old + dt_si * dec_old).max(0.0);
-                            let dec_pred = pump.deceleration(solve(a_pred).flow, a_pred, g_si);
+                            let dec_pred = pump.deceleration(solve(a_pred).device, a_pred, g_si);
                             (a_old + 0.5 * dt_si * (dec_old + dec_pred)).max(0.0)
                         } else {
                             1.0
                         };
                         let s = solve(alpha);
                         pump_alpha[n] = alpha;
-                        pump_flow[n] = s.flow;
+                        pump_flow[n] = s.device;
                         let (p_in, p_out) = (topo[n][i_in].0.0, topo[n][i_out].0.0);
-                        let last = h_new[p_in].len() - 1;
-                        h_new[p_in][last] = s.head_suction;
-                        q_new[p_in][last] = s.flow;
-                        h_new[p_out][0] = s.head_discharge;
-                        q_new[p_out][0] = s.flow;
-                        node_head[n] = s.head_discharge;
-                        node_outflow[n] = s.flow;
+                        write_sides(
+                            &s,
+                            p_in,
+                            p_out,
+                            &mut h_new,
+                            &mut q_new,
+                            cavities.as_mut(),
+                            n,
+                        );
+                        node_head[n] = s.head_downstream;
+                        node_outflow[n] = s.device;
                         continue;
                     }
                 };
@@ -607,10 +637,10 @@ impl Network {
                 std::mem::swap(&mut cav.volume, &mut cav.volume_new);
                 for (j, probe) in resolved.iter().enumerate() {
                     cavity_volumes[j].push(match *probe {
-                        Resolved::Node(n) => cav.node_volume[n],
-                        Resolved::Pipe(p, 0) => cav.node_volume[self.pipes()[p].from.0],
+                        Resolved::Node(n) => cav.at_node(n),
+                        Resolved::Pipe(p, 0) => cav.at_node(self.pipes()[p].from.0),
                         Resolved::Pipe(p, i) if i + 1 == cav.volume[p].len() => {
-                            cav.node_volume[self.pipes()[p].to.0]
+                            cav.at_node(self.pipes()[p].to.0)
                         }
                         Resolved::Pipe(p, i) => cav.volume[p][i],
                     });
@@ -731,6 +761,65 @@ fn interiors(
                 }
             };
         }
+    }
+}
+
+/// Steps a two-sided device at node `n` (upstream pipe bringing `a_in`,
+/// downstream pipe `a_out`) with `solve` - through
+/// [`cavity::two_sided`] if the run has vapour cavities.
+fn device_step<T: Copy>(
+    cavities: Option<&Cavities>,
+    n: usize,
+    a_in: Arrival,
+    a_out: Arrival,
+    dt: f64,
+    solve: impl Fn(f64, f64, f64, f64) -> (f64, f64, f64, T),
+) -> cavity::TwoSided<T> {
+    let (inlet, outlet) = (
+        (a_in.characteristic, a_in.impedance),
+        (a_out.characteristic, a_out.impedance),
+    );
+    if let Some(c) = cavities {
+        return cavity::two_sided(
+            inlet,
+            outlet,
+            c.node_floor[n],
+            (c.node_volume[n], c.node_volume_down[n]),
+            dt,
+            solve,
+        );
+    }
+    let (hu, hd, q, device) = solve(inlet.0, inlet.1, outlet.0, outlet.1);
+    cavity::TwoSided {
+        head_upstream: hu,
+        head_downstream: hd,
+        flow_upstream: q,
+        flow_downstream: q,
+        device,
+        volume_upstream: 0.0,
+        volume_downstream: 0.0,
+    }
+}
+
+/// Writes a two-sided device's step onto the ends of its pipes (`p_in`
+/// ends at it, `p_out` starts at it) and keeps its cavities.
+fn write_sides<T>(
+    s: &cavity::TwoSided<T>,
+    p_in: usize,
+    p_out: usize,
+    h_new: &mut [Vec<f64>],
+    q_new: &mut [Vec<f64>],
+    cavities: Option<&mut Cavities>,
+    n: usize,
+) {
+    let last = h_new[p_in].len() - 1;
+    h_new[p_in][last] = s.head_upstream;
+    q_new[p_in][last] = s.flow_upstream;
+    h_new[p_out][0] = s.head_downstream;
+    q_new[p_out][0] = s.flow_downstream;
+    if let Some(c) = cavities {
+        c.node_volume[n] = s.volume_upstream;
+        c.node_volume_down[n] = s.volume_downstream;
     }
 }
 

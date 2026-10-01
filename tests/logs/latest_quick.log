@@ -1,17 +1,18 @@
 joukowsky test run
-  when     2026-10-01 14:17:18
+  when     2026-10-01 14:40:21
   suite    quick
-  commit   ae37e28 (with uncommitted changes)
+  commit   2f0a2ce (with uncommitted changes)
   rust     rustc 1.98.1 (48a229cea 2026-09-01)
   command  cargo test --workspace --no-fail-fast -- --nocapture --test-threads=1
 ==============================================================================
    Compiling jk-tests v0.1.0 (C:\Users\HP\Desktop\joukowsky\tests)
    Compiling jk-cli v0.1.0 (C:\Users\HP\Desktop\joukowsky\crates\interfaces\cli)
    Compiling jk-application v0.1.0 (C:\Users\HP\Desktop\joukowsky\crates\application)
-   Compiling jk-localisation v0.1.0 (C:\Users\HP\Desktop\joukowsky\crates\domain\localisation)
-   Compiling jk-sim v0.1.0 (C:\Users\HP\Desktop\joukowsky\crates\sim)
    Compiling jk-files v0.1.0 (C:\Users\HP\Desktop\joukowsky\crates\adapters\files)
-    Finished `test` profile [unoptimized + debuginfo] target(s) in 18.60s
+   Compiling jk-sim v0.1.0 (C:\Users\HP\Desktop\joukowsky\crates\sim)
+   Compiling jk-localisation v0.1.0 (C:\Users\HP\Desktop\joukowsky\crates\domain\localisation)
+   Compiling jk-hydraulics v0.1.0 (C:\Users\HP\Desktop\joukowsky\crates\domain\hydraulics)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 20.94s
      Running unittests src\lib.rs (target\debug\deps\jk_application-a6f8696c1e4119f9.exe)
 
 running 3 tests
@@ -87,7 +88,7 @@ test supply::tests::a_slam_swinging_back_to_the_floor_still_marks_the_return ...
 test supply::tests::live_in_pieces_gives_the_same_spells ... ok
 test supply::tests::still_empty_at_the_end_is_said ... ok
 
-test result: ok. 20 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.04s
+test result: ok. 20 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.09s
 
      Running unittests src\lib.rs (target\debug\deps\jk_files-ec39beec6edb1da0.exe)
 
@@ -119,7 +120,7 @@ test result: ok. 22 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; fin
 
      Running unittests src\lib.rs (target\debug\deps\jk_hydraulics-c42e47dfc771fa13.exe)
 
-running 61 tests
+running 63 tests
 test boundary::check_valve::tests::open_valve_passes_forward_flow_like_a_plain_joint ... ok
 test boundary::check_valve::tests::reversing_flow_shuts_it_and_each_side_becomes_a_dead_end ... ok
 test boundary::check_valve::tests::stays_shut_until_upstream_pushes_harder_then_reopens ... ok
@@ -150,8 +151,10 @@ test moc::characteristics::tests::interior_solution_lies_on_both_characteristics
 test moc::grid::tests::courant_one_time_step ... ok
 test moc::grid::tests::step_counts_and_limits ... ok
 test moc::network::cavity::tests::a_cavity_the_water_fills_collapses ... ok
+test moc::network::cavity::tests::a_column_pulling_away_from_a_shut_device_opens_a_cavity_behind_it ... ok
 test moc::network::cavity::tests::above_the_floor_nothing_changes ... ok
 test moc::network::cavity::tests::below_the_floor_a_cavity_opens_and_takes_the_difference ... ok
+test moc::network::cavity::tests::the_cavity_collapses_when_the_column_comes_back ... ok
 test moc::network::grid::tests::awkward_lengths_are_adjusted_within_the_bound ... ok
 test moc::network::grid::tests::commensurate_pipes_need_no_adjustment ... ok
 test moc::network::grid::tests::impossible_bound_is_an_error_not_a_hang ... ok
@@ -182,7 +185,7 @@ test steady::controls::tests::once_is_once ... ok
 test steady::rules::tests::or_binds_tighter_than_and_as_in_epanet ... ok
 test vapour::tests::the_coast_boils_lower_than_the_highveld ... ok
 
-test result: ok. 61 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.03s
+test result: ok. 63 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.09s
 
      Running unittests src\lib.rs (target\debug\deps\jk_kernel-eccabcc9e10cd5d2.exe)
 
@@ -201,7 +204,7 @@ test units::tests::same_type_arithmetic ... ok
 test units::tests::velocity_flow_area ... ok
 test units::tests::wave_travel_time_and_distance_round_trip ... ok
 
-test result: ok. 13 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+test result: ok. 13 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.03s
 
      Running unittests src\lib.rs (target\debug\deps\jk_localisation-b57d917c3efe0d09.exe)
 
@@ -214,7 +217,7 @@ test posterior::score::tests::a_wrong_candidate_is_penalised ... ok
 test posterior::score::tests::with_independent_errors_the_correlated_score_matches_the_simple_one ... ok
 test size::tests::exact_fronts_give_back_the_flow ... ok
 
-test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
 
      Running unittests src\lib.rs (target\debug\deps\jk_sim-cdf9363ef8ace4d0.exe)
 
@@ -224,7 +227,7 @@ test town::tests::every_junction_is_reachable_and_the_town_has_loops_and_dead_en
 test town::tests::the_length_is_exactly_the_target ... ok
 test town::tests::the_same_seed_gives_the_same_town ... ok
 
-test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
 
      Running unittests src\lib.rs (target\debug\deps\jk_telemetry-c8a96417b1d674bc.exe)
 
@@ -512,7 +515,7 @@ test simulation::logger_files::a_burst_recorded_in_logger_files_raises_one_alarm
   at 10:15:03 - seconds past 10:15:00          got       2.998747   expected       3.000000   rel.err 4.2e-4
 ok
 
-test result: ok. 16 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.64s
+test result: ok. 16 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.82s
 
      Running balance\main.rs (target\debug\deps\balance-728b54a33b8a3084.exe)
 
@@ -537,7 +540,7 @@ test simulation::night_watch::the_detection_curve_matches_the_cusum_arithmetic .
   at the arithmetic's size: caught at least a third of the time yes
 ok
 
-test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.26s
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 3.90s
 
      Running channels\main.rs (target\debug\deps\channels-c97e6a381f8a602a.exe)
 
@@ -626,7 +629,7 @@ test simulation::feed::when_the_canal_stops_the_sump_runs_down_and_the_town_runs
     the sump's change = in - drawn, within 1.27% of the water drawn (draw read every 5 min) yes
 ok
 
-test result: ok. 11 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 29.53s
+test result: ok. 11 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 35.63s
 
      Running classification\main.rs (target\debug\deps\classification-7090793340b9d59f.exe)
 
@@ -809,7 +812,7 @@ test simulation::scenarios::power_data_settles_the_slow_burst ... The same slow 
   burst                                        yes
 ok
 
-test result: ok. 11 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.34s
+test result: ok. 11 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 3.86s
 
      Running detection\main.rs (target\debug\deps\detection-e23fac69caef8598.exe)
 
@@ -872,11 +875,11 @@ Loggers: 128 S/s, integrating, random clock phase, 2 cm noise:
 ok
 test simulation::burst_location::vs1_location_error_versus_sampling_rate_and_noise ... ignored, full suite: 150 recorded sensor pairs across rates and noise levels
 
-test result: ok. 8 passed; 0 failed; 2 ignored; 0 measured; 0 filtered out; finished in 1.33s
+test result: ok. 8 passed; 0 failed; 2 ignored; 0 measured; 0 filtered out; finished in 3.86s
 
      Running hydraulics\main.rs (target\debug\deps\hydraulics-2a8e28d011452c5f.exe)
 
-running 62 tests
+running 64 tests
 test analytical::boundaries::burst::a_10mm_hole_at_60m_head ... DN150 AC main at 60 m head, 0.5 m/s; a 10 mm hole opens (Cd 0.6):
   water lost              1.555 l/s  (134 m^3 per day)
   head step at the burst  -4.486 m
@@ -943,6 +946,13 @@ With water's vapour floor at the coast (-10 m gauge):
       5 T: rigid column A (V0 t - g dH t^2 / 2L) [m^3] got       0.006074   expected       0.006074   rel.err 1.2e-10
   it collapses at t = 6.085 s (rigid column: 6.099 s)
     collapse surge: H_R + (a/g) v_in [m]       got     226.056757   expected     226.056757   rel.err 2.0e-12
+ok
+test analytical::cavitation::va17_a_column_pulled_away_from_a_shut_valve_leaves_a_cavity_behind_it ... Reservoir B drops from 30 m to -8 m behind a shut valve, 500 m away:
+    the valve's downstream side holds at the vapour floor [m] got     -10.000000   expected     -10.000000   rel.err 0.0e0
+    its upstream side stays at rest at 30 m [m] got      30.000000   expected      30.000000   rel.err 0.0e0
+    it opens when the wave arrives, L/a after B fell [s] got       0.500000   expected       0.500000   rel.err 0.0e0
+  the cavity grows to 55.5 litres (rigid column: 55.6) and lives 19.00 s (rigid column: 19.00 s)
+    at all 19 whole round trips its volume is the rigid column's (worst 3.3e-14 of the peak) yes
 ok
 test analytical::cavitation::va17_on_the_highveld_and_up_a_rise_the_cavity_is_bigger ... The same closure in Johannesburg (1700 m: vapour floor -8.19 m gauge), the valve 15 m above the reservoir's datum:
     the cavity opens when the wave returns, 2L/a [s] got       1.005000   expected       1.000000   rel.err 5.0e-3
@@ -1341,6 +1351,15 @@ test invariants::grid_independence::joukowsky_peak_is_the_same_on_every_grid ...
   peak head [m]                                got     201.971621   expected     201.971621   rel.err 1.4e-16
   lowest head [m]                              got      -1.971621   expected      -1.971621   rel.err 1.4e-14
 ok
+test invariants::network::cavitation::after_a_pump_trip_the_column_separates_at_the_knee_of_the_rising_main ... A pump with 1/20 of the usual flywheel trips; its main climbs to a knee 50 m up. Linear theory: the knee's pressure falls to -45.5 m - water cannot hold that.
+    (linear theory goes below the floor at the knee) yes
+With the vapour floor (-10 m): a cavity opens at the knee at 1.06 s, grows to 19 litres and collapses at 4.92 s.
+    the knee's pressure never below the floor (lowest -10.000 m) yes
+    nor the pump's discharge (lowest -0.292 m) yes
+    the cavity opens and closes again          yes
+    every head finite                          yes
+  highest pressure at the knee after the collapse: 160.2 m (linear theory: 75.7 m) - the collapse surge, why column separation breaks pipes
+ok
 test invariants::network::continuity::flows_balance_at_the_junction_at_every_instant ...   samples checked: 253
   flow into branch 1 went from 20.00 to 0.67 l/s as its valve shut
   largest imbalance at the junction: 3.5e-17 m^3/s
@@ -1390,7 +1409,7 @@ test invariants::steady_state::an_undisturbed_pipe_stays_steady ... Steady state
   valve holds steady                           yes
 ok
 
-test result: ok. 61 passed; 0 failed; 1 ignored; 0 measured; 0 filtered out; finished in 15.68s
+test result: ok. 63 passed; 0 failed; 1 ignored; 0 measured; 0 filtered out; finished in 22.60s
 
      Running kernel\main.rs (target\debug\deps\kernel-8eea161e1918dc58.exe)
 
@@ -1708,7 +1727,7 @@ test simulation::valve_fronts::a_shut_prv_passes_no_wave_and_no_route ... A seco
     and no route from S1 reaches the zone: the locator cannot place a burst there from S1 yes
 ok
 
-test result: ok. 29 passed; 0 failed; 3 ignored; 0 measured; 0 filtered out; finished in 70.95s
+test result: ok. 29 passed; 0 failed; 3 ignored; 0 measured; 0 filtered out; finished in 78.35s
 
      Running pipeline\main.rs (target\debug\deps\pipeline-0a591d8df4220b73.exe)
 
@@ -1989,7 +2008,7 @@ test simulation::valves_by_hour::at_noon_the_valve_is_active_and_both_loggers_lo
     and it is not dismissed                    yes
 ok
 
-test result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 10.91s
+test result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 7.87s
 
    Doc-tests jk_application
 
@@ -2064,9 +2083,9 @@ running 0 tests
 test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
 
 ==============================================================================
-  passed   307
+  passed   311
   failed   0
   skipped  6 slow test(s) not in this suite (run -Suite full)
   filtered 0 test(s) outside -Only/-Filter
-  time     157.0 s (including compile)
+  time     187.1 s (including compile)
   result   ALL PASSED

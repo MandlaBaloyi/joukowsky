@@ -346,3 +346,17 @@ FN-034  2026-10-01  Cavitation: DVCM first, not DGCM
   the after-slam record of the refill tests (V-S6) went to -320 m in
   linear theory; with the floor it holds at -10 m and the 100 mm refill
   gives one refill alert instead of two. Doc updated (section 5).
+
+FN-035  2026-10-01  Linear theory halves the worst surge after a pump trip
+  First pump trip with cavitation (invariants/network/cavitation.rs): a
+  light pump on a main climbing 50 m to a knee. Linear water-hammer theory
+  (no vapour floor) puts the knee's lowest pressure at -45.5 m - water
+  cannot hold that - and its highest at 76 m. With the floor, a cavity
+  opens at the knee and its collapse drives the pressure to 160 m: more
+  than twice linear theory's worst. The collapse of the columns, not the
+  first down-surge, is the danger - as the literature says (Bergant,
+  Simpson & Tijsseling 2006). Consequences: any surge advice (P4) and
+  pipe-rating check must run with the vapour floor on; a design that
+  "passes" in linear theory may not. Caveat: DVCM is known to overstate
+  collapse spikes [VERIFY with DGCM and laboratory data]; the direction of
+  the finding stands, the factor 2 is not yet trusted.

@@ -4,6 +4,7 @@
 //! solver, which is already proven against Joukowsky: two independent
 //! implementations must agree.
 
+mod cavitation;
 mod continuity;
 mod matches_single_pipe;
 mod steady_start;

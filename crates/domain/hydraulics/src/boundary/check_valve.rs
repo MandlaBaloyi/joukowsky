@@ -45,9 +45,15 @@ pub fn step(
     c_minus_down: f64,
     b_down: f64,
 ) -> CheckValveStep {
+    // Open: one head, both characteristics. Written so that a side held
+    // at a fixed head by a vapour cavity (impedance 0) also works.
     let open = || {
-        let h = (c_plus_up / b_up + c_minus_down / b_down) / (1.0 / b_up + 1.0 / b_down);
-        (h, (c_plus_up - h) / b_up)
+        let b = b_up + b_down;
+        if b == 0.0 {
+            return (c_plus_up, 0.0);
+        }
+        let h = (c_plus_up * b_down + c_minus_down * b_up) / b;
+        (h, (c_plus_up - c_minus_down) / b)
     };
     let closed = CheckValveStep {
         head_upstream: c_plus_up,

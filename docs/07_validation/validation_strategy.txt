@@ -29,7 +29,11 @@ Rung 1  Analytical: results that must match closed-form physics.
         its volume at whole round trips equals the rigid-column volume
         (1e-11); collapse surge H_R + (a/g) v_in = 226.06 m (2e-12); no
         head below its own floor. Highveld (-8.19 m) with the valve 15 m
-        up: same checks, 137 l vs 78 l of cavity (2026-10-01).
+        up: same checks, 137 l vs 78 l of cavity. Two-sided device: a
+        column pulled away from a shut valve by a reservoir falling to
+        -8 m beyond it - cavity on the valve's downstream side equal to
+        the rigid column at 19 round trips (3e-14), life 19.00 s
+        (2026-10-01).
   V-A16 Refilling after a supply cut (02_/refilling_and_air_pockets.txt):
         rigid column into an empty 500 m DN200 pipe from 30 m of supply.
         No air in the way: speed along the pipe vs v^2 = 2gH(1 - x0/x) and

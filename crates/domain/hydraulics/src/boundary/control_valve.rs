@@ -167,8 +167,10 @@ pub fn step(r: Option<f64>, one_way: bool, cp: f64, bu: f64, cm: f64, bd: f64) -
             if r > 0.0 {
                 // The stable root, written to avoid cancellation.
                 sign * 2.0 * d / (b + (b * b + 4.0 * r * d).sqrt())
-            } else {
+            } else if b > 0.0 {
                 drive / b
+            } else {
+                0.0 // both sides held at one head (vapour cavities)
             }
         }
         None => 0.0,

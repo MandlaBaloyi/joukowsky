@@ -25,7 +25,8 @@
 
 use jk_hydraulics::vapour::{VAPOUR_PRESSURE_20C, vapour_floor};
 use jk_hydraulics::{
-    GridOptions, InitialCondition, Network, NetworkRun, Node, Probe, SteadyOptions, ValveClosure,
+    GridOptions, InitialCondition, Network, NetworkRun, Node, Probe, SourceLevel, SteadyOptions,
+    ValveClosure, ValveMode,
 };
 use jk_kernel::{Head, Length, STANDARD_GRAVITY, Time};
 use jk_tests::{check, check_close, pipe};
@@ -200,5 +201,122 @@ fn va17_on_the_highveld_and_up_a_rise_the_cavity_is_bigger() {
     check(
         "  bigger: less pressure to push the water back",
         biggest(&run) > biggest(&coast),
+    );
+}
+
+/// A shut valve mid-line acts as a wall: 30 m reservoir -> 50 m -> shut
+/// PRV -> 500 m -> reservoir B, all at rest at 30 m. B's level falls at
+/// once to -8 m: the wave pulls the column toward B, and at the wall it
+/// would reach 30 - 2 x 38 = -46 m. A cavity opens on the valve's
+/// downstream side - the two-sided device logic. The same exact solution
+/// holds with V1 = g 38 / a and dH = -8 - (-10) = 2 m.
+#[test]
+#[allow(clippy::too_many_lines)] // one scenario, built and checked in order
+fn va17_a_column_pulled_away_from_a_shut_valve_leaves_a_cavity_behind_it() {
+    let g = STANDARD_GRAVITY.value();
+    let area = std::f64::consts::PI * 0.25 * D * D;
+    let (drop_to, floor) = (-8.0, -10.0);
+    let mut net = Network::new(STANDARD_GRAVITY);
+    let a_node = net.add_node(Node::Reservoir {
+        head: Head::new(H_R),
+    });
+    let wall = net.add_node(Node::ControlValve {
+        mode: ValveMode::Prv {
+            setting: Head::ZERO,
+        },
+        open_resistance: 1.0,
+        response: None,
+    });
+    let b_node = net.add_node(Node::Reservoir {
+        head: Head::new(H_R),
+    });
+    net.add_pipe(a_node, wall, pipe(50.0, D, A, 0.0)).unwrap();
+    let p = net.add_pipe(wall, b_node, pipe(L, D, A, 0.0)).unwrap();
+    net.add_level(SourceLevel {
+        node: b_node,
+        history: vec![
+            (Time::ZERO, Head::new(H_R)),
+            (Time::new(1e-6), Head::new(drop_to)),
+        ],
+    })
+    .unwrap();
+    net.set_vapour_floor(Some(Head::new(floor))).unwrap();
+    let run = net
+        .simulate(
+            &InitialCondition::Steady(SteadyOptions::default()),
+            Time::new(25.0),
+            &[
+                Probe::Pipe {
+                    pipe: p,
+                    fraction: 0.0,
+                },
+                Probe::Node(wall),
+            ],
+            &GridOptions {
+                max_wave_speed_adjustment: 0.001,
+                min_reaches: 10,
+            },
+        )
+        .unwrap();
+    let dt = run.trace.time_step().value();
+    let below: Vec<f64> = run.trace.head(0).iter().map(|h| h.value()).collect();
+    let above: Vec<f64> = run.trace.head(1).iter().map(|h| h.value()).collect();
+    let volume = &run.cavity_volumes[0];
+    let lowest = |h: &[f64]| h.iter().copied().fold(f64::INFINITY, f64::min);
+    println!("Reservoir B drops from 30 m to {drop_to} m behind a shut valve, 500 m away:");
+    check_close(
+        "  the valve's downstream side holds at the vapour floor [m]",
+        lowest(&below),
+        floor,
+        1e-9,
+    );
+    check_close(
+        "  its upstream side stays at rest at 30 m [m]",
+        lowest(&above),
+        H_R,
+        1e-9,
+    );
+    let first = volume
+        .iter()
+        .position(|&v| v > 0.0)
+        .expect("a cavity opens");
+    #[allow(clippy::cast_precision_loss)]
+    let origin = (first - 1) as f64 * dt;
+    check_close(
+        "  it opens when the wave arrives, L/a after B fell [s]",
+        origin,
+        L / A,
+        1e-6,
+    );
+    let (v1, dh, round_trip) = (g * (H_R - drop_to) / A, drop_to - floor, 2.0 * L / A);
+    let rigid = |t: f64| area * (v1 * t - g * dh * t * t / (2.0 * L));
+    let at = |t: f64| {
+        #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
+        let k = (t / dt).round() as usize;
+        k
+    };
+    let peak = volume.iter().copied().fold(0.0, f64::max);
+    let mut worst: f64 = 0.0;
+    let mut n = 1.0;
+    while rigid(n * round_trip) > 0.0 {
+        let t = n * round_trip;
+        worst = worst.max((volume[at(origin + t)] - rigid(t)).abs() / peak);
+        n += 1.0;
+    }
+    // Its first life (without friction the column keeps bouncing).
+    #[allow(clippy::cast_precision_loss)]
+    let life = volume[first..].iter().take_while(|&&v| v > 0.0).count() as f64 * dt;
+    println!(
+        "  the cavity grows to {:.1} litres (rigid column: {:.1}) and lives {life:.2} s (rigid column: {:.2} s)",
+        peak * 1e3,
+        area * v1 * v1 * L / (2.0 * g * dh) * 1e3,
+        2.0 * v1 * L / (g * dh)
+    );
+    check(
+        &format!(
+            "  at all {:.0} whole round trips its volume is the rigid column's (worst {worst:.1e} of the peak)",
+            n - 1.0
+        ),
+        worst < 1e-9,
     );
 }
