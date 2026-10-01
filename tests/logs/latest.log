@@ -1,19 +1,17 @@
 joukowsky test run
-  when     2026-10-01 10:15:08
-  suite    full
-  commit   dd575ed (with uncommitted changes)
+  when     2026-10-01 10:37:01
+  suite    quick
+  commit   2221a11 (with uncommitted changes)
   rust     rustc 1.98.1 (48a229cea 2026-09-01)
-  command  cargo test --workspace --no-fail-fast -- --nocapture --test-threads=1 --include-ignored
+  command  cargo test --workspace --no-fail-fast -- --nocapture --test-threads=1
 ==============================================================================
    Compiling jk-tests v0.1.0 (C:\Users\HP\Desktop\joukowsky\tests)
    Compiling jk-cli v0.1.0 (C:\Users\HP\Desktop\joukowsky\crates\interfaces\cli)
    Compiling jk-application v0.1.0 (C:\Users\HP\Desktop\joukowsky\crates\application)
-   Compiling jk-files v0.1.0 (C:\Users\HP\Desktop\joukowsky\crates\adapters\files)
    Compiling jk-localisation v0.1.0 (C:\Users\HP\Desktop\joukowsky\crates\domain\localisation)
+   Compiling jk-files v0.1.0 (C:\Users\HP\Desktop\joukowsky\crates\adapters\files)
    Compiling jk-sim v0.1.0 (C:\Users\HP\Desktop\joukowsky\crates\sim)
-   Compiling jk-hydraulics v0.1.0 (C:\Users\HP\Desktop\joukowsky\crates\domain\hydraulics)
-   Compiling jk-channels v0.1.0 (C:\Users\HP\Desktop\joukowsky\crates\domain\channels)
-    Finished `test` profile [unoptimized + debuginfo] target(s) in 21.79s
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 12.28s
      Running unittests src\lib.rs (target\debug\deps\jk_application-a6f8696c1e4119f9.exe)
 
 running 3 tests
@@ -113,7 +111,7 @@ test result: ok. 22 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; fin
 
      Running unittests src\lib.rs (target\debug\deps\jk_hydraulics-c42e47dfc771fa13.exe)
 
-running 55 tests
+running 57 tests
 test boundary::check_valve::tests::open_valve_passes_forward_flow_like_a_plain_joint ... ok
 test boundary::check_valve::tests::reversing_flow_shuts_it_and_each_side_becomes_a_dead_end ... ok
 test boundary::check_valve::tests::stays_shut_until_upstream_pushes_harder_then_reopens ... ok
@@ -166,11 +164,13 @@ test pipe::viscoelastic::tests::a_slow_window_softens_and_a_fast_one_damps_like_
 test pipe::viscoelastic::tests::the_new_rate_is_what_advancing_then_gives ... ok
 test pipe::viscoelastic::tests::walls_are_checked ... ok
 test pipe::viscoelastic::tests::without_creep_a_characteristic_is_unchanged ... ok
+test refill::tests::a_free_column_slams_and_a_sealed_pocket_holds ... ok
+test refill::tests::a_vent_lets_air_out ... ok
 test steady::controls::tests::daily_times_repeat_and_land_exactly ... ok
 test steady::controls::tests::once_is_once ... ok
 test steady::rules::tests::or_binds_tighter_than_and_as_in_epanet ... ok
 
-test result: ok. 55 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+test result: ok. 57 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.04s
 
      Running unittests src\lib.rs (target\debug\deps\jk_kernel-eccabcc9e10cd5d2.exe)
 
@@ -524,7 +524,7 @@ test simulation::night_watch::the_detection_curve_matches_the_cusum_arithmetic .
   at the arithmetic's size: caught at least a third of the time yes
 ok
 
-test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.13s
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.27s
 
      Running channels\main.rs (target\debug\deps\channels-c97e6a381f8a602a.exe)
 
@@ -613,7 +613,7 @@ test simulation::feed::when_the_canal_stops_the_sump_runs_down_and_the_town_runs
     the sump's change = in - drawn, within 1.27% of the water drawn (draw read every 5 min) yes
 ok
 
-test result: ok. 11 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 11.11s
+test result: ok. 11 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 13.39s
 
      Running classification\main.rs (target\debug\deps\classification-7090793340b9d59f.exe)
 
@@ -709,7 +709,7 @@ test simulation::scenarios::power_data_settles_the_slow_burst ... The same slow 
   burst                                        yes
 ok
 
-test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.81s
+test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.99s
 
      Running detection\main.rs (target\debug\deps\detection-e23fac69caef8598.exe)
 
@@ -733,11 +733,7 @@ ok
 test analytical::drift::slow_demand_drift_is_not_an_event ... 10 minutes swinging +/- 3 m (5-minute period) with 2 cm noise: 0 alarms
   drift raises no alarm                        yes
 ok
-test analytical::false_alarms::a_full_day_of_pure_noise_raises_no_alarm ... 24 hours of 2 cm Gaussian noise at 128 S/s (11 059 200 samples): 0 alarms
-  no false alarms in a day                     yes
-  NOTE: real noise has heavier tails than Gaussian (taps, pumps, knocks);
-  false-alarm rates must be re-measured on field data (rung 4).
-ok
+test analytical::false_alarms::a_full_day_of_pure_noise_raises_no_alarm ... ignored, full suite: 24 hours of samples (11 million)
 test analytical::false_alarms::ten_minutes_of_pure_noise_raise_no_alarm ... 10 minutes of 2 cm Gaussian noise at 128 S/s (76 800 samples): 0 alarms
   no false alarms                              yes
 ok
@@ -774,22 +770,13 @@ Loggers: 128 S/s, integrating, random clock phase, 2 cm noise:
   located within 1 m (docs target: metre-level at 128 S/s) yes
   sized within 2%                              yes
 ok
-test simulation::burst_location::vs1_location_error_versus_sampling_rate_and_noise ... RMS location error [m] over 10 random clock phases / noise draws:
-  rate [S/s]   noise 0.5 cm   noise 2 cm   noise 10 cm
-         32         0.059         0.321         0.945
-         64         0.026         0.130         0.445
-        128         0.011         0.039         0.319
-        256         0.029         0.029         0.089
-       1000         0.077         0.027         0.048
-  (clocks perfect here; a clock error sigma_c at each sensor adds about a sigma_c / sqrt(2) in quadrature)
-  128 S/s with 2 cm noise locates to under 1 m RMS yes
-ok
+test simulation::burst_location::vs1_location_error_versus_sampling_rate_and_noise ... ignored, full suite: 150 recorded sensor pairs across rates and noise levels
 
-test result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 2.93s
+test result: ok. 8 passed; 0 failed; 2 ignored; 0 measured; 0 filtered out; finished in 1.27s
 
      Running hydraulics\main.rs (target\debug\deps\hydraulics-2a8e28d011452c5f.exe)
 
-running 57 tests
+running 60 tests
 test analytical::boundaries::burst::a_10mm_hole_at_60m_head ... DN150 AC main at 60 m head, 0.5 m/s; a 10 mm hole opens (Cd 0.6):
   water lost              1.555 l/s  (134 m^3 per day)
   head step at the burst  -4.486 m
@@ -1051,6 +1038,41 @@ Down-surge:
   lowest head mid-main         5.3 m
   Joukowsky bound for stopping 104.6 l/s: B Q0 = 150.8 m
 ok
+test analytical::refill::va16_a_sealed_air_pocket_stops_the_column_where_the_energy_says ... Sealed pocket, n = 1.4: the column stops 51.4 m from the end
+    it never reaches the end                   yes
+    peak air pressure vs the energy balance [m of water] got     205.268606   expected     205.268607   rel.err 6.4e-9
+  = 6.8 times the supply's 30 m
+    supply's work = motion + work on the air, all along (worst 1.4e-14) yes
+Sealed pocket, n = 1: the column stops 9.9 m from the end
+    it never reaches the end                   yes
+    peak air pressure vs the energy balance [m of water] got     457.998904   expected     457.998945   rel.err 8.9e-8
+  = 15.3 times the supply's 30 m
+    supply's work = motion + work on the air, all along (worst 1.1e-13) yes
+ok
+test analytical::refill::va16_the_air_valve_size_decides_between_a_cushion_and_a_slam ... Refilling with friction (f = 0.02), adiabatic air; sealed pocket peak 33.3 m, no air at all slams at 350 m:
+  air valve   peak air   slam at the end   worst at the end
+     0.5 mm      33.3 m           none       33.3 m
+     2.0 mm      33.3 m           none       33.3 m
+     5.0 mm      32.9 m           none       32.9 m
+    10.0 mm      31.5 m           none       31.5 m
+    20.0 mm      24.1 m          169 m      169.4 m
+    30.0 mm       8.9 m          307 m      306.8 m
+    40.0 mm       3.3 m          341 m      340.9 m
+    50.0 mm       1.7 m          347 m      346.5 m
+   100.0 mm       0.2 m          350 m      349.6 m
+    a pin-hole valve behaves like a sealed pocket [m] got      33.324326   expected      33.328576   rel.err 1.3e-4
+    a large valve lets the air out and the column slams almost as with no air yes
+    the worst valve gives 10x the sealed pocket's peak - letting air out the wrong way is worse than trapping it (as Zhou et al. 2002 found) yes
+ok
+test analytical::refill::va16_with_no_air_in_the_way_the_column_races_in_as_theory_says_and_slams ... Supply returns (30 m) into an empty 500 m pipe, no air cushion, f = 0:
+    column speed along the way vs the closed form (worst 1.1e-14) yes
+    reaches the end at 23.3 s with speed [m/s] got      23.012151   expected      23.012151   rel.err 5.5e-11
+    and slams: a v / g [m]                     got    2346.586361   expected    2346.586361   rel.err 0.0e0
+Supply returns (30 m) into an empty 500 m pipe, no air cushion, f = 0.02:
+    column speed along the way vs the closed form (worst 4.0e-15) yes
+    reaches the end at 95.4 s with speed [m/s] got       3.430449   expected       3.430449   rel.err 5.0e-10
+    and slams: a v / g [m]                     got     349.808441   expected     349.808441   rel.err 0.0e0
+ok
 test analytical::single_pipe::friction::friction_causes_line_packing_and_damping ... Friction f = 0.03, instant closure; Joukowsky dH = 101.972 m
   steady valve head            94.901 m
   just after closure (step 1)  196.873 m
@@ -1171,9 +1193,7 @@ test analytical::viscoelastic::va5_a_creeping_wall_slows_and_damps_the_ring_as_t
   rigid pipe, same run: fundamental 10.387 m then 10.387 m (no creep, no friction: no decay)
   rigid pipe does not decay                    got      10.386751   expected      10.386751   rel.err 5.1e-16
 ok
-test invariants::grid_independence::joukowsky_peak_is_exact_on_every_grid_and_material ...   1024 simulations; largest error in peak or trough: 2.84e-14 m
-  every case within 1e-9 m of Joukowsky        yes
-ok
+test invariants::grid_independence::joukowsky_peak_is_exact_on_every_grid_and_material ... ignored, full suite: 1024 simulations (run-tests.ps1 -Suite full)
 test invariants::grid_independence::joukowsky_peak_is_the_same_on_every_grid ... 1 reach(es), dt = 1.0000 s:
   peak head [m]                                got     201.971621   expected     201.971621   rel.err 1.4e-16
   lowest head [m]                              got      -1.971621   expected      -1.971621   rel.err 1.4e-14
@@ -1236,7 +1256,7 @@ test invariants::steady_state::an_undisturbed_pipe_stays_steady ... Steady state
   valve holds steady                           yes
 ok
 
-test result: ok. 57 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 12.93s
+test result: ok. 59 passed; 0 failed; 1 ignored; 0 measured; 0 filtered out; finished in 7.02s
 
      Running kernel\main.rs (target\debug\deps\kernel-8eea161e1918dc58.exe)
 
@@ -1332,43 +1352,7 @@ test analytical::detectability::the_smallest_burst_three_loggers_can_locate_on_t
 Average 90% region, 3 loggers: 154 m if every burst were felt; 1800 m for 0.02 l/s bursts
   0.02 l/s bursts: blind everywhere (region = the whole 1.8 km) yes
 ok
-test analytical::placement::campus_value_of_each_extra_logger ... Campus, 2.31 km, wave speeds known to +/-10%: what each logger buys
-  2 loggers: average 90% region  291 m, pinpointed   0%   (A, C)
-  3 loggers: average 90% region  204 m, pinpointed   3%   (A, C, b1 block B1)
-  4 loggers: average 90% region  152 m, pinpointed   8%   (A, C, b1 block B1, c2 block C2)
-  5 loggers: average 90% region  115 m, pinpointed  13%   (A, C, b1 block B1, c2 block C2, a2 block A2)
-  6 loggers: average 90% region   89 m, pinpointed  16%   (A, C, b1 block B1, c2 block C2, a2 block A2, m1 gatehouse)
-Recommended 6 (after swaps): a1 block A1, c1 block C1, b1 block B1, c2 block C2, a2 block A2, m1 gatehouse
-  average 90% region 77 m, pinpointed 22%
-    R-M connection    150 m   typical region  195 m
-    M-A ring          300 m   typical region   60 m
-    A-B ring          250 m   typical region   70 m
-    B-C ring          300 m   typical region   70 m
-    C-M ring          250 m   typical region   65 m
-    M-m1              100 m   typical region   20 m
-    A-a1              120 m   typical region   20 m
-    A-a2              180 m   typical region   20 m
-    B-b1              200 m   typical region   25 m
-    B-b2               90 m   typical region  155 m
-    C-c1              150 m   typical region   20 m
-    C-c2              220 m   typical region   25 m
-  (advice took 4 s on this machine)
-Would a sudden 1 l/s burst be felt? By at least one logger on 100% of the pipe, by two (so located) on 100%. Smallest burst locatable anywhere on each pipe (upper bound: no plastic-wall damping yet):
-    R-M connection     0.09 l/s
-    M-A ring           0.04 l/s
-    A-B ring           0.04 l/s
-    B-C ring           0.04 l/s
-    C-M ring           0.04 l/s
-    M-m1               0.09 l/s
-    A-a1               0.04 l/s
-    A-a2               0.04 l/s
-    B-b1               0.09 l/s
-    B-b2               0.09 l/s
-    C-c1               0.04 l/s
-    C-c2               0.04 l/s
-  each extra logger helps                      yes
-  swaps never make it worse                    yes
-ok
+test analytical::placement::campus_value_of_each_extra_logger ... ignored, full suite: the advisor on a 2.3 km campus takes about a minute
 test analytical::placement::knowing_the_wave_speeds_is_worth_as_much_as_a_logger ...   wave speeds known to   0%: pinpointed  78%, average 90% region   89 m
   wave speeds known to   1%: pinpointed  78%, average 90% region   89 m
   wave speeds known to   2%: pinpointed  69%, average 90% region   99 m
@@ -1424,11 +1408,7 @@ test analytical::straight_main::a_burst_on_a_straight_main_is_found_where_the_fo
   the region is at most two grid cells         yes
   misfit of a perfect fit                      got       0.000000   expected       0.000000   rel.err 0.0e0
 ok
-test invariants::calibration::calibration_holds_over_many_trials ... 400 random bursts; wave speeds off by ~3%; timing noise 0.2 ms:
-  truth inside the 90% region: 92.5% (ideal 90%)
-  average region length: 97 m
-  coverage between 85% and 95%                 yes
-ok
+test invariants::calibration::calibration_holds_over_many_trials ... ignored, full suite: 400 random localisations
 test invariants::calibration::the_90_percent_region_holds_the_truth_about_90_percent_of_the_time ... 60 random bursts; true wave speeds off by ~3%; timing noise 0.2 ms:
   truth inside the 90% region: 90% of trials
   average region length: 108 m
@@ -1501,11 +1481,7 @@ test invariants::zones::one_zone_gives_exactly_the_plain_advice ... 3 km town, 3
   the same loggers                             yes
   the same mean 90% region [m]                 got     142.889725   expected     142.889725   rel.err 0.0e0
 ok
-test invariants::zones::zoned_plans_stay_close_to_whole_town_plans ... 5 km town, 6 loggers: whole town at once 82.8 m mean 90% region (11% pinpointed); 3 zones 82.3 m (14% pinpointed)
-  planned in more than one zone                yes
-  the asked number of loggers                  yes
-  within 10% of the whole-town plan            yes
-ok
+test invariants::zones::zoned_plans_stay_close_to_whole_town_plans ... ignored, full suite: plans a 5 km town twice (about a minute in debug)
 test invariants::zones::zones_cover_every_pipe_exactly_once ... 20 km town in zones of about 5 km: [6.60, 6.57, 3.80, 3.02] km
   4 zones                                      yes
   every pipe in exactly one zone               yes
@@ -1598,7 +1574,7 @@ test simulation::valve_fronts::a_shut_prv_passes_no_wave_and_no_route ... A seco
     and no route from S1 reaches the zone: the locator cannot place a burst there from S1 yes
 ok
 
-test result: ok. 32 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 79.89s
+test result: ok. 29 passed; 0 failed; 3 ignored; 0 measured; 0 filtered out; finished in 38.58s
 
      Running pipeline\main.rs (target\debug\deps\pipeline-0a591d8df4220b73.exe)
 
@@ -1819,7 +1795,7 @@ test simulation::valves_by_hour::at_noon_the_valve_is_active_and_both_loggers_lo
     and it is not dismissed                    yes
 ok
 
-test result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 4.65s
+test result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 4.97s
 
    Doc-tests jk_application
 
@@ -1894,9 +1870,9 @@ running 0 tests
 test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
 
 ==============================================================================
-  passed   290
+  passed   289
   failed   0
-  skipped  0 slow test(s) not in this suite
+  skipped  6 slow test(s) not in this suite (run -Suite full)
   filtered 0 test(s) outside -Only/-Filter
-  time     143.1 s (including compile)
+  time     87.0 s (including compile)
   result   ALL PASSED

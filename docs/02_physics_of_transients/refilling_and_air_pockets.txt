@@ -1,0 +1,83 @@
+REFILLING PIPES AND TRAPPED AIR (R-5, first rung; gap G-14)
+STATUS: DRAFT v0.1 (2026-10-01) - rigid-column model built and checked
+against closed forms (V-A16); not yet in the network solver
+
+Why
+------------------------------------------------------------------------
+After a supply cut (water shedding, a burst repaired, a reservoir run
+dry) pipes drain and fill with air. When the supply returns, water races
+back in: the column accelerates down the empty pipe, compresses the air
+ahead of it, and where the air escapes through an air valve the column
+can slam into a closed end or a full section. These refilling surges are
+among the most violent transients in South African networks
+(01_/the_operating_environment.txt, section 2). Experiments show peak
+pressures several times the supply head for some air-valve sizes (Zhou,
+Hicks & Steffler, J. Hydraul. Eng. 2002; Liou & Hunt, J. Hydraul. Res.
+1996).
+
+1. The rigid-column model (Liou & Hunt 1996; Zhou et al. 2002)
+------------------------------------------------------------------------
+While a pipe fills, the water column (length x, from the entrance to the
+air-water front) moves as one body - the column is short compared with
+the distance a pressure wave covers while it moves, so its compressibility
+is ignored until it stops against something. With the supply at
+piezometric head H, the entrance at elevation 0, the front at elevation
+z_f(x), entrance loss K, Darcy f, diameter D, gauge air pressure p_a:
+
+    dx/dt = v
+    x dv/dt = g (H - z_f) - p_a/rho - (1 + K) v^2 / 2 - f x v|v| / (2 D)
+
+(the column gains mass from the supply at rest, so the momentum it brings
+in and the kinetic head it costs cancel into the (1 + K) v^2/2 term).
+The air ahead (volume V = A (L - x), mass m) obeys a polytropic law
+p_abs V^n / m^n = const (n = 1 isothermal ... 1.4 adiabatic):
+
+    dp_abs/dt = n p_abs ( (dm/dt)/m - (dV/dt)/V ),   dV/dt = -A v
+
+and leaves (or enters) through an air valve as through an orifice of
+area A_o: isentropic compressible flow, choked above p_abs / p_atm =
+1.893 (air, gamma = 1.4).
+
+2. Closed forms used to check it
+------------------------------------------------------------------------
+a. No air in the way (fully vented), flat, frictionless, K = 0, from
+   rest at x0:   (x v^2)' = 2 g H   =>   v^2 = 2 g H (1 - x0 / x).
+   With friction:  u = x v^2 obeys u' + (f/D) u = 2 g H, so
+   v^2 = (2 g H D / f) (1 - exp(-f (x - x0) / D)) / x.
+b. Energy, flat, frictionless, K = 0: d(rho A x v^2 / 2)/dt = rho g H A v
+   - p_a A v - the supply's work goes into the column's motion and the
+   work done on the air. For a sealed pocket (no vent) the work on the
+   air is a function of its volume alone,
+       W(V) = (p V - p0 V0) / (n - 1) - p_atm (V0 - V),  p = p0 (V0/V)^n
+   (n -> 1: p0 V0 ln(V0/V) - p_atm (V0 - V)), so the column STOPS (v = 0,
+   the peak pressure) where  W(V) = rho g H A (x - x0)  - a closed form
+   for the peak pressure, independent of the integration.
+c. The slam: if the air escapes and the column reaches the closed end
+   with velocity v, the column stops in the time a wave takes to cross
+   it: Joukowsky, dH = a v / g.
+
+3. Numerics
+------------------------------------------------------------------------
+Fourth-order Runge-Kutta on (x, v, p_abs, m), step limited so the air
+volume changes by at most 1% per step (the pocket stiffens as it shrinks).
+
+Checked (V-A16, 500 m DN200, 30 m supply, from 50 m of water):
+  no air, f = 0:     reaches the end at 23.3 s, 23.0 m/s, slam 2347 m
+  no air, f = 0.02:  95.4 s, 3.43 m/s, slam 350 m
+  sealed, f = 0:     peak 205.3 m (n = 1.4), 458.0 m (n = 1.0) - 6.8 and
+                     15.3 times the supply - matching the energy balance
+  air valve sweep, f = 0.02, n = 1.4, Cd 0.6:
+      valve   0.5-10 mm   20 mm   30 mm   40 mm   50 mm   100 mm
+      worst   33-31 m     169 m   307 m   341 m   347 m   350 m
+  The worst case is a valve large enough to let the column run and too
+  small to matter at the end (FN-032).
+
+4. Limits
+------------------------------------------------------------------------
+One pipe, one air pocket ahead of one column, straight profile; the
+column's own elasticity only at the final slam; no air entrained in the
+water, no stratified (partly full) flow ahead of the front - those need
+mixed-flow (Saint-Venant with a Preissmann slot, R-5 next rung) and the
+air valve's own dynamics. Not yet coupled to the network solver. The air
+valve is an ideal orifice [VERIFY discharge coefficients against maker
+data].

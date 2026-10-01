@@ -1,12 +1,18 @@
 joukowsky test run
-  when     2026-09-29 12:42:24
+  when     2026-10-01 10:37:01
   suite    quick
-  commit   a7156ed (with uncommitted changes)
+  commit   2221a11 (with uncommitted changes)
   rust     rustc 1.98.1 (48a229cea 2026-09-01)
   command  cargo test --workspace --no-fail-fast -- --nocapture --test-threads=1
 ==============================================================================
-    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.12s
-     Running unittests src\lib.rs (target\debug\deps\jk_application-31ec11ad23313301.exe)
+   Compiling jk-tests v0.1.0 (C:\Users\HP\Desktop\joukowsky\tests)
+   Compiling jk-cli v0.1.0 (C:\Users\HP\Desktop\joukowsky\crates\interfaces\cli)
+   Compiling jk-application v0.1.0 (C:\Users\HP\Desktop\joukowsky\crates\application)
+   Compiling jk-localisation v0.1.0 (C:\Users\HP\Desktop\joukowsky\crates\domain\localisation)
+   Compiling jk-files v0.1.0 (C:\Users\HP\Desktop\joukowsky\crates\adapters\files)
+   Compiling jk-sim v0.1.0 (C:\Users\HP\Desktop\joukowsky\crates\sim)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 12.28s
+     Running unittests src\lib.rs (target\debug\deps\jk_application-a6f8696c1e4119f9.exe)
 
 running 3 tests
 test pipeline::fusion::tests::arrivals_too_far_apart_for_the_pipes_are_not_one_event ... ok
@@ -14,6 +20,26 @@ test pipeline::fusion::tests::one_event_seen_everywhere_is_one_group ... ok
 test pipeline::fusion::tests::two_events_far_apart_in_time_are_two_groups ... ok
 
 test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running unittests src\lib.rs (target\debug\deps\jk_balance-a53bc54c50f611b0.exe)
+
+running 6 tests
+test leak::tests::a_step_of_three_spreads_is_caught_and_dated ... ok
+test leak::tests::missing_nights_neither_raise_nor_lower_the_watch ... ok
+test leak::tests::the_smallest_detectable_leak_follows_the_cusum_arithmetic ... ok
+test night::tests::a_night_mostly_missing_is_missing ... ok
+test night::tests::nights_are_the_mean_over_the_local_window ... ok
+test zone::tests::inflows_minus_outflows_minus_storage ... ok
+
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running unittests src\lib.rs (target\debug\deps\jk_channels-dc908437cd577aa9.exe)
+
+running 2 tests
+test section::tests::critical_flow_has_froude_one ... ok
+test section::tests::depth_and_area_are_inverse ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
 
      Running unittests src\lib.rs (target\debug\deps\jk_classification-ac838da961a672cc.exe)
 
@@ -25,7 +51,7 @@ test features::front::tests::an_integrated_step_rises_in_one_point_six_samples .
 
 test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
 
-     Running unittests src\main.rs (target\debug\deps\jk-8d7ba007e226f94d.exe)
+     Running unittests src\main.rs (target\debug\deps\jk-40170446bfdb3c37.exe)
 
 running 4 tests
 test view::svg::tests::escapes_markup ... ok
@@ -55,14 +81,46 @@ test onset::step_area::tests::exact_for_a_sharp_step_at_any_phase ... ok
 
 test result: ok. 14 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.03s
 
+     Running unittests src\lib.rs (target\debug\deps\jk_files-ec39beec6edb1da0.exe)
+
+running 22 tests
+test epanet::friction::tests::darcy_weisbach_matches_the_moody_chart ... ok
+test epanet::friction::tests::hazen_williams_gives_the_same_head_loss_at_the_reference_velocity ... ok
+test epanet::friction::tests::manning_gives_the_same_head_loss_at_the_reference_velocity ... ok
+test epanet::operations::tests::times_in_every_epanet_form ... ok
+test epanet::pumps::tests::many_points_least_squares_recovers_a_quadratic ... ok
+test epanet::pumps::tests::one_point_curve_is_epanets_own ... ok
+test epanet::pumps::tests::rising_heads_are_not_a_pump ... ok
+test epanet::pumps::tests::speed_scales_by_the_affinity_laws ... ok
+test epanet::pumps::tests::three_points_are_matched_exactly ... ok
+test epanet::sections::tests::refuses_unknown_sections_and_stray_data ... ok
+test epanet::sections::tests::splits_sections_drops_comments_stops_at_end ... ok
+test epanet::units::tests::conversions_match_the_definitions ... ok
+test logger::grid::tests::a_missing_second_splits_the_run_and_repeats_are_dropped ... ok
+test logger::grid::tests::millisecond_timestamps_at_128_per_second_snap_to_128 ... ok
+test logger::table::tests::a_plain_csv_with_a_preamble ... ok
+test logger::table::tests::semicolons_decimal_commas_and_split_date_time ... ok
+test logger::table::tests::values_missing_and_bad ... ok
+test logger::time::tests::numbers_and_nonsense ... ok
+test logger::time::tests::the_calendar_is_exact ... ok
+test logger::time::tests::the_usual_logger_formats ... ok
+test logger::units::tests::one_bar_is_about_ten_metres ... ok
+test logger::units::tests::units_from_headers ... ok
+
+test result: ok. 22 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
      Running unittests src\lib.rs (target\debug\deps\jk_hydraulics-c42e47dfc771fa13.exe)
 
-running 41 tests
+running 57 tests
 test boundary::check_valve::tests::open_valve_passes_forward_flow_like_a_plain_joint ... ok
 test boundary::check_valve::tests::reversing_flow_shuts_it_and_each_side_becomes_a_dead_end ... ok
 test boundary::check_valve::tests::stays_shut_until_upstream_pushes_harder_then_reopens ... ok
 test boundary::closure::tests::openings ... ok
 test boundary::closure::tests::rejects_bad_power_closures ... ok
+test boundary::control_valve::tests::a_throttle_passes_both_ways ... ok
+test boundary::control_valve::tests::one_way_never_backwards_and_shut_is_shut ... ok
+test boundary::control_valve::tests::orifice_balances_both_characteristics ... ok
+test boundary::control_valve::tests::the_regulating_opening_puts_a_prv_on_its_setting ... ok
 test boundary::dead_end::tests::no_flow_and_head_from_the_characteristic ... ok
 test boundary::junction::tests::a_single_pipe_without_outflow_is_a_dead_end ... ok
 test boundary::junction::tests::flows_balance_and_every_pipe_satisfies_its_characteristic ... ok
@@ -91,6 +149,8 @@ test moc::network::initial::tests::a_symmetric_loop_closes_and_heads_fall_with_f
 test moc::network::initial::tests::an_unbalanced_loop_is_rejected ... ok
 test moc::network::initial::tests::at_rest_needs_equal_reservoirs_and_no_demand ... ok
 test moc::network::initial::tests::flows_that_do_not_balance_are_rejected ... ok
+test moc::network::solver::tests::interiors_split_among_threads_are_bit_for_bit_the_same ... ok
+test moc::network::solver::tests::pipe_groups_cover_every_pipe_once_in_order ... ok
 test moc::single_pipe::tests::rejects_bad_setups ... ok
 test moc::trace::tests::keeps_samples_per_probe_in_order ... ok
 test model::tests::burst_opening_schedules ... ok
@@ -99,16 +159,29 @@ test model::tests::rejects_broken_topologies ... ok
 test pipe::friction::quasi_steady::tests::matches_darcy_weisbach_in_velocity_form_and_is_odd_in_flow ... ok
 test pipe::tests::rejects_non_physical_values ... ok
 test pipe::tests::timing_matches_docs_example ... ok
+test pipe::viscoelastic::tests::a_constant_pressure_rise_creeps_along_the_exact_curve ... ok
+test pipe::viscoelastic::tests::a_slow_window_softens_and_a_fast_one_damps_like_the_front ... ok
+test pipe::viscoelastic::tests::the_new_rate_is_what_advancing_then_gives ... ok
+test pipe::viscoelastic::tests::walls_are_checked ... ok
+test pipe::viscoelastic::tests::without_creep_a_characteristic_is_unchanged ... ok
+test refill::tests::a_free_column_slams_and_a_sealed_pocket_holds ... ok
+test refill::tests::a_vent_lets_air_out ... ok
+test steady::controls::tests::daily_times_repeat_and_land_exactly ... ok
+test steady::controls::tests::once_is_once ... ok
+test steady::rules::tests::or_binds_tighter_than_and_as_in_epanet ... ok
 
-test result: ok. 41 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+test result: ok. 57 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.04s
 
      Running unittests src\lib.rs (target\debug\deps\jk_kernel-eccabcc9e10cd5d2.exe)
 
-running 10 tests
+running 13 tests
 test linalg::tests::reports_a_matrix_that_is_not_positive_definite ... ok
 test linalg::tests::solves_a_known_system ... ok
 test random::tests::normal_numbers_have_the_right_spread ... ok
 test random::tests::same_seed_same_numbers ... ok
+test sparse::tests::a_grid_gets_a_band_about_as_wide_as_its_side ... ok
+test sparse::tests::a_singular_matrix_names_its_row ... ok
+test sparse::tests::solves_what_the_dense_cholesky_solves ... ok
 test units::tests::circle_area_dn150 ... ok
 test units::tests::display_carries_unit ... ok
 test units::tests::head_pressure_round_trip ... ok
@@ -116,18 +189,30 @@ test units::tests::same_type_arithmetic ... ok
 test units::tests::velocity_flow_area ... ok
 test units::tests::wave_travel_time_and_distance_round_trip ... ok
 
-test result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+test result: ok. 13 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
 
      Running unittests src\lib.rs (target\debug\deps\jk_localisation-b57d917c3efe0d09.exe)
 
-running 5 tests
+running 7 tests
 test graph::travel_time::tests::fastest_path_and_no_passing_through_reservoirs ... ok
 test locate::tests::golden_section_finds_a_parabola_minimum ... ok
+test posterior::bound::tests::the_determinant_terms_are_largest_without_wave_speed_doubt ... ok
 test posterior::score::tests::a_perfect_candidate_scores_zero_misfit_and_recovers_t0 ... ok
 test posterior::score::tests::a_wrong_candidate_is_penalised ... ok
 test posterior::score::tests::with_independent_errors_the_correlated_score_matches_the_simple_one ... ok
+test size::tests::exact_fronts_give_back_the_flow ... ok
 
-test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running unittests src\lib.rs (target\debug\deps\jk_sim-cdf9363ef8ace4d0.exe)
+
+running 4 tests
+test town::tests::big_towns_get_more_reservoirs ... ok
+test town::tests::every_junction_is_reachable_and_the_town_has_loops_and_dead_ends ... ok
+test town::tests::the_length_is_exactly_the_target ... ok
+test town::tests::the_same_seed_gives_the_same_town ... ok
+
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
 
      Running unittests src\lib.rs (target\debug\deps\jk_telemetry-c8a96417b1d674bc.exe)
 
@@ -139,14 +224,398 @@ test assembly::tests::overlaps_and_interval_changes_are_refused_and_change_nothi
 
 test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
 
-     Running unittests common\lib.rs (target\debug\deps\jk_tests-9b6010198dc710d9.exe)
+     Running unittests common\lib.rs (target\debug\deps\jk_tests-cb6edf71623bd169.exe)
 
 running 1 test
 test sensor::tests::averaging_a_step_gives_the_covered_fraction ... ok
 
 test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
 
-     Running classification\main.rs (target\debug\deps\classification-34b7a14708c88642.exe)
+     Running adapters\main.rs (target\debug\deps\adapters-9ce014cc325c8aab.exe)
+
+running 16 tests
+test analytical::epanet::broken_files_are_refused_with_the_line_number ...   refused: line 4: link 'P1' joins unknown node 'B'
+  line 4: 'unknown node 'B''                   yes
+  refused: line 3: node ID 'A' is used twice
+  line 3: 'used twice'                         yes
+  refused: line 2: elevation 'one' is not a number
+  line 2: 'not a number'                       yes
+  refused: line 3: [PIPEZ] is not an EPANET section - is this an .inp file?
+  line 3: 'not an EPANET section'              yes
+  refused: line 5: pipe 'P1': invalid length = -3.048: must be finite and > 0
+  line 5: 'length'                             yes
+ok
+test analytical::epanet::everything_approximated_is_reported_never_dropped ...   reader's notes (12):
+    - [OPTIONS] not used by the engine: Quality None
+    - [DEMANDS] gives 1 junction(s) several demand categories: their sum is used
+    - line 30: pump 'PU1': one-point curve, taken exactly (EPANET's own form); efficiency 75%, 1450 rpm and inertia (Thorley) assumed - they matter only for pump trips [VERIFY]
+    - line 34: PRV valve 'V1' is closed: J4 and J5 are not connected through it
+    - 1 tank(s) with storage: fixed heads in transients, their level simulated in extended-period runs (cylinders of the given diameter)
+    - 1 pump(s) modelled with their curves, each between two 10.0 m lengths of station pipework (pipes 'ID/suction' and 'ID/discharge')
+    - .inp files carry no wave speeds: every pipe is given 1000 m/s [VERIFY - real wave speeds, by material, are needed to locate bursts well]
+    - Darcy-Weisbach roughness turned into one Darcy friction factor per pipe, equal head loss at 1.0 m/s: f from 0.0212 to 0.0253
+    - 1 closed pipe(s) left out: A4
+    - 1 check-valve pipe(s) kept as plain pipes (the check valve is not modelled): A3
+    - 1 pipe(s) have minor-loss coefficients: not used
+    - 1 control(s) switch pumps and pipes in extended-period runs (by tank level or clock)
+  pump PU1, one-point curve 10 l/s at 40 m: shut-off head 4/3 x 40 [m] got      53.333333   expected      53.333333   rel.err 1.3e-16
+    ... and 40 m at 10 l/s [m]                 got      40.000000   expected      40.000000   rel.err 1.8e-16
+    J1 and J2 stay apart, joined by the pump and its station pipework yes
+    ... and says what was assumed              yes
+  the closed valve does not connect J4 and J5  yes
+  the closed pipe is left out                  yes
+  the check-valve pipe is kept, and flagged    yes
+  the tank is a fixed head at 30 + 4 = 34 m (in transients) yes
+    ... with storage: floor 30 + 1, ceiling 30 + 6, 10 m across yes
+    ... and says so                            yes
+  [DEMANDS] replaces J4's demand: 0.5 + 0.7 = 1.2 l/s yes
+  [TIMES] duration 24:00 [h]                   got      24.000000   expected      24.000000   rel.err 0.0e0
+  [PATTERNS] J1 follows its own pattern 'daily' (1.0 1.2 0.8) yes
+    ... the others have no pattern (no option PATTERN, no pattern '1') yes
+  [CONTROLS] A2 closes when tank TK is above 5 m of water: head 30 + 5 = 35 m yes
+  the unused option is listed                  yes
+  the minor loss is listed                     yes
+  pipe A5 keeps its bend at (400, 120)         yes
+ok
+test analytical::epanet::the_engine_works_on_a_network_read_from_a_file ...   average 90% search stretch [m]: file vs code got     153.888889   expected     153.888889   rel.err 0.0e0
+ok
+test analytical::epanet::the_estate_in_si_units_reads_exactly ... Test estate (SI units) - written by hand for joukowsky tests
+  5 nodes, 4 pipes                             yes
+  lengths 400, 300, 500, 600 m                 yes
+  every diameter 150 mm                        yes
+  R is a 60 m reservoir                        yes
+  S2 draws 15 l/s                              yes
+  S3 is drawn at (700, -600)                   yes
+  elevation of S2: 12 m                        yes
+  reader's notes (3):
+    - .inp files carry no wave speeds: every pipe is given 1000 m/s [VERIFY - real wave speeds, by material, are needed to locate bursts well]
+    - Darcy-Weisbach roughness turned into one Darcy friction factor per pipe, equal head loss at 1.0 m/s: f from 0.0203 to 0.0203
+    - DURATION 0 (a single steady state in EPANET): extended-period runs default to 24 h
+  it says wave speeds were assumed             yes
+ok
+test analytical::epanet::us_units_give_the_same_network_as_si_units ...   pipe length [m]                              got     400.000000   expected     400.000000   rel.err 4.0e-12
+  pipe diameter [m]                            got       0.150000   expected       0.150000   rel.err 3.2e-8
+  pipe length [m]                              got     300.000000   expected     300.000000   rel.err 5.0e-10
+  pipe diameter [m]                            got       0.150000   expected       0.150000   rel.err 3.2e-8
+  pipe length [m]                              got     500.000000   expected     500.000000   rel.err 3.0e-10
+  pipe diameter [m]                            got       0.150000   expected       0.150000   rel.err 3.2e-8
+  pipe length [m]                              got     600.000000   expected     600.000000   rel.err 4.0e-12
+  pipe diameter [m]                            got       0.150000   expected       0.150000   rel.err 3.2e-8
+  demand [m3/s]                                got       0.000000   expected       0.000000   rel.err 0.0e0
+  demand [m3/s]                                got       0.000000   expected       0.000000   rel.err 0.0e0
+  demand [m3/s]                                got       0.015000   expected       0.015000   rel.err 5.1e-10
+  demand [m3/s]                                got       0.015000   expected       0.015000   rel.err 5.1e-10
+  reservoir head [m]                           got      60.000000   expected      60.000000   rel.err 1.5e-9
+  friction factor: D-W 0.1 mm gives 0.0203; H-W C = 130 gives 0.0223
+  both friction factors plausible (0.015 - 0.025) yes
+ok
+test analytical::epanet_operations::a_pda_file_gives_demands_that_fall_with_pressure ...   reader's notes (4):
+    - .inp files carry no wave speeds: every pipe is given 1000 m/s [VERIFY - real wave speeds, by material, are needed to locate bursts well]
+    - Darcy-Weisbach roughness turned into one Darcy friction factor per pipe, equal head loss at 1.0 m/s: f from 0.0203 to 0.0203
+    - DEMAND MODEL PDA: demands fall with pressure - nothing at or below 0.00 m, all of it from 15.00 m, exponent 0.5 (on each node's ground elevation)
+    - DURATION 0 (a single steady state in EPANET): extended-period runs default to 24 h
+    C's ground elevation from the file [m]     got      30.000000   expected      30.000000   rel.err 0.0e0
+    minimum 0 m, required 15 m, exponent 0.5   yes
+  the source 15 m above C's ground: C gets 15.87 of its 20 l/s at 9.45 m of pressure
+    delivered = 20 l/s x sqrt(p / 15) [l/s]    got      15.871690   expected      15.871690   rel.err 1.1e-16
+ok
+test analytical::epanet_operations::a_prv_in_a_file_holds_elevation_plus_setting_in_either_units ... SI (m) units:
+  reader's notes (5):
+    - line 12: PRV 'V': holds 50.00 m downstream (elevation of J + setting); frozen at its steady opening in transients (its response over seconds is not modelled)
+    - 1 control valve(s) modelled, each between two 10.0 m lengths of pipe of its own diameter (pipes 'ID/in' and 'ID/out')
+    - .inp files carry no wave speeds: every pipe is given 1000 m/s [VERIFY - real wave speeds, by material, are needed to locate bursts well]
+    - Darcy-Weisbach roughness turned into one Darcy friction factor per pipe, equal head loss at 1.0 m/s: f from 0.0189 to 0.0189
+    - DURATION 0 (a single steady state in EPANET): extended-period runs default to 24 h
+    setting as a head: 20 + 30 [m]             got      50.000000   expected      50.000000   rel.err 0.0e0
+    it is active in the steady state           yes
+    it passes the 20 + 5 l/s drawn below it [l/s] got      25.000000   expected      25.000000   rel.err 3.3e-13
+    5 s with nothing happening: head at J stays within a micrometre (spread 3.6e-11 m) yes
+US (ft, psi) units:
+    setting as a head: 20 + 30 [m]             got      50.000000   expected      50.000000   rel.err 0.0e0
+    it is active in the steady state           yes
+    it passes the 20 + 5 l/s drawn below it [l/s] got      25.000000   expected      25.000000   rel.err 1.2e-14
+ok
+test analytical::epanet_operations::a_pump_and_its_controls_read_from_a_file_switch_on_time ...   reader's notes (6):
+    - line 24: pump 'PU': three-point curve: a quadratic through the points (EPANET's power law H = A - B Q^2.09 differs by up to 0.21 m between them); efficiency 75%, 1450 rpm and inertia (Thorley) assumed - they matter only for pump trips [VERIFY]
+    - 1 tank(s) with storage: fixed heads in transients, their level simulated in extended-period runs (cylinders of the given diameter)
+    - 1 pump(s) modelled with their curves, each between two 10.0 m lengths of station pipework (pipes 'ID/suction' and 'ID/discharge')
+    - .inp files carry no wave speeds: every pipe is given 1000 m/s [VERIFY - real wave speeds, by material, are needed to locate bursts well]
+    - Darcy-Weisbach roughness turned into one Darcy friction factor per pipe, equal head loss at 1.0 m/s: f from 0.0160 to 0.0160
+    - 2 control(s) switch pumps and pipes in extended-period runs (by tank level or clock)
+The file's run: 48 h in 5-minute steps, 2 controls
+    tank level 50 + 7 in the file = switch-on head [m] got      57.000000   expected      57.000000   rel.err 0.0e0
+  pump delivers 112.3 l/s at 57 m, 100.0 l/s at 64 m
+    pump stops at [h]                          got       5.100005   expected       5.099979   rel.err 5.1e-6
+      ... that way round                       yes
+    pump starts at [h]                         got      11.581486   expected      11.581460   rel.err 2.3e-6
+      ... that way round                       yes
+    pump stops at [h]                          got      20.032128   expected      20.032062   rel.err 3.3e-6
+      ... that way round                       yes
+    pump starts at [h]                         got      26.513609   expected      26.513544   rel.err 2.5e-6
+      ... that way round                       yes
+    at least four switches in 48 h             yes
+ok
+test analytical::epanet_operations::psv_fcv_and_tcv_in_a_file_become_valves_with_their_settings ...   reader's notes (9):
+    - 1 curve(s) not used (efficiency, volume, valve or unmodelled pump curves): 1
+    - line 17: PSV 'S': holds 72.00 m upstream (elevation of A + setting); frozen at its steady opening in transients (its response over seconds is not modelled)
+    - line 18: FCV 'F': passes at most 8.00 l/s; frozen at its steady opening in transients (its response over seconds is not modelled)
+    - line 19: TCV 'T': a fixed throttle, loss coefficient 5; frozen at its steady opening in transients (its response over seconds is not modelled)
+    - line 20: GPV valve 'G' between A and L: modelled as a plain connection (the two nodes are joined); its own hydraulics are not
+    - 3 control valve(s) modelled, each between two 10.0 m lengths of pipe of its own diameter (pipes 'ID/in' and 'ID/out')
+    - .inp files carry no wave speeds: every pipe is given 1000 m/s [VERIFY - real wave speeds, by material, are needed to locate bursts well]
+    - Darcy-Weisbach roughness turned into one Darcy friction factor per pipe, equal head loss at 1.0 m/s: f from 0.0203 to 0.0203
+    - DURATION 0 (a single steady state in EPANET): extended-period runs default to 24 h
+    PSV S keeps elevation of A (60) + 12 = 72 m upstream yes
+    FCV F passes at most 8 l/s                 yes
+    TCV T: loss coefficient 5 on DN150 -> R = K / (2 g A^2) [s^2/m^5] got     816.346498   expected     816.346498   rel.err 0.0e0
+    the GPV stays a plain connection, and says so yes
+ok
+test analytical::epanet_operations::rules_in_a_file_run_the_pump_as_its_controls_did ... The V-A9 file with [RULES] instead of [CONTROLS]:
+  reader's notes (6):
+    - line 24: pump 'PU': three-point curve: a quadratic through the points (EPANET's power law H = A - B Q^2.09 differs by up to 0.21 m between them); efficiency 75%, 1450 rpm and inertia (Thorley) assumed - they matter only for pump trips [VERIFY]
+    - 1 tank(s) with storage: fixed heads in transients, their level simulated in extended-period runs (cylinders of the given diameter)
+    - 1 pump(s) modelled with their curves, each between two 10.0 m lengths of station pipework (pipes 'ID/suction' and 'ID/discharge')
+    - .inp files carry no wave speeds: every pipe is given 1000 m/s [VERIFY - real wave speeds, by material, are needed to locate bursts well]
+    - Darcy-Weisbach roughness turned into one Darcy friction factor per pipe, equal head loss at 1.0 m/s: f from 0.0160 to 0.0160
+    - 2 rule(s) switch pumps and pipes in extended-period runs (IF / AND / OR / THEN / ELSE / PRIORITY, read as EPANET does: OR binds tighter than AND)
+    the same switches at the same moments      yes
+ok
+test analytical::epanet_operations::rules_the_engine_cannot_read_are_reported_never_dropped ...   reader's notes (14):
+    - line 12: pump 'PU': one-point curve, taken exactly (EPANET's own form); efficiency 75%, 1450 rpm and inertia (Thorley) assumed - they matter only for pump trips [VERIFY]
+    - line 16: TCV 'V': a fixed throttle, loss coefficient 3; frozen at its steady opening in transients (its response over seconds is not modelled)
+    - 1 tank(s) with storage: fixed heads in transients, their level simulated in extended-period runs (cylinders of the given diameter)
+    - 1 control valve(s) modelled, each between two 10.0 m lengths of pipe of its own diameter (pipes 'ID/in' and 'ID/out')
+    - 1 pump(s) modelled with their curves, each between two 10.0 m lengths of station pipework (pipes 'ID/suction' and 'ID/discharge')
+    - .inp files carry no wave speeds: every pipe is given 1000 m/s [VERIFY - real wave speeds, by material, are needed to locate bursts well]
+    - Darcy-Weisbach roughness turned into one Darcy friction factor per pipe, equal head loss at 1.0 m/s: f from 0.0175 to 0.0175
+    - DURATION 0 (a single steady state in EPANET): extended-period runs default to 24 h
+    - the run's t = 0 is the file's start clock time 06:00; clock-time controls are shifted to match
+    - line 24: rule night: action not taken: PUMP SETTING is not taken (only STATUS)
+    - line 27: rule demand not modelled: SYSTEM DEMAND is not read
+    - line 33: rule valve: action not taken: link 'V' is a TCV (switching valves by controls is not modelled)
+    - line 31: rule valve not modelled: none of its actions can be taken
+    - 2 rule(s) switch pumps and pipes in extended-period runs (IF / AND / OR / THEN / ELSE / PRIORITY, read as EPANET does: OR binds tighter than AND)
+    'night' is read: three premises (OR, AND), THEN and ELSE, priority 3 yes
+    10 PM with the run starting at 6 AM is 16:00 into the day yes
+    a tank level of 12 m of water is 50 + 12 = 62 m of head yes
+    the pump SETTING action is dropped, and said yes
+    'demand' is left out: SYSTEM DEMAND is not read yes
+    'valve' is left out: the TCV cannot be switched yes
+    'pressure' is read: junction pressure 20 m on elevation 0 = 20 m of head yes
+    and the whole thing runs                   yes
+ok
+test analytical::epanet_operations::times_patterns_and_controls_in_every_form_are_mapped_or_noted ...   reader's notes (14):
+    - line 17: pump 'PU1': one-point curve, taken exactly (EPANET's own form); efficiency 75%, 1450 rpm and inertia (Thorley) assumed - they matter only for pump trips [VERIFY]
+    - line 18: pump 'PU2' is given as constant power, not a head curve: modelled as a plain connection
+    - line 25: PRV 'V1': holds 30.00 m downstream (elevation of D + setting); frozen at its steady opening in transients (its response over seconds is not modelled)
+    - line 18: pump 'PU2' between S3 and B: modelled as a plain connection (the two nodes are joined); its own hydraulics are not
+    - 1 tank(s) with storage: fixed heads in transients, their level simulated in extended-period runs (cylinders of the given diameter)
+    - 1 control valve(s) modelled, each between two 10.0 m lengths of pipe of its own diameter (pipes 'ID/in' and 'ID/out')
+    - 1 pump(s) modelled with their curves, each between two 10.0 m lengths of station pipework (pipes 'ID/suction' and 'ID/discharge')
+    - .inp files carry no wave speeds: every pipe is given 1000 m/s [VERIFY - real wave speeds, by material, are needed to locate bursts well]
+    - Darcy-Weisbach roughness turned into one Darcy friction factor per pipe, equal head loss at 1.0 m/s: f from 0.0189 to 0.0203
+    - the run's t = 0 is the file's start clock time 06:00; clock-time controls are shifted to match
+    - line 35: control not modelled: condition on node 'C', which is not a storage tank (junction pressures and reservoir heads are not modelled as conditions)
+    - line 36: control not modelled: link 'V1' is a PRV (switching valves by controls is not modelled)
+    - line 37: control not modelled: link 'PU1' set to 0.8: settings (speeds, valve settings) are not modelled
+    - 3 control(s) switch pumps and pipes in extended-period runs (by tank level or clock)
+[TIMES]
+    2 days [h]                                 got      48.000000   expected      48.000000   rel.err 0.0e0
+    15 min steps [s]                           got     900.000000   expected     900.000000   rel.err 0.0e0
+[PATTERNS] (pattern start 2:00 = two hourly steps in)
+    option PATTERN homes is the default, rotated: 3 4 1 2 yes
+    C follows 'plant'; B, whose own pattern is the default, is not listed yes
+[STATUS] and [CONTROLS]
+    PU1 starts closed: shut at the start, switched off at t = 0 yes
+    PU1 on below 2 m of water in TK: head 40 + 2 = 42 m yes
+    PU1 off at 1:30 into the run               yes
+    P2 closed at 8 AM = 2 h after the 6 AM start, every day yes
+    a junction-pressure condition is noted, not modelled yes
+    a control on a valve is noted              yes
+    a pump speed setting is noted              yes
+    the constant-power pump PU2 is a connection, and says so yes
+    the start clock time is noted              yes
+    and the whole thing runs                   yes
+ok
+test analytical::logger::a_column_without_a_unit_is_refused_unless_the_unit_is_given ...   refused: no unit for column(s) Pressure: the header must name it (e.g. 'P1 (bar)') or it must be given - units are never guessed
+  refused: units are never guessed             yes
+  reader's notes (4):
+    - column 'Pressure' names no unit: bar as instructed
+    - 2 sample(s) a second
+    - timestamps carry no time zone: times are as written (only differences matter within one file; across loggers their clocks must agree)
+    - 'Pressure': bar -> metres of head (x 10.2121); ground elevation not added
+  read when the unit is given, and noted       yes
+  2 samples a second                           got       0.500000   expected       0.500000   rel.err 0.0e0
+ok
+test analytical::logger::a_european_export_semicolons_decimal_commas_date_and_time_columns ...   reader's notes (5):
+    - numbers use a decimal comma
+    - 1 sample(s) a second
+    - timestamps carry no time zone: times are as written (only differences matter within one file; across loggers their clocks must agree)
+    - line 7: 1 row(s) repeat an earlier time or go back in time: left out
+    - 'Druck [kPa]': kPa -> metres of head (x 0.1021); ground elevation not added
+  1 sample a second                            got       1.000000   expected       1.000000   rel.err 0.0e0
+  one continuous run across midnight           yes
+  the repeated row is dropped and noted        yes
+  451.2 kPa in metres of head                  got      46.076822   expected      46.076822   rel.err 1.5e-16
+  decimal comma noted                          yes
+  no time zone: noted                          yes
+ok
+test analytical::logger::a_typical_export_with_a_gap_an_empty_cell_and_a_step ...   reader's notes (8):
+    - 2 line(s) of metadata above the table skipped
+    - column 'Temperature (C)' looks like temperature, not a pressure: not used
+    - 128 sample(s) a second
+    - timestamps carry a time zone: times are UTC
+    - timestamps sit up to 0.50 ms off the logger's regular clock (rounding): samples are placed on the regular clock
+    - 1 gap(s) in the rows - 64 sample(s), 0.500 s in all, never arrived: the recording is split there, nothing is filled in
+    - 'P1 (bar)': bar -> metres of head (x 10.2121); ground elevation not added
+    - 'P1 (bar)': 1 empty and 0 unreadable value(s) - kept as gaps, not filled
+  sampling interval [s]                        got       0.007812   expected       0.007812   rel.err 0.0e0
+  one pressure channel (temperature left out)  yes
+  two runs: the lost half second splits it     yes
+  second run starts at 10:15:02.500 (s after the first) got       2.500000   expected       2.500000   rel.err 0.0e0
+  4.5 bar in metres of head                    got      45.954277   expected      45.954277   rel.err 0.0e0
+  the empty cell is a gap (NaN), not filled    yes
+  the 0.5 bar drop, in metres                  got      -5.106031   expected      -5.106031   rel.err 5.2e-16
+  rounded timestamps noted                     yes
+  time zone noted: UTC                         yes
+  metadata lines skipped                       yes
+ok
+test simulation::logger_files::a_burst_recorded_in_logger_files_raises_one_alarm_in_the_right_place ... Wrote 3 logger exports to C:\Users\HP\Desktop\joukowsky\target\tmp\logger_files
+  S1 gatehouse: 1280 samples at 128 S/s from 2026-09-29T10:15:00.000Z, 1 run(s)
+  S2 north block: 1280 samples at 128 S/s from 2026-09-29T10:15:00.004Z, 1 run(s)
+  S3 south block: 1280 samples at 128 S/s from 2026-09-29T10:15:00.000Z, 1 run(s)
+[Alarm] #1 BURST (98% confident) at t = 1790676902.999 s
+  where: T-S3 south branch at 199.9 m from its start; 90% within 2 m of pipe
+    T-S3 south branch    100.0%
+  size: about 1.56 l/s (+/- 0.16 l/s), from 3 logger(s)
+  seen by: S3 south block, S1 gatehouse, S2 north block
+  because: pressure DROPPED by 9.02 m: a burst or a pump trip, not a closing valve (seen upstream)
+  because: SHARP front (7 ms, 10-90%): a sudden change - a pipe splitting, a valve slamming - not a pump running down
+  because: pump power is not monitored: no outside evidence
+  exactly one alert                            yes
+  an ALARM for a burst                         yes
+  on T-S3                                      yes
+  at 200 m (within 2 m: the ms-rounded clocks cost a little) got     199.852358   expected     200.000000   rel.err 7.4e-4
+  at 10:15:03 - seconds past 10:15:00          got       2.998747   expected       3.000000   rel.err 4.2e-4
+ok
+
+test result: ok. 16 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.63s
+
+     Running balance\main.rs (target\debug\deps\balance-728b54a33b8a3084.exe)
+
+running 3 tests
+test simulation::night_watch::a_one_litre_per_second_leak_is_caught_dated_and_sized ... Night flow baseline 2.54 l/s, nights vary by 0.29 l/s; a week catches leaks over 0.40 l/s
+  leak from mid-day 45: first night 46 (the night of day 46), alarm night 48, size 0.99 +/- 0.18 l/s
+  dated to the first night after it began (day 46) yes
+  raised within 3 nights                       yes
+  size within 2 uncertainties of 1 l/s         yes
+  one alarm, no echoes                         yes
+ok
+test simulation::night_watch::false_alarms_are_rare_on_a_zone_without_leaks ... 200 zones x 90 days, no leak: 21 false alarm(s) in 12400 watched nights - one every 590 nights
+  fewer than one false alarm a year per zone   yes
+ok
+test simulation::night_watch::the_detection_curve_matches_the_cusum_arithmetic ... Night spread 0.386 l/s: the arithmetic says leaks over 0.523 l/s show within a week.
+  leak 0.26 l/s (0.5 x the arithmetic): caught within a week in 25 of 100 zones
+  leak 0.52 l/s (1 x the arithmetic): caught within a week in 75 of 100 zones
+  leak 0.79 l/s (1.5 x the arithmetic): caught within a week in 94 of 100 zones
+  leak 1.05 l/s (2 x the arithmetic): caught within a week in 95 of 100 zones
+  more leak, more often caught                 yes
+  twice the arithmetic's size: caught 90%+ of the time yes
+  at the arithmetic's size: caught at least a third of the time yes
+ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.27s
+
+     Running channels\main.rs (target\debug\deps\channels-c97e6a381f8a602a.exe)
+
+running 11 tests
+test analytical::backwater::va14_a_steady_backwater_profile_lies_on_the_direct_step_curve ... Normal depth 1.413 m; the outlet held at 2.260 m. Depth along the canal (solver after 24 h vs direct step):
+  x =   4900 m: solver 2.2145 m, direct step 2.2166 m (off by 2.1 mm)
+  x =   4500 m: solver 2.0469 m, direct step 2.0488 m (off by 1.8 mm)
+  x =   4000 m: solver 1.8563 m, direct step 1.8576 m (off by 1.3 mm)
+  x =   3001 m: solver 1.5757 m, direct step 1.5758 m (off by 0.1 mm)
+  x =   2002 m: solver 1.4528 m, direct step 1.4525 m (off by 0.3 mm)
+  x =    988 m: solver 1.4204 m, direct step 1.4203 m (off by 0.2 mm)
+    the solver's profile lies on the curve (worst 0.25% of the 0.85 m rise at the weir) yes
+ok
+test analytical::celerity::va14_a_small_wave_travels_at_the_square_root_of_g_h ... A 1 cm hump on 2 m of still water; its crest reaches a gauge 500 m away at 112.75 s (0.26 cm high: each half carries half of it)
+    speed [m/s] vs sqrt(g h)                   got       4.434590   expected       4.428691   rel.err 1.3e-3
+ok
+test analytical::dam_break::va14_a_dam_break_onto_a_dry_bed_follows_ritter ... A 1 m dam breaks onto a dry bed; after 50 s the wave spans 470 m (front at 313 m past the dam):
+    depth profile vs Ritter: mean error 0.22% of h0 over the wave yes
+    depth at the dam: 4/9 h0 [m]               got       0.447646   expected       0.444444   rel.err 7.2e-3
+    where the advancing water is 5 cm deep [m past the dam] got     208.250000   expected     208.120093   rel.err 6.2e-4
+    where the advancing water is 1 cm deep [m past the dam] got     260.750000   expected     266.182355   rel.err 2.0e-2
+  (the thinnest edge lags: 1 mm deep at 277 m, Ritter 298 m - a first-order scheme smears a vanishing depth)
+    and no depth anywhere is negative          yes
+ok
+test analytical::uniform::va14_flow_started_elsewhere_settles_at_normal_depth ... Still water 1 m deep; 10 m^3/s let in upstream, the outlet held at normal depth:
+    0.0 h: depth half way 1.0000 m
+    2.0 h: depth half way 1.4120 m
+    4.0 h: depth half way 1.4126 m
+    6.0 h: depth half way 1.4126 m
+    8.0 h: depth half way 1.4126 m
+   10.0 h: depth half way 1.4126 m
+   12.0 h: depth half way 1.4126 m
+    after 12 h, half way down [m]              got       1.412645   expected       1.412645   rel.err 9.4e-16
+    ... carrying the inflow [m^3/s]            got      10.000000   expected      10.000000   rel.err 1.8e-16
+ok
+test analytical::uniform::va14_normal_depth_satisfies_manning_and_uniform_flow_stays_uniform ... Canal 3 m wide, sides 1:1.5, bed 0.5 m/km, n = 0.015, carrying 10 m^3/s:
+    normal depth: Manning's flow at it [m^3/s] got      10.000000   expected      10.000000   rel.err 3.6e-16
+  normal depth 1.4126 m; critical depth 0.8917 m (subcritical: slower than a small wave)
+    started at normal depth, after 2 h (1812 steps) every cell is still there (largest change 2.2e-16 m) yes
+ok
+test invariants::conservation::a_closed_flume_keeps_its_water_through_a_dam_break_and_its_echoes ... Closed flume, a dam breaks and the surge rings for 10 minutes (2888 steps): water at the start 720.000000 m^3, at the end 720.000000 m^3
+    the same water (relative change 9.3e-15)   yes
+ok
+test invariants::conservation::an_open_canal_changes_its_water_by_exactly_what_crosses_its_ends ... Canal, inflow rising 5 -> 15 -> 8 m^3/s over 3 h: in 96282.8 m^3, out 87407.6 m^3, stored 8875.2 m^3 more
+    stored = in - out (mismatch 1.7e-15 of the inflow) yes
+ok
+test simulation::feed::a_canal_and_the_town_it_feeds_agree_on_level_and_flow ... 300 l/s into the canal, 300 l/s drawn by the town: settled in 2 turns (last change 3.9e-16 m^3/s)
+    the town draws its 300 l/s at every recorded time yes
+    the canal's outlet stays at normal depth [m] got       0.195934   expected       0.195934   rel.err 6.7e-14
+    the town's head: bed + depth - the main's friction [m] got      94.455997   expected      94.455997   rel.err 1.5e-16
+    and the canal never ran dry                yes
+ok
+test simulation::feed::a_sump_between_canal_and_town_settles_below_the_canal_by_the_inlet_loss ... Canal -> inlet -> sump -> town, 300 l/s steady, run side by side (360 exchanges):          canal at the inlet 100.1945 m, sump 100.1045 m
+    the sump sits below the canal by the inlet's loss (Q / 1.0)^2 [m] got       0.090000   expected       0.090000   rel.err 2.0e-13
+    the town gets all its 300 l/s [l/s]        got     300.000000   expected     300.000000   rel.err 0.0e0
+ok
+test simulation::feed::when_the_canal_stops_flowing_the_town_feels_it_hours_later ... The water into the canal stops at 01:00; the town keeps drawing 300 l/s:
+    0.0 h: town head  94.456 m
+    1.0 h: town head  94.456 m
+    2.0 h: town head  94.456 m
+    3.0 h: town head  94.260 m
+    4.0 h: town head  94.260 m
+    5.0 h: town head  94.260 m
+    6.0 h: town head  94.260 m
+    7.0 h: town head  94.260 m
+    8.0 h: town head  94.260 m
+    9.0 h: town head  94.260 m
+   10.0 h: town head  94.260 m
+  canal: held 3227 m^3 at the start; 1213 m^3 came in; 4319 m^3 left it; 121 m^3 remain
+    water in the canal: start + in - out = end [m^3] got     120.680197   expected     120.680197   rel.err 1.9e-13
+  the outlet first runs dry at 2.92 h, 1.9 h after the cut - from then the town's 300 l/s cannot be met; water still trickles down from the upper canal
+    the canal gave 4319 m^3: all 3150 asked until it ran dry, never more than the 10800 asked in all yes
+    the town's head falls with the intake level after the cut yes
+ok
+test simulation::feed::when_the_canal_stops_the_sump_runs_down_and_the_town_runs_short_then_dry ... The water into the canal stops at 01:00:
+   0.0 h: sump 100.100 m, town gets 300.0 of 300.0 l/s
+   1.0 h: sump 100.105 m, town gets 300.0 of 300.0 l/s
+   2.0 h: sump 100.105 m, town gets 300.0 of 300.0 l/s
+   3.0 h: sump  99.544 m, town gets 300.0 of 300.0 l/s
+   4.0 h: sump  94.166 m, town gets 288.4 of 300.0 l/s
+  canal outlet under 1 cm at 3.08 h; SUPPLY SHORT at 3.83 h; sump empty at 4.17 h
+    in that order: the canal runs low, then the town runs short, then the sump empties yes
+    the canal's water: start + in - out = end [m^3] got     660.045863   expected     660.045863   rel.err 4.3e-15
+    what the canal gave = what left it [m^3]   got    3779.084583   expected    3779.084583   rel.err 0.0e0
+  water: 3779 m^3 through the inlet, 4446 m^3 drawn by the town, the sump's store changed by -610 m^3
+    the sump's change = in - drawn, within 1.27% of the water drawn (draw read every 5 min) yes
+ok
+
+test result: ok. 11 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 13.39s
+
+     Running classification\main.rs (target\debug\deps\classification-7090793340b9d59f.exe)
 
 running 8 tests
 test simulation::scenarios::a_pump_trip_is_recognised_from_its_shape_alone ... Pump losing power, sensor at its discharge, power NOT monitored:
@@ -240,9 +709,9 @@ test simulation::scenarios::power_data_settles_the_slow_burst ... The same slow 
   burst                                        yes
 ok
 
-test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.04s
+test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.99s
 
-     Running detection\main.rs (target\debug\deps\detection-b444fcbf23cd3a81.exe)
+     Running detection\main.rs (target\debug\deps\detection-e23fac69caef8598.exe)
 
 running 10 tests
 test analytical::delay::delay_follows_the_cusum_formula ... Sharp drops at t = 3 s, noise-free signal with a 2 cm noise floor set:
@@ -303,11 +772,11 @@ Loggers: 128 S/s, integrating, random clock phase, 2 cm noise:
 ok
 test simulation::burst_location::vs1_location_error_versus_sampling_rate_and_noise ... ignored, full suite: 150 recorded sensor pairs across rates and noise levels
 
-test result: ok. 8 passed; 0 failed; 2 ignored; 0 measured; 0 filtered out; finished in 1.44s
+test result: ok. 8 passed; 0 failed; 2 ignored; 0 measured; 0 filtered out; finished in 1.27s
 
-     Running hydraulics\main.rs (target\debug\deps\hydraulics-1ec183be55c13ac0.exe)
+     Running hydraulics\main.rs (target\debug\deps\hydraulics-2a8e28d011452c5f.exe)
 
-running 35 tests
+running 60 tests
 test analytical::boundaries::burst::a_10mm_hole_at_60m_head ... DN150 AC main at 60 m head, 0.5 m/s; a 10 mm hole opens (Cd 0.6):
   water lost              1.555 l/s  (134 m^3 per day)
   head step at the burst  -4.486 m
@@ -359,6 +828,128 @@ test analytical::boundaries::reflections::va3_tee_of_identical_pipes_transmits_t
   matches the closed-form formula              got       0.666667   expected       0.666667   rel.err 8.3e-16
   => each tee cuts the front by a third: waves fade fast in branched networks.
 ok
+test analytical::control_valves::va10_a_prv_holds_its_setting_opens_when_it_cannot_and_shuts_against_backflow ... ACTIVE: source at 80 m, setting 50 m, 20 l/s drawn
+    the valve is active                        yes
+    junction head = setting - R2 Q^2 [m]       got      49.173449   expected      49.173449   rel.err 1.4e-16
+    head just upstream = 80 - R1 Q^2 [m]       got      78.966811   expected      78.966811   rel.err 1.8e-16
+OPEN: source at 45 m, below the setting
+    the valve is fully open                    yes
+    junction head = 45 - (R1 + Rv + R2) Q^2 [m] got      43.036942   expected      43.036942   rel.err 1.8e-15
+CLOSED: a second source at 60 m holds the zone above the setting
+    the valve is shut                          yes
+    nothing passes it                          yes
+    junction fed from the second source alone: 60 - R3 Q^2 [m] got      59.346923   expected      59.346923   rel.err 1.0e-12
+...until the zone draws 50 l/s: the second source alone would give
+   43.7 m, below the setting - the PRV opens and shares
+    the valve is active                        yes
+    head just below it = setting [m] (junction + R2 q^2) got      50.000000   expected      50.000000   rel.err 0.0e0
+  the PRV passes 10.4 l/s, the second source 39.6 l/s
+    continuity and energy hold (residuals)     yes
+ok
+test analytical::control_valves::va10_a_wave_passes_a_prv_in_the_share_the_orifice_law_gives ... A 0.5 m wave meets a PRV dropping 30 m at 50 l/s (frozen orifice, 2 R Q0 = 1200 s/m^2, pipe impedance B = 1443 s/m^2):
+  steady head below the valve 50.0000 m (= the setting)
+    head below before the wave [m]             got      50.000000   expected      50.000000   rel.err 1.4e-11
+    wave passed on [m] (orifice law)           got       0.352875   expected       0.352875   rel.err 6.1e-10
+  = 71% of the wave (small-wave formula: 0.3531 m, 71%) - the rest is reflected
+ok
+test analytical::control_valves::va11_a_psv_keeps_the_high_zone_up_and_opens_when_it_need_not ... PSV set to 70 m between a high zone (5 l/s) and a low reservoir at 20 m:
+    the valve is active                        yes
+    head just above it = setting [m]           got      70.000000   expected      70.000000   rel.err 0.0e0
+    what it lets through to the low reservoir [l/s] got      15.309753   expected      15.309753   rel.err 4.8e-15
+    the high zone's head [m]                   got      71.020492   expected      71.020492   rel.err 2.0e-16
+...and with the low reservoir at 72 m, above the setting: no need to throttle
+    the valve is fully open                    yes
+    flow as through plain pipes [l/s]          got      12.102980   expected      12.102980   rel.err 5.5e-14
+ok
+test analytical::control_valves::va11_a_tcv_is_a_fixed_loss_both_ways ... TCV (K = 5 on DN200) between reservoirs at 80 m and 20 m, then 20 m and 80 m:
+    forward flow sqrt(60 / sum R) [l/s]        got      42.697009   expected      42.697009   rel.err 5.7e-15
+    the same flow backwards [l/s]              got     -42.697009   expected     -42.697009   rel.err 6.0e-15
+ok
+test analytical::control_valves::va11_an_fcv_passes_its_setting_and_no_more ... FCV between a source at 80 m and a reservoir at 20 m; fully open it would pass          42.7 l/s
+    set to 10 l/s: active                      yes
+    passes exactly 10 l/s [l/s]                got      10.000000   expected      10.000000   rel.err 4.4e-15
+    head above it: 80 - (R1 + R2) q^2 [m]      got      77.387691   expected      77.387691   rel.err 9.2e-16
+    set to 100 l/s: fully open                 yes
+    passes what it can [l/s]                   got      42.697009   expected      42.697009   rel.err 5.8e-15
+ok
+test analytical::control_valves::va13_a_prv_that_moves_restores_its_setting_after_a_burst_below_it ... A 25 mm burst opens at 1 s, 500 m below a PRV holding 50 m:
+  frozen  : head just below the valve, mean over 9-13 s  14.17 m, over 70-78 s  14.18 m
+  tau 3 s : head just below the valve, mean over 9-13 s  54.80 m, over 70-78 s  50.00 m
+  tau 10 s: head just below the valve, mean over 9-13 s  64.69 m, over 70-78 s  50.00 m
+    tau = 1e13 s is the frozen valve (largest difference 1.3e-8 m) yes
+    frozen, the valve under-feeds the burst: the head below stays down yes
+    moving (tau 3 s), it opens and brings the head below back to its setting [m] got      49.999452   expected      50.000000   rel.err 1.1e-5
+    ... and so does a slower valve (tau 10 s), given time [m] got      50.000004   expected      50.000000   rel.err 8.9e-8
+    the quicker valve is nearer its setting soon after the burst (9-13 s) yes
+ok
+test analytical::controls::va12_a_higher_priority_rule_holds_the_pump_off_until_its_window_ends ... Pump switches: [(3600.0, false, Rule(0)), (14400.0, true, Rule(1))]
+    01:00: the peak rule stops the pump        yes
+  the tank falls to 57 m at 2.71 h, inside the window
+    the level rule wants the pump then, but has the lower priority yes
+    04:00: the window ends and the level rule starts the pump yes
+ok
+test analytical::controls::va12_rules_that_mirror_the_level_controls_switch_at_the_same_moments ... The V-A9 pump, run by two rules instead of two controls:
+    as many switches                           yes
+    at the same moments (largest difference 0.0e0 s) yes
+    and each says a rule did it                yes
+ok
+test analytical::controls::va9_a_float_valve_on_the_inlet_closes_when_full_and_opens_when_low ... A float valve on a tank's inlet: the reservoir at 80 m delivers 95.2 l/s at 57 m, 79.4 l/s at 64 m.
+    valve closes at [h]                        got       9.319321   expected       9.319277   rel.err 4.7e-6
+      ... in that direction                    yes
+    valve opens at [h]                         got      15.800802   expected      15.800758   rel.err 2.8e-6
+      ... in that direction                    yes
+    valve closes at [h]                        got      30.346155   expected      30.346059   rel.err 3.2e-6
+      ... in that direction                    yes
+    three switches                             yes
+ok
+test analytical::controls::va9_a_pump_fills_its_tank_between_the_switch_levels_on_time ... A pump fills a 200 m^2 tank while the town draws 60 l/s; it starts at 57 m and stops at 64 m.
+  pump delivers 109.5 l/s at 57 m, 97.5 l/s at 64 m (lift and friction rise)
+  the pump switched 6 times in 48 h; the first four:
+    at least four switches                     yes
+    pump stops at [h]                          got       5.420888   expected       5.420875   rel.err 2.4e-6
+      ... stops, by the level control          yes
+    with 15-minute steps: 5.42 h (+1.0 s)
+    pump starts at [h]                         got      11.902370   expected      11.902357   rel.err 1.1e-6
+      ... starts, by the level control         yes
+    with 15-minute steps: 11.90 h (+1.0 s)
+    pump stops at [h]                          got      20.868184   expected      20.868132   rel.err 2.5e-6
+      ... stops, by the level control          yes
+    with 15-minute steps: 20.87 h (+2.4 s)
+    pump starts at [h]                         got      27.349666   expected      27.349613   rel.err 1.9e-6
+      ... starts, by the level control         yes
+    with 15-minute steps: 27.35 h (+2.4 s)
+  the level stayed between 57.0127 m and 63.9972 m
+    it never passes the switch levels: each step is cut where they are reached yes
+  the pump ran 60% of the time
+ok
+test analytical::controls::va9_closing_a_pipe_is_the_same_as_removing_it ... Closing pipe A-C of a loop vs building the network without it:
+    largest head difference 1.0e-12 m (rounding only) yes
+    and the closed pipe carries nothing        yes
+    a dead end closed off with no demand: its head is unknown (NaN), not invented yes
+  closing the only supply pipe: invalid network: heads cannot be determined near node 1: closed pipes, stopped pumps or shut valves cut it off from every source, and it draws water
+    cutting consumers off from every source is an error (supply lost) yes
+ok
+test analytical::controls::va9_load_shedding_stops_the_pump_and_it_restarts_when_power_returns ... Load-shedding: power off 0.2-0.3 h and 5-9 h.
+  PowerOff { at: Time(720.0) }
+  Switched { target: Pump(NodeId(1)), open: false, at: Time(720.0), cause: PowerCut }
+  PowerOn { at: Time(1080.0) }
+  Switched { target: Pump(NodeId(1)), open: true, at: Time(1080.0), cause: PowerBack }
+  Switched { target: Pump(NodeId(1)), open: false, at: Time(3555.9388110033137), cause: Control(1) }
+  PowerOff { at: Time(18000.0) }
+  PowerOn { at: Time(32400.0) }
+  Switched { target: Pump(NodeId(1)), open: true, at: Time(32400.0), cause: PowerBack }
+    0.2 h: the cut stops the running pump      yes
+    0.3 h: power back, the controls still want it: it restarts yes
+    then it stops by the level control         yes
+  the tank falls to 57 m at 7.47 h, during the cut: the control asks for the pump
+    no switch while the power is off           yes
+    but the pump can only start when the power returns, at 9 h yes
+    level when power returns [m] (straight fall from 64 m) got      55.346782   expected      55.346782   rel.err 4.5e-15
+    no pump runs during the cut                yes
+ok
+test analytical::controls::va9_timed_controls_switch_on_the_clock ... Pump kept off in the morning peak: switches at [(6.0, false), (10.0, true), (30.0, false), (34.0, true)] (h, running)
+    off at 06:00, on at 10:00, off at 06:00 next day, on at 10:00 yes
+ok
 test analytical::joukowsky::burst_quantification::dn150_ac_main_2_litre_per_second_burst ... DN150 AC main, a = 1000 m/s:
   impedance B [s/m^2]                          got    5768.442835   expected    5770.000000   rel.err 2.7e-4
   step from a 2 l/s burst [m]                  got       5.768443   expected       5.800000   rel.err 5.4e-3
@@ -389,6 +980,18 @@ Size from the step at S1:
   burst flow sized from the step [l/s]         got       1.553399   expected       1.554948   rel.err 1.0e-3
   S2 hears it later than S1 (closer to S1)     yes
   => estimated loss 134 m^3/day, located to within one 10 m reach.
+ok
+test analytical::plastic_front::va6_a_sharp_front_in_plastic_pipe_shrinks_as_theory_says ... Theory: the front shrinks by exp(-0.00667 x): half its height every 104 m
+  rigid pipe: every point would jump 8.158 m (Joukowsky)
+      0 m from the valve: jump 8.131 m, theory 8.158 m (-0.3%)
+    100 m from the valve: jump 4.214 m, theory 4.188 m (+0.6%)
+    200 m from the valve: jump 2.184 m, theory 2.150 m (+1.6%)
+    300 m from the valve: jump 1.132 m, theory 1.104 m (+2.5%)
+    400 m from the valve: jump 0.586 m, theory 0.567 m (+3.5%)
+    500 m from the valve: jump 0.304 m, theory 0.291 m (+4.4%)
+    600 m from the valve: jump 0.158 m, theory 0.149 m (+5.4%)
+  front damping rate kappa [1/m]               got       0.006573   expected       0.006667   rel.err 1.4e-2
+  the front has lost over half its height 200 m on yes
 ok
 test analytical::pumps::inertia::inertia_of_the_station_pump ... Pump + motor for 79.5 kW at 1450 rpm:
   estimated inertia 2.46 kg m^2
@@ -435,6 +1038,41 @@ Down-surge:
   lowest head mid-main         5.3 m
   Joukowsky bound for stopping 104.6 l/s: B Q0 = 150.8 m
 ok
+test analytical::refill::va16_a_sealed_air_pocket_stops_the_column_where_the_energy_says ... Sealed pocket, n = 1.4: the column stops 51.4 m from the end
+    it never reaches the end                   yes
+    peak air pressure vs the energy balance [m of water] got     205.268606   expected     205.268607   rel.err 6.4e-9
+  = 6.8 times the supply's 30 m
+    supply's work = motion + work on the air, all along (worst 1.4e-14) yes
+Sealed pocket, n = 1: the column stops 9.9 m from the end
+    it never reaches the end                   yes
+    peak air pressure vs the energy balance [m of water] got     457.998904   expected     457.998945   rel.err 8.9e-8
+  = 15.3 times the supply's 30 m
+    supply's work = motion + work on the air, all along (worst 1.1e-13) yes
+ok
+test analytical::refill::va16_the_air_valve_size_decides_between_a_cushion_and_a_slam ... Refilling with friction (f = 0.02), adiabatic air; sealed pocket peak 33.3 m, no air at all slams at 350 m:
+  air valve   peak air   slam at the end   worst at the end
+     0.5 mm      33.3 m           none       33.3 m
+     2.0 mm      33.3 m           none       33.3 m
+     5.0 mm      32.9 m           none       32.9 m
+    10.0 mm      31.5 m           none       31.5 m
+    20.0 mm      24.1 m          169 m      169.4 m
+    30.0 mm       8.9 m          307 m      306.8 m
+    40.0 mm       3.3 m          341 m      340.9 m
+    50.0 mm       1.7 m          347 m      346.5 m
+   100.0 mm       0.2 m          350 m      349.6 m
+    a pin-hole valve behaves like a sealed pocket [m] got      33.324326   expected      33.328576   rel.err 1.3e-4
+    a large valve lets the air out and the column slams almost as with no air yes
+    the worst valve gives 10x the sealed pocket's peak - letting air out the wrong way is worse than trapping it (as Zhou et al. 2002 found) yes
+ok
+test analytical::refill::va16_with_no_air_in_the_way_the_column_races_in_as_theory_says_and_slams ... Supply returns (30 m) into an empty 500 m pipe, no air cushion, f = 0:
+    column speed along the way vs the closed form (worst 1.1e-14) yes
+    reaches the end at 23.3 s with speed [m/s] got      23.012151   expected      23.012151   rel.err 5.5e-11
+    and slams: a v / g [m]                     got    2346.586361   expected    2346.586361   rel.err 0.0e0
+Supply returns (30 m) into an empty 500 m pipe, no air cushion, f = 0.02:
+    column speed along the way vs the closed form (worst 4.0e-15) yes
+    reaches the end at 95.4 s with speed [m/s] got       3.430449   expected       3.430449   rel.err 5.0e-10
+    and slams: a v / g [m]                     got     349.808441   expected     349.808441   rel.err 0.0e0
+ok
 test analytical::single_pipe::friction::friction_causes_line_packing_and_damping ... Friction f = 0.03, instant closure; Joukowsky dH = 101.972 m
   steady valve head            94.901 m
   just after closure (step 1)  196.873 m
@@ -466,6 +1104,15 @@ Every one of the 241 samples on the square wave:
   all samples within 1e-9 m of the ideal       yes
   no flow through the shut valve               yes
 ok
+test analytical::sources::a_flat_level_history_is_exactly_a_fixed_reservoir ...   identical flows, step for step               yes
+ok
+test analytical::sources::va7_a_slowly_rising_source_drives_the_water_column_as_theory_says ... Upstream reservoir rising 0.01 m/s; flow at mid-pipe vs rigid-column theory:
+    flow at 20.0 s [l/s]                       got       1.386382   expected       1.386382   rel.err 1.6e-16
+    flow at 21.5 s [l/s]                       got       1.601272   expected       1.602138   rel.err 5.4e-4
+    flow at 40.0 s [l/s]                       got       5.545530   expected       5.545530   rel.err 1.8e-15
+    flow at 40.7 s [l/s]                       got       5.741010   expected       5.741322   rel.err 5.4e-5
+    flow at 60.0 s [l/s]                       got      12.477442   expected      12.477442   rel.err 2.0e-15
+ok
 test analytical::steady::check_valves::forward_head_opens_the_valve ... 80 m on the valve's upstream side, 50 m downstream:
   valve is open                                yes
   flow = sqrt(30 / 2R) [l/s]                   got      76.205416   expected      76.205416   rel.err 3.7e-16
@@ -493,6 +1140,23 @@ ok
 test analytical::steady::closed_form::two_reservoirs_and_one_pipe ... 80 m and 50 m reservoirs joined by 2000 m of DN250:
   flow = sqrt(30 / R) [l/s]                    got      99.225802   expected      99.225802   rel.err 0.0e0
 ok
+test analytical::steady::pressure_demand::va15_a_consumer_gets_all_some_or_none_of_its_demand_as_its_pressure_allows ... One consumer on ground 30 m, 20 l/s at full pressure (15 m); the main loses R Q^2 = 8.7 m at 20 l/s:
+    source at 80 m: all 20 l/s delivered [l/s] got      20.000000   expected      20.000000   rel.err 0.0e0
+    ... at head 80 - R D^2 [m]                 got      71.292304   expected      71.292304   rel.err 0.0e0
+    source at 45 m: Q = D sqrt((H - z) / (s + D^2 R)) [l/s] got      15.908563   expected      15.908563   rel.err 2.2e-16
+    ... and that is D sqrt(p / 15) at the pressure it gets [l/s] got      15.908563   expected      15.908563   rel.err 2.2e-16
+    ... asked 20 l/s, and the pipes carry what is delivered yes
+    source at 25 m, below the ground: nothing delivered (0.0e0 l/s) yes
+    exponent 0.75: delivered = D (p / 15)^0.75 [l/s] got      14.923433   expected      14.923433   rel.err 1.2e-16
+ok
+test analytical::steady::pressure_demand::va15_a_draining_tank_warns_when_it_can_no_longer_meet_the_demand ... A tank alone feeds a town on 10 m ground (5 l/s, full pressure 15 m); 99% delivery needs the tank at 24.97 m or more:
+  SUPPLY SHORT at 14.00 h (99% delivered at that record); expected from the falling level 13.98 h
+    the warning comes at the first record after the level passes it yes
+  at the last record the town gets 4.36 of its 5.00 l/s
+    and it gets less and less, never more than asked yes
+ok
+test analytical::steady::pressure_demand::va15_a_transient_from_a_pressure_starved_state_starts_still ...   Starting from the partly supplied state, 3 s with nothing happening: the consumer's head stays put (spread 6.4e-14 m) yes
+ok
 test analytical::steady::three_reservoirs::three_reservoirs_meeting_at_one_junction ... Reservoirs at 100, 80 and 40 m meeting at one junction:
   junction head: engine vs bisection [m]       got      79.999507   expected      79.999507   rel.err 1.8e-16
   flow from the 100 m reservoir [l/s]          got     140.000013   expected     140.000013   rel.err 4.1e-16
@@ -501,6 +1165,33 @@ test analytical::steady::three_reservoirs::three_reservoirs_meeting_at_one_junct
   the 80 m reservoir is SUPPLYING the junction (0.33 l/s)
   water balances at the junction               yes
   solved in 9 Newton rounds
+ok
+test analytical::tanks::va8_a_draining_tank_follows_the_exact_curve_and_empties_on_time ... Tank draining into a reservoir 30 m below, level vs the exact curve:
+    level at 2 h [m]                           got      44.764104   expected      44.764084   rel.err 4.5e-7
+    level at 4 h [m]                           got      40.029956   expected      40.029916   rel.err 1.0e-6
+    level at 8 h [m]                           got      32.066902   expected      32.066822   rel.err 2.5e-6
+    level at 12 h [m]                          got      26.110840   expected      26.110720   rel.err 4.6e-6
+  largest error: 1.20e-4 m with 5-minute steps, 4.84e-4 m with 10-minute steps
+  halving the step cuts the error at least threefold (second order) yes
+    tank reaches its floor at [h]              got      16.224080   expected      16.223718   rel.err 2.2e-5
+    and the reservoir below keeps the network supplied yes
+ok
+test analytical::tanks::va8_a_tank_that_is_the_only_source_runs_dry_and_supply_is_lost ... A tank alone supplying 5 l/s, 250 m^3 above its floor:
+    empties at [h]                             got      13.888889   expected      13.888889   rel.err 3.8e-14
+  supply lost at 13.89 h: no source reaches part of the network (invalid network: a steady solve needs at least one reservoir)
+    supply is lost within one step of emptying yes
+ok
+test analytical::viscoelastic::va5_a_creeping_wall_slows_and_damps_the_ring_as_theory_says ... Theory: rigid ring 4.000 s period; with the creeping wall 4.500 s, dying away at 0.0102 per second (amplitude x0.96 per period)
+  100 reaches: decay 0.010268 per second, +0.4% from theory
+  200 reaches: decay 0.010242 per second, +0.1% from theory
+  400 reaches: decay 0.010236 per second, +0.1% from theory
+  decay rate, 100 reaches [1/s]                got       0.010268   expected       0.010230   rel.err 3.7e-3
+  decay rate, 400 reaches [1/s]                got       0.010236   expected       0.010230   rel.err 6.2e-4
+  finer grids come closer                      yes
+  phase of the ring at theory's frequency moves 0.007 rad over 7 periods (0 if the frequency is right)
+  the ring keeps theory's frequency (drift < 0.1 rad) yes
+  rigid pipe, same run: fundamental 10.387 m then 10.387 m (no creep, no friction: no decay)
+  rigid pipe does not decay                    got      10.386751   expected      10.386751   rel.err 5.1e-16
 ok
 test invariants::grid_independence::joukowsky_peak_is_exact_on_every_grid_and_material ... ignored, full suite: 1024 simulations (run-tests.ps1 -Suite full)
 test invariants::grid_independence::joukowsky_peak_is_the_same_on_every_grid ... 1 reach(es), dt = 1.0000 s:
@@ -538,7 +1229,7 @@ test invariants::network::matches_single_pipe::splitting_a_pipe_at_a_junction_ch
     junctions between identical pipes are invisible yes
 ok
 test invariants::network::steady_start::a_solved_steady_state_stays_steady_in_the_transient_solver ... Steady solve: 8 Newton rounds
-  residuals: energy 0.0e0 m, continuity 4.6e-16 m^3/s
+  residuals: energy 0.0e0 m, continuity 7.0e-16 m^3/s
   head at A             88.547 m
   head at B             87.181 m
   head at C             85.569 m
@@ -547,7 +1238,7 @@ test invariants::network::steady_start::a_solved_steady_state_stays_steady_in_th
   energy equation satisfied (< 1e-9 m)         yes
   continuity satisfied (< 1e-12 m^3/s)         yes
 Transient run from that state, nothing disturbed, 221 samples:
-  largest head drift 9.9e-13 m, flow drift 1.9e-16 m^3/s
+  largest head drift 1.4e-12 m, flow drift 2.6e-16 m^3/s
   no fake transient (head drift < 1e-6 m)      yes
   flows hold (drift < 1e-9 m^3/s)              yes
 ok
@@ -565,9 +1256,9 @@ test invariants::steady_state::an_undisturbed_pipe_stays_steady ... Steady state
   valve holds steady                           yes
 ok
 
-test result: ok. 34 passed; 0 failed; 1 ignored; 0 measured; 0 filtered out; finished in 0.06s
+test result: ok. 59 passed; 0 failed; 1 ignored; 0 measured; 0 filtered out; finished in 7.02s
 
-     Running kernel\main.rs (target\debug\deps\kernel-419ce9c0b855e6a8.exe)
+     Running kernel\main.rs (target\debug\deps\kernel-8eea161e1918dc58.exe)
 
 running 5 tests
 test conversions::dn150_area ... Cross-section of a DN150 pipe:
@@ -592,9 +1283,9 @@ ok
 
 test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
 
-     Running localisation\main.rs (target\debug\deps\localisation-f844bf3dc056be80.exe)
+     Running localisation\main.rs (target\debug\deps\localisation-e801408e48e80f21.exe)
 
-running 16 tests
+running 32 tests
 test analytical::branched::two_sensors_see_a_whole_branch_three_sensors_see_the_point ... Sensors S1 and S2 only (burst 200 m along branch T-S3):
   probability on branch T-S3: 100.0%
   90% region: 540 m of pipe
@@ -603,17 +1294,41 @@ test analytical::branched::two_sensors_see_a_whole_branch_three_sensors_see_the_
 Adding sensor S3 at the end of the branch:
   most likely: branch T-S3 at 200.000 m from T; 90% region 4.0 m
   the most likely pipe is the branch           yes
-  distance from T [m]                          got     200.000030   expected     200.000000   rel.err 1.5e-7
+  distance from T [m]                          got     200.000007   expected     200.000000   rel.err 3.6e-8
   the region shrinks to a few metres           yes
   => sensor PLACEMENT decides what the engine can see (docs: placement advisor).
+ok
+test analytical::clock_drift::f9_a_burst_after_the_last_calibration_is_found_only_with_drift_repaired ... Burst 200 m along T-S3 at 23:00 (clocks: S2 +20 ppm, S3 -35 ppm, no GNSS):
+  clocks as read                 400.00 m off, 90% stretch     2.0 m, misfit   119.86
+  one fixed offset per clock     400.00 m off, 90% stretch     2.0 m, misfit    60.29
+  offset and drift per clock       0.06 m off, 90% stretch    12.0 m, misfit     0.01
+  drift repaired: within 1 m of the burst      yes
+  drift repaired: 90% stretch under 30 m       yes
+  a fixed offset alone misses by more than 50 m yes
+ok
+test analytical::clock_drift::f9_a_clock_seen_at_only_one_time_has_no_measurable_drift_and_is_refused ...   refused: invalid input: the clock of the sensor at node 3 is in 1 calibration event(s): its drift needs known events at two or more different times
+  the refusal names S2's node                  yes
+ok
+test analytical::clock_drift::f9_drift_rates_and_offsets_are_recovered_from_known_events ... Noise-free picks, four known events between 06:00 and 20:00:
+    S2 drift [ppm of its own seconds]          got      19.999596   expected      19.999600   rel.err 2.0e-7
+    S2 offset at 23:00 [ms]                    got    1263.999786   expected    1263.999939   rel.err 1.2e-7
+    S3 drift [ppm of its own seconds]          got     -35.001223   expected     -35.001225   rel.err 5.5e-8
+    S3 offset at 23:00 [ms]                    got   -2167.000050   expected   -2167.000055   rel.err 2.6e-9
+Picks with 0.2 ms noise:
+  S2: drift +19.990 ppm (true +20); offset at 23:00 +1263.749 ms (true +1264.000), uncertainty 0.320 ms (at the events' middle 0.141 ms)
+      offset at 23:00 within 3 reported sigma  yes
+      less sure when extrapolating than at the events yes
+  S3: drift -34.998 ppm (true -35); offset at 23:00 -2166.820 ms (true -2167.000), uncertainty 0.320 ms (at the events' middle 0.141 ms)
+      offset at 23:00 within 3 reported sigma  yes
+      less sure when extrapolating than at the events yes
 ok
 test analytical::clocks::a_clock_that_never_meets_the_others_is_refused_not_guessed ... S2 only ever sees an event alone: refused - invalid input: the clock of the sensor at node 3 cannot be separated from the event times: it must share events with the other sensors
   the engine refuses                           yes
 ok
 test analytical::clocks::offsets_are_recovered_from_three_known_events ... Noise-free picks:
     offset of node 1 [ms]                      got       0.000000   expected       0.000000   rel.err 0.0e0
-    offset of node 3 [ms]                      got      23.000000   expected      23.000000   rel.err 4.3e-13
-    offset of node 4 [ms]                      got     -41.000000   expected     -41.000000   rel.err 3.0e-13
+    offset of node 3 [ms]                      got      23.000000   expected      23.000000   rel.err 7.7e-15
+    offset of node 4 [ms]                      got     -41.000000   expected     -41.000000   rel.err 1.7e-16
 Picks with 0.2 ms noise:
   node 3: +23.276 ms (true +23.0 ms), uncertainty 0.163 ms
     within 3 reported sigma                    yes
@@ -685,8 +1400,8 @@ ok
 test analytical::straight_main::a_burst_on_a_straight_main_is_found_where_the_formula_says ... Arrivals 0.7 s and 1.3 s after the burst, +/- 0.15 ms each:
   most likely: pipe 1 at 700.000 m
   on the main between the sensors              yes
-  distance from S1 [m]                         got     700.000015   expected     700.000000   rel.err 2.2e-8
-  burst time recovered [s]                     got       2.000000   expected       2.000000   rel.err 2.2e-16
+  distance from S1 [m]                         got     700.000011   expected     700.000000   rel.err 1.6e-8
+  burst time recovered [s]                     got       2.000000   expected       2.000000   rel.err 0.0e0
   probability on that pipe                     got       1.000000   expected       1.000000   rel.err 0.0e0
   90% region: 4.0 m of pipe (timing alone: sigma_x = a sigma / sqrt2 = 0.11 m; grid cells are 2 m)
   the region contains the truth                yes
@@ -695,9 +1410,82 @@ test analytical::straight_main::a_burst_on_a_straight_main_is_found_where_the_fo
 ok
 test invariants::calibration::calibration_holds_over_many_trials ... ignored, full suite: 400 random localisations
 test invariants::calibration::the_90_percent_region_holds_the_truth_about_90_percent_of_the_time ... 60 random bursts; true wave speeds off by ~3%; timing noise 0.2 ms:
-  truth inside the 90% region: 88% of trials
+  truth inside the 90% region: 90% of trials
   average region length: 108 m
   coverage between 75% and 99% (60 trials)     yes
+ok
+test invariants::pruning::skipping_changes_nothing_for_40_random_bursts_and_logger_sets ... 40 random bursts on a 6 km town, 2-6 loggers each, 0-3 ms timing noise:
+  largest relative difference, 40 bursts       got       0.000000   expected       0.000000   rel.err 0.0e0
+ok
+test invariants::pruning::skipping_pipes_changes_nothing_on_a_10_km_town ... 10 km town, burst 0.5 along pipe 10, timing noise 0 ms:
+  same most likely pipe                        yes
+  most likely point [m]                        got      79.968493   expected      79.968493   rel.err 0.0e0
+  90% search stretch [m]                       got      39.984245   expected      39.984245   rel.err 0.0e0
+  misfit                                       got       0.000000   expected       0.000000   rel.err 0.0e0
+  probability of the top pipe                  got       1.000000   expected       1.000000   rel.err 0.0e0
+10 km town, burst 0.25 along pipe 60, timing noise 2 ms:
+  same most likely pipe                        yes
+  most likely point [m]                        got     158.711241   expected     158.711241   rel.err 0.0e0
+  90% search stretch [m]                       got     263.982592   expected     263.982592   rel.err 0.0e0
+  misfit                                       got       0.083857   expected       0.083857   rel.err 0.0e0
+  probability of the top pipe                  got       0.265214   expected       0.265214   rel.err 0.0e0
+10 km town, burst 0.9 along pipe 95, timing noise 0 ms:
+  same most likely pipe                        yes
+  most likely point [m]                        got      23.197623   expected      23.197623   rel.err 0.0e0
+  90% search stretch [m]                       got     176.464279   expected     176.464279   rel.err 0.0e0
+  misfit                                       got       0.000000   expected       0.000000   rel.err 0.0e0
+  probability of the top pipe                  got       0.535903   expected       0.535903   rel.err 0.0e0
+10 km town, burst 0.4 along pipe 110, timing noise 2 ms:
+  same most likely pipe                        yes
+  most likely point [m]                        got      40.383626   expected      40.383626   rel.err 0.0e0
+  90% search stretch [m]                       got     193.806708   expected     193.806708   rel.err 0.0e0
+  misfit                                       got       0.168662   expected       0.168662   rel.err 0.0e0
+  probability of the top pipe                  got       0.644992   expected       0.644992   rel.err 0.0e0
+ok
+test invariants::pruning::skipping_pipes_changes_nothing_on_the_estate ... Estate, burst 0.33 along pipe 3:
+  same most likely pipe                        yes
+  most likely point [m]                        got     198.044047   expected     198.044047   rel.err 0.0e0
+  90% search stretch [m]                       got      28.000000   expected      28.000000   rel.err 0.0e0
+  misfit                                       got       0.025024   expected       0.025024   rel.err 0.0e0
+  probability of the top pipe                  got       1.000000   expected       1.000000   rel.err 0.0e0
+Estate, burst 0.8 along pipe 2:
+  same most likely pipe                        yes
+  most likely point [m]                        got     399.850988   expected     399.850988   rel.err 0.0e0
+  90% search stretch [m]                       got      34.000000   expected      34.000000   rel.err 0.0e0
+  misfit                                       got       0.026250   expected       0.026250   rel.err 0.0e0
+  probability of the top pipe                  got       1.000000   expected       1.000000   rel.err 0.0e0
+Estate, burst 0.5 along pipe 0:
+  same most likely pipe                        yes
+  most likely point [m]                        got      66.527864   expected      66.527864   rel.err 0.0e0
+  90% search stretch [m]                       got     374.000000   expected     374.000000   rel.err 0.0e0
+  misfit                                       got       0.035827   expected       0.035827   rel.err 0.0e0
+  probability of the top pipe                  got       0.965347   expected       0.965347   rel.err 0.0e0
+ok
+test invariants::time_origin::clock_repair_with_clock_time_gives_the_same_offsets ...   offset of node 1: +0.000000 ms from zero, +0.000000 ms from clock time
+    ... the same to 1 microsecond              yes
+  offset of node 3: +3.000000 ms from zero, +2.999989 ms from clock time
+    ... the same to 1 microsecond              yes
+  offset of node 4: +0.000000 ms from zero, -0.000064 ms from clock time
+    ... the same to 1 microsecond              yes
+  S2's clock found 3 ms late from clock time (to 1 us) yes
+ok
+test invariants::time_origin::locating_with_clock_time_gives_the_same_answer_as_from_zero ... Burst 200 m along T-S3, located with times near 0 and near 1790676900 s:
+  most likely point [m]                        got     200.249103   expected     200.249144   rel.err 2.1e-7
+  same pipe                                    yes
+  90% search stretch [m]                       got      28.000000   expected      28.000000   rel.err 0.0e0
+  emission time, clock minus zero [s]          got 1790676900.000000   expected 1790676900.000000   rel.err 0.0e0
+  misfit stays small (arrivals fit one source) yes
+ok
+test invariants::zones::one_zone_gives_exactly_the_plain_advice ... 3 km town, 3 loggers: whole [NodeId(19), NodeId(15), NodeId(6)], zoned [NodeId(19), NodeId(15), NodeId(6)]
+  one zone                                     yes
+  the same loggers                             yes
+  the same mean 90% region [m]                 got     142.889725   expected     142.889725   rel.err 0.0e0
+ok
+test invariants::zones::zoned_plans_stay_close_to_whole_town_plans ... ignored, full suite: plans a 5 km town twice (about a minute in debug)
+test invariants::zones::zones_cover_every_pipe_exactly_once ... 20 km town in zones of about 5 km: [6.60, 6.57, 3.80, 3.02] km
+  4 zones                                      yes
+  every pipe in exactly one zone               yes
+  no zone more than twice the average          yes
 ok
 test simulation::clock_study::f9_software_clock_repair_restores_metre_level_location ... Burst 200 m along branch T-S3; S2 reads 23 ms late, S3 41 ms early.
   WITHOUT repair: most likely pipe 3 at 220.6 m; 90% region 66 m of pipe
@@ -741,16 +1529,56 @@ Localisation:
   90% region: 2.0 m of pipe; timing misfit 0.35
   burst emitted at 1.9995 s (true 2.0 s)
   the right branch is the most likely pipe     yes
-  distance from T [m]                          got     200.049417   expected     200.000000   rel.err 2.5e-4
+  distance from T [m]                          got     200.049423   expected     200.000000   rel.err 2.5e-4
   the 90% region contains the truth            yes
   the arrivals fit one source (misfit < 3)     yes
 ok
+test simulation::plastic_fronts::the_front_model_holds_for_measured_hdpe ... HDPE, Imperial College (Covas et al. 2005): an 8 mm hole lets out 0.949 l/s; a sharp front keeps exp(-0.00380 x)
+  S1 (tee, 350 m): rigid pipe would give 6.337 m
+      sharp front [m]                          got       1.702651   expected       1.678338   rel.err 1.4e-2
+      felt within 0.25 s [m]                   got       5.120896   expected       4.984633   rel.err 2.7e-2
+  S2 (tee, 450 m, dead end): rigid pipe would give 12.674 m
+      sharp front [m]                          got       2.340426   expected       2.296420   rel.err 1.9e-2
+      felt within 0.25 s [m]                   got       9.754043   expected       9.509130   rel.err 2.5e-2
+  S3 (dead end, 200 m): rigid pipe would give 19.011 m
+      sharp front [m]                          got       8.964749   expected       8.897907   rel.err 7.5e-3
+      felt within 0.25 s [m]                   got      16.345114   expected      16.052330   rel.err 1.8e-2
+  at S2: sharp front 18% of rigid pipe's, felt within 0.25 s 75%
+  felt is more than the sharp front            yes
+ok
+test simulation::plastic_fronts::the_front_model_with_plastic_walls_matches_the_full_simulation ... Illustrative plastic wall: an 8 mm hole lets out 1.016 l/s; a sharp front keeps exp(-0.00667 x)
+  S1 (tee, 350 m): rigid pipe would give 1.453 m
+      sharp front [m]                          got       0.145123   expected       0.140906   rel.err 2.9e-2
+      felt within 0.25 s [m]                   got       1.178654   expected       1.196106   rel.err 1.5e-2
+  S2 (tee, 450 m, dead end): rigid pipe would give 2.906 m
+      sharp front [m]                          got       0.150416   expected       0.144688   rel.err 3.8e-2
+      felt within 0.25 s [m]                   got       2.201915   expected       2.338121   rel.err 5.8e-2
+  S3 (dead end, 200 m): rigid pipe would give 4.359 m
+      sharp front [m]                          got       1.166973   expected       1.149064   rel.err 1.5e-2
+      felt within 0.25 s [m]                   got       3.774112   expected       3.713554   rel.err 1.6e-2
+  the sharp front at S2 is under a fifth of rigid pipe's yes
+  but within 0.25 s S2 feels over two thirds of it yes
+ok
+test simulation::valve_fronts::a_front_crossing_a_prv_is_heard_as_the_orifice_law_says ... An 8 mm hole below a PRV dropping 30 m at 20 l/s (0.93 l/s out; r = 3000 s/m^2, B = 3246 s/m^2):
+    S2, same side: front [m]                   got       1.509470   expected       1.509470   rel.err 7.5e-10
+    S1, across the valve: front [m]            got       1.029797   expected       1.032379   rel.err 2.5e-3
+    share heard across the valve (simulated) vs 2B / (2B + r) got       0.682225   expected       0.683935   rel.err 2.5e-3
+ok
+test simulation::valve_fronts::a_front_crossing_a_running_pump_loses_what_its_curve_droops ... A burst 1 km up a rising main; the pump delivers 150.0 l/s, its curve droops r = 483 s/m^2 (B = 1443 s/m^2)
+    suction-side front (simulated) vs model [m] got       0.607881   expected       0.608008   rel.err 2.1e-4
+    share passed by the pump (simulated) vs 2B / (2B + r) got       0.856337   expected       0.856515   rel.err 2.1e-4
+ok
+test simulation::valve_fronts::a_shut_prv_passes_no_wave_and_no_route ... A second source at 60 m holds the zone: the valve is Closed
+    S2, same side as the burst: simulated vs model front [m] got       1.655751   expected       1.655751   rel.err 6.9e-10
+    S1, beyond the shut valve: simulator 0.0e0 m, model 0.0e0 m - nothing yes
+    and no route from S1 reaches the zone: the locator cannot place a burst there from S1 yes
+ok
 
-test result: ok. 14 passed; 0 failed; 2 ignored; 0 measured; 0 filtered out; finished in 3.78s
+test result: ok. 29 passed; 0 failed; 3 ignored; 0 measured; 0 filtered out; finished in 38.58s
 
-     Running pipeline\main.rs (target\debug\deps\pipeline-aee9828f246fe90a.exe)
+     Running pipeline\main.rs (target\debug\deps\pipeline-0a591d8df4220b73.exe)
 
-running 7 tests
+running 9 tests
 test simulation::live::a_power_cut_at_a_sensor_is_reported_not_taken_for_silence ... A burst at t = 3 s while load-shedding has cut S2's gateway from
 t = 2.5 s to t = 6 s: S2's samples for that time never arrive, and when
 it comes back the network is still ringing:
@@ -758,6 +1586,7 @@ it comes back the network is still ringing:
 [Alarm] #1 BURST (98% confident) at t = 2.999 s
   where: T-S3 south branch at 199.9 m from its start; 90% within 2 m of pipe
     T-S3 south branch    100.0%
+  size: about 1.56 l/s (+/- 0.16 l/s), from 2 logger(s)
   seen by: S3 south block, S1 gatehouse
   because: pressure DROPPED by 9.01 m: a burst or a pump trip, not a closing valve (seen upstream)
   because: SHARP front (12 ms, 10-90%): a sudden change - a pipe splitting, a valve slamming - not a pump running down
@@ -776,6 +1605,7 @@ decides without it - and revises when S2's data turns up:
 [Alarm] #1 BURST (98% confident) at t = 2.999 s
   where: T-S3 south branch at 199.9 m from its start; 90% within 2 m of pipe
     T-S3 south branch    100.0%
+  size: about 1.55 l/s (+/- 0.16 l/s), from 2 logger(s)
   seen by: S3 south block, S1 gatehouse
   because: pressure DROPPED by 9.02 m: a burst or a pump trip, not a closing valve (seen upstream)
   because: SHARP front (12 ms, 10-90%): a sudden change - a pipe splitting, a valve slamming - not a pump running down
@@ -785,6 +1615,7 @@ decides without it - and revises when S2's data turns up:
 [Alarm] #1 (revision 1) BURST (98% confident) at t = 2.999 s
   where: T-S3 south branch at 200.0 m from its start; 90% within 2 m of pipe
     T-S3 south branch    100.0%
+  size: about 1.55 l/s (+/- 0.16 l/s), from 3 logger(s)
   seen by: S3 south block, S1 gatehouse, S2 north block
   because: pressure DROPPED by 9.02 m: a burst or a pump trip, not a closing valve (seen upstream)
   because: SHARP front (12 ms, 10-90%): a sudden change - a pipe splitting, a valve slamming - not a pump running down
@@ -806,35 +1637,43 @@ Whole records, for comparison:
 [Alarm] #1 BURST (98% confident) at t = 2.999 s
   where: T-S3 south branch at 199.3 m from its start; 90% within 2 m of pipe
     T-S3 south branch    100.0%
+  size: about 1.30 l/s (+/- 0.13 l/s), from 3 logger(s)
   seen by: S3 south block, S1 gatehouse, S2 north block
   because: pressure DROPPED by 7.78 m: a burst or a pump trip, not a closing valve (seen upstream)
   because: SHARP front (7 ms, 10-90%): a sudden change - a pipe splitting, a valve slamming - not a pump running down
   because: pump power is not monitored: no outside evidence
+  because: the loggers' drops disagree on the size (misfit 3.0): an echo or a second event in the window - size uncertain
 [Alarm] #2 BURST (98% confident) at t = 29.999 s
   where: T-S2 north branch at 150.7 m from its start; 90% within 6 m of pipe
     T-S2 north branch    100.0%
+  size: about 1.31 l/s (+/- 0.13 l/s), from 3 logger(s)
   seen by: S2 north block, S1 gatehouse, S3 south block
   because: pressure DROPPED by 7.96 m: a burst or a pump trip, not a closing valve (seen upstream)
   because: SHARP front (8 ms, 10-90%): a sudden change - a pipe splitting, a valve slamming - not a pump running down
   because: pump power is not monitored: no outside evidence
+  because: the loggers' drops disagree on the size (misfit 17.8): an echo or a second event in the window - size uncertain
 
 Live: each sensor sends a 1 s chunk in turn:
 2 alert(s) went out:
 [Alarm] #1 BURST (98% confident) at t = 2.999 s
   where: T-S3 south branch at 199.3 m from its start; 90% within 2 m of pipe
     T-S3 south branch    100.0%
+  size: about 1.30 l/s (+/- 0.13 l/s), from 3 logger(s)
   seen by: S3 south block, S1 gatehouse, S2 north block
   because: pressure DROPPED by 7.78 m: a burst or a pump trip, not a closing valve (seen upstream)
   because: SHARP front (7 ms, 10-90%): a sudden change - a pipe splitting, a valve slamming - not a pump running down
   because: pump power is not monitored: no outside evidence
+  because: the loggers' drops disagree on the size (misfit 3.0): an echo or a second event in the window - size uncertain
   -> sent when the data had reached t = 7.00 s
 [Alarm] #2 BURST (98% confident) at t = 29.999 s
   where: T-S2 north branch at 150.7 m from its start; 90% within 6 m of pipe
     T-S2 north branch    100.0%
+  size: about 1.31 l/s (+/- 0.13 l/s), from 3 logger(s)
   seen by: S2 north block, S1 gatehouse, S3 south block
   because: pressure DROPPED by 7.96 m: a burst or a pump trip, not a closing valve (seen upstream)
   because: SHARP front (8 ms, 10-90%): a sudden change - a pipe splitting, a valve slamming - not a pump running down
   because: pump power is not monitored: no outside evidence
+  because: the loggers' drops disagree on the size (misfit 17.8): an echo or a second event in the window - size uncertain
   -> sent when the data had reached t = 34.00 s
   the same alerts as from whole records        yes
   alert 1 went out 4.00 s (data time) after its burst
@@ -865,6 +1704,7 @@ test simulation::scenarios::one_burst_gives_exactly_one_alarm_on_the_right_pipe 
 [Alarm] #1 BURST (98% confident) at t = 2.999 s
   where: T-S3 south branch at 200.0 m from its start; 90% within 2 m of pipe
     T-S3 south branch    100.0%
+  size: about 1.55 l/s (+/- 0.16 l/s), from 3 logger(s)
   seen by: S3 south block, S1 gatehouse, S2 north block
   because: pressure DROPPED by 9.01 m: a burst or a pump trip, not a closing valve (seen upstream)
   because: SHARP front (11 ms, 10-90%): a sudden change - a pipe splitting, a valve slamming - not a pump running down
@@ -875,6 +1715,9 @@ test simulation::scenarios::one_burst_gives_exactly_one_alarm_on_the_right_pipe 
   on the south branch (pipe 3)                 yes
   within 2 m of the truth                      yes
   seen by all three sensors                    yes
+  size: 1.55 +/- 0.16 l/s from 3 loggers (the hole let out 1.55 l/s)
+  size within 2 uncertainties of the true flow yes
+  and within 15% of it                         yes
 ok
 test simulation::scenarios::two_bursts_far_apart_give_two_alarms ... Consumers drawing 30 l/s; a hole opens on the south branch at t = 3 s,
 another on the north branch at t = 30 s:
@@ -882,25 +1725,91 @@ another on the north branch at t = 30 s:
 [Alarm] #1 BURST (98% confident) at t = 2.999 s
   where: T-S3 south branch at 199.3 m from its start; 90% within 2 m of pipe
     T-S3 south branch    100.0%
+  size: about 1.30 l/s (+/- 0.13 l/s), from 3 logger(s)
   seen by: S3 south block, S1 gatehouse, S2 north block
   because: pressure DROPPED by 7.78 m: a burst or a pump trip, not a closing valve (seen upstream)
   because: SHARP front (7 ms, 10-90%): a sudden change - a pipe splitting, a valve slamming - not a pump running down
   because: pump power is not monitored: no outside evidence
+  because: the loggers' drops disagree on the size (misfit 3.0): an echo or a second event in the window - size uncertain
 [Alarm] #2 BURST (98% confident) at t = 29.999 s
   where: T-S2 north branch at 150.7 m from its start; 90% within 6 m of pipe
     T-S2 north branch    100.0%
+  size: about 1.31 l/s (+/- 0.13 l/s), from 3 logger(s)
   seen by: S2 north block, S1 gatehouse, S3 south block
   because: pressure DROPPED by 7.96 m: a burst or a pump trip, not a closing valve (seen upstream)
   because: SHARP front (8 ms, 10-90%): a sudden change - a pipe splitting, a valve slamming - not a pump running down
   because: pump power is not monitored: no outside evidence
+  because: the loggers' drops disagree on the size (misfit 17.8): an echo or a second event in the window - size uncertain
   two alerts, both alarms - no echo alerts     yes
   the first on the south branch, ~200 m        yes
   the second on the north branch, ~150 m       yes
 ok
+test simulation::valves_by_hour::a_night_burst_behind_a_shut_valve_is_not_blamed_on_the_one_logger_that_heard_it ... The zone drawing 3 l/s: the PRV is Closed
 
-test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 4.87s
+-- Without the schedule (valve taken as at base demand: open):
+1 alert(s):
+[Review] #1 UNKNOWN (50% confident) at t = 4.199 s
+  where: not located (fewer than two sensors saw it)
+  seen by: S2 in the zone
+  because: pressure DROPPED by 6.31 m: a burst or a pump trip, not a closing valve (seen upstream)
+  because: DRAWN-OUT front (605 ms, 10-90%): a gradual change - a pump running down, a valve closing slowly, or a burst opening slowly
+  because: SHALLOW drop: 12% of the pressure - a hole lets out a little water
+  because: pump power is not monitored: no outside evidence
+  because: seen by ONE sensor only: S1 above the valve watched and felt nothing, though a pressure wave from anywhere in the network would have reached them - a fault in S2 in the zone, or an event too small or too local to travel
+    S1's silence is read as evidence against S2 yes
+
+-- With the schedule:
+1 alert(s):
+[Review] #1 UNKNOWN (50% confident) at t = 4.199 s
+  where: not located (fewer than two sensors saw it)
+  seen by: S2 in the zone
+  because: located with pumps and valves as the site's schedule has them at 02:00 (1 shut: no wave passes it)
+  because: pressure DROPPED by 6.31 m: a burst or a pump trip, not a closing valve (seen upstream)
+  because: DRAWN-OUT front (605 ms, 10-90%): a gradual change - a pump running down, a valve closing slowly, or a burst opening slowly
+  because: SHALLOW drop: 12% of the pressure - a hole lets out a little water
+  because: pump power is not monitored: no outside evidence
+  because: seen by ONE sensor only, and no other sensor that its wave could reach was watching: not located, not corroborated
+    one alert                                  yes
+    it says the valve is shut at 02:00         yes
+    and does not blame S2: S1 could not have heard it yes
+ok
+test simulation::valves_by_hour::at_noon_the_valve_is_active_and_both_loggers_locate_the_burst ... The zone drawing 15 l/s: the PRV is Active
+1 alert(s):
+[Review] #1 UNKNOWN (50% confident) at t = 36002.835 s
+  where: T-J at 35.5 m from its start; 90% within 1262 m of pipe
+    T-J                   71.4%
+    S2-J                  28.6%
+    PRV-S2                 0.0%
+  seen by: S2 in the zone, S1 above the valve
+  because: located with pumps and valves as the site's schedule has them at 12:00
+  because: pressure DROPPED by 4.92 m: a burst or a pump trip, not a closing valve (seen upstream)
+  because: DRAWN-OUT front (605 ms, 10-90%): a gradual change - a pump running down, a valve closing slowly, or a burst opening slowly
+  because: SHALLOW drop: 10% of the pressure - a hole lets out a little water
+  because: pump power is not monitored: no outside evidence
+    one alert                                  yes
+    heard by both loggers                      yes
+    it says the devices are as scheduled at 12:00, none shut yes
+  located on T-J at 35.5 m (truth: S2-J at 200 m); level Review
+    beyond S2: 100% on S2-J (the truth) and T-J together yes
+    the true pipe holds a real share           yes
+    and it is not dismissed                    yes
+ok
+
+test result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 4.97s
 
    Doc-tests jk_application
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+   Doc-tests jk_balance
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+   Doc-tests jk_channels
 
 running 0 tests
 
@@ -913,6 +1822,12 @@ running 0 tests
 test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
 
    Doc-tests jk_detection
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+   Doc-tests jk_files
 
 running 0 tests
 
@@ -936,6 +1851,12 @@ running 0 tests
 
 test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
 
+   Doc-tests jk_sim
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
    Doc-tests jk_telemetry
 
 running 0 tests
@@ -949,9 +1870,9 @@ running 0 tests
 test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
 
 ==============================================================================
-  passed   162
+  passed   289
   failed   0
-  skipped  5 slow test(s) not in this suite (run -Suite full)
+  skipped  6 slow test(s) not in this suite (run -Suite full)
   filtered 0 test(s) outside -Only/-Filter
-  time     12.5 s (including compile)
+  time     87.0 s (including compile)
   result   ALL PASSED

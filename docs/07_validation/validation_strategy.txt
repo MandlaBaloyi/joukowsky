@@ -23,6 +23,16 @@ Rung 1  Analytical: results that must match closed-form physics.
         reservoir-pipe-valve system vs the exact complex-frequency
         solution; first-order convergence, extrapolated within 0.5%
         (2026-09-29: +0.1% at 400 reaches after FN-021).
+  V-A16 Refilling after a supply cut (02_/refilling_and_air_pockets.txt):
+        rigid column into an empty 500 m DN200 pipe from 30 m of supply.
+        No air in the way: speed along the pipe vs v^2 = 2gH(1 - x0/x) and
+        the friction closed form (1e-14), the slam a v / g (23.0 m/s ->
+        2347 m frictionless, 3.43 m/s -> 350 m with f = 0.02). Sealed
+        pocket: peak air pressure vs the energy balance W(V) = rho g H A
+        (x - x0), 205.3 m adiabatic and 458.0 m isothermal (6.4e-9, 8.9e-8);
+        energy books balanced all along (1e-13). Air-valve sweep: a pin-hole
+        acts as a sealed pocket (1.3e-4), a large valve slams like no air
+        (FN-032) (2026-10-01).
   V-A15 Pressure-driven demand (EPANET 2.2's law): one consumer full,
         partial (closed form Q^2 = D^2 (H - z) / (s + D^2 R)) and cut, to
         2e-16; exponent 0.75 on the law at the pressure found; a transient

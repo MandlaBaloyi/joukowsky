@@ -12,6 +12,7 @@ mod joukowsky;
 mod network;
 mod plastic_front;
 mod pumps;
+mod refill;
 mod single_pipe;
 mod sources;
 pub mod steady;

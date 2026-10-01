@@ -129,6 +129,11 @@ G-13  Wave-speed doubt in placement is a fixed 10%                OPEN
   F10 proper: robust placement over a posterior of wave speeds.
 
 G-14  Refilling / air-pocket transients have no class             OPEN
+  2026-10-01: the physics has a first rung - one pipe refilling against
+  free air, a sealed pocket or an air valve (hydraulics refill.rs, V-A16,
+  FN-032). Still open: a classification class, refilling inside the
+  network solver (mixed flow, R-5 next rung), several pockets, real
+  air-valve data.
   Classes today: Burst, ValveClosure, PumpTrip, Unknown. Refilling after
   supply cuts is among the most violent SA transients
   (01_/the_operating_environment.txt section 2); it will come out as
@@ -151,7 +156,8 @@ G-18  Sources are fixed heads; dams, rivers, canals not modelled  IN PROGRESS
   valves as devices, [RULES], pressure conditions (since done: V-A10 to
   V-A12). R-4 open channels done 2026-10-01 (crates/domain/channels,
   V-A14), coupled to the pipe network at an intake (V-S5). Still open:
-  R-5 draining and refilling (G-14).
+  R-5 draining and refilling (G-14): first rung done 2026-10-01 (one
+  pipe refilling, V-A16); mixed flow in the network still open.
   Every reservoir node holds one head forever. Right for a burst lasting
   seconds; blind to levels that change over hours, supply cuts, draining
   and refilling, and water lost between source and site. Plan R-1..R-5 in

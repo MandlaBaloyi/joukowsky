@@ -21,6 +21,7 @@ pub mod joukowsky;
 pub mod moc;
 pub mod model;
 pub mod pipe;
+pub mod refill;
 pub mod steady;
 
 pub use boundary::closure::ValveClosure;

@@ -294,3 +294,19 @@ FN-031  2026-10-01  Two solvers must step together, not swap histories
   sump's time constant. One pass, 0.1 s, water exact at the interface
   (V-S5). Lesson for every future coupling (sources, mixed flow): couple
   in time, not over whole runs.
+
+FN-032  2026-10-01  A half-sized air valve is worse than none
+  First refilling runs (V-A16; 500 m DN200, 30 m supply, f = 0.02): with
+  the air sealed in, it cushions the column - peak 33 m. With no air at
+  all the column slams the closed end at 3.4 m/s - 350 m. Between them
+  the air valve decides: up to 10 mm the cushion holds (31-33 m); at
+  20 mm the air leaves fast enough to let the column run but not fast
+  enough to stop it slamming, 169 m; from 40 mm on it is a full slam
+  (341-350 m). So an air valve that is merely "there" says nothing about
+  safety - its size against the fill rate does, and a fast refill through
+  an open valve is the worst case (agrees with Zhou, Hicks & Steffler
+  2002). Second lesson: the air's polytropic exponent moves a sealed
+  pocket's peak by 2x (205 m adiabatic vs 458 m isothermal, frictionless)
+  [VERIFY which applies to field refills; the literature uses 1.2-1.4].
+  Consequence: any refill advice must be simulated with the actual valve
+  size and a range of exponents (P4).

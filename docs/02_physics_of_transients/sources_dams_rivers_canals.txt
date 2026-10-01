@@ -120,7 +120,9 @@ model, each doing the physics it is built for.
        backwater profile vs the direct-step method, small-wave celerity
        sqrt(g y), Ritter's dam-break solution [VERIFY].
   R-5  Mixed flow in pipes (partly full <-> full): draining and refilling
-       - joins the pipe transients (G-14).
+       - joins the pipe transients (G-14). First rung done 2026-10-01: one
+       pipe refilling as a rigid column against air (refill.rs, V-A16,
+       refilling_and_air_pockets.txt).
 Code: a new bounded context (e.g. domain/sources or domain/channels),
 created when R-4 starts; R-1 and R-2 live in hydraulics (they are
 boundary conditions of the pipe network).
@@ -231,4 +233,7 @@ Swapping whole histories between the two solvers did not settle (FN-031).
 
 Pressure-driven demand (2026-10-01, V-A15): with it, extended runs report
 the demand delivered over time and warn SUPPLY SHORT when under 99%.
-Next: R-5 (pipes draining and refilling, G-14).
+R-5 first rung (2026-10-01, V-A16): one pipe refilling after a supply cut
+- the column's run, the air pocket ahead of it, the air valve and the slam
+at the end (refilling_and_air_pockets.txt; FN-032: valve size decides).
+Next: mixed flow in the network (Preissmann slot) and a refill class.
