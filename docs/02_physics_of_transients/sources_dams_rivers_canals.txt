@@ -218,6 +218,17 @@ depth, a SourceLevel), the network gives the canal the flow it draws
 until the drawn flow stops changing. Water is conserved at the intake;
 when the canal's outlet runs dry the run says when (the network's
 demands are fixed, so it would otherwise keep drawing - gap G-20).
+Intake sump (2026-10-01): a canal fills a sump through an inlet (orifice,
+Q = c sqrt(L_canal - max(h_sump, sill))) and the network draws from it.
+The inlet is solved inside the network's run (steps shortened to the
+sump's time constant A / (dQ/dh)); the canal runs SIDE BY SIDE as a live
+source (channels ChannelState, hydraulics Source/extended_fed): each step
+it gives its level, the network moves the sump, the canal gives the
+inlet's flow over the step - or less if it runs low, the shortfall taken
+back out of the sump. An empty sump passes on only what trickles in. With
+pressure-driven demand the town's supply now falls away honestly (V-S5).
+Swapping whole histories between the two solvers did not settle (FN-031).
+
 Pressure-driven demand (2026-10-01, V-A15): with it, extended runs report
 the demand delivered over time and warn SUPPLY SHORT when under 99%.
 Next: R-5 (pipes draining and refilling, G-14).

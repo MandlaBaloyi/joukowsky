@@ -189,11 +189,10 @@ G-20  Demands are fixed, whatever the pressure        IN PROGRESS
   2026-10-01: pressure-driven demand built (EPANET 2.2's law, exact by
   settling each junction FULL / PARTIAL / CUT; V-A15): steady and
   extended runs deliver less as pressure falls and warn SUPPLY SHORT /
-  met again; files with DEMAND MODEL PDA run that way. Still open: a
-  canal's intake is a fixed level, not a sump that can run dry, so a
-  coupled run (V-S5) still reports the canal running dry instead of the
-  network's supply falling away; pressure-driven demand in transients
-  (the MOC keeps each junction's steady delivery).
+  met again; files with DEMAND MODEL PDA run that way. Same day: an
+  intake sump between canal and network (V-S5) - the town's supply falls
+  away as the canal runs dry. Still open: pressure-driven demand in
+  transients (the MOC keeps each junction's steady delivery).
   2026-10-01: the steady and extended-period solvers are demand-driven:
   a junction draws its demand even when the head there is too low to
   deliver it. Right while the network is supplied; wrong when it is not -

@@ -85,6 +85,49 @@ pub struct PeriodOptions {
     /// Rule-based controls (IF ... THEN ... ELSE ..., with priorities),
     /// looked at after the simple controls ([`rules`]).
     pub rules: Vec<Rule>,
+    /// Water poured into tanks from outside the network over time (a canal
+    /// filling an intake sump): per tank node, (time, flow) points, linear
+    /// between, held beyond. An EMPTY tank with inflow passes on just that
+    /// inflow - the network gets what arrives, no more.
+    pub tank_inflows: Vec<(NodeId, Vec<(Time, Flow)>)>,
+    /// Inlets into tanks from a free-surface source outside the network (a
+    /// canal filling an intake sump) - see [`TankInlet`].
+    pub tank_inlets: Vec<TankInlet>,
+}
+
+/// A free-surface source a tank inlet draws from, advanced alongside an
+/// extended-period run ([`Network::extended_fed`]) - e.g. a canal.
+pub trait Source {
+    /// Its water level now [m].
+    fn level(&self) -> Head;
+    /// Advances it to `until`, drawing `flow` off on average; returns the
+    /// average flow actually given (less if it ran low).
+    fn take(&mut self, until: Time, flow: Flow) -> Flow;
+}
+
+/// An inlet into a tank from a free-surface source outside the network: a
+/// canal or river filling an intake sump through an orifice,
+///
+/// ```text
+///   Q = coefficient sqrt(L(t) - max(h, sill)),   one way
+/// ```
+///
+/// with L the source's level and h the tank's. Below the sill the tank's
+/// level does not matter (the water falls in), so a source that runs down
+/// to its sill - a canal running dry - gives nothing. The run takes steps
+/// short enough for the tank to follow (a step never longer than the
+/// tank's time constant A / (dQ/dh)).
+#[derive(Debug, Clone, PartialEq)]
+pub struct TankInlet {
+    /// The tank it fills.
+    pub tank: NodeId,
+    /// The source's water level over time: (time, level) points, linear
+    /// between, held beyond.
+    pub source: Vec<(Time, Head)>,
+    /// The inlet's sill level.
+    pub sill: Head,
+    /// Q / sqrt(head across it) [m^2.5/s].
+    pub coefficient: f64,
 }
 
 impl Default for PeriodOptions {
@@ -99,6 +142,8 @@ impl Default for PeriodOptions {
             controls: Vec::new(),
             power_cuts: Vec::new(),
             rules: Vec::new(),
+            tank_inflows: Vec::new(),
+            tank_inlets: Vec::new(),
         }
     }
 }
@@ -323,6 +368,36 @@ impl Network {
         options: &PeriodOptions,
         observe: &mut dyn FnMut(Time, &SteadySolution),
     ) -> Result<PeriodRun, HydraulicsError> {
+        self.extended_fed(options, &mut [], observe)
+    }
+
+    /// As [`Network::extended_observed`], with some tank inlets drawing
+    /// from LIVE sources run side by side (co-simulation): `live` pairs the
+    /// index of an inlet in `options.tank_inlets` (its level history is
+    /// then ignored) with its [`Source`]. Each step the run takes the
+    /// source's level now, moves the tanks, then has the source give the
+    /// inlet's flow over the step; water the source cannot give is taken
+    /// back out of the tank, so none is created at the interface.
+    ///
+    /// # Errors
+    /// As [`Network::extended`], or a live index with no inlet.
+    #[allow(clippy::too_many_lines)] // one time loop with its supply events, kept together
+    pub fn extended_fed(
+        &self,
+        options: &PeriodOptions,
+        live: &mut [(usize, &mut dyn Source)],
+        observe: &mut dyn FnMut(Time, &SteadySolution),
+    ) -> Result<PeriodRun, HydraulicsError> {
+        if live.iter().any(|(k, _)| *k >= options.tank_inlets.len()) {
+            return Err(HydraulicsError::InvalidNetwork(
+                "a live source names no tank inlet".into(),
+            ));
+        }
+        let mut current = options.clone();
+        for (k, src) in live.iter() {
+            current.tank_inlets[*k].source = vec![(Time::ZERO, src.level())];
+        }
+        let options = &current.clone();
         positive("step", options.step.value())?;
         positive("duration", options.duration.value())?;
         positive("pattern_step", options.pattern_step.value())?;
@@ -347,6 +422,42 @@ impl Network {
         }
         controls::check(self, &options.controls, &options.power_cuts)?;
         rules::check(self, &options.rules)?;
+        for inlet in &options.tank_inlets {
+            if !self.tanks().iter().any(|t| t.node == inlet.tank) {
+                return Err(HydraulicsError::InvalidNetwork(format!(
+                    "node {} given an inlet is not a tank",
+                    inlet.tank.index()
+                )));
+            }
+            if inlet.source.is_empty()
+                || inlet.source.windows(2).any(|w| w[1].0 <= w[0].0)
+                || !(inlet.coefficient.is_finite() && inlet.coefficient >= 0.0)
+            {
+                return Err(HydraulicsError::InvalidNetwork(
+                    "a tank inlet needs a level history at increasing times and a coefficient \
+                     >= 0"
+                        .into(),
+                ));
+            }
+        }
+        for (node, history) in &options.tank_inflows {
+            if !self.tanks().iter().any(|t| t.node == *node) {
+                return Err(HydraulicsError::InvalidNetwork(format!(
+                    "node {} given an inflow is not a tank",
+                    node.index()
+                )));
+            }
+            if history.is_empty()
+                || history.windows(2).any(|w| w[1].0 <= w[0].0)
+                || history
+                    .iter()
+                    .any(|(_, q)| !(q.value().is_finite() && q.value() >= 0.0))
+            {
+                return Err(HydraulicsError::InvalidNetwork(
+                    "a tank inflow needs flows >= 0 at increasing times".into(),
+                ));
+            }
+        }
         let mut tanks: Vec<TankState> = self
             .tanks()
             .iter()
@@ -398,6 +509,10 @@ impl Network {
             let report = (k as f64 * dt).min(end);
             let mut substeps = 0;
             while t < report - TIME_TOL {
+                for (k, src) in live.iter() {
+                    current.tank_inlets[*k].source = vec![(Time::new(t), src.level())];
+                }
+                let opts = &current;
                 substeps += 1;
                 if substeps > MAX_SUBSTEPS {
                     return Err(HydraulicsError::InvalidNetwork(format!(
@@ -407,26 +522,29 @@ impl Network {
                 }
                 // Step to the next report time or timed switch, whichever
                 // comes first...
-                let boundary = next_boundary(options, t).min(report);
+                let boundary = next_boundary(opts, t)
+                    .min(report)
+                    .min(t + inlet_step(opts, &tanks, t));
                 let mut target = boundary;
-                let rates = match self.heun(&here, &tanks, &status, t, target - t, options) {
+                let rates = match self.heun(&here, &tanks, &status, t, target - t, opts) {
                     Ok(r) => r,
                     Err(e) => return Ok(lost(run, target, &e)),
                 };
                 // ...or to where a tank reaches a level that matters, redone
                 // from the start with the shorter step.
                 let mut rates = rates;
-                let crossing = crossing(&tanks, &rates, target - t, &status, options);
+                let crossing = crossing(&tanks, &rates, target - t, &status, opts);
                 if let Some(c) = crossing
                     && c.fraction < 1.0
                 {
                     target = t + c.fraction * (target - t);
-                    rates = match self.heun(&here, &tanks, &status, t, target - t, options) {
+                    rates = match self.heun(&here, &tanks, &status, t, target - t, opts) {
                         Ok(r) => r,
                         Err(e) => return Ok(lost(run, target, &e)),
                     };
                 }
                 let h = target - t;
+                let before: Vec<f64> = tanks.iter().map(|x| x.level).collect();
                 for (i, tank) in tanks.iter_mut().enumerate() {
                     if !tank.open {
                         continue;
@@ -458,13 +576,35 @@ impl Network {
                         tank.level = level;
                     }
                 }
+                // Live sources give the inlets' flow over the step; what
+                // they cannot give comes back out of the tank.
+                for (k, src) in live.iter_mut() {
+                    let inlet = &opts.tank_inlets[*k];
+                    let Some(i) = tanks.iter().position(|x| x.node == inlet.tank.index()) else {
+                        continue;
+                    };
+                    let (from, to) = if tanks[i].open {
+                        (before[i], tanks[i].level)
+                    } else {
+                        (tanks[i].floor, tanks[i].floor)
+                    };
+                    let asked = inlet.coefficient
+                        * f64::midpoint(
+                            inlet_head(inlet, t, from).sqrt(),
+                            inlet_head(inlet, t, to).sqrt(),
+                        );
+                    let given = src.take(Time::new(target), Flow::new(asked)).value();
+                    if given < asked && tanks[i].open {
+                        tanks[i].level = (tanks[i].level - (asked - given) * h / tanks[i].area)
+                            .max(tanks[i].floor);
+                    }
+                }
                 t = target;
-                switch(options, &mut status, &tanks, t, &mut run.events);
+                switch(opts, &mut status, &tanks, t, &mut run.events);
                 here = match self
-                    .settle(t, &mut tanks, &status, options, &mut run.events)
-                    .and_then(|s| {
-                        self.obey(options, &mut status, &mut tanks, t, s, &mut run.events)
-                    }) {
+                    .settle(t, &mut tanks, &status, opts, &mut run.events)
+                    .and_then(|s| self.obey(opts, &mut status, &mut tanks, t, s, &mut run.events))
+                {
                     Ok(s) => s,
                     Err(e) => return Ok(lost(run, t, &e)),
                 };
@@ -542,6 +682,8 @@ impl Network {
             let state = self.state_at(t, t, tanks, status, options)?;
             let mut reopened = false;
             for tank in tanks.iter_mut().filter(|tank| !tank.open) {
+                // Reopens when the network would push water back into it
+                // (outside inflow above what it draws).
                 if state.node_heads[tank.node].value() > tank.floor {
                     tank.open = true;
                     reopened = true;
@@ -570,7 +712,7 @@ impl Network {
         h: f64,
         options: &PeriodOptions,
     ) -> Result<Vec<f64>, HydraulicsError> {
-        let slope_now = self.net_inflows(here, tanks);
+        let slope_now = self.net_inflows(here, tanks, t, options);
         let mut predicted = tanks.to_vec();
         for (tank, q) in predicted.iter_mut().zip(&slope_now) {
             if tank.open {
@@ -578,7 +720,7 @@ impl Network {
             }
         }
         let there = self.state_at(t + h, t + 0.5 * h, &predicted, status, options)?;
-        let slope_there = self.net_inflows(&there, &predicted);
+        let slope_there = self.net_inflows(&there, &predicted, t + h, options);
         Ok(tanks
             .iter()
             .zip(slope_now.iter().zip(&slope_there))
@@ -639,7 +781,8 @@ impl Network {
                     }
                 } else {
                     Node::Junction {
-                        demand: jk_kernel::Flow::ZERO,
+                        // An empty tank passes on what pours in.
+                        demand: jk_kernel::Flow::new(-outside(options, tank.node, t, tank.floor)),
                     }
                 },
             );
@@ -652,30 +795,98 @@ impl Network {
         }
     }
 
-    /// Net flow INTO each tank [m^3/s] in `state` (0 for closed tanks).
-    fn net_inflows(&self, state: &SteadySolution, tanks: &[TankState]) -> Vec<f64> {
+    /// Net flow INTO each tank [m^3/s] in `state` at time `t`, from its
+    /// pipes and from outside (0 for closed tanks).
+    fn net_inflows(
+        &self,
+        state: &SteadySolution,
+        tanks: &[TankState],
+        t: f64,
+        options: &PeriodOptions,
+    ) -> Vec<f64> {
         tanks
             .iter()
             .map(|tank| {
                 if !tank.open {
                     return 0.0;
                 }
-                self.pipes()
-                    .iter()
-                    .zip(&state.pipe_flows)
-                    .map(|(p, q)| {
-                        if p.to.index() == tank.node {
-                            q.value()
-                        } else if p.from.index() == tank.node {
-                            -q.value()
-                        } else {
-                            0.0
-                        }
-                    })
-                    .sum()
+                outside(options, tank.node, t, tank.level)
+                    + self
+                        .pipes()
+                        .iter()
+                        .zip(&state.pipe_flows)
+                        .map(|(p, q)| {
+                            if p.to.index() == tank.node {
+                                q.value()
+                            } else if p.from.index() == tank.node {
+                                -q.value()
+                            } else {
+                                0.0
+                            }
+                        })
+                        .sum::<f64>()
             })
             .collect()
     }
+}
+
+/// A (time, value) history at time `t`, linear between, held beyond.
+fn history_at(points: &[(Time, f64)], t: f64) -> f64 {
+    match points.iter().position(|(pt, _)| pt.value() > t) {
+        None => points.last().map_or(0.0, |p| p.1),
+        Some(0) => points[0].1,
+        Some(k) => {
+            let ((t0, v0), (t1, v1)) = (points[k - 1], points[k]);
+            v0 + (t - t0.value()) / (t1.value() - t0.value()) * (v1 - v0)
+        }
+    }
+}
+
+/// The head driving an inlet at time `t` with the tank at `level` [m]
+/// (0 if none).
+fn inlet_head(inlet: &TankInlet, t: f64, level: f64) -> f64 {
+    let source: Vec<(Time, f64)> = inlet.source.iter().map(|(t, h)| (*t, h.value())).collect();
+    (history_at(&source, t) - level.max(inlet.sill.value())).max(0.0)
+}
+
+/// Outside inflow into tank node `node` at time `t` with its level at
+/// `level` [m^3/s]: given inflows plus inlets.
+fn outside(options: &PeriodOptions, node: usize, t: f64, level: f64) -> f64 {
+    let given = options
+        .tank_inflows
+        .iter()
+        .find(|(n, _)| n.index() == node)
+        .map_or(0.0, |(_, points)| {
+            let p: Vec<(Time, f64)> = points.iter().map(|(t, q)| (*t, q.value())).collect();
+            history_at(&p, t)
+        });
+    let inlets: f64 = options
+        .tank_inlets
+        .iter()
+        .filter(|i| i.tank.index() == node)
+        .map(|i| i.coefficient * inlet_head(i, t, level).sqrt())
+        .sum();
+    given + inlets
+}
+
+/// The longest step an open tank fed by an inlet allows: its time constant
+/// A / (dQ/dh), dQ/dh = c / (2 sqrt(head)) (head floored at 1 cm).
+fn inlet_step(options: &PeriodOptions, tanks: &[TankState], t: f64) -> f64 {
+    let mut step = f64::INFINITY;
+    for tank in tanks.iter().filter(|x| x.open) {
+        for inlet in options
+            .tank_inlets
+            .iter()
+            .filter(|i| i.tank.index() == tank.node)
+        {
+            if tank.level > inlet.sill.value() && inlet.coefficient > 0.0 {
+                let head = inlet_head(inlet, t, tank.level).max(0.01);
+                let slope = inlet.coefficient / (2.0 * head.sqrt());
+                step = step.min(tank.area / slope);
+            }
+        }
+    }
+    step
 }
 
 /// The first level inside a step of length `h` that some open tank
@@ -909,8 +1120,14 @@ fn record(
         series.1.push(status.running(n));
     }
     run.node_heads.push(here.node_heads.clone());
-    let asked: f64 = here.requested.iter().map(|q| q.value()).sum();
-    let given: f64 = here.delivered.iter().map(|q| q.value()).sum();
+    // Consumers only (an empty tank passing inflow on is a negative
+    // "demand", not a consumer).
+    let (asked, given) = here
+        .requested
+        .iter()
+        .zip(&here.delivered)
+        .filter(|(r, _)| r.value() > 0.0)
+        .fold((0.0, 0.0), |(a, g), (r, d)| (a + r.value(), g + d.value()));
     let short = |(a, g): (f64, f64)| a > 0.0 && g < SHORT_SHARE * a;
     let was_short = run
         .supply

@@ -104,6 +104,13 @@ Rung 3  Simulation studies.
         settled in 2 turns; the town's head = bed + normal depth - main
         friction (1e-16); after the canal's inflow stops, its water balance
         holds to 1e-13 and the outlet runs dry 1.9 h later (2026-10-01).
+        With an intake sump (application/feed.rs run_with_sump, canal and
+        network stepped side by side, pressure-driven demand): steady, the
+        sump sits (Q/c)^2 = 0.090 m below the canal (2e-13) and the town
+        gets all 300 l/s; after the cut: canal outlet low 3.08 h, SUPPLY
+        SHORT 3.83 h, sump empty 4.17 h, in that order; canal balance and
+        the water handed across exact; sump balance within 1.3% (draw read
+        every 5 min).
   V-S4  Scale: synthetic towns of 10 / 50 / 100 km - time the simulator,
         live engine and advisor (10_findings/detection_range_and_scale.txt,
         gap G-10).

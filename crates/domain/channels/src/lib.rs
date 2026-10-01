@@ -15,4 +15,6 @@ mod error;
 
 pub use error::ChannelError;
 pub use section::{Reach, Section};
-pub use solver::{ChannelOptions, ChannelRun, Downstream, Initial, Upstream, centres, simulate};
+pub use solver::{
+    ChannelOptions, ChannelRun, ChannelState, Downstream, Initial, Upstream, centres, simulate,
+};

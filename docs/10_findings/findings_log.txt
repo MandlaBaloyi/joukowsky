@@ -279,3 +279,18 @@ FN-030  2026-10-01  A PRV that moves overshoots its setting after a burst
   a second load on weakened pipes, and a pattern the classifier should not
   read as a new event. Model-based: [VERIFY] against a real valve's
   recorded response before it is used to advise anyone (P4).
+
+FN-031  2026-10-01  Two solvers must step together, not swap histories
+  First coupling of canal and network through an intake sump: each solver
+  ran the whole 6-8 h, then handed the other its history (levels one way,
+  flows the other), repeated until they agreed. It did not settle - not
+  even halving each turn. Reason: the interface is stiff. A 100 m^2 sump
+  behind an inlet passing 1.0 sqrt(dh) reacts in ~60 s, and near drying
+  the inlet's flow c sqrt(depth) has an infinite slope; an error of 1 cm in
+  one turn grows to metres over a long window. Fix: step them together -
+  the canal as a live source the network asks every step (level), then
+  draws from over the step (flow, capped by what it holds), the stiff
+  inlet solved inside the network's step with steps no longer than the
+  sump's time constant. One pass, 0.1 s, water exact at the interface
+  (V-S5). Lesson for every future coupling (sources, mixed flow): couple
+  in time, not over whole runs.

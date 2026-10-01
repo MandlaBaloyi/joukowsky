@@ -1,7 +1,7 @@
 joukowsky test run
-  when     2026-10-01 09:53:02
+  when     2026-10-01 10:15:08
   suite    full
-  commit   7f0767a (with uncommitted changes)
+  commit   dd575ed (with uncommitted changes)
   rust     rustc 1.98.1 (48a229cea 2026-09-01)
   command  cargo test --workspace --no-fail-fast -- --nocapture --test-threads=1 --include-ignored
 ==============================================================================
@@ -12,7 +12,8 @@ joukowsky test run
    Compiling jk-localisation v0.1.0 (C:\Users\HP\Desktop\joukowsky\crates\domain\localisation)
    Compiling jk-sim v0.1.0 (C:\Users\HP\Desktop\joukowsky\crates\sim)
    Compiling jk-hydraulics v0.1.0 (C:\Users\HP\Desktop\joukowsky\crates\domain\hydraulics)
-    Finished `test` profile [unoptimized + debuginfo] target(s) in 16.24s
+   Compiling jk-channels v0.1.0 (C:\Users\HP\Desktop\joukowsky\crates\domain\channels)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 21.79s
      Running unittests src\lib.rs (target\debug\deps\jk_application-a6f8696c1e4119f9.exe)
 
 running 3 tests
@@ -169,7 +170,7 @@ test steady::controls::tests::daily_times_repeat_and_land_exactly ... ok
 test steady::controls::tests::once_is_once ... ok
 test steady::rules::tests::or_binds_tighter_than_and_as_in_epanet ... ok
 
-test result: ok. 55 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s
+test result: ok. 55 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
 
      Running unittests src\lib.rs (target\debug\deps\jk_kernel-eccabcc9e10cd5d2.exe)
 
@@ -498,7 +499,7 @@ test simulation::logger_files::a_burst_recorded_in_logger_files_raises_one_alarm
   at 10:15:03 - seconds past 10:15:00          got       2.998747   expected       3.000000   rel.err 4.2e-4
 ok
 
-test result: ok. 16 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.60s
+test result: ok. 16 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.63s
 
      Running balance\main.rs (target\debug\deps\balance-728b54a33b8a3084.exe)
 
@@ -523,11 +524,11 @@ test simulation::night_watch::the_detection_curve_matches_the_cusum_arithmetic .
   at the arithmetic's size: caught at least a third of the time yes
 ok
 
-test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.20s
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.13s
 
      Running channels\main.rs (target\debug\deps\channels-c97e6a381f8a602a.exe)
 
-running 9 tests
+running 11 tests
 test analytical::backwater::va14_a_steady_backwater_profile_lies_on_the_direct_step_curve ... Normal depth 1.413 m; the outlet held at 2.260 m. Depth along the canal (solver after 24 h vs direct step):
   x =   4900 m: solver 2.2145 m, direct step 2.2166 m (off by 2.1 mm)
   x =   4500 m: solver 2.0469 m, direct step 2.0488 m (off by 1.8 mm)
@@ -576,6 +577,10 @@ test simulation::feed::a_canal_and_the_town_it_feeds_agree_on_level_and_flow ...
     the town's head: bed + depth - the main's friction [m] got      94.455997   expected      94.455997   rel.err 1.5e-16
     and the canal never ran dry                yes
 ok
+test simulation::feed::a_sump_between_canal_and_town_settles_below_the_canal_by_the_inlet_loss ... Canal -> inlet -> sump -> town, 300 l/s steady, run side by side (360 exchanges):          canal at the inlet 100.1945 m, sump 100.1045 m
+    the sump sits below the canal by the inlet's loss (Q / 1.0)^2 [m] got       0.090000   expected       0.090000   rel.err 2.0e-13
+    the town gets all its 300 l/s [l/s]        got     300.000000   expected     300.000000   rel.err 0.0e0
+ok
 test simulation::feed::when_the_canal_stops_flowing_the_town_feels_it_hours_later ... The water into the canal stops at 01:00; the town keeps drawing 300 l/s:
     0.0 h: town head  94.456 m
     1.0 h: town head  94.456 m
@@ -594,8 +599,21 @@ test simulation::feed::when_the_canal_stops_flowing_the_town_feels_it_hours_late
     the canal gave 4319 m^3: all 3150 asked until it ran dry, never more than the 10800 asked in all yes
     the town's head falls with the intake level after the cut yes
 ok
+test simulation::feed::when_the_canal_stops_the_sump_runs_down_and_the_town_runs_short_then_dry ... The water into the canal stops at 01:00:
+   0.0 h: sump 100.100 m, town gets 300.0 of 300.0 l/s
+   1.0 h: sump 100.105 m, town gets 300.0 of 300.0 l/s
+   2.0 h: sump 100.105 m, town gets 300.0 of 300.0 l/s
+   3.0 h: sump  99.544 m, town gets 300.0 of 300.0 l/s
+   4.0 h: sump  94.166 m, town gets 288.4 of 300.0 l/s
+  canal outlet under 1 cm at 3.08 h; SUPPLY SHORT at 3.83 h; sump empty at 4.17 h
+    in that order: the canal runs low, then the town runs short, then the sump empties yes
+    the canal's water: start + in - out = end [m^3] got     660.045863   expected     660.045863   rel.err 4.3e-15
+    what the canal gave = what left it [m^3]   got    3779.084583   expected    3779.084583   rel.err 0.0e0
+  water: 3779 m^3 through the inlet, 4446 m^3 drawn by the town, the sump's store changed by -610 m^3
+    the sump's change = in - drawn, within 1.27% of the water drawn (draw read every 5 min) yes
+ok
 
-test result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 12.55s
+test result: ok. 11 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 11.11s
 
      Running classification\main.rs (target\debug\deps\classification-7090793340b9d59f.exe)
 
@@ -691,7 +709,7 @@ test simulation::scenarios::power_data_settles_the_slow_burst ... The same slow 
   burst                                        yes
 ok
 
-test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.82s
+test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.81s
 
      Running detection\main.rs (target\debug\deps\detection-e23fac69caef8598.exe)
 
@@ -767,7 +785,7 @@ test simulation::burst_location::vs1_location_error_versus_sampling_rate_and_noi
   128 S/s with 2 cm noise locates to under 1 m RMS yes
 ok
 
-test result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 2.80s
+test result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 2.93s
 
      Running hydraulics\main.rs (target\debug\deps\hydraulics-2a8e28d011452c5f.exe)
 
@@ -1218,7 +1236,7 @@ test invariants::steady_state::an_undisturbed_pipe_stays_steady ... Steady state
   valve holds steady                           yes
 ok
 
-test result: ok. 57 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 14.09s
+test result: ok. 57 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 12.93s
 
      Running kernel\main.rs (target\debug\deps\kernel-8eea161e1918dc58.exe)
 
@@ -1580,7 +1598,7 @@ test simulation::valve_fronts::a_shut_prv_passes_no_wave_and_no_route ... A seco
     and no route from S1 reaches the zone: the locator cannot place a burst there from S1 yes
 ok
 
-test result: ok. 32 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 90.81s
+test result: ok. 32 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 79.89s
 
      Running pipeline\main.rs (target\debug\deps\pipeline-0a591d8df4220b73.exe)
 
@@ -1801,7 +1819,7 @@ test simulation::valves_by_hour::at_noon_the_valve_is_active_and_both_loggers_lo
     and it is not dismissed                    yes
 ok
 
-test result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 4.82s
+test result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 4.65s
 
    Doc-tests jk_application
 
@@ -1876,9 +1894,9 @@ running 0 tests
 test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
 
 ==============================================================================
-  passed   288
+  passed   290
   failed   0
   skipped  0 slow test(s) not in this suite
   filtered 0 test(s) outside -Only/-Filter
-  time     150.9 s (including compile)
+  time     143.1 s (including compile)
   result   ALL PASSED

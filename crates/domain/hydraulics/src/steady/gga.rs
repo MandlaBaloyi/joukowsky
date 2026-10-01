@@ -664,11 +664,14 @@ pub(crate) fn solve_shut(
         })
         .collect();
     let pressure = options.pressure_demand;
+    // Junctions start PARTIAL: their outlets then give the solve a fixed
+    // head even where no reservoir does (a network fed only by an empty
+    // tank's trickle); the settling moves them to FULL or CUT.
     let mut supply: Vec<Option<Supply>> = nodes
         .iter()
         .map(|node| match node {
             Node::Junction { demand } if pressure.is_some() && demand.value() > 0.0 => {
-                Some(Supply::Full)
+                Some(Supply::Partial)
             }
             _ => None,
         })

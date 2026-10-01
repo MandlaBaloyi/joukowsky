@@ -100,6 +100,10 @@ pub struct ChannelRun {
     pub exchanged: (f64, f64),
     /// Steps taken.
     pub steps: usize,
+    /// Flow out of the downstream end at each recorded time: the average
+    /// over the interval ending there (the first: over the first interval)
+    /// - so its integral is the water that left.
+    pub outlet: Vec<Flow>,
 }
 
 /// The centre of each of `cells` equal cells along `reach` [m].
@@ -167,13 +171,302 @@ fn at(points: &[(Time, f64)], t: f64) -> f64 {
     }
 }
 
+/// A reach in motion: its cells' areas and flows at time `t`, advanced on
+/// demand - so it can run side by side with another solver (a pipe network
+/// drawing from it), exchanging levels and flows every step.
+#[derive(Debug, Clone, PartialEq)]
+pub struct ChannelState {
+    reach: Reach,
+    courant: f64,
+    inflow: Option<Vec<(Time, f64)>>,
+    level: Option<Vec<(Time, f64)>>,
+    drawn: Option<Vec<(Time, f64)>>,
+    upstream_wall: bool,
+    downstream: Downstream,
+    a: Vec<f64>,
+    q: Vec<f64>,
+    flux: Vec<(f64, f64)>,
+    dx: f64,
+    t: f64,
+    /// Water that came in upstream and went out downstream so far [m^3].
+    exchanged: (f64, f64),
+    steps: usize,
+    /// A flow drawn off now, overriding the downstream history ([`Self::draw`]).
+    drawing: Option<f64>,
+}
+
+impl ChannelState {
+    /// A reach at time 0 in the state `initial`, cut into `cells`, stepped
+    /// at Courant number `courant`.
+    ///
+    /// # Errors
+    /// A bad reach, a Courant number outside (0, 1), fewer than two cells,
+    /// a history that is empty or not in time order, an initial state of
+    /// the wrong length, or a uniform start on a bed with no uniform flow.
+    pub fn new(
+        reach: &Reach,
+        upstream: &Upstream,
+        downstream: &Downstream,
+        initial: &Initial,
+        cells: usize,
+        courant: f64,
+    ) -> Result<Self, ChannelError> {
+        reach.validate()?;
+        if !(courant > 0.0 && courant < 1.0) {
+            return Err(ChannelError::InvalidInput(
+                "the Courant number must be between 0 and 1".into(),
+            ));
+        }
+        if cells < 2 {
+            return Err(ChannelError::InvalidInput("at least two cells".into()));
+        }
+        let history = |points: Vec<(Time, f64)>| -> Result<Vec<(Time, f64)>, ChannelError> {
+            if points.is_empty() || points.windows(2).any(|w| w[1].0 <= w[0].0) {
+                return Err(ChannelError::InvalidInput(
+                    "a history needs points in increasing time".into(),
+                ));
+            }
+            Ok(points)
+        };
+        let inflow = match upstream {
+            Upstream::Inflow(p) => Some(history(p.iter().map(|(t, q)| (*t, q.value())).collect())?),
+            _ => None,
+        };
+        let level = match upstream {
+            Upstream::Level(p) => Some(history(p.iter().map(|(t, h)| (*t, h.value())).collect())?),
+            _ => None,
+        };
+        let drawn = match downstream {
+            Downstream::Outflow(p) => {
+                Some(history(p.iter().map(|(t, q)| (*t, q.value())).collect())?)
+            }
+            _ => None,
+        };
+        let s = reach.section;
+        let x = centres(reach, cells);
+        #[allow(clippy::cast_precision_loss)]
+        let dx = reach.length.value() / cells as f64;
+        let (a, q): (Vec<f64>, Vec<f64>) = match initial {
+            Initial::Uniform(flow) => {
+                let h = reach.normal_depth(*flow)?.value();
+                (vec![s.area(h); cells], vec![flow.value(); cells])
+            }
+            Initial::Still(h) => (vec![s.area(h.value()); cells], vec![0.0; cells]),
+            Initial::Dam {
+                at: dam,
+                upstream,
+                downstream,
+            } => (
+                x.iter()
+                    .map(|&xi| {
+                        s.area(if xi < dam.value() {
+                            upstream.value()
+                        } else {
+                            downstream.value()
+                        })
+                    })
+                    .collect(),
+                vec![0.0; cells],
+            ),
+            Initial::Cells(given) => {
+                if given.len() != cells {
+                    return Err(ChannelError::InvalidInput(format!(
+                        "{} initial cells for {cells} cells",
+                        given.len()
+                    )));
+                }
+                (
+                    given.iter().map(|(h, _)| s.area(h.value())).collect(),
+                    given.iter().map(|(_, f)| f.value()).collect(),
+                )
+            }
+        };
+        Ok(Self {
+            reach: *reach,
+            courant,
+            inflow,
+            level,
+            drawn,
+            upstream_wall: matches!(upstream, Upstream::Wall),
+            downstream: downstream.clone(),
+            a,
+            q,
+            flux: vec![(0.0, 0.0); cells + 1],
+            dx,
+            t: 0.0,
+            exchanged: (0.0, 0.0),
+            steps: 0,
+            drawing: None,
+        })
+    }
+
+    /// The time reached [s].
+    #[must_use]
+    pub fn time(&self) -> Time {
+        Time::new(self.t)
+    }
+
+    /// Depth in cell `i`.
+    #[must_use]
+    pub fn depth(&self, i: usize) -> Length {
+        Length::new(self.reach.section.depth(self.a[i]))
+    }
+
+    /// Flow in cell `i`.
+    #[must_use]
+    pub fn flow(&self, i: usize) -> Flow {
+        Flow::new(self.q[i])
+    }
+
+    /// Number of cells.
+    #[must_use]
+    pub fn cells(&self) -> usize {
+        self.a.len()
+    }
+
+    /// Depth at the downstream end (its last cell).
+    #[must_use]
+    pub fn outlet_depth(&self) -> Length {
+        self.depth(self.a.len() - 1)
+    }
+
+    /// Water in the reach now [m^3].
+    #[must_use]
+    pub fn volume(&self) -> f64 {
+        self.a.iter().sum::<f64>() * self.dx
+    }
+
+    /// Water that came in upstream and went out downstream so far [m^3].
+    #[must_use]
+    pub fn exchanged(&self) -> (f64, f64) {
+        self.exchanged
+    }
+
+    /// Steps taken so far.
+    #[must_use]
+    pub fn steps(&self) -> usize {
+        self.steps
+    }
+
+    /// Advances to `until`, in steps the fastest wave allows.
+    pub fn advance(&mut self, until: Time) {
+        let until = until.value();
+        while self.t < until - 1e-12 {
+            let (s, g) = (self.reach.section, self.reach.gravity.value());
+            let fastest = self
+                .a
+                .iter()
+                .zip(&self.q)
+                .map(|(&ai, &qi)| {
+                    let (_, _, u, c) = physics(&s, g, ai, qi);
+                    u.abs() + c
+                })
+                .fold(0.0, f64::max)
+                .max(1e-9);
+            let dt = (self.courant * self.dx / fastest).min(until - self.t);
+            self.step(dt);
+        }
+    }
+
+    /// Advances to `until` drawing `flow` off at the downstream end (which
+    /// must be [`Downstream::Outflow`]); returns the average flow actually
+    /// given - less than asked if the end of the channel runs low.
+    pub fn draw(&mut self, until: Time, flow: Flow) -> Flow {
+        let (t0, out0) = (self.t, self.exchanged.1);
+        self.drawing = Some(flow.value());
+        self.advance(until);
+        self.drawing = None;
+        if self.t > t0 {
+            Flow::new((self.exchanged.1 - out0) / (self.t - t0))
+        } else {
+            Flow::ZERO
+        }
+    }
+
+    /// One step of length `dt`.
+    fn step(&mut self, dt: f64) {
+        let (s, g, n, dx, t) = (
+            self.reach.section,
+            self.reach.gravity.value(),
+            self.a.len(),
+            self.dx,
+            self.t,
+        );
+        let dry_area = s.area(DRY);
+        let (a, q) = (&mut self.a, &mut self.q);
+        // Ghost cells.
+        let up = if let Some(points) = &self.inflow {
+            let qin = at(points, t);
+            let critical = if qin > 0.0 {
+                self.reach
+                    .critical_depth(Flow::new(qin))
+                    .map_or(0.0, |h| s.area(h.value()))
+            } else {
+                0.0
+            };
+            (a[0].max(critical), qin)
+        } else if let Some(points) = &self.level {
+            (s.area(at(points, t)), q[0])
+        } else {
+            debug_assert!(self.upstream_wall);
+            (a[0], -q[0])
+        };
+        let down = match &self.downstream {
+            Downstream::Depth(h) => (s.area(h.value()), q[n - 1]),
+            Downstream::FreeOutfall | Downstream::Outflow(_) => (a[n - 1], q[n - 1]),
+            Downstream::Wall => (a[n - 1], -q[n - 1]),
+        };
+        let flux = &mut self.flux;
+        flux[0] = hll(&s, g, up, (a[0], q[0]));
+        for i in 1..n {
+            flux[i] = hll(&s, g, (a[i - 1], q[i - 1]), (a[i], q[i]));
+        }
+        let asked = self
+            .drawing
+            .or_else(|| self.drawn.as_deref().map(|p| at(p, t)));
+        flux[n] = match asked {
+            // Drawn off: exactly the asked flow, capped by what the last
+            // cell can give this step.
+            Some(asked) => {
+                let h_last = s.depth(a[n - 1]);
+                let available = ((a[n - 1] - dry_area) * dx / dt + flux[n - 1].0).max(0.0) * 0.999;
+                let qd = asked.max(0.0).min(available);
+                if h_last <= DRY || a[n - 1] <= dry_area {
+                    (0.0, 0.0)
+                } else {
+                    (qd, qd * qd / a[n - 1] + g * s.pressure_term(h_last))
+                }
+            }
+            None => hll(&s, g, (a[n - 1], q[n - 1]), down),
+        };
+        self.exchanged.0 += dt * flux[0].0;
+        self.exchanged.1 += dt * flux[n].0;
+        let r = dt / dx;
+        for i in 0..n {
+            a[i] = (a[i] - r * (flux[i + 1].0 - flux[i].0)).max(0.0);
+            let moved = q[i] - r * (flux[i + 1].1 - flux[i].1);
+            let h = s.depth(a[i]);
+            if a[i] <= dry_area || h <= DRY {
+                q[i] = 0.0;
+                continue;
+            }
+            // Gravity along the bed and friction, together.
+            let pushed = moved + dt * g * a[i] * self.reach.slope;
+            let radius = a[i] / s.perimeter(h);
+            let k = g * self.reach.manning * self.reach.manning / (a[i] * radius.powf(4.0 / 3.0));
+            q[i] = pushed / (1.0 + dt * k * moved.abs());
+        }
+        self.t += dt;
+        self.steps += 1;
+    }
+}
+
 /// Runs the reach.
 ///
 /// # Errors
 /// A bad reach or options, a history that is empty or not in time order,
 /// an initial state of the wrong length, or a uniform start on a bed with
 /// no uniform flow.
-#[allow(clippy::too_many_lines)] // one time loop: boundaries, fluxes, sources, records
 pub fn simulate(
     reach: &Reach,
     upstream: &Upstream,
@@ -182,85 +475,19 @@ pub fn simulate(
     gauges: &[Length],
     options: &ChannelOptions,
 ) -> Result<ChannelRun, ChannelError> {
-    reach.validate()?;
     positive("duration", options.duration.value())?;
     positive("record interval", options.record_every.value())?;
-    if !(options.courant > 0.0 && options.courant < 1.0) {
-        return Err(ChannelError::InvalidInput(
-            "the Courant number must be between 0 and 1".into(),
-        ));
-    }
-    if options.cells < 2 {
-        return Err(ChannelError::InvalidInput("at least two cells".into()));
-    }
-    let history = |points: &[(Time, f64)]| -> Result<Vec<(Time, f64)>, ChannelError> {
-        if points.is_empty() || points.windows(2).any(|w| w[1].0 <= w[0].0) {
-            return Err(ChannelError::InvalidInput(
-                "a history needs points in increasing time".into(),
-            ));
-        }
-        Ok(points.to_vec())
-    };
-    let inflow = match upstream {
-        Upstream::Inflow(p) => Some(history(
-            &p.iter().map(|(t, q)| (*t, q.value())).collect::<Vec<_>>(),
-        )?),
-        _ => None,
-    };
-    let drawn = match downstream {
-        Downstream::Outflow(p) => Some(history(
-            &p.iter().map(|(t, q)| (*t, q.value())).collect::<Vec<_>>(),
-        )?),
-        _ => None,
-    };
-    let level = match upstream {
-        Upstream::Level(p) => Some(history(
-            &p.iter().map(|(t, h)| (*t, h.value())).collect::<Vec<_>>(),
-        )?),
-        _ => None,
-    };
-
-    let s = reach.section;
-    let g = reach.gravity.value();
-    let n = options.cells;
-    let x = centres(reach, n);
+    let mut state = ChannelState::new(
+        reach,
+        upstream,
+        downstream,
+        initial,
+        options.cells,
+        options.courant,
+    )?;
+    let n = state.cells();
     #[allow(clippy::cast_precision_loss)]
     let dx = reach.length.value() / n as f64;
-    let (mut a, mut q): (Vec<f64>, Vec<f64>) = match initial {
-        Initial::Uniform(flow) => {
-            let h = reach.normal_depth(*flow)?.value();
-            (vec![s.area(h); n], vec![flow.value(); n])
-        }
-        Initial::Still(h) => (vec![s.area(h.value()); n], vec![0.0; n]),
-        Initial::Dam {
-            at: dam,
-            upstream,
-            downstream,
-        } => (
-            x.iter()
-                .map(|&xi| {
-                    s.area(if xi < dam.value() {
-                        upstream.value()
-                    } else {
-                        downstream.value()
-                    })
-                })
-                .collect(),
-            vec![0.0; n],
-        ),
-        Initial::Cells(cells) => {
-            if cells.len() != n {
-                return Err(ChannelError::InvalidInput(format!(
-                    "{} initial cells for {n} cells",
-                    cells.len()
-                )));
-            }
-            (
-                cells.iter().map(|(h, _)| s.area(h.value())).collect(),
-                cells.iter().map(|(_, f)| f.value()).collect(),
-            )
-        }
-    };
     let gauge_cells: Vec<usize> = gauges
         .iter()
         .map(|p| {
@@ -281,105 +508,43 @@ pub fn simulate(
             .collect(),
         depth: Vec::new(),
         flow: Vec::new(),
-        volume: (a.iter().sum::<f64>() * dx, 0.0),
+        volume: (state.volume(), 0.0),
         exchanged: (0.0, 0.0),
         steps: 0,
+        outlet: Vec::new(),
     };
-    let record = |run: &mut ChannelRun, t: f64, a: &[f64], q: &[f64]| {
-        run.times.push(Time::new(t));
+    let record = |run: &mut ChannelRun, state: &ChannelState| {
+        run.times.push(state.time());
         for (k, &i) in gauge_cells.iter().enumerate() {
-            run.gauges[k].1.push(Length::new(s.depth(a[i])));
-            run.gauges[k].2.push(Flow::new(q[i]));
+            run.gauges[k].1.push(state.depth(i));
+            run.gauges[k].2.push(state.flow(i));
         }
     };
-
     let end = options.duration.value();
     let every = options.record_every.value();
-    let mut t = 0.0;
-    let mut next_record = 0.0;
-    let mut flux = vec![(0.0, 0.0); n + 1];
-    let dry_area = s.area(DRY);
-    while t < end - 1e-12 {
-        if t >= next_record - 1e-12 {
-            record(&mut run, t, &a, &q);
-            next_record += every;
+    record(&mut run, &state);
+    let mut out_at_record = 0.0;
+    let mut k = 1.0;
+    loop {
+        let t0 = state.time().value();
+        let next = (k * every).min(end);
+        state.advance(Time::new(next));
+        let out = state.exchanged().1;
+        record(&mut run, &state);
+        run.outlet
+            .push(Flow::new((out - out_at_record) / (next - t0)));
+        out_at_record = out;
+        if next >= end - 1e-12 {
+            break;
         }
-        // Time step from the fastest wave.
-        let fastest = a
-            .iter()
-            .zip(&q)
-            .map(|(&ai, &qi)| {
-                let (_, _, u, c) = physics(&s, g, ai, qi);
-                u.abs() + c
-            })
-            .fold(0.0, f64::max)
-            .max(1e-9);
-        let dt = (options.courant * dx / fastest)
-            .min(end - t)
-            .min(next_record - t);
-        // Ghost cells.
-        let up = match upstream {
-            Upstream::Inflow(_) => {
-                let qin = at(inflow.as_deref().unwrap_or(&[]), t);
-                let critical = if qin > 0.0 {
-                    reach
-                        .critical_depth(Flow::new(qin))
-                        .map_or(0.0, |h| s.area(h.value()))
-                } else {
-                    0.0
-                };
-                (a[0].max(critical), qin)
-            }
-            Upstream::Level(_) => (s.area(at(level.as_deref().unwrap_or(&[]), t)), q[0]),
-            Upstream::Wall => (a[0], -q[0]),
-        };
-        let down = match downstream {
-            Downstream::Depth(h) => (s.area(h.value()), q[n - 1]),
-            Downstream::FreeOutfall | Downstream::Outflow(_) => (a[n - 1], q[n - 1]),
-            Downstream::Wall => (a[n - 1], -q[n - 1]),
-        };
-        flux[0] = hll(&s, g, up, (a[0], q[0]));
-        for i in 1..n {
-            flux[i] = hll(&s, g, (a[i - 1], q[i - 1]), (a[i], q[i]));
-        }
-        flux[n] = match &drawn {
-            // Drawn off: exactly the asked flow, capped by what the last
-            // cell can give this step (after what flows into it).
-            Some(points) => {
-                let h_last = s.depth(a[n - 1]);
-                let available = ((a[n - 1] - dry_area) * dx / dt + flux[n - 1].0).max(0.0) * 0.999;
-                let qd = at(points, t).max(0.0).min(available);
-                if h_last <= DRY || a[n - 1] <= dry_area {
-                    (0.0, 0.0)
-                } else {
-                    (qd, qd * qd / a[n - 1] + g * s.pressure_term(h_last))
-                }
-            }
-            None => hll(&s, g, (a[n - 1], q[n - 1]), down),
-        };
-        run.exchanged.0 += dt * flux[0].0;
-        run.exchanged.1 += dt * flux[n].0;
-        let r = dt / dx;
-        for i in 0..n {
-            a[i] = (a[i] - r * (flux[i + 1].0 - flux[i].0)).max(0.0);
-            let moved = q[i] - r * (flux[i + 1].1 - flux[i].1);
-            let h = s.depth(a[i]);
-            if a[i] <= dry_area || h <= DRY {
-                q[i] = 0.0;
-                continue;
-            }
-            // Gravity along the bed and friction, together.
-            let pushed = moved + dt * g * a[i] * reach.slope;
-            let radius = a[i] / s.perimeter(h);
-            let k = g * reach.manning * reach.manning / (a[i] * radius.powf(4.0 / 3.0));
-            q[i] = pushed / (1.0 + dt * k * moved.abs());
-        }
-        t += dt;
-        run.steps += 1;
+        k += 1.0;
     }
-    record(&mut run, t, &a, &q);
-    run.volume.1 = a.iter().sum::<f64>() * dx;
-    run.depth = a.iter().map(|&ai| Length::new(s.depth(ai))).collect();
-    run.flow = q.iter().map(|&qi| Flow::new(qi)).collect();
+    // The first record's outflow: that of the first interval.
+    run.outlet.insert(0, run.outlet[0]);
+    run.volume.1 = state.volume();
+    run.exchanged = state.exchanged();
+    run.steps = state.steps();
+    run.depth = (0..n).map(|i| state.depth(i)).collect();
+    run.flow = (0..n).map(|i| state.flow(i)).collect();
     Ok(run)
 }
