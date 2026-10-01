@@ -34,7 +34,7 @@ pub enum Upstream {
 }
 
 /// What happens at the downstream end.
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum Downstream {
     /// The depth held there (a pool, a gate holding a level).
     Depth(Length),
@@ -42,6 +42,10 @@ pub enum Downstream {
     FreeOutfall,
     /// A closed end.
     Wall,
+    /// Water drawn off at a given rate (an intake, a pump station, the
+    /// network a canal feeds): (time, flow) points, linear between. Never
+    /// more than the end of the channel holds - a dry canal gives nothing.
+    Outflow(Vec<(Time, Flow)>),
 }
 
 /// The channel at the start.
@@ -173,7 +177,7 @@ fn at(points: &[(Time, f64)], t: f64) -> f64 {
 pub fn simulate(
     reach: &Reach,
     upstream: &Upstream,
-    downstream: Downstream,
+    downstream: &Downstream,
     initial: &Initial,
     gauges: &[Length],
     options: &ChannelOptions,
@@ -199,6 +203,12 @@ pub fn simulate(
     };
     let inflow = match upstream {
         Upstream::Inflow(p) => Some(history(
+            &p.iter().map(|(t, q)| (*t, q.value())).collect::<Vec<_>>(),
+        )?),
+        _ => None,
+    };
+    let drawn = match downstream {
+        Downstream::Outflow(p) => Some(history(
             &p.iter().map(|(t, q)| (*t, q.value())).collect::<Vec<_>>(),
         )?),
         _ => None,
@@ -325,14 +335,28 @@ pub fn simulate(
         };
         let down = match downstream {
             Downstream::Depth(h) => (s.area(h.value()), q[n - 1]),
-            Downstream::FreeOutfall => (a[n - 1], q[n - 1]),
+            Downstream::FreeOutfall | Downstream::Outflow(_) => (a[n - 1], q[n - 1]),
             Downstream::Wall => (a[n - 1], -q[n - 1]),
         };
         flux[0] = hll(&s, g, up, (a[0], q[0]));
         for i in 1..n {
             flux[i] = hll(&s, g, (a[i - 1], q[i - 1]), (a[i], q[i]));
         }
-        flux[n] = hll(&s, g, (a[n - 1], q[n - 1]), down);
+        flux[n] = match &drawn {
+            // Drawn off: exactly the asked flow, capped by what the last
+            // cell can give this step (after what flows into it).
+            Some(points) => {
+                let h_last = s.depth(a[n - 1]);
+                let available = ((a[n - 1] - dry_area) * dx / dt + flux[n - 1].0).max(0.0) * 0.999;
+                let qd = at(points, t).max(0.0).min(available);
+                if h_last <= DRY || a[n - 1] <= dry_area {
+                    (0.0, 0.0)
+                } else {
+                    (qd, qd * qd / a[n - 1] + g * s.pressure_term(h_last))
+                }
+            }
+            None => hll(&s, g, (a[n - 1], q[n - 1]), down),
+        };
         run.exchanged.0 += dt * flux[0].0;
         run.exchanged.1 += dt * flux[n].0;
         let r = dt / dx;

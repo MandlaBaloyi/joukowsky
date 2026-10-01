@@ -92,6 +92,11 @@ Rung 3  Simulation studies.
   V-E1..V-E6  External factors (lightning spike on one logger, restart
         surge, wrong wave speed from temperature, vibration noise, earth
         tremor on all loggers at once): 10_findings/external_factors.txt.
+  V-S5  Source to tap: a 5 km canal feeding a town through a 3 km main,
+        canal and network taking turns at the intake (application/feed.rs):
+        settled in 2 turns; the town's head = bed + normal depth - main
+        friction (1e-16); after the canal's inflow stops, its water balance
+        holds to 1e-13 and the outlet runs dry 1.9 h later (2026-10-01).
   V-S4  Scale: synthetic towns of 10 / 50 / 100 km - time the simulator,
         live engine and advisor (10_findings/detection_range_and_scale.txt,
         gap G-10).

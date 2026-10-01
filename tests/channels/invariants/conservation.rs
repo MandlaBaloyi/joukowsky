@@ -16,7 +16,7 @@ fn a_closed_flume_keeps_its_water_through_a_dam_break_and_its_echoes() {
     let run = simulate(
         &reach,
         &Upstream::Wall,
-        Downstream::Wall,
+        &Downstream::Wall,
         &Initial::Dam {
             at: Length::new(200.0),
             upstream: Length::new(1.5),
@@ -54,7 +54,7 @@ fn an_open_canal_changes_its_water_by_exactly_what_crosses_its_ends() {
             (Time::new(1800.0), Flow::new(15.0)),
             (Time::new(3600.0), Flow::new(8.0)),
         ]),
-        Downstream::FreeOutfall,
+        &Downstream::FreeOutfall,
         &Initial::Uniform(Flow::new(5.0)),
         &[],
         &ChannelOptions {

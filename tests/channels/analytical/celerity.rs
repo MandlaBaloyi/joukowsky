@@ -25,7 +25,7 @@ fn va14_a_small_wave_travels_at_the_square_root_of_g_h() {
     let run = simulate(
         &reach,
         &Upstream::Wall,
-        Downstream::Wall,
+        &Downstream::Wall,
         &Initial::Cells(start),
         &[Length::new(1500.0)],
         &ChannelOptions {

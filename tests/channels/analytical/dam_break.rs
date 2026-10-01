@@ -29,7 +29,7 @@ fn va14_a_dam_break_onto_a_dry_bed_follows_ritter() {
     let run = simulate(
         &reach,
         &Upstream::Wall,
-        Downstream::FreeOutfall,
+        &Downstream::FreeOutfall,
         &Initial::Dam {
             at: Length::new(dam),
             upstream: Length::new(h0),

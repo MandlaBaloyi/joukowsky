@@ -18,10 +18,12 @@
 //! Folders:
 //! - [`pipeline`]: the site description, fusion, and the use case itself.
 //! - [`alert`]: what comes out.
+//! - [`feed`]: source to tap - a canal feeding a pipe network.
 //! - [`ports`]: the traits adapters implement.
 
 pub mod alert;
 mod error;
+pub mod feed;
 pub mod pipeline;
 pub mod ports;
 

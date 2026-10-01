@@ -46,7 +46,7 @@ fn va14_a_steady_backwater_profile_lies_on_the_direct_step_curve() {
     let run = simulate(
         &reach,
         &Upstream::Inflow(vec![(Time::ZERO, Flow::new(Q))]),
-        Downstream::Depth(Length::new(h_end)),
+        &Downstream::Depth(Length::new(h_end)),
         &Initial::Uniform(Flow::new(Q)),
         &[],
         &ChannelOptions {

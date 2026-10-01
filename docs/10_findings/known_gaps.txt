@@ -150,8 +150,8 @@ G-18  Sources are fixed heads; dams, rivers, canals not modelled  IN PROGRESS
   so a real model runs as its owner operates it; still missing there:
   valves as devices, [RULES], pressure conditions (since done: V-A10 to
   V-A12). R-4 open channels done 2026-10-01 (crates/domain/channels,
-  V-A14) - not yet coupled to the pipe network. Still open: a canal's end
-  level as a reservoir's level history; R-5 draining and refilling (G-14).
+  V-A14), coupled to the pipe network at an intake (V-S5). Still open:
+  R-5 draining and refilling (G-14).
   Every reservoir node holds one head forever. Right for a burst lasting
   seconds; blind to levels that change over hours, supply cuts, draining
   and refilling, and water lost between source and site. Plan R-1..R-5 in
@@ -184,3 +184,13 @@ G-19  Valves: response times unknown; PBV/GPV                    OPEN
   PBV and GPV (rare) remain plain connections. [RULES] read and run too
   (V-A12); premises on demands, fill/drain times and settings, and
   setting actions, are reported, not modelled.
+
+G-20  Demands are fixed, whatever the pressure                   OPEN
+  2026-10-01: the steady and extended-period solvers are demand-driven:
+  a junction draws its demand even when the head there is too low to
+  deliver it. Right while the network is supplied; wrong when it is not -
+  a canal running dry (V-S5), a reservoir too low, a pump stopped. Today
+  the runs SAY when this happens (supply lost, the canal's outlet dry);
+  they do not reduce the draw. Fix: pressure-driven demand (a junction
+  draws demand x f(pressure), Wagner's or EPANET 2.2's PDA [VERIFY the
+  form]), needed anyway for draining and refilling (R-5, G-14).

@@ -72,7 +72,7 @@ conserved to rounding (1e-14).
 4. Limits
 ------------------------------------------------------------------------
 Prismatic channels (one cross-section shape along a reach); no lateral
-inflow yet; no gates, weirs or structures inside a reach; no coupling to
-the pipe network yet (next: a canal's end level as a reservoir's
-SourceLevel). Natural rivers with surveyed sections, flood plains and
+inflow yet; no gates, weirs or structures inside a reach. Coupled to the
+pipe network through an intake (application/feed.rs, V-S5); downstream
+boundary "water drawn off" for that. Natural rivers with surveyed sections, flood plains and
 sediment are out of scope until asked.

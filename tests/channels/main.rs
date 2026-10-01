@@ -7,6 +7,7 @@
 
 mod analytical;
 mod invariants;
+mod simulation;
 
 use jk_channels::{Reach, Section};
 use jk_kernel::{Length, STANDARD_GRAVITY};

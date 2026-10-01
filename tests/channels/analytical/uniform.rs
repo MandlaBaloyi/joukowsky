@@ -38,7 +38,7 @@ fn va14_normal_depth_satisfies_manning_and_uniform_flow_stays_uniform() {
     let run = simulate(
         &reach,
         &Upstream::Inflow(vec![(Time::ZERO, Flow::new(Q))]),
-        Downstream::FreeOutfall,
+        &Downstream::FreeOutfall,
         &Initial::Uniform(Flow::new(Q)),
         &[],
         &ChannelOptions {
@@ -71,7 +71,7 @@ fn va14_flow_started_elsewhere_settles_at_normal_depth() {
     let run = simulate(
         &reach,
         &Upstream::Inflow(vec![(Time::ZERO, Flow::new(Q))]),
-        Downstream::Depth(Length::new(hn)),
+        &Downstream::Depth(Length::new(hn)),
         &Initial::Still(Length::new(1.0)),
         &[Length::new(2500.0)],
         &ChannelOptions {
