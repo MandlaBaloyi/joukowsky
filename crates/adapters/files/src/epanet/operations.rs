@@ -86,6 +86,8 @@ pub(super) struct Context<'a> {
     /// in it.
     pub demands: &'a HashMap<NodeId, Vec<(f64, Option<String>)>>,
     pub default_pattern: Option<&'a str>,
+    /// DEMAND MODEL PDA: demands that fall with pressure.
+    pub pressure_demand: Option<jk_hydraulics::PressureDemand>,
 }
 
 /// A time as EPANET writes it: `h`, `h.hh`, `h:mm`, `h:mm:ss`, optionally
@@ -206,6 +208,19 @@ pub(super) fn build(
         pattern_step: Time::new(times.pattern_step),
         ..PeriodOptions::default()
     };
+    if let Some(p) = ctx.pressure_demand {
+        period.steady.pressure_demand = Some(p);
+        notes.push((
+            None,
+            format!(
+                "DEMAND MODEL PDA: demands fall with pressure - nothing at or below {:.2} m, all \
+                 of it from {:.2} m, exponent {} (on each node's ground elevation)",
+                p.minimum.value(),
+                p.required.value(),
+                p.exponent
+            ),
+        ));
+    }
     if times.duration > 0.0 {
         period.duration = Time::new(times.duration);
     } else {

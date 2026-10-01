@@ -45,6 +45,14 @@
 //!     of fixed flow; OPEN (and a TCV, always): a friction link; CLOSED: no
 //!     link. States settled with the check valves (EPANET's rules).
 //!
+//! Pressure-driven demand ([`PressureDemand`]): each junction with demand
+//! is FULL (it draws its demand), CUT (it draws nothing) or PARTIAL - then
+//! its demand is a link to a fixed head at ground + `p_min` whose loss is
+//! the inverse of EPANET 2.2's law, (`p_req` - `p_min`) (Q / D)^(1/exponent).
+//! Settled like the check valves: FULL goes PARTIAL below `p_req`, CUT goes
+//! PARTIAL above `p_min`, PARTIAL goes FULL at its full demand and CUT at no
+//! flow - so the answer is exact on both sides of the curve.
+//!
 //! Links out of service ([`Shut`]): a closed pipe stays in the graph with
 //! no conductance (it carries nothing whatever the heads); a stopped pump
 //! has no link, like a pump whose non-return valve is shut, and stays that
@@ -61,7 +69,7 @@ use crate::boundary::pump::PumpCurve;
 use crate::moc::network::initial::SteadyState;
 use crate::model::{Network, Node, NodeId, Topology};
 use crate::pipe::friction::quasi_steady;
-use crate::steady::{Shut, SteadyOptions, SteadySolution};
+use crate::steady::{PressureDemand, Shut, SteadyOptions, SteadySolution};
 use jk_kernel::sparse::Envelope;
 use jk_kernel::{Flow, Head, Time};
 
@@ -107,7 +115,26 @@ enum Law {
     Regulated { at: usize, sign: f64 },
     /// An active FCV: its flow is its setting (the link's initial flow).
     FixedFlow,
+    /// A partially supplied junction's demand: loss span (Q / full)^(1 /
+    /// exponent) to its outlet at ground + `p_min`; continued straight beyond
+    /// 0 and full (the settling moves the junction off those).
+    Pda { full: f64, span: f64, exponent: f64 },
 }
+
+/// How much of its demand a junction gets (pressure-driven demand).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum Supply {
+    /// All of it.
+    Full,
+    /// Some, by the pressure law.
+    Partial,
+    /// None.
+    Cut,
+}
+
+/// Pressure tolerance for moving a junction between FULL, PARTIAL and CUT
+/// [m].
+const SUPPLY_TOL: f64 = 1e-6;
 
 impl Law {
     /// Head LOST from `from` to `to` at flow q, and its derivative (floored).
@@ -122,6 +149,24 @@ impl Law {
                 (-curve.head(q, 1.0), (-curve.slope(q, 1.0)).max(min_slope))
             }
             Self::Closed | Self::Regulated { .. } | Self::FixedFlow => (0.0, f64::INFINITY),
+            Self::Pda {
+                full,
+                span,
+                exponent,
+            } => {
+                let (x, p) = (q / full, 1.0 / exponent);
+                if x <= 0.0 {
+                    (D_FLOOR * q, D_FLOOR)
+                } else if x >= 1.0 {
+                    let slope = span * p / full;
+                    (span + slope * (q - full), slope)
+                } else {
+                    (
+                        span * x.powf(p),
+                        (span * p * x.powf(p - 1.0) / full).max(D_FLOOR),
+                    )
+                }
+            }
         }
     }
 }
@@ -154,6 +199,8 @@ struct Graph {
     pump_link: Vec<Option<usize>>,
     /// Link of each PRV node that is ACTIVE or OPEN.
     prv_link: Vec<Option<usize>>,
+    /// Demand link of each partially supplied junction.
+    pda_link: Vec<Option<usize>>,
     /// Solver nodes cut off from every source, with no demand: their heads
     /// are unknown (their fixed head of 0 is a placeholder).
     isolated: Vec<bool>,
@@ -165,6 +212,8 @@ impl Graph {
         network: &Network,
         states: &[CheckValveState],
         valves: &[Option<ValveState>],
+        supply: &[Option<Supply>],
+        pressure: Option<PressureDemand>,
         shut: &Shut,
     ) -> Result<Self, HydraulicsError> {
         let active = |n: usize| valves[n] == Some(ValveState::Active);
@@ -178,6 +227,7 @@ impl Graph {
             valve_link: vec![None; network.nodes().len()],
             pump_link: vec![None; network.nodes().len()],
             prv_link: vec![None; network.nodes().len()],
+            pda_link: vec![None; network.nodes().len()],
             isolated: Vec::new(),
         };
         let add = |g: &mut Self, fixed: Option<f64>, demand: f64, origin: usize| {
@@ -189,7 +239,10 @@ impl Graph {
         for (n, node) in network.nodes().iter().enumerate() {
             let (fixed, demand) = match node {
                 Node::Reservoir { head } => (Some(network.source_head(n, *head, Time::ZERO)), 0.0),
-                Node::Junction { demand } => (None, demand.value()),
+                Node::Junction { demand } => match supply[n] {
+                    Some(Supply::Partial | Supply::Cut) => (None, 0.0),
+                    _ => (None, demand.value()),
+                },
                 Node::ControlValve {
                     mode: ValveMode::Psv { setting },
                     ..
@@ -308,8 +361,30 @@ impl Graph {
                 }
             }
         }
+        if let Some(p) = pressure {
+            for (n, node) in network.nodes().iter().enumerate() {
+                if let (Node::Junction { demand }, Some(Supply::Partial)) = (node, supply[n]) {
+                    let z = network.elevation(NodeId(n)).value();
+                    let outlet = add(&mut graph, Some(z + p.minimum.value()), 0.0, n);
+                    graph.links.push(Link {
+                        from: graph.up_side[n],
+                        to: outlet,
+                        law: Law::Pda {
+                            full: demand.value(),
+                            span: p.required.value() - p.minimum.value(),
+                            exponent: p.exponent,
+                        },
+                        initial_flow: 0.5 * demand.value(),
+                    });
+                    graph.pda_link[n] = Some(graph.links.len() - 1);
+                }
+            }
+        }
         graph.isolated = vec![false; graph.fixed_head.len()];
-        if !shut.is_empty() || valves.contains(&Some(ValveState::Closed)) {
+        if !shut.is_empty()
+            || valves.contains(&Some(ValveState::Closed))
+            || supply.contains(&Some(Supply::Cut))
+        {
             graph.isolate()?;
         }
         Ok(graph)
@@ -588,9 +663,19 @@ pub(crate) fn solve_shut(
             _ => None,
         })
         .collect();
+    let pressure = options.pressure_demand;
+    let mut supply: Vec<Option<Supply>> = nodes
+        .iter()
+        .map(|node| match node {
+            Node::Junction { demand } if pressure.is_some() && demand.value() > 0.0 => {
+                Some(Supply::Full)
+            }
+            _ => None,
+        })
+        .collect();
 
     for _ in 0..MAX_CHECK_VALVE_PASSES {
-        let graph = Graph::build(network, &states, &valves, shut)?;
+        let graph = Graph::build(network, &states, &valves, &supply, pressure, shut)?;
         let solved = match newton(&graph, options) {
             Ok(solved) => solved,
             Err(Failure::Error(e)) => return Err(e),
@@ -680,8 +765,45 @@ pub(crate) fn solve_shut(
                 changed = true;
             }
         }
+        if let Some(p) = pressure {
+            for (n, node) in nodes.iter().enumerate() {
+                let (Node::Junction { demand }, Some(s)) = (node, supply[n]) else {
+                    continue;
+                };
+                let up = graph.up_side[n];
+                let head = if graph.isolated[up] {
+                    f64::NAN
+                } else {
+                    solved.heads[up]
+                };
+                let pressure_head = head - network.elevation(NodeId(n)).value();
+                let next = match s {
+                    Supply::Full if pressure_head < p.required.value() - SUPPLY_TOL => {
+                        Supply::Partial
+                    }
+                    Supply::Cut if pressure_head > p.minimum.value() + SUPPLY_TOL => {
+                        Supply::Partial
+                    }
+                    Supply::Partial => {
+                        let q = graph.pda_link[n].map_or(0.0, |j| solved.flows[j]);
+                        if q >= demand.value() {
+                            Supply::Full
+                        } else if q <= 0.0 {
+                            Supply::Cut
+                        } else {
+                            Supply::Partial
+                        }
+                    }
+                    s => s,
+                };
+                if next != s {
+                    supply[n] = Some(next);
+                    changed = true;
+                }
+            }
+        }
         if !changed {
-            return assemble(network, topo, &graph, &solved, states, &valves);
+            return assemble(network, topo, &graph, &solved, states, &valves, &supply);
         }
     }
     Err(HydraulicsError::InvalidNetwork(
@@ -742,6 +864,7 @@ fn assemble(
     solved: &Solved,
     states: Vec<CheckValveState>,
     valves: &[Option<ValveState>],
+    supply: &[Option<Supply>],
 ) -> Result<(SteadySolution, SteadyState), HydraulicsError> {
     let nodes = network.nodes();
     let pipes = network.pipes();
@@ -820,12 +943,30 @@ fn assemble(
         let loss = p.pipe.friction_head_loss(Flow::new(*q), g).value();
         energy = energy.max((loss - (h_from - h_to)).abs());
     }
+    // Demand asked and delivered at each node.
+    let requested: Vec<f64> = nodes
+        .iter()
+        .map(|node| match node {
+            Node::Junction { demand } => demand.value(),
+            _ => 0.0,
+        })
+        .collect();
+    let delivered: Vec<f64> = (0..nodes.len())
+        .map(|n| match supply[n] {
+            None | Some(Supply::Full) => requested[n],
+            Some(Supply::Cut) => 0.0,
+            Some(Supply::Partial) => {
+                graph.pda_link[n].map_or(0.0, |j| solved.flows[j].clamp(0.0, requested[n]))
+            }
+        })
+        .collect();
     // Continuity at every node that neither stores nor releases water:
-    // junctions (net inflow = demand), pumps and check valves (in = out).
+    // junctions (net inflow = delivered demand), pumps and check valves (in
+    // = out).
     let mut continuity = 0.0_f64;
     for (n, node) in nodes.iter().enumerate() {
         let demand = match node {
-            Node::Junction { demand } => demand.value(),
+            Node::Junction { .. } => delivered[n],
             Node::Pump { .. } | Node::CheckValve | Node::ControlValve { .. } => 0.0,
             Node::Reservoir { .. } | Node::Valve { .. } => continue,
         };
@@ -880,6 +1021,8 @@ fn assemble(
             .enumerate()
             .filter_map(|(n, s)| s.map(|s| (NodeId(n), s)))
             .collect(),
+        requested: requested.iter().map(|&q| Flow::new(q)).collect(),
+        delivered: delivered.iter().map(|&q| Flow::new(q)).collect(),
     };
     let state = SteadyState {
         node_heads,
@@ -887,6 +1030,7 @@ fn assemble(
         pipe_end_heads,
         valve_steady,
         check_valves: states,
+        junction_outflow: delivered,
     };
     Ok((solution, state))
 }

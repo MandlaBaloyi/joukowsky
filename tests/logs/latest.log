@@ -1,15 +1,18 @@
 joukowsky test run
-  when     2026-10-01 09:27:24
+  when     2026-10-01 09:53:02
   suite    full
-  commit   02e136e (with uncommitted changes)
+  commit   7f0767a (with uncommitted changes)
   rust     rustc 1.98.1 (48a229cea 2026-09-01)
   command  cargo test --workspace --no-fail-fast -- --nocapture --test-threads=1 --include-ignored
 ==============================================================================
-   Compiling jk-cli v0.1.0 (C:\Users\HP\Desktop\joukowsky\crates\interfaces\cli)
    Compiling jk-tests v0.1.0 (C:\Users\HP\Desktop\joukowsky\tests)
+   Compiling jk-cli v0.1.0 (C:\Users\HP\Desktop\joukowsky\crates\interfaces\cli)
    Compiling jk-application v0.1.0 (C:\Users\HP\Desktop\joukowsky\crates\application)
-   Compiling jk-channels v0.1.0 (C:\Users\HP\Desktop\joukowsky\crates\domain\channels)
-    Finished `test` profile [unoptimized + debuginfo] target(s) in 14.52s
+   Compiling jk-files v0.1.0 (C:\Users\HP\Desktop\joukowsky\crates\adapters\files)
+   Compiling jk-localisation v0.1.0 (C:\Users\HP\Desktop\joukowsky\crates\domain\localisation)
+   Compiling jk-sim v0.1.0 (C:\Users\HP\Desktop\joukowsky\crates\sim)
+   Compiling jk-hydraulics v0.1.0 (C:\Users\HP\Desktop\joukowsky\crates\domain\hydraulics)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 16.24s
      Running unittests src\lib.rs (target\debug\deps\jk_application-a6f8696c1e4119f9.exe)
 
 running 3 tests
@@ -185,7 +188,7 @@ test units::tests::same_type_arithmetic ... ok
 test units::tests::velocity_flow_area ... ok
 test units::tests::wave_travel_time_and_distance_round_trip ... ok
 
-test result: ok. 13 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s
+test result: ok. 13 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
 
      Running unittests src\lib.rs (target\debug\deps\jk_localisation-b57d917c3efe0d09.exe)
 
@@ -198,7 +201,7 @@ test posterior::score::tests::a_wrong_candidate_is_penalised ... ok
 test posterior::score::tests::with_independent_errors_the_correlated_score_matches_the_simple_one ... ok
 test size::tests::exact_fronts_give_back_the_flow ... ok
 
-test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
 
      Running unittests src\lib.rs (target\debug\deps\jk_sim-cdf9363ef8ace4d0.exe)
 
@@ -229,7 +232,7 @@ test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; fini
 
      Running adapters\main.rs (target\debug\deps\adapters-9ce014cc325c8aab.exe)
 
-running 15 tests
+running 16 tests
 test analytical::epanet::broken_files_are_refused_with_the_line_number ...   refused: line 4: link 'P1' joins unknown node 'B'
   line 4: 'unknown node 'B''                   yes
   refused: line 3: node ID 'A' is used twice
@@ -304,6 +307,16 @@ test analytical::epanet::us_units_give_the_same_network_as_si_units ...   pipe l
   reservoir head [m]                           got      60.000000   expected      60.000000   rel.err 1.5e-9
   friction factor: D-W 0.1 mm gives 0.0203; H-W C = 130 gives 0.0223
   both friction factors plausible (0.015 - 0.025) yes
+ok
+test analytical::epanet_operations::a_pda_file_gives_demands_that_fall_with_pressure ...   reader's notes (4):
+    - .inp files carry no wave speeds: every pipe is given 1000 m/s [VERIFY - real wave speeds, by material, are needed to locate bursts well]
+    - Darcy-Weisbach roughness turned into one Darcy friction factor per pipe, equal head loss at 1.0 m/s: f from 0.0203 to 0.0203
+    - DEMAND MODEL PDA: demands fall with pressure - nothing at or below 0.00 m, all of it from 15.00 m, exponent 0.5 (on each node's ground elevation)
+    - DURATION 0 (a single steady state in EPANET): extended-period runs default to 24 h
+    C's ground elevation from the file [m]     got      30.000000   expected      30.000000   rel.err 0.0e0
+    minimum 0 m, required 15 m, exponent 0.5   yes
+  the source 15 m above C's ground: C gets 15.87 of its 20 l/s at 9.45 m of pressure
+    delivered = 20 l/s x sqrt(p / 15) [l/s]    got      15.871690   expected      15.871690   rel.err 1.1e-16
 ok
 test analytical::epanet_operations::a_prv_in_a_file_holds_elevation_plus_setting_in_either_units ... SI (m) units:
   reader's notes (5):
@@ -485,7 +498,7 @@ test simulation::logger_files::a_burst_recorded_in_logger_files_raises_one_alarm
   at 10:15:03 - seconds past 10:15:00          got       2.998747   expected       3.000000   rel.err 4.2e-4
 ok
 
-test result: ok. 15 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.62s
+test result: ok. 16 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.60s
 
      Running balance\main.rs (target\debug\deps\balance-728b54a33b8a3084.exe)
 
@@ -510,7 +523,7 @@ test simulation::night_watch::the_detection_curve_matches_the_cusum_arithmetic .
   at the arithmetic's size: caught at least a third of the time yes
 ok
 
-test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.32s
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.20s
 
      Running channels\main.rs (target\debug\deps\channels-c97e6a381f8a602a.exe)
 
@@ -582,7 +595,7 @@ test simulation::feed::when_the_canal_stops_flowing_the_town_feels_it_hours_late
     the town's head falls with the intake level after the cut yes
 ok
 
-test result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 31.37s
+test result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 12.55s
 
      Running classification\main.rs (target\debug\deps\classification-7090793340b9d59f.exe)
 
@@ -678,7 +691,7 @@ test simulation::scenarios::power_data_settles_the_slow_burst ... The same slow 
   burst                                        yes
 ok
 
-test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 2.54s
+test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.82s
 
      Running detection\main.rs (target\debug\deps\detection-e23fac69caef8598.exe)
 
@@ -754,11 +767,11 @@ test simulation::burst_location::vs1_location_error_versus_sampling_rate_and_noi
   128 S/s with 2 cm noise locates to under 1 m RMS yes
 ok
 
-test result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 8.40s
+test result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 2.80s
 
      Running hydraulics\main.rs (target\debug\deps\hydraulics-2a8e28d011452c5f.exe)
 
-running 54 tests
+running 57 tests
 test analytical::boundaries::burst::a_10mm_hole_at_60m_head ... DN150 AC main at 60 m head, 0.5 m/s; a 10 mm hole opens (Cd 0.6):
   water lost              1.555 l/s  (134 m^3 per day)
   head step at the burst  -4.486 m
@@ -1087,6 +1100,23 @@ ok
 test analytical::steady::closed_form::two_reservoirs_and_one_pipe ... 80 m and 50 m reservoirs joined by 2000 m of DN250:
   flow = sqrt(30 / R) [l/s]                    got      99.225802   expected      99.225802   rel.err 0.0e0
 ok
+test analytical::steady::pressure_demand::va15_a_consumer_gets_all_some_or_none_of_its_demand_as_its_pressure_allows ... One consumer on ground 30 m, 20 l/s at full pressure (15 m); the main loses R Q^2 = 8.7 m at 20 l/s:
+    source at 80 m: all 20 l/s delivered [l/s] got      20.000000   expected      20.000000   rel.err 0.0e0
+    ... at head 80 - R D^2 [m]                 got      71.292304   expected      71.292304   rel.err 0.0e0
+    source at 45 m: Q = D sqrt((H - z) / (s + D^2 R)) [l/s] got      15.908563   expected      15.908563   rel.err 2.2e-16
+    ... and that is D sqrt(p / 15) at the pressure it gets [l/s] got      15.908563   expected      15.908563   rel.err 2.2e-16
+    ... asked 20 l/s, and the pipes carry what is delivered yes
+    source at 25 m, below the ground: nothing delivered (0.0e0 l/s) yes
+    exponent 0.75: delivered = D (p / 15)^0.75 [l/s] got      14.923433   expected      14.923433   rel.err 1.2e-16
+ok
+test analytical::steady::pressure_demand::va15_a_draining_tank_warns_when_it_can_no_longer_meet_the_demand ... A tank alone feeds a town on 10 m ground (5 l/s, full pressure 15 m); 99% delivery needs the tank at 24.97 m or more:
+  SUPPLY SHORT at 14.00 h (99% delivered at that record); expected from the falling level 13.98 h
+    the warning comes at the first record after the level passes it yes
+  at the last record the town gets 4.36 of its 5.00 l/s
+    and it gets less and less, never more than asked yes
+ok
+test analytical::steady::pressure_demand::va15_a_transient_from_a_pressure_starved_state_starts_still ...   Starting from the partly supplied state, 3 s with nothing happening: the consumer's head stays put (spread 6.4e-14 m) yes
+ok
 test analytical::steady::three_reservoirs::three_reservoirs_meeting_at_one_junction ... Reservoirs at 100, 80 and 40 m meeting at one junction:
   junction head: engine vs bisection [m]       got      79.999507   expected      79.999507   rel.err 1.8e-16
   flow from the 100 m reservoir [l/s]          got     140.000013   expected     140.000013   rel.err 4.1e-16
@@ -1188,7 +1218,7 @@ test invariants::steady_state::an_undisturbed_pipe_stays_steady ... Steady state
   valve holds steady                           yes
 ok
 
-test result: ok. 54 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 46.62s
+test result: ok. 57 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 14.09s
 
      Running kernel\main.rs (target\debug\deps\kernel-8eea161e1918dc58.exe)
 
@@ -1304,7 +1334,7 @@ Recommended 6 (after swaps): a1 block A1, c1 block C1, b1 block B1, c2 block C2,
     B-b2               90 m   typical region  155 m
     C-c1              150 m   typical region   20 m
     C-c2              220 m   typical region   25 m
-  (advice took 13 s on this machine)
+  (advice took 4 s on this machine)
 Would a sudden 1 l/s burst be felt? By at least one logger on 100% of the pipe, by two (so located) on 100%. Smallest burst locatable anywhere on each pipe (upper bound: no plastic-wall damping yet):
     R-M connection     0.09 l/s
     M-A ring           0.04 l/s
@@ -1550,7 +1580,7 @@ test simulation::valve_fronts::a_shut_prv_passes_no_wave_and_no_route ... A seco
     and no route from S1 reaches the zone: the locator cannot place a burst there from S1 yes
 ok
 
-test result: ok. 32 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 230.38s
+test result: ok. 32 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 90.81s
 
      Running pipeline\main.rs (target\debug\deps\pipeline-0a591d8df4220b73.exe)
 
@@ -1771,7 +1801,7 @@ test simulation::valves_by_hour::at_noon_the_valve_is_active_and_both_loggers_lo
     and it is not dismissed                    yes
 ok
 
-test result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 13.09s
+test result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 4.82s
 
    Doc-tests jk_application
 
@@ -1846,9 +1876,9 @@ running 0 tests
 test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
 
 ==============================================================================
-  passed   284
+  passed   288
   failed   0
   skipped  0 slow test(s) not in this suite
   filtered 0 test(s) outside -Only/-Filter
-  time     355.9 s (including compile)
+  time     150.9 s (including compile)
   result   ALL PASSED

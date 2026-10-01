@@ -23,6 +23,13 @@ Rung 1  Analytical: results that must match closed-form physics.
         reservoir-pipe-valve system vs the exact complex-frequency
         solution; first-order convergence, extrapolated within 0.5%
         (2026-09-29: +0.1% at 400 reaches after FN-021).
+  V-A15 Pressure-driven demand (EPANET 2.2's law): one consumer full,
+        partial (closed form Q^2 = D^2 (H - z) / (s + D^2 R)) and cut, to
+        2e-16; exponent 0.75 on the law at the pressure found; a transient
+        from a starved state starts still; a tank feeding a town warns
+        SUPPLY SHORT at the first record after the level can no longer give
+        99% (14.00 h, expected 13.98 h); read from EPANET files (DEMAND
+        MODEL PDA, elevations) (2026-10-01).
   V-A14 Open channels (02_/open_channels.txt): normal depth satisfies
         Manning and uniform flow stays uniform (2e-16 m over 2 h); flow
         started elsewhere settles at it; the steady backwater (M1) profile

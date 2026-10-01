@@ -37,6 +37,9 @@ pub struct SteadyOptions {
     /// Converged when no pipe flow changes by more than this fraction of
     /// the largest flow (or of 1 l/s, if flows are smaller).
     pub tolerance: f64,
+    /// Demands that fall with pressure (None: every junction draws its
+    /// demand whatever the pressure - demand-driven).
+    pub pressure_demand: Option<PressureDemand>,
 }
 
 impl Default for SteadyOptions {
@@ -44,8 +47,27 @@ impl Default for SteadyOptions {
         Self {
             max_iterations: 200,
             tolerance: 1e-10,
+            pressure_demand: None,
         }
     }
+}
+
+/// Pressure-driven demand, as EPANET 2.2's: a junction delivers
+///
+/// ```text
+///   D = D_full ((p - p_min) / (p_req - p_min))^exponent,   p_min < p < p_req
+/// ```
+///
+/// nothing at or below `minimum`, all of it at or above `required`
+/// (pressure head p = head - ground elevation, [`Network::set_elevation`]).
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct PressureDemand {
+    /// Pressure head at or below which nothing is delivered [m].
+    pub minimum: Head,
+    /// Pressure head at or above which the full demand is delivered [m].
+    pub required: Head,
+    /// The exponent (EPANET's default 0.5).
+    pub exponent: f64,
 }
 
 /// The steady state found, with evidence of how well it satisfies physics.
@@ -70,6 +92,11 @@ pub struct SteadySolution {
     pub idle_pumps: Vec<NodeId>,
     /// Head each pump adds (discharge minus suction head).
     pub pump_lifts: Vec<(NodeId, Head)>,
+    /// Demand asked at each node (junctions; 0 elsewhere).
+    pub requested: Vec<Flow>,
+    /// Demand delivered at each node: as asked, unless pressure-driven
+    /// demand cuts it.
+    pub delivered: Vec<Flow>,
     /// What each control valve is doing.
     pub valves: Vec<(NodeId, crate::boundary::control_valve::ValveState)>,
 }
@@ -149,6 +176,16 @@ impl Network {
 pub(crate) fn validate(options: &SteadyOptions) -> Result<(), HydraulicsError> {
     if options.max_iterations == 0 {
         return Err(HydraulicsError::invalid("max_iterations", 0.0, ">= 1"));
+    }
+    if let Some(p) = options.pressure_demand {
+        if !(p.minimum.value().is_finite() && p.required.value() > p.minimum.value()) {
+            return Err(HydraulicsError::invalid(
+                "pressure-driven demand",
+                p.required.value(),
+                "required pressure above the minimum",
+            ));
+        }
+        positive("pressure exponent", p.exponent)?;
     }
     positive("tolerance", options.tolerance)
 }

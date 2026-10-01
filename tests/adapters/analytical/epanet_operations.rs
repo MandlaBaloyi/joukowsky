@@ -544,3 +544,61 @@ Headloss D-W
         inp.network.extended(&inp.operations.period).is_ok(),
     );
 }
+
+#[test]
+fn a_pda_file_gives_demands_that_fall_with_pressure() {
+    let text = "\
+[RESERVOIRS]
+R 45
+[JUNCTIONS]
+C 30 20
+[PIPES]
+P R C 1000 150 0.1
+[OPTIONS]
+Units LPS
+Headloss D-W
+Demand Model PDA
+Minimum Pressure 0
+Required Pressure 15
+Pressure Exponent 0.5
+";
+    let inp = parse(text, &InpOptions::default()).unwrap();
+    print_notes(&inp);
+    let c = inp
+        .network
+        .node_id(inp.node_ids.iter().position(|x| x == "C").unwrap())
+        .unwrap();
+    check_close(
+        "  C's ground elevation from the file [m]",
+        inp.network.elevation(c).value(),
+        30.0,
+        1e-12,
+    );
+    let pda = inp
+        .operations
+        .period
+        .steady
+        .pressure_demand
+        .expect("PDA read");
+    check(
+        "  minimum 0 m, required 15 m, exponent 0.5",
+        pda.minimum.value() == 0.0
+            && (pda.required.value() - 15.0).abs() < 1e-12
+            && (pda.exponent - 0.5).abs() < 1e-12,
+    );
+    let s = inp
+        .network
+        .steady_state(&inp.operations.period.steady)
+        .unwrap();
+    let p = s.node_heads[c.index()].value() - 30.0;
+    println!(
+        "  the source 15 m above C's ground: C gets {:.2} of its 20 l/s at {p:.2} m of pressure",
+        s.delivered[c.index()].value() * 1000.0
+    );
+    check_close(
+        "  delivered = 20 l/s x sqrt(p / 15) [l/s]",
+        s.delivered[c.index()].value() * 1000.0,
+        20.0 * (p / 15.0).sqrt(),
+        1e-9,
+    );
+}

@@ -35,4 +35,4 @@ pub use model::{
     Burst, BurstOpening, Network, NetworkPipe, Node, NodeId, PipeId, SourceLevel, TankStorage,
 };
 pub use pipe::Pipe;
-pub use steady::{SteadyOptions, SteadySolution};
+pub use steady::{PressureDemand, SteadyOptions, SteadySolution};

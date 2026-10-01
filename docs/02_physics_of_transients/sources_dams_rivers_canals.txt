@@ -218,4 +218,6 @@ depth, a SourceLevel), the network gives the canal the flow it draws
 until the drawn flow stops changing. Water is conserved at the intake;
 when the canal's outlet runs dry the run says when (the network's
 demands are fixed, so it would otherwise keep drawing - gap G-20).
+Pressure-driven demand (2026-10-01, V-A15): with it, extended runs report
+the demand delivered over time and warn SUPPLY SHORT when under 99%.
 Next: R-5 (pipes draining and refilling, G-14).

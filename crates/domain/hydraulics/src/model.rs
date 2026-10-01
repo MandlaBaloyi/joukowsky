@@ -6,7 +6,7 @@
 //! network bounded context (asset records, GIS, versions) will translate
 //! its richer model into this one.
 
-use jk_kernel::{Acceleration, Area, Flow, Head, Time};
+use jk_kernel::{Acceleration, Area, Flow, Head, Length, Time};
 
 use crate::boundary::control_valve::ValveMode;
 use crate::boundary::junction::PipeEnd;
@@ -212,6 +212,9 @@ pub struct Network {
     bursts: Vec<Burst>,
     levels: Vec<SourceLevel>,
     tanks: Vec<TankStorage>,
+    /// Ground elevation of each node [m] (0 unless set): pressure head =
+    /// head - elevation, for pressure-driven demand.
+    elevations: Vec<f64>,
 }
 
 /// For each node, the pipes that touch it and which end of each.
@@ -228,11 +231,37 @@ impl Network {
             bursts: Vec::new(),
             levels: Vec::new(),
             tanks: Vec::new(),
+            elevations: Vec::new(),
         }
+    }
+
+    /// Sets node `node`'s ground elevation (used where a pressure matters:
+    /// pressure-driven demand).
+    ///
+    /// # Errors
+    /// An unknown node or an elevation that is not finite.
+    pub fn set_elevation(
+        &mut self,
+        node: NodeId,
+        elevation: Length,
+    ) -> Result<(), HydraulicsError> {
+        finite("elevation", elevation.value())?;
+        let slot = self.elevations.get_mut(node.0).ok_or_else(|| {
+            HydraulicsError::InvalidNetwork(format!("node {} does not exist", node.0))
+        })?;
+        *slot = elevation.value();
+        Ok(())
+    }
+
+    /// Node `node`'s ground elevation (0 unless set).
+    #[must_use]
+    pub fn elevation(&self, node: NodeId) -> Length {
+        Length::new(self.elevations.get(node.0).copied().unwrap_or(0.0))
     }
 
     /// Adds a node and returns its id.
     pub fn add_node(&mut self, node: Node) -> NodeId {
+        self.elevations.push(0.0);
         self.nodes.push(node);
         NodeId(self.nodes.len() - 1)
     }

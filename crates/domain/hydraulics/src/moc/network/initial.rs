@@ -65,6 +65,9 @@ pub(crate) struct SteadyState {
     pub valve_steady: Vec<(f64, f64)>,
     /// For check-valve nodes: open or closed.
     pub check_valves: Vec<CheckValveState>,
+    /// At each junction, the demand it draws in the transient: as given,
+    /// or as pressure-driven demand delivered it in the steady state.
+    pub junction_outflow: Vec<f64>,
 }
 
 impl SteadyState {
@@ -136,6 +139,7 @@ impl InitialCondition {
                     // A valve that passed no flow: its opening has no effect.
                     valve_steady: vec![(0.0, 1.0); n_nodes],
                     check_valves: vec![CheckValveState::Closed; n_nodes],
+                    junction_outflow: vec![0.0; n_nodes],
                 })
             }
             Self::PipeFlows(flows) => from_pipe_flows(network, topo, flows),
@@ -234,6 +238,14 @@ fn from_pipe_flows(
         pipe_flows: flows.iter().map(|q| q.value()).collect(),
         valve_steady,
         check_valves,
+        junction_outflow: network
+            .nodes()
+            .iter()
+            .map(|n| match n {
+                Node::Junction { demand } => demand.value(),
+                _ => 0.0,
+            })
+            .collect(),
     })
 }
 

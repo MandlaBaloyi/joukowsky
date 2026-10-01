@@ -40,6 +40,10 @@ struct Settings {
     viscosity: f64,
     /// Option PATTERN: the default demand pattern.
     default_pattern: Option<String>,
+    /// DEMAND MODEL PDA, with MINIMUM / REQUIRED PRESSURE and PRESSURE
+    /// EXPONENT (file pressure units).
+    pda: bool,
+    pressures: (f64, f64, f64),
 }
 
 /// A node as the file gives it (file units).
@@ -285,6 +289,11 @@ pub(super) fn build(text: &str, options: &InpOptions) -> Result<InpNetwork, Read
             closed_pumps: &closed_pumps,
             demands: &demands,
             default_pattern: settings.default_pattern.as_deref(),
+            pressure_demand: settings.pda.then(|| jk_hydraulics::PressureDemand {
+                minimum: Head::new(settings.pressures.0 * settings.units.pressure()),
+                required: Head::new(settings.pressures.1 * settings.units.pressure()),
+                exponent: settings.pressures.2,
+            }),
         };
         operations::build(
             &ctx,
@@ -321,6 +330,9 @@ fn read_options(sections: &Sections, notes: &mut Vec<Note>) -> Result<Settings, 
         demand_multiplier: 1.0,
         viscosity: 1.0,
         default_pattern: None,
+        pda: false,
+        // EPANET 2.2's defaults.
+        pressures: (0.0, 0.1, 0.5),
     };
     let mut units_given = false;
     let mut unused = Vec::new();
@@ -340,6 +352,12 @@ fn read_options(sections: &Sections, notes: &mut Vec<Note>) -> Result<Settings, 
                     ReadError::at(l.number, format!("unknown head-loss formula '{v}'"))
                 })?;
             }
+            ("DEMAND", Some("MODEL")) => {
+                s.pda = field(l, 2, "demand model")?.eq_ignore_ascii_case("PDA");
+            }
+            ("MINIMUM", Some("PRESSURE")) => s.pressures.0 = number(l, 2, "minimum pressure")?,
+            ("REQUIRED", Some("PRESSURE")) => s.pressures.1 = number(l, 2, "required pressure")?,
+            ("PRESSURE", Some("EXPONENT")) => s.pressures.2 = number(l, 2, "pressure exponent")?,
             ("DEMAND", Some("MULTIPLIER")) => {
                 s.demand_multiplier = number(l, 2, "demand multiplier")?;
             }
@@ -1362,6 +1380,14 @@ fn assemble(
         }
     }
 
+    // Ground elevations, for pressures (pressure-driven demand).
+    for (n, z) in elevations.iter().enumerate() {
+        if let (Some(z), Some(id)) = (z, network.node_id(n)) {
+            network
+                .set_elevation(id, *z)
+                .map_err(|e| ReadError::general(format!("elevation: {e}")))?;
+        }
+    }
     let node_of_raw = (0..nodes.len()).map(|i| ids[group(i)]).collect();
     Ok((
         InpNetwork {

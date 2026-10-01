@@ -38,7 +38,7 @@
 //!   draining pipes, and the refilling surge that follows (gap G-14)
 //!   becomes a risk.
 
-use jk_kernel::{Head, Time};
+use jk_kernel::{Flow, Head, Time};
 
 use crate::HydraulicsError;
 use crate::error::positive;
@@ -46,6 +46,9 @@ use crate::model::{Network, Node, NodeId, PipeId};
 use crate::steady::controls::{self, Cause, Control, TIME_TOL, Target};
 use crate::steady::rules::{self, Clause, Rule, Situation};
 use crate::steady::{Shut, SteadyOptions, SteadySolution};
+
+/// Below this share of the demand delivered, the supply is short.
+const SHORT_SHARE: f64 = 0.99;
 
 /// Most sub-steps (cuts at switches) inside one reporting step before the
 /// run gives up: a guard against controls that chatter.
@@ -155,6 +158,19 @@ pub enum SupplyEvent {
         /// When.
         at: Time,
     },
+    /// Pressure-driven demand delivers less than 99% of what is asked
+    /// (only with [`crate::steady::PressureDemand`]).
+    SupplyShort {
+        /// When (a recorded time).
+        at: Time,
+        /// Share of the demand delivered then (0..1).
+        delivered: f64,
+    },
+    /// The demand is met again (99% or more).
+    SupplyMet {
+        /// When (a recorded time).
+        at: Time,
+    },
     /// No source reaches part of the network that draws water: the run
     /// stops.
     SupplyLost {
@@ -179,6 +195,9 @@ pub struct PeriodRun {
     /// Head at every node, at each recorded time (NaN where closed pipes
     /// cut a part off with no demand: its pressure is unknown).
     pub node_heads: Vec<Vec<Head>>,
+    /// Demand asked and delivered over the whole network, at each recorded
+    /// time (equal unless pressure-driven demand cuts it).
+    pub supply: Vec<(Flow, Flow)>,
     /// Supply events, in time order.
     pub events: Vec<SupplyEvent>,
 }
@@ -364,6 +383,7 @@ impl Network {
                 .map(|&n| (NodeId(n), Vec::with_capacity(steps + 1)))
                 .collect(),
             node_heads: Vec::with_capacity(steps + 1),
+            supply: Vec::with_capacity(steps + 1),
             events: Vec::new(),
         };
 
@@ -889,6 +909,22 @@ fn record(
         series.1.push(status.running(n));
     }
     run.node_heads.push(here.node_heads.clone());
+    let asked: f64 = here.requested.iter().map(|q| q.value()).sum();
+    let given: f64 = here.delivered.iter().map(|q| q.value()).sum();
+    let short = |(a, g): (f64, f64)| a > 0.0 && g < SHORT_SHARE * a;
+    let was_short = run
+        .supply
+        .last()
+        .is_some_and(|(a, g)| short((a.value(), g.value())));
+    if short((asked, given)) && !was_short {
+        run.events.push(SupplyEvent::SupplyShort {
+            at: Time::new(t),
+            delivered: given / asked,
+        });
+    } else if !short((asked, given)) && was_short {
+        run.events.push(SupplyEvent::SupplyMet { at: Time::new(t) });
+    }
+    run.supply.push((Flow::new(asked), Flow::new(given)));
 }
 
 /// Ends the run: supply lost at `t`.

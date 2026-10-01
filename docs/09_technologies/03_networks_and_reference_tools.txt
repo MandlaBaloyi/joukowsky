@@ -53,6 +53,9 @@ EPANET .inp format                                               [ADOPT]
         coefficient) as valves too.
         Then [RULES] (IF / AND / OR / THEN / ELSE / PRIORITY) into the
         engine's rules; what it cannot read is reported per rule.
+        2026-10-01: node elevations kept in the network; DEMAND MODEL PDA
+        with MINIMUM / REQUIRED PRESSURE and PRESSURE EXPONENT read into
+        the steady options (pressure-driven demand, V-A15).
         Not yet: the wave-speed sidecar; PBV and GPV as devices; controls on junction pressures,
         valves and pump speeds; reservoir head patterns; tank volume
         curves.

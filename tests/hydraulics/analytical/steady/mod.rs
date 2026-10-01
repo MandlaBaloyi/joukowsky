@@ -8,6 +8,7 @@
 
 mod check_valves;
 mod closed_form;
+mod pressure_demand;
 mod three_reservoirs;
 
 use jk_hydraulics::Pipe;

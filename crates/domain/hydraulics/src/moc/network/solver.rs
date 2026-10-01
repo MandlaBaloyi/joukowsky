@@ -174,7 +174,7 @@ impl Network {
             .iter()
             .enumerate()
             .map(|(n, node)| match node {
-                Node::Junction { demand } => demand.value(),
+                Node::Junction { .. } => steady.junction_outflow[n],
                 Node::Valve { .. } => steady.valve_steady[n].0,
                 Node::Reservoir { .. } => topo[n]
                     .iter()
@@ -296,8 +296,8 @@ impl Network {
                             .sum();
                         (hn, net_in)
                     }
-                    Node::Junction { demand } => {
-                        let d = demand.value();
+                    Node::Junction { .. } => {
+                        let d = steady.junction_outflow[n];
                         match burst_at[n] {
                             Some(b) => {
                                 let (hn, leak_flow) = leak::head(

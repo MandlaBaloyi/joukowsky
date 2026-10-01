@@ -135,6 +135,12 @@ fn extended_summary(inp: &jk_files::epanet::InpNetwork) {
             ),
             SupplyEvent::PowerOff { at } => format!("{:7.2} h  power off", hours(*at)),
             SupplyEvent::PowerOn { at } => format!("{:7.2} h  power on", hours(*at)),
+            SupplyEvent::SupplyShort { at, delivered } => format!(
+                "{:7.2} h  SUPPLY SHORT: {:.0}% of the demand delivered",
+                hours(*at),
+                delivered * 100.0
+            ),
+            SupplyEvent::SupplyMet { at } => format!("{:7.2} h  demand met again", hours(*at)),
             SupplyEvent::SupplyLost { at, reason } => {
                 format!("{:7.2} h  SUPPLY LOST: {reason}", hours(*at))
             }
