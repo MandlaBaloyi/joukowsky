@@ -24,7 +24,7 @@ mod hours;
 mod sensor;
 
 use jk_classification::extract;
-use jk_detection::{Detector, Event, StreamOutput};
+use jk_detection::{Detector, Event, StreamOutput, SupplyWatch};
 use jk_kernel::Time;
 use jk_localisation::ClockEstimate;
 use jk_localisation::clocks::correct;
@@ -228,12 +228,30 @@ impl Monitor {
                                 error,
                             }
                         })?;
+                        let supply = SupplyWatch::new(self.config.supply, start, interval)
+                            .map_err(|error| ApplicationError::Detection {
+                                sensor: name.clone(),
+                                error,
+                            })?;
                         let state = &mut self.sensors[sensor];
                         state.stream = Some(stream);
+                        state.supply = Some(supply);
                         state.start_stretch(start.value());
                     }
                     let state = &mut self.sensors[sensor];
                     state.append(samples);
+                    if let Some(watch) = state.supply.as_mut() {
+                        let ended =
+                            watch
+                                .push(samples)
+                                .map_err(|error| ApplicationError::Detection {
+                                    sensor: name.clone(),
+                                    error,
+                                })?;
+                        state
+                            .supply_returns
+                            .extend(ended.iter().filter_map(|s| s.until.map(Time::value)));
+                    }
                     let out = match state.stream.as_mut() {
                         Some(s) => {
                             s.push(samples)
@@ -274,6 +292,9 @@ impl Monitor {
 
     /// Ends the sensor's current continuous stretch, if any.
     fn end_stretch(&mut self, sensor: usize) {
+        // A spell still open at a gap: whether the supply came back during
+        // it is not known (P6).
+        self.sensors[sensor].supply = None;
         if let Some(stream) = self.sensors[sensor].stream.take() {
             let out = stream.finish();
             self.absorb(sensor, out);
@@ -301,6 +322,7 @@ impl Monitor {
                 event,
                 arrival,
                 features: None,
+                supply_return: None,
             });
         }
     }
@@ -323,6 +345,12 @@ impl Monitor {
             .filter(|p| p.sensor == sensor && p.features.is_none())
         {
             if ended || until >= found.event.arrival.value() + after {
+                // The clock correction applies to the return as to the
+                // arrival.
+                let shift = found.arrival.time.value() - found.event.arrival.value();
+                found.supply_return = state
+                    .supply_returned_by(found.event.arrival.value())
+                    .map(|back| Time::new(back + shift));
                 found.features = Some(
                     extract(&series, &found.event, found.event.noise, f).map_err(|e| e.to_string()),
                 );
@@ -479,8 +507,11 @@ impl Monitor {
         }
         self.issued
             .retain(|g| g.members.iter().any(|m| m.arrival.time.value() >= horizon));
+        let refill_window = self.config.classifier.refill_window.value();
         for s in &mut self.sensors {
             s.forget_impaired_before(horizon);
+            s.supply_returns
+                .retain(|&back| back >= horizon - refill_window);
         }
     }
 }

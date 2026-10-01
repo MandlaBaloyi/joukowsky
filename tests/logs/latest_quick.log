@@ -1,16 +1,15 @@
 joukowsky test run
-  when     2026-10-01 10:53:30
+  when     2026-10-01 11:00:21
   suite    quick
-  commit   18fb126 (with uncommitted changes)
+  commit   cd21361 (with uncommitted changes)
   rust     rustc 1.98.1 (48a229cea 2026-09-01)
   command  cargo test --workspace --no-fail-fast -- --nocapture --test-threads=1
 ==============================================================================
-   Compiling jk-classification v0.1.0 (C:\Users\HP\Desktop\joukowsky\crates\domain\classification)
-   Compiling jk-detection v0.1.0 (C:\Users\HP\Desktop\joukowsky\crates\domain\detection)
-   Compiling jk-application v0.1.0 (C:\Users\HP\Desktop\joukowsky\crates\application)
-   Compiling jk-tests v0.1.0 (C:\Users\HP\Desktop\joukowsky\tests)
    Compiling jk-cli v0.1.0 (C:\Users\HP\Desktop\joukowsky\crates\interfaces\cli)
-    Finished `test` profile [unoptimized + debuginfo] target(s) in 17.76s
+   Compiling jk-tests v0.1.0 (C:\Users\HP\Desktop\joukowsky\tests)
+   Compiling jk-application v0.1.0 (C:\Users\HP\Desktop\joukowsky\crates\application)
+   Compiling jk-classification v0.1.0 (C:\Users\HP\Desktop\joukowsky\crates\domain\classification)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 11.48s
      Running unittests src\lib.rs (target\debug\deps\jk_application-a6f8696c1e4119f9.exe)
 
 running 3 tests
@@ -64,7 +63,7 @@ test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; fini
 
      Running unittests src\lib.rs (target\debug\deps\jk_detection-ab885d9bb867d09a.exe)
 
-running 18 tests
+running 20 tests
 test baseline::brown::tests::follows_a_steady_trend_without_lag ... ok
 test baseline::brown::tests::shifting_keeps_the_trend ... ok
 test change::cusum::tests::a_clean_step_is_caught_and_its_start_found ... ok
@@ -81,10 +80,12 @@ test onset::step_area::tests::declines_when_the_windows_do_not_fit ... ok
 test onset::step_area::tests::exact_for_a_sharp_step_at_any_phase ... ok
 test supply::tests::a_brief_touch_of_zero_is_a_transient_not_an_empty_pipe ... ok
 test supply::tests::a_cut_and_a_return_are_found ... ok
-test supply::tests::a_short_wander_above_does_not_end_the_spell ... ok
+test supply::tests::a_flicker_of_supply_is_a_return ... ok
+test supply::tests::a_slam_swinging_back_to_the_floor_still_marks_the_return ... ok
+test supply::tests::live_in_pieces_gives_the_same_spells ... ok
 test supply::tests::still_empty_at_the_end_is_said ... ok
 
-test result: ok. 18 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.03s
+test result: ok. 20 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.03s
 
      Running unittests src\lib.rs (target\debug\deps\jk_files-ec39beec6edb1da0.exe)
 
@@ -112,7 +113,7 @@ test logger::time::tests::the_usual_logger_formats ... ok
 test logger::units::tests::one_bar_is_about_ten_metres ... ok
 test logger::units::tests::units_from_headers ... ok
 
-test result: ok. 22 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+test result: ok. 22 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
 
      Running unittests src\lib.rs (target\debug\deps\jk_hydraulics-c42e47dfc771fa13.exe)
 
@@ -505,7 +506,7 @@ test simulation::logger_files::a_burst_recorded_in_logger_files_raises_one_alarm
   at 10:15:03 - seconds past 10:15:00          got       2.998747   expected       3.000000   rel.err 4.2e-4
 ok
 
-test result: ok. 16 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.56s
+test result: ok. 16 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.63s
 
      Running balance\main.rs (target\debug\deps\balance-728b54a33b8a3084.exe)
 
@@ -530,7 +531,7 @@ test simulation::night_watch::the_detection_curve_matches_the_cusum_arithmetic .
   at the arithmetic's size: caught at least a third of the time yes
 ok
 
-test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.18s
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.16s
 
      Running channels\main.rs (target\debug\deps\channels-c97e6a381f8a602a.exe)
 
@@ -619,13 +620,13 @@ test simulation::feed::when_the_canal_stops_the_sump_runs_down_and_the_town_runs
     the sump's change = in - drawn, within 1.27% of the water drawn (draw read every 5 min) yes
 ok
 
-test result: ok. 11 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 11.32s
+test result: ok. 11 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 11.24s
 
      Running classification\main.rs (target\debug\deps\classification-7090793340b9d59f.exe)
 
 running 11 tests
 test simulation::refill::vs6_a_refill_against_trapped_air_is_called_a_refill ... Supply returns to the drained pipe; a 5 mm air valve keeps most of the air in, so the logger at the end sees it squeezed over a minute - too slow for a front:
-  supply watch: the pipe stood empty, supply returned at t = 127.57 s
+  supply watch: the pipe stood empty, supply returned at t = 127.40 s
   first front: DROP at t = 209.40 s, from 32.19 m
   verdict: refill (98% confident)
     refill          97.8%
@@ -640,7 +641,7 @@ test simulation::refill::vs6_a_refill_against_trapped_air_is_called_a_refill ...
     the first front comes once the pipe is already under pressure yes
     yet with the supply watch it is called a refill yes
 Supply returns to the drained pipe; a 20 mm air valve keeps most of the air in, so the logger at the end sees it squeezed over a minute - too slow for a front:
-  supply watch: the pipe stood empty, supply returned at t = 128.15 s
+  supply watch: the pipe stood empty, supply returned at t = 128.03 s
   first front: RISE at t = 131.04 s, from 2.73 m
   verdict: refill (99% confident)
     refill          99.3%
@@ -659,6 +660,7 @@ lets the air out, so the logger there reads ~0 until the water slams in:
   the column arrives after 95.5 s at 3.43 m/s
     it arrives at the speed the open pipe would carry [m/s] got       3.428564   expected       3.429785   rel.err 3.6e-4
     the slam the logger sees: Joukowsky a v / g + the supply head regained (line packing) [m] got     379.422793   expected     379.616217   rel.err 5.1e-4
+  supply watch: the pipe stood empty, supply returned at t = 215.54 s
   first front: RISE at t = 215.54 s, from 0.03 m
   verdict: refill (100% confident)
     refill         100.0%
@@ -801,7 +803,7 @@ test simulation::scenarios::power_data_settles_the_slow_burst ... The same slow 
   burst                                        yes
 ok
 
-test result: ok. 11 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.18s
+test result: ok. 11 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.19s
 
      Running detection\main.rs (target\debug\deps\detection-e23fac69caef8598.exe)
 
@@ -1348,7 +1350,7 @@ test invariants::steady_state::an_undisturbed_pipe_stays_steady ... Steady state
   valve holds steady                           yes
 ok
 
-test result: ok. 59 passed; 0 failed; 1 ignored; 0 measured; 0 filtered out; finished in 6.55s
+test result: ok. 59 passed; 0 failed; 1 ignored; 0 measured; 0 filtered out; finished in 6.76s
 
      Running kernel\main.rs (target\debug\deps\kernel-8eea161e1918dc58.exe)
 
@@ -1666,11 +1668,11 @@ test simulation::valve_fronts::a_shut_prv_passes_no_wave_and_no_route ... A seco
     and no route from S1 reaches the zone: the locator cannot place a burst there from S1 yes
 ok
 
-test result: ok. 29 passed; 0 failed; 3 ignored; 0 measured; 0 filtered out; finished in 31.93s
+test result: ok. 29 passed; 0 failed; 3 ignored; 0 measured; 0 filtered out; finished in 33.64s
 
      Running pipeline\main.rs (target\debug\deps\pipeline-0a591d8df4220b73.exe)
 
-running 9 tests
+running 10 tests
 test simulation::live::a_power_cut_at_a_sensor_is_reported_not_taken_for_silence ... A burst at t = 3 s while load-shedding has cut S2's gateway from
 t = 2.5 s to t = 6 s: S2's samples for that time never arrive, and when
 it comes back the network is still ringing:
@@ -1779,6 +1781,62 @@ Live: each sensor sends a 1 s chunk in turn:
     ... within 5.5 s                           yes
   alert 2 went out 4.00 s (data time) after its burst
     ... within 5.5 s                           yes
+ok
+test simulation::refill::vs6_live_refills_come_out_as_refill_warnings_not_bursts ... 
+Supply returns to the drained main; 5 mm air valve at the far end:
+1 alert(s) went out:
+[Warning] #1 REFILL (100% confident) at t = 120.951 s
+  where: not located (fewer than two sensors saw it)
+  seen by: S1 closed end
+  because: pressure ROSE by 0.28 m: a closing valve raises pressure upstream of it, returning water fills a pipe; bursts and pump trips lower it
+  because: DRAWN-OUT front (945 ms, 10-90%): a gradual change - a pump running down, a valve closing slowly, or a burst opening slowly
+  because: the pipe was EMPTY before: 0.04 m of pressure - supply returning to a drained pipe; with nothing flowing there was nothing to stop or let out
+  because: pump power is not monitored: no outside evidence
+  because: seen by ONE sensor only, and no other sensor that its wave could reach was watching: not located, not corroborated
+  -> sent when the data had reached t = 123.99 s
+    at least one alert                         yes
+    every alert is a REFILL                    yes
+    at WARNING level                           yes
+
+Supply returns to the drained main; 20 mm air valve at the far end:
+1 alert(s) went out:
+[Warning] #1 REFILL (95% confident) at t = 266.969 s
+  where: not located (fewer than two sensors saw it)
+  seen by: S1 closed end
+  because: pressure DROPPED by 4.56 m: a burst or a pump trip, not a closing valve (seen upstream) - or, in a refilling pipe, its column bouncing back off the air ahead
+  because: SHARP front (6 ms, 10-90%): a sudden change - a pipe splitting, a valve slamming - not a pump running down
+  because: supply RETURNED 139 s before to a pipe that had stood empty: it is still filling - the air ahead squeezed, the column bouncing on it or slamming into a closed end
+  because: pump power is not monitored: no outside evidence
+  because: seen by ONE sensor only, and no other sensor that its wave could reach was watching: not located, not corroborated
+  -> sent when the data had reached t = 269.99 s
+    at least one alert                         yes
+    every alert is a REFILL                    yes
+    at WARNING level                           yes
+
+Supply returns to the drained main; 100 mm air valve at the far end:
+2 alert(s) went out:
+[Warning] #1 REFILL (100% confident) at t = 215.543 s
+  where: not located (fewer than two sensors saw it)
+  seen by: S1 closed end
+  because: pressure ROSE by 379.35 m: a closing valve raises pressure upstream of it, returning water fills a pipe; bursts and pump trips lower it
+  because: SHARP front (14 ms, 10-90%): a sudden change - a pipe splitting, a valve slamming - not a pump running down
+  because: the pipe was EMPTY before: 0.03 m of pressure - supply returning to a drained pipe; with nothing flowing there was nothing to stop or let out
+  because: pump power is not monitored: no outside evidence
+  because: seen by ONE sensor only, and no other sensor that its wave could reach was watching: not located, not corroborated
+  -> sent when the data had reached t = 218.99 s
+[Warning] #2 REFILL (98% confident) at t = 216.543 s
+  where: not located (fewer than two sensors saw it)
+  seen by: S1 closed end
+  because: pressure DROPPED by 665.37 m: a burst or a pump trip, not a closing valve (seen upstream) - or, in a refilling pipe, its column bouncing back off the air ahead
+  because: SHARP front (13 ms, 10-90%): a sudden change - a pipe splitting, a valve slamming - not a pump running down
+  because: DEEP drop: 179% of the pressure - a stopping pump collapses the head
+  because: supply RETURNED 1 s before to a pipe that had stood empty: it is still filling - the air ahead squeezed, the column bouncing on it or slamming into a closed end
+  because: pump power is not monitored: no outside evidence
+  because: seen by ONE sensor only, and no other sensor that its wave could reach was watching: not located, not corroborated
+  -> sent when the data had reached t = 219.99 s
+    at least one alert                         yes
+    every alert is a REFILL                    yes
+    at WARNING level                           yes
 ok
 test simulation::scenarios::a_faulty_sensor_is_sent_for_review_not_raised_as_an_alarm ... No event in the pipes; S2's reading jumps 3 m at t = 6 s (sensor fault):
 1 alert(s):
@@ -1901,7 +1959,7 @@ test simulation::valves_by_hour::at_noon_the_valve_is_active_and_both_loggers_lo
     and it is not dismissed                    yes
 ok
 
-test result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 4.76s
+test result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 5.47s
 
    Doc-tests jk_application
 
@@ -1976,9 +2034,9 @@ running 0 tests
 test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
 
 ==============================================================================
-  passed   298
+  passed   301
   failed   0
   skipped  6 slow test(s) not in this suite (run -Suite full)
   filtered 0 test(s) outside -Only/-Filter
-  time     80.9 s (including compile)
+  time     76.5 s (including compile)
   result   ALL PASSED

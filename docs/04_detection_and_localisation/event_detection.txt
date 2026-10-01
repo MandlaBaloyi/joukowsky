@@ -159,11 +159,17 @@ ramp - the air squeezed over a minute or more - so its start is never a
 front (FN-033). What marks it is the state before: a drained pipe reads
 about 0 (air at atmospheric pressure; below 0 in a vacuum) for minutes
 to hours. The supply watch (crates/domain/detection/src/supply.rs,
-empty_spells) finds spells at or below 2 m lasting >= 60 s - a pump
-trip's down-surge touches the vapour floor for seconds, which is a
-transient - bridging wanders above 2 m shorter than 2 s, and reports when
-each spell ended: the supply returned. A spell running into the start or
+empty_spells; live: SupplyWatch) finds spells at or below 2 m lasting
+>= 60 s - a pump trip's down-surge touches the vapour floor for seconds,
+which is a transient - and reports when each spell ended: the first
+reading above 2 m, the supply returned. Any reading above ends it: noise
+never reaches 2 m, and after a slam the pressure swings between surge
+and floor every 2L/a, so waiting for it to STAY up missed the return
+(FN-033). A flicker of supply that drains again is a refill attempt. A spell running into the start or
 end of the record says so (began before / not yet ended, P6). The
 classifier takes the returns as context: fronts within 15 min after one
 belong to the refill. [VERIFY the 2 m / 60 s / 15 min on field records
-of supply cuts.] Not yet run by the live Monitor (G-14).
+of supply cuts.] The live Monitor runs a watch per sensor beside its
+front detector (PipelineConfig.supply); a gap ends the watch (a spell
+open at a gap: whether supply came back during it is not known, P6), and
+each event is classified with its own sensor's last return.

@@ -325,5 +325,11 @@ FN-033  2026-10-01  A refill against trapped air has no front
   pipe stood EMPTY (<= 2 m for >= 60 s) and when the supply returned;
   the classifier treats fronts within 15 min of a return as the refill's.
   The dip is now refill 98%. Lesson: some events are slow STATE changes,
-  not waves; the engine needs both watches. Still to do: run the supply
-  watch in the live Monitor (G-14).
+  not waves; the engine needs both watches.
+  Then, wired into the live Monitor: the first watch confirmed a return
+  only once the reading had STAYED above 2 m for 2 s (to ride out
+  wanders). After a slam the water hammer swings between +379 m and the
+  floor every 2L/a = 1 s, so the return was never confirmed and the
+  down-surge 1 s after the slam went out as BURST (82%, Review). Noise
+  (2 cm) never reaches 2 m; any reading above it is water arriving. The
+  2 s bridge was removed; that down-surge is now refill 98%.

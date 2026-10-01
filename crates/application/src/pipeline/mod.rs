@@ -17,7 +17,7 @@ pub use monitor::Monitor;
 pub use run::process;
 
 use jk_classification::{ClassifierConfig, Context, FeatureConfig};
-use jk_detection::{DetectorConfig, Series};
+use jk_detection::{DetectorConfig, Series, SupplyConfig};
 use jk_hydraulics::steady::extended::PeriodOptions;
 use jk_hydraulics::{Network, NodeId};
 use jk_kernel::Time;
@@ -79,6 +79,9 @@ pub struct Record<'a> {
 pub struct PipelineConfig {
     /// Detection at each sensor.
     pub detector: DetectorConfig,
+    /// Supply watch at each sensor: when its pipe stood empty and when the
+    /// supply returned (refills).
+    pub supply: SupplyConfig,
     /// Feature windows for classification.
     pub features: FeatureConfig,
     /// Classification rules.
@@ -104,6 +107,7 @@ impl Default for PipelineConfig {
     fn default() -> Self {
         Self {
             detector: DetectorConfig::default(),
+            supply: SupplyConfig::default(),
             features: FeatureConfig::default(),
             classifier: ClassifierConfig::default(),
             localise: LocaliseOptions::default(),

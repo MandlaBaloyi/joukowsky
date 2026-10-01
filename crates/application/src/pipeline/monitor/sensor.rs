@@ -1,6 +1,6 @@
 //! What the monitor keeps per sensor.
 
-use jk_detection::{DetectorStream, Series};
+use jk_detection::{DetectorStream, Series, SupplyWatch};
 use jk_kernel::Time;
 use jk_telemetry::Assembler;
 
@@ -16,6 +16,11 @@ pub(super) struct SensorState {
     pub impaired: Vec<(f64, f64)>,
     /// Time of its first valid sample.
     pub first_data: Option<f64>,
+    /// Supply watch over the current continuous stretch.
+    pub supply: Option<SupplyWatch>,
+    /// Recent times (its own clock) when supply returned to its empty
+    /// pipe [s].
+    pub supply_returns: Vec<f64>,
     /// Recent valid samples of the current stretch (for classification):
     /// sample i is sample `dropped + i` of the stretch.
     history: Vec<f64>,
@@ -128,6 +133,17 @@ impl SensorState {
     /// Forgets impaired stretches that ended before `t`.
     pub fn forget_impaired_before(&mut self, t: f64) {
         self.impaired.retain(|&(_, to)| to >= t);
+    }
+
+    /// The last supply return at or before `t` (its own clock) [s].
+    pub fn supply_returned_by(&self, t: f64) -> Option<f64> {
+        self.supply_returns
+            .iter()
+            .copied()
+            .filter(|&back| back <= t)
+            .fold(None, |latest, back| {
+                Some(latest.map_or(back, |l: f64| l.max(back)))
+            })
     }
 }
 

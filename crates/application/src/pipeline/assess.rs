@@ -35,6 +35,9 @@ pub(super) struct Found {
     /// Classification features, once the record around the front is in
     /// (or the reason they could not be measured).
     pub features: Option<Result<Features, String>>,
+    /// When supply last returned to this sensor's empty pipe before the
+    /// event (clock-corrected), if the supply watch saw it.
+    pub supply_return: Option<Time>,
 }
 
 /// A sensor whose data was not waited for: its index, and the time of its
@@ -64,12 +67,11 @@ pub(super) fn assess(
 
     let (class, confidence) = match &first.features {
         Some(Ok(features)) => {
-            let c = classify(
-                features,
-                &site.context,
-                first.arrival.time,
-                &config.classifier,
-            );
+            let context = site
+                .context
+                .clone()
+                .with_supply_returns(first.supply_return.as_slice());
+            let c = classify(features, &context, first.arrival.time, &config.classifier);
             reasons.extend(c.reasons.iter().cloned());
             (c.class, c.confidence)
         }

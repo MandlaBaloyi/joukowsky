@@ -130,7 +130,8 @@ Rung 3  Simulation studies.
         already under pressure; the supply watch finds the return (127.6 s,
         128.2 s; the air passes 2 m 7.6 s and 8.2 s after the water comes
         back) -> refill 98%, 99%. Control: the same slam on a pipe under
-        pressure -> valve closure (2026-10-01).
+        pressure -> valve closure. Live monitor, 1 s chunks, 5/20/100 mm
+        valves: every alert a REFILL warning, none a burst (2026-10-01).
   V-S4  Scale: synthetic towns of 10 / 50 / 100 km - time the simulator,
         live engine and advisor (10_findings/detection_range_and_scale.txt,
         gap G-10).
