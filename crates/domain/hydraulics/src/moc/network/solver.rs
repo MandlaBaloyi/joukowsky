@@ -15,7 +15,9 @@
 //! ([`super::cavity`]); a point then carries two flows, its upstream side
 //! (used by the C- leaving it) and its downstream side (used by the C+).
 //! Pumps, check valves and control valves may hold a cavity on either side
-//! ([`super::cavity::two_sided`]).
+//! ([`super::cavity::two_sided`]). With free gas (DGCM) every pipe point and
+//! junction/valve node carries its gas volume instead; two-sided devices
+//! keep vapour cavities.
 //!
 //! A plastic pipe's creep is folded into every characteristic it carries
 //! (`pipe/viscoelastic.rs`): interior points and pipe ends then solve with
@@ -127,6 +129,10 @@ struct Cavities {
     node_volume: Vec<f64>,
     /// Cavity volume on the downstream side of a two-sided device.
     node_volume_down: Vec<f64>,
+    /// Gas constant c3 at every pipe grid point and node (all 0: vapour
+    /// cavities only).
+    point_gas: Vec<Vec<f64>>,
+    node_gas: Vec<f64>,
 }
 
 impl Cavities {
@@ -188,6 +194,11 @@ impl Network {
         }
         let mut h_new = h.clone();
         let mut q_new = q.clone();
+        if self.free_gas().is_some() && self.vapour_floor().is_none() {
+            return Err(HydraulicsError::InvalidNetwork(
+                "free gas needs a vapour floor (set_vapour_floor)".into(),
+            ));
+        }
         let mut cavities = self.vapour_floor().map(|floor| {
             let hv = floor.value();
             let z = |n: NodeId| self.elevation(n).value();
@@ -205,15 +216,58 @@ impl Network {
                 })
                 .collect();
             let zeros: Vec<Vec<f64>> = h.iter().map(|hp| vec![0.0; hp.len()]).collect();
+            let node_floor: Vec<f64> = (0..self.nodes().len()).map(|n| z(NodeId(n)) + hv).collect();
+            // Free gas: c3 = alpha0 Vreach (h0 - floor), half reaches at a
+            // node from each pipe; only plain points, junctions and valves.
+            let (mut point_gas, mut node_gas) = (zeros.clone(), vec![0.0; self.nodes().len()]);
+            if let Some(gas) = self.free_gas() {
+                let per_volume = gas.void_fraction * (gas.at_head.value() - hv);
+                for (p, np) in self.pipes().iter().enumerate() {
+                    let r = h[p].len() - 1;
+                    let reach = np.pipe.area().value() * np.pipe.length().value()
+                        / f64::from(grid.reaches()[p]);
+                    for c in &mut point_gas[p][1..r] {
+                        *c = per_volume * reach;
+                    }
+                    for end in [np.from, np.to] {
+                        if matches!(
+                            self.nodes()[end.0],
+                            Node::Junction { .. } | Node::Valve { .. }
+                        ) {
+                            node_gas[end.0] += per_volume * reach / 2.0;
+                        }
+                    }
+                }
+            }
+            // Gas volumes at the start: Vg = c3 / (H0 - floor).
+            let start = |c3: f64, head: f64, floor: f64| {
+                if c3 > 0.0 {
+                    c3 / (head - floor).max(1e-3)
+                } else {
+                    0.0
+                }
+            };
+            let volume: Vec<Vec<f64>> = (0..h.len())
+                .map(|p| {
+                    (0..h[p].len())
+                        .map(|i| start(point_gas[p][i], h[p][i], point_floor[p][i]))
+                        .collect()
+                })
+                .collect();
+            let node_volume: Vec<f64> = (0..self.nodes().len())
+                .map(|n| start(node_gas[n], steady.node_heads[n], node_floor[n]))
+                .collect();
             Cavities {
                 floor: point_floor,
-                volume: zeros.clone(),
-                volume_new: zeros,
+                volume: volume.clone(),
+                volume_new: volume,
                 upstream: q.clone(),
                 upstream_new: q.clone(),
-                node_floor: (0..self.nodes().len()).map(|n| z(NodeId(n)) + hv).collect(),
-                node_volume: vec![0.0; self.nodes().len()],
+                node_floor,
+                node_volume,
                 node_volume_down: vec![0.0; self.nodes().len()],
+                point_gas,
+                node_gas,
             }
         });
         let mut walls: Vec<Option<Wall>> = self
@@ -323,6 +377,7 @@ impl Network {
                     upstream: &cav.upstream,
                     volume: &cav.volume,
                     floor: &cav.floor,
+                    gas: &cav.point_gas,
                     dt: dt_si,
                 };
                 std::thread::scope(|scope| {
@@ -414,14 +469,26 @@ impl Network {
                         };
                         match cavities.as_mut() {
                             Some(cav) => {
-                                let (hn, out, v) = cavity::node(
-                                    &arrivals,
-                                    usual,
-                                    cav.node_floor[n],
-                                    cav.node_volume[n],
-                                    dt_si,
-                                    |hh| d + opening.map_or(0.0, |(k, o)| leak::flow_at(hh, k, o)),
-                                );
+                                let outflow_at =
+                                    |hh| d + opening.map_or(0.0, |(k, o)| leak::flow_at(hh, k, o));
+                                let (hn, out, v) = if cav.node_gas[n] > 0.0 {
+                                    cavity::node_gas(
+                                        &arrivals,
+                                        cav.node_floor[n],
+                                        (cav.node_volume[n], cav.node_gas[n]),
+                                        dt_si,
+                                        outflow_at,
+                                    )
+                                } else {
+                                    cavity::node(
+                                        &arrivals,
+                                        usual,
+                                        cav.node_floor[n],
+                                        cav.node_volume[n],
+                                        dt_si,
+                                        outflow_at,
+                                    )
+                                };
                                 cav.node_volume[n] = v;
                                 (hn, out)
                             }
@@ -444,14 +511,26 @@ impl Network {
                         );
                         match cavities.as_mut() {
                             Some(cav) => {
-                                let (hn, qv, v) = cavity::node(
-                                    &arrivals,
-                                    usual,
-                                    cav.node_floor[n],
-                                    cav.node_volume[n],
-                                    dt_si,
-                                    |hh| valve::flow_at(hh, downstream_head.value(), cv),
-                                );
+                                let outflow_at =
+                                    |hh| valve::flow_at(hh, downstream_head.value(), cv);
+                                let (hn, qv, v) = if cav.node_gas[n] > 0.0 {
+                                    cavity::node_gas(
+                                        &arrivals,
+                                        cav.node_floor[n],
+                                        (cav.node_volume[n], cav.node_gas[n]),
+                                        dt_si,
+                                        outflow_at,
+                                    )
+                                } else {
+                                    cavity::node(
+                                        &arrivals,
+                                        usual,
+                                        cav.node_floor[n],
+                                        cav.node_volume[n],
+                                        dt_si,
+                                        outflow_at,
+                                    )
+                                };
                                 cav.node_volume[n] = v;
                                 (hn, qv)
                             }
@@ -832,6 +911,7 @@ struct Shared<'a> {
     upstream: &'a [Vec<f64>],
     volume: &'a [Vec<f64>],
     floor: &'a [Vec<f64>],
+    gas: &'a [Vec<f64>],
     dt: f64,
 }
 
@@ -860,7 +940,14 @@ fn cavitating(
                     (cp, cm, b)
                 }
             };
-            let (head, qu, qd, v) = cavity::point(cp, cm, b, s.floor[p][i], s.volume[p][i], s.dt);
+            let (head, qu, qd, v) = cavity::point_gas(
+                cp,
+                cm,
+                b,
+                s.floor[p][i],
+                (s.volume[p][i], s.gas[p][i]),
+                s.dt,
+            );
             h_new[k][i] = head;
             q_new[k][i] = qd;
             upstream_new[k][i] = qu;

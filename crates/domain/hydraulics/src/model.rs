@@ -8,6 +8,8 @@
 
 use jk_kernel::{Acceleration, Area, Flow, Head, Length, Time};
 
+use crate::vapour::FreeGas;
+
 use crate::boundary::control_valve::ValveMode;
 use crate::boundary::junction::PipeEnd;
 use crate::boundary::pump::Pump;
@@ -218,6 +220,8 @@ pub struct Network {
     /// Gauge pressure head at which water boils, if transients may
     /// cavitate (S7).
     vapour_floor: Option<f64>,
+    /// Free gas in the water, if cavities are gas cavities (DGCM).
+    free_gas: Option<FreeGas>,
 }
 
 /// For each node, the pipes that touch it and which end of each.
@@ -236,6 +240,7 @@ impl Network {
             tanks: Vec::new(),
             elevations: Vec::new(),
             vapour_floor: None,
+            free_gas: None,
         }
     }
 
@@ -269,6 +274,35 @@ impl Network {
     #[must_use]
     pub fn vapour_floor(&self) -> Option<Head> {
         self.vapour_floor.map(Head::new)
+    }
+
+    /// Makes the cavities GAS cavities (DGCM): every grid point carries the
+    /// free `gas` ([`FreeGas`]), which swells as the pressure falls and
+    /// softens collapses; waves slow down with it. Needs a vapour floor
+    /// ([`Network::set_vapour_floor`]). `None` (default): pure vapour
+    /// cavities (DVCM) - the limit as the gas goes to 0.
+    ///
+    /// # Errors
+    /// A void fraction outside (0, 0.01] or a head that is not finite.
+    pub fn set_free_gas(&mut self, gas: Option<FreeGas>) -> Result<(), HydraulicsError> {
+        if let Some(g) = gas {
+            if !(g.void_fraction > 0.0 && g.void_fraction <= 0.01) {
+                return Err(HydraulicsError::invalid(
+                    "void fraction",
+                    g.void_fraction,
+                    "in (0, 0.01]",
+                ));
+            }
+            finite("free gas head", g.at_head.value())?;
+        }
+        self.free_gas = gas;
+        Ok(())
+    }
+
+    /// The free gas, if set.
+    #[must_use]
+    pub fn free_gas(&self) -> Option<FreeGas> {
+        self.free_gas
     }
 
     /// Sets node `node`'s ground elevation (used where a pressure matters:

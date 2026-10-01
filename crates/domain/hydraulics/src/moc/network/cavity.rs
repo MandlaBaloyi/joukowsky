@@ -30,6 +30,19 @@
 //! The cavities are an exact water budget: water missing from the columns
 //! is the cavity volume. psi = 1 [VERIFY against psi = 0.5 on Bergant &
 //! Simpson's laboratory runs when that data is approved].
+//!
+//! GAS cavities (DGCM, [`crate::vapour::FreeGas`]): with a gas constant
+//! `c3` = alpha0 Vreach (h0 - floor) > 0 at a point, its gas volume obeys
+//! `Vg (H - H_floor) = c3` at all times, and the same balance holds:
+//!
+//! ```text
+//!   c3 / y = Vg_old + dt (Qd - Qu),   y = H - H_floor > 0
+//!   Qd - Qu = (2 H - C_P - C_M) / B
+//!   =>  s y^2 + k y - c3 = 0,  s = 2 dt / B,  k = Vg_old + dt (2 H_floor - C_P - C_M) / B
+//! ```
+//!
+//! one positive root, solved without cancellation. The head never reaches
+//! the floor; as c3 -> 0 the gas cavity becomes the vapour cavity.
 
 use crate::boundary::junction::{Arrival, PipeEnd};
 
@@ -47,6 +60,28 @@ pub fn point(
     volume: f64,
     dt: f64,
 ) -> (f64, f64, f64, f64) {
+    point_gas(c_plus, c_minus, b, floor, (volume, 0.0), dt)
+}
+
+/// As [`point`] with free gas: `gas` = (volume before the step, gas
+/// constant c3). With c3 = 0 it is the vapour cavity of [`point`].
+#[must_use]
+#[inline]
+pub fn point_gas(
+    c_plus: f64,
+    c_minus: f64,
+    b: f64,
+    floor: f64,
+    (volume, c3): (f64, f64),
+    dt: f64,
+) -> (f64, f64, f64, f64) {
+    if c3 > 0.0 {
+        let s = 2.0 * dt / b;
+        let k = volume + dt * (2.0 * floor - c_plus - c_minus) / b;
+        let y = positive_root(s, k, c3);
+        let head = floor + y;
+        return (head, (c_plus - head) / b, (head - c_minus) / b, c3 / y);
+    }
     let head = f64::midpoint(c_plus, c_minus);
     if volume > 0.0 || head < floor {
         let upstream = (c_plus - floor) / b;
@@ -58,6 +93,64 @@ pub fn point(
     }
     let q = (c_plus - c_minus) / (2.0 * b);
     (head, q, q, 0.0)
+}
+
+/// The positive root y of s y^2 + k y - c = 0 (s, c > 0), in the form
+/// without cancellation.
+#[inline]
+fn positive_root(s: f64, k: f64, c: f64) -> f64 {
+    let d = (k * k + 4.0 * s * c).sqrt();
+    if k > 0.0 {
+        2.0 * c / (k + d)
+    } else {
+        (d - k) / (2.0 * s)
+    }
+}
+
+/// A node with free gas (gas constant `c3` > 0, gas volume `volume` before
+/// the step): finds y = H - floor > 0 with c3 / y = `volume` + dt (outflow
+/// minus inflow) at H, the outflow law `outflow_at` being any increasing
+/// function (demand, leak, valve). Returns (head, outflow, gas volume).
+#[must_use]
+pub fn node_gas(
+    arrivals: &[Arrival],
+    floor: f64,
+    (volume, c3): (f64, f64),
+    dt: f64,
+    outflow_at: impl Fn(f64) -> f64,
+) -> (f64, f64, f64) {
+    let inflow = |h: f64| -> f64 {
+        arrivals
+            .iter()
+            .map(|a| match a.end {
+                PipeEnd::Downstream => a.flow(h),
+                PipeEnd::Upstream => -a.flow(h),
+            })
+            .sum()
+    };
+    // Increasing in y, from -infinity at y -> 0.
+    let f = |y: f64| volume + dt * (outflow_at(floor + y) - inflow(floor + y)) - c3 / y;
+    let mut hi = 1.0;
+    while f(hi) < 0.0 && hi < 1e7 {
+        hi *= 2.0;
+    }
+    let mut lo = hi;
+    while f(lo) > 0.0 && lo > 1e-300 {
+        lo *= 0.5;
+    }
+    for _ in 0..200 {
+        let mid = f64::midpoint(lo, hi);
+        if mid <= lo || mid >= hi {
+            break;
+        }
+        if f(mid) < 0.0 {
+            lo = mid;
+        } else {
+            hi = mid;
+        }
+    }
+    let y = f64::midpoint(lo, hi);
+    (floor + y, outflow_at(floor + y), c3 / y)
 }
 
 /// A node, given its usual solution (`head`, `outflow`) and how its own
@@ -219,6 +312,42 @@ mod tests {
         assert!((qu - (cp + 10.0) / b).abs() < 1e-15, "C+ holds");
         assert!((qd - (-10.0 - cm) / b).abs() < 1e-15, "C- holds");
         assert!((v - dt * (qd - qu)).abs() < 1e-18 && v > 0.0);
+    }
+
+    #[test]
+    fn gas_obeys_its_law_and_both_characteristics() {
+        let (b, dt, floor, c3) = (100.0, 1e-3, -10.0, 1e-4);
+        let (cp, cm) = (-20.0, -40.0);
+        let v_old = c3 / 5.0;
+        let (h, qu, qd, v) = point_gas(cp, cm, b, floor, (v_old, c3), dt);
+        assert!(h > floor, "never reaches the floor");
+        assert!((v * (h - floor) - c3).abs() < 1e-15, "gas law");
+        assert!((v - v_old - dt * (qd - qu)).abs() < 1e-15, "water budget");
+        assert!((h - (cp - b * qu)).abs() < 1e-12 && (h - (cm + b * qd)).abs() < 1e-12);
+    }
+
+    #[test]
+    fn a_trace_of_gas_is_a_vapour_cavity() {
+        let (b, dt, floor) = (100.0, 1e-3, -10.0);
+        let vapour = point(-20.0, -40.0, b, floor, 0.0, dt);
+        let gas = point_gas(-20.0, -40.0, b, floor, (1e-15, 1e-15), dt);
+        assert!((vapour.0 - gas.0).abs() < 1e-9);
+        assert!((vapour.3 - gas.3).abs() < 1e-12);
+    }
+
+    #[test]
+    fn node_gas_balances_its_flows() {
+        use crate::boundary::junction::PipeEnd;
+        let arrivals = [Arrival {
+            characteristic: -40.0,
+            impedance: 100.0,
+            end: PipeEnd::Downstream,
+        }];
+        let (dt, floor, c3, v_old) = (1e-3, -10.0, 1e-4, 1e-5);
+        let (h, out, v) = node_gas(&arrivals, floor, (v_old, c3), dt, |_| 0.002);
+        let inflow = arrivals[0].flow(h);
+        assert!((v * (h - floor) - c3).abs() < 1e-12 * c3.max(1.0));
+        assert!((v - v_old - dt * (out - inflow)).abs() < 1e-12);
     }
 
     #[test]

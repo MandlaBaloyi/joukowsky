@@ -360,3 +360,7 @@ FN-035  2026-10-01  Linear theory halves the worst surge after a pump trip
   "passes" in linear theory may not. Caveat: DVCM is known to overstate
   collapse spikes [VERIFY with DGCM and laboratory data]; the direction of
   the finding stands, the factor 2 is not yet trusted.
+  Revisited the same day with free gas (DGCM, V-A18): alpha0 from 1e-7 to
+  1e-4 gives 159-174 m at the knee, 2.1-2.3 times linear theory's worst.
+  The doubling survives the gas model; laboratory data remains the last
+  check [VERIFY].

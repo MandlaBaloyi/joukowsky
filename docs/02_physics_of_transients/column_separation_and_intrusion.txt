@@ -1,5 +1,5 @@
 COLUMN SEPARATION, CAVITATION AND INTRUSION
-STATUS: DRAFT v0.2 - section 5 built and checked (V-A17)
+STATUS: DRAFT v0.3 - sections 5-6 built and checked (V-A17, V-A18)
 
 1. The down-surge
 -----------------
@@ -128,3 +128,45 @@ pressure - linear theory's highest was 76 m (FN-035). A stopped pump
 passes water from its sump into a down-surge at its discharge (no
 non-return valve modelled beyond the pump's own), so the discharge itself
 did not boil: the knee did, as in the field.
+
+6. Implementation note: free gas - the discrete gas cavity model (2026-10-01)
+------------------------------------------------------------------------------
+Built on the same code (Network::set_free_gas, hydraulics vapour.rs
+FreeGas; needs a vapour floor). Every pipe grid point - and every
+junction or valve node, with half of each touching reach - carries a
+small free-gas volume, isothermal between its pressure and the vapour
+pressure (Wylie 1984; Bergant, Simpson & Tijsseling 2006):
+
+    Vg (H - H_floor) = c3 = alpha0 Vreach (h0 - floor)   per point
+    c3 / y = Vg_old + dt (Qd - Qu),  y = H - H_floor > 0  (psi = 1)
+    with Qd - Qu = (2H - C_P - C_M)/B:  s y^2 + k y - c3 = 0,
+    s = 2 dt / B,  k = Vg_old + dt (2 H_floor - C_P - C_M) / B
+
+one positive root, solved without cancellation; a node with a leak or a
+valve (nonlinear outflow) is solved by bisection. alpha0 is the gas
+fraction at gauge head h0 (0 = atmospheric): about 1e-7 for laboratory
+water, up to about 1e-4 in the field [VERIFY for SA municipal supply].
+Pumps, check valves and control valves keep vapour cavities (G-21).
+
+Checks (V-A18):
+  - Limit: as alpha0 -> 0 the vapour cavity comes back. V-A17's closure:
+      alpha0   collapse surge   off by    largest cavity   off by
+      1e-7     227.67 m         7.1e-3    77.30 l          3.6e-3
+      1e-9     226.32 m         1.2e-3    77.54 l          5.9e-4
+      1e-11    226.08 m         1.2e-4    77.58 l          5.9e-5
+      1e-13    226.06 m         1.2e-5    77.58 l          5.9e-6
+    (the difference falls as sqrt(alpha0)).
+  - Wave speed: gas makes the water springier. Wood's formula for a
+    bubbly mixture, 1/a_m^2 = 1/a^2 + alpha rho / p*, with alpha0 = 1e-3
+    at atmospheric and the pipe at 50 m: a_m = 882.8 m/s. The valve end
+    rings with period 2.26574 s over 4 cycles; 4L/a_m = 2.26562 s
+    (5e-5). The lumped gas at grid points reproduces the distributed
+    mixture's wave speed.
+
+Pump trip at the knee (FN-035 revisited): the highest pressure at the
+knee after the column separates, against the gas content:
+      none (vapour)  160.2 m      1e-6   174.1 m      1e-4   158.8 m
+      1e-7           172.1 m      1e-5   161.9 m
+Linear theory's highest is 75.7 m. Across four decades of gas the
+collapse still reaches 2.1-2.3 times linear theory's worst: the doubling
+is not an artefact of the vapour model.

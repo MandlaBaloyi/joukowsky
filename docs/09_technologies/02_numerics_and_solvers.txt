@@ -126,7 +126,8 @@ In build order:
       STATUS 2026-09-29: built and validated (V-A5); parameters [VERIFY].
   S7  Cavitation: DGCM (discrete gas cavity model), DVCM for comparison.
       STATUS 2026-10-01: DVCM built first (exact solution to test, V-A17;
-      FN-034) at pipe points, junctions and valves; DGCM next.
+      FN-034) at pipe points, junctions, valves and two-sided devices;
+      DGCM on the same code the same day (V-A18).
   S8  Discrete adjoint of the network MOC - exact gradients of a data
       misfit w.r.t. wave speeds, friction, leak parameters, in one
       backward pass. Enables gradient-based ITA and HMC (05_). This is

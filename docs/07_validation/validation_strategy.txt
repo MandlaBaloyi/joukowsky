@@ -23,6 +23,11 @@ Rung 1  Analytical: results that must match closed-form physics.
         reservoir-pipe-valve system vs the exact complex-frequency
         solution; first-order convergence, extrapolated within 0.5%
         (2026-09-29: +0.1% at 400 reaches after FN-021).
+  V-A18 Free gas (DGCM, 02_/column_separation_and_intrusion.txt section
+        6): as alpha0 -> 0 (1e-7 .. 1e-13) V-A17's collapse surge and
+        cavity come back, difference falling as sqrt(alpha0) to 1.2e-5;
+        with alpha0 = 1e-3 the ringing period matches Wood's mixture
+        wave speed, 4L/a_m = 2.2656 s (5e-5) (2026-10-01).
   V-A17 Column separation (02_/column_separation_and_intrusion.txt
         section 5): instant valve closure on 2 m/s, frictionless 500 m
         pipe, 30 m reservoir, vapour floor -10 m. Cavity opens at 2L/a;

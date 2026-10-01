@@ -10,6 +10,7 @@
 //! Laws checked: no head below its own floor; the cavity opens and closes;
 //! the run stays finite. (The exact numbers are V-A17's.)
 
+use jk_hydraulics::vapour::FreeGas;
 use jk_hydraulics::{
     GridOptions, InitialCondition, Network, NetworkRun, Node, Probe, Pump, PumpCurve,
     SteadyOptions, thorley_inertia,
@@ -23,7 +24,7 @@ const FLOOR: f64 = -10.0;
 /// Sump 10 m -> pump (trips at 0.01 s, inertia 1/20 of the Thorley
 /// estimate) -> 1000 m up to a knee at 50 m -> 1000 m on to a reservoir at
 /// 100 m (ground 95 m). Probes: the pump (discharge head), the knee.
-fn pump_trip(floor: Option<f64>) -> NetworkRun {
+fn pump_trip(floor: Option<f64>, gas: Option<FreeGas>) -> NetworkRun {
     let power = 998.2 * STANDARD_GRAVITY.value() * 0.10 * 120.0 / 0.8 / 1000.0;
     let station = Pump {
         curve: PumpCurve::from_points(
@@ -58,6 +59,7 @@ fn pump_trip(floor: Option<f64>) -> NetworkRun {
     net.set_elevation(knee, Length::new(KNEE)).unwrap();
     net.set_elevation(top, Length::new(95.0)).unwrap();
     net.set_vapour_floor(floor.map(Head::new)).unwrap();
+    net.set_free_gas(gas).unwrap();
     net.simulate(
         &InitialCondition::Steady(SteadyOptions::default()),
         Time::new(30.0),
@@ -78,7 +80,7 @@ fn heads(r: &NetworkRun, j: usize) -> Vec<f64> {
 fn after_a_pump_trip_the_column_separates_at_the_knee_of_the_rising_main() {
     let lowest = |h: &[f64]| h.iter().copied().fold(f64::INFINITY, f64::min);
     let highest = |h: &[f64]| h.iter().copied().fold(f64::NEG_INFINITY, f64::max);
-    let linear = pump_trip(None);
+    let linear = pump_trip(None, None);
     let knee_linear = heads(&linear, 1);
     println!(
         "A pump with 1/20 of the usual flywheel trips; its main climbs to a knee 50 m up. Linear \
@@ -89,7 +91,7 @@ fn after_a_pump_trip_the_column_separates_at_the_knee_of_the_rising_main() {
         "  (linear theory goes below the floor at the knee)",
         lowest(&knee_linear) < KNEE + FLOOR,
     );
-    let run = pump_trip(Some(FLOOR));
+    let run = pump_trip(Some(FLOOR), None);
     let knee = heads(&run, 1);
     let volume = &run.cavity_volumes[1];
     let peak = volume.iter().copied().fold(0.0, f64::max);
@@ -129,5 +131,50 @@ fn after_a_pump_trip_the_column_separates_at_the_knee_of_the_rising_main() {
          the collapse surge, why column separation breaks pipes",
         highest(&knee[closes.unwrap_or(0)..]) - KNEE,
         highest(&knee_linear) - KNEE
+    );
+}
+
+#[test]
+fn free_gas_does_not_take_away_the_doubled_surge_at_the_knee() {
+    let highest = |r: &NetworkRun| heads(r, 1).iter().copied().fold(f64::MIN, f64::max) - KNEE;
+    let lowest = |r: &NetworkRun| heads(r, 1).iter().copied().fold(f64::MAX, f64::min) - KNEE;
+    let linear = highest(&pump_trip(None, None));
+    let vapour = highest(&pump_trip(Some(FLOOR), None));
+    println!(
+        "The pump trip at the knee: how high the pressure goes after the column separates,          against how much free gas the water carries (linear theory: {linear:.1} m)."
+    );
+    println!("  free gas alpha0      highest   lowest   [m of pressure at the knee]");
+    println!(
+        "  none (vapour)       {vapour:8.1}   {:6.1}",
+        lowest(&pump_trip(Some(FLOOR), None))
+    );
+    let mut peaks = Vec::new();
+    for alpha0 in [1e-7, 1e-6, 1e-5, 1e-4] {
+        let run = pump_trip(
+            Some(FLOOR),
+            Some(FreeGas {
+                void_fraction: alpha0,
+                at_head: Head::ZERO,
+            }),
+        );
+        println!(
+            "  {alpha0:15.0e}     {:8.1}   {:6.1}",
+            highest(&run),
+            lowest(&run)
+        );
+        check("    never below the floor", lowest(&run) >= FLOOR - 1e-9);
+        peaks.push(highest(&run));
+    }
+    check(
+        "  a trace of gas (1e-7) behaves like the vapour cavity (within 10%)",
+        (peaks[0] - vapour).abs() <= 0.1 * vapour,
+    );
+    let least = peaks.iter().copied().fold(f64::MAX, f64::min);
+    check(
+        &format!(
+            "  at every gas content the collapse still reaches about twice linear theory's worst ({:.2}x at the least)",
+            least / linear
+        ),
+        least > 1.9 * linear,
     );
 }

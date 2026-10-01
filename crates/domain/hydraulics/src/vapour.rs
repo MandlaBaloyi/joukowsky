@@ -41,6 +41,29 @@ pub fn vapour_floor(altitude: Length, vapour_pressure: Pressure, gravity: Accele
     )
 }
 
+/// Free gas carried in the water - dissolved air come out of solution,
+/// entrained bubbles - for the discrete GAS cavity model (DGCM,
+/// `column_separation_and_intrusion.txt` section 6). Each grid point holds
+/// a small gas volume obeying the isothermal gas law between its pressure
+/// and the vapour pressure:
+///
+/// ```text
+///   Vg (H - H_floor) = alpha0 Vreach (h0 - floor)      (constant per point)
+/// ```
+///
+/// so it shrinks under pressure and swells as the pressure falls - and
+/// near the floor it plays the vapour cavity's part, without DVCM's hard
+/// on/off.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct FreeGas {
+    /// Gas volume per volume of pipe, `alpha0`, when the pressure head is
+    /// `at_head`. Laboratory water about 1e-7, field water up to about 1e-4
+    /// [VERIFY for SA municipal supply].
+    pub void_fraction: f64,
+    /// Gauge pressure head at which `void_fraction` holds (0 = atmospheric).
+    pub at_head: Head,
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

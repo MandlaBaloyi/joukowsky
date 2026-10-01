@@ -23,7 +23,7 @@
 //! When the water comes back and fills it, the columns meet: the valve end
 //! jumps to the reservoir head + (a/g) times the velocity arriving then.
 
-use jk_hydraulics::vapour::{VAPOUR_PRESSURE_20C, vapour_floor};
+use jk_hydraulics::vapour::{FreeGas, VAPOUR_PRESSURE_20C, vapour_floor};
 use jk_hydraulics::{
     GridOptions, InitialCondition, Network, NetworkRun, Node, Probe, SourceLevel, SteadyOptions,
     ValveClosure, ValveMode,
@@ -318,5 +318,126 @@ fn va17_a_column_pulled_away_from_a_shut_valve_leaves_a_cavity_behind_it() {
             n - 1.0
         ),
         worst < 1e-9,
+    );
+}
+
+/// V-A18: the closure of V-A17 with free gas (DGCM).
+fn closure_with_gas(gas: Option<FreeGas>, v0: f64, reservoir: f64) -> NetworkRun {
+    let area = std::f64::consts::PI * 0.25 * D * D;
+    let mut net = Network::new(STANDARD_GRAVITY);
+    let r = net.add_node(Node::Reservoir {
+        head: Head::new(reservoir),
+    });
+    let v = net.add_node(Node::Valve {
+        downstream_head: Head::ZERO,
+        closure: ValveClosure::Instantaneous,
+        flow_coefficient: Some(v0 * area / reservoir.sqrt()),
+    });
+    net.add_pipe(r, v, pipe(L, D, A, 0.0)).unwrap();
+    net.set_vapour_floor(Some(Head::new(-10.0))).unwrap();
+    net.set_free_gas(gas).unwrap();
+    net.simulate(
+        &InitialCondition::Steady(SteadyOptions::default()),
+        Time::new(12.0),
+        &[Probe::Node(v)],
+        &GridOptions {
+            max_wave_speed_adjustment: 0.001,
+            min_reaches: 100,
+        },
+    )
+    .unwrap()
+}
+
+#[test]
+fn va18_as_the_free_gas_goes_to_zero_the_vapour_cavity_comes_back() {
+    println!("V-A17's closure again, the water carrying less and less free gas:");
+    let vapour = closure_with_gas(None, V0, H_R);
+    let peak = |r: &NetworkRun| {
+        let h: Vec<f64> = r.trace.head(0).iter().map(|h| h.value()).collect();
+        // The first collapse surge, after the first second.
+        h[250..1300].iter().copied().fold(f64::MIN, f64::max)
+    };
+    let biggest = |r: &NetworkRun| r.cavity_volumes[0].iter().copied().fold(0.0, f64::max);
+    let (surge, cavity) = (peak(&vapour), biggest(&vapour));
+    println!(
+        "  vapour cavity (no gas): collapse surge {surge:.3} m, largest cavity {:.2} l",
+        cavity * 1e3
+    );
+    println!("  alpha0     surge [m]   off by     largest gas [l]   off by");
+    let mut errors = Vec::new();
+    for alpha0 in [1e-7, 1e-9, 1e-11, 1e-13] {
+        let run = closure_with_gas(
+            Some(FreeGas {
+                void_fraction: alpha0,
+                at_head: Head::ZERO,
+            }),
+            V0,
+            H_R,
+        );
+        let (e_surge, e_cavity) = (
+            (peak(&run) - surge).abs() / surge,
+            (biggest(&run) - cavity).abs() / cavity,
+        );
+        println!(
+            "  {alpha0:7.0e}   {:9.3}   {e_surge:8.1e}   {:15.2}   {e_cavity:8.1e}",
+            peak(&run),
+            biggest(&run) * 1e3
+        );
+        errors.push(e_surge.max(e_cavity));
+    }
+    check(
+        "  the difference shrinks with the gas",
+        errors.windows(2).all(|w| w[1] < w[0]),
+    );
+    check(
+        &format!("  and is below 1e-4 at alpha0 = 1e-13 ({:.1e})", errors[3]),
+        errors[3] < 1e-4,
+    );
+}
+
+#[test]
+fn va18_free_gas_slows_the_waves_as_woods_formula_says() {
+    // Small surge on a still pipe at 50 m: linear. Gas alpha0 = 1e-3 at
+    // atmospheric; at 50 m it is compressed to alpha0 (0 + 10) / (50 + 10).
+    let (head, alpha0, v_small) = (50.0, 1e-3, 0.02);
+    let g = STANDARD_GRAVITY.value();
+    let gas = closure_with_gas(
+        Some(FreeGas {
+            void_fraction: alpha0,
+            at_head: Head::ZERO,
+        }),
+        v_small,
+        head,
+    );
+    // 1/a_m^2 = 1/a^2 + alpha rho / p*, alpha = alpha0 (0 - floor) / (H - floor),
+    // p* = rho g (H - floor)  =>  a_m = a / sqrt(1 + alpha0 10 a^2 / (g 60^2)).
+    let a_m = A / (1.0 + alpha0 * 10.0 * A * A / (g * 60.0 * 60.0)).sqrt();
+    let h: Vec<f64> = gas.trace.head(0).iter().map(|h| h.value()).collect();
+    let dt = gas.trace.time_step().value();
+    // The period: from the mean crossings of the valve head about 50 m.
+    let mut ups = Vec::new();
+    for k in 1..h.len() {
+        let (x0, x1) = (h[k - 1] - head, h[k] - head);
+        if x0 < 0.0 && x1 >= 0.0 {
+            #[allow(clippy::cast_precision_loss)]
+            ups.push((k as f64 - 1.0 + x0 / (x0 - x1)) * dt);
+        }
+    }
+    let cycles = ups.len() - 1;
+    #[allow(clippy::cast_precision_loss)]
+    let period = (ups[cycles] - ups[0]) / cycles as f64;
+    println!(
+        "Free gas alpha0 = 1e-3 (at atmospheric pressure), pipe at 50 m: the valve end rings with \
+         period {period:.4} s over {cycles} cycles:"
+    );
+    check_close(
+        "  4 L / a_m, Wood's mixture wave speed [s]",
+        period,
+        4.0 * L / a_m,
+        0.01,
+    );
+    println!(
+        "  (a_m = {a_m:.1} m/s instead of {A:.0} m/s: the wave slows by {:.0}%)",
+        (1.0 - a_m / A) * 100.0
     );
 }
