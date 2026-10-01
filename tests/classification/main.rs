@@ -14,7 +14,7 @@ mod simulation;
 use jk_classification::{
     Classification, ClassifierConfig, Context, FeatureConfig, classify, extract,
 };
-use jk_detection::{Detector, DetectorConfig, Series};
+use jk_detection::{Detector, DetectorConfig, Series, SupplyConfig, empty_spells};
 use jk_kernel::Time;
 use jk_tests::sensor::{Logger, Rng, sample};
 
@@ -34,8 +34,9 @@ pub fn with_quiet_lead(truth: &[f64], dt: f64, lead: f64) -> Vec<f64> {
 }
 
 /// Records `truth` (every `dt` s) with a 128 S/s logger, detects the first
-/// event, measures its features and classifies it with `context`.
-/// Prints the verdict and its reasons.
+/// event, measures its features and classifies it with `context` - plus
+/// any supply returns the record itself shows (the supply watch: spells of
+/// an empty pipe and when they ended). Prints the verdict and its reasons.
 ///
 /// # Panics
 /// If no event is detected (a test bug: every scenario has one).
@@ -57,12 +58,34 @@ pub fn verdict(truth: &[f64], dt: f64, context: &Context, seed: u64) -> Classifi
         .expect("valid config")
         .run(&series)
         .expect("detection runs");
+    let returns: Vec<Time> = empty_spells(&series, &SupplyConfig::default())
+        .expect("supply watch runs")
+        .iter()
+        .filter_map(|s| s.until)
+        .collect();
+    for t in &returns {
+        println!(
+            "  supply watch: the pipe stood empty, supply returned at t = {:.2} s",
+            t.value()
+        );
+    }
+    let context = &context.clone().with_supply_returns(&returns);
     let event = *found
         .events
         .first()
         .expect("the scenario's event must be detected");
     let features = extract(&series, &event, found.noise, &FeatureConfig::default())
         .expect("enough record around the event");
+    println!(
+        "  first front: {} at t = {:.2} s, from {:.2} m",
+        if event.direction == jk_detection::Direction::Rise {
+            "RISE"
+        } else {
+            "DROP"
+        },
+        event.arrival.value(),
+        features.level_before.value()
+    );
     let c = classify(
         &features,
         context,

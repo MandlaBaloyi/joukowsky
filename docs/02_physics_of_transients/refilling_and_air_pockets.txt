@@ -54,7 +54,14 @@ b. Energy, flat, frictionless, K = 0: d(rho A x v^2 / 2)/dt = rho g H A v
    for the peak pressure, independent of the integration.
 c. The slam: if the air escapes and the column reaches the closed end
    with velocity v, the column stops in the time a wave takes to cross
-   it: Joukowsky, dH = a v / g.
+   it: Joukowsky, dH = a v / g. That is the rise at the moment of the
+   slam. With friction the column was losing head along its length; once
+   stopped that head comes back (line packing), so the peak at the end
+   approaches a v / g + (supply head - head at the front): 379.4 m vs
+   349.6 + 30 m for the 500 m example (V-S6). A column that has run far
+   moves at almost the open pipe's steady speed (3.43 m/s vs 3.43 m/s),
+   so after the slam it behaves like an instant closure of a free
+   discharge at the end.
 
 3. Numerics
 ------------------------------------------------------------------------
@@ -78,6 +85,8 @@ One pipe, one air pocket ahead of one column, straight profile; the
 column's own elasticity only at the final slam; no air entrained in the
 water, no stratified (partly full) flow ahead of the front - those need
 mixed-flow (Saint-Venant with a Preissmann slot, R-5 next rung) and the
-air valve's own dynamics. Not yet coupled to the network solver. The air
+air valve's own dynamics. Seen by a logger, a refill against trapped air
+is a slow ramp, not a front: it is recognised by the supply watch
+(04_/event_detection.txt section 6; classification V-S6, FN-033). Not yet coupled to the network solver. The air
 valve is an ideal orifice [VERIFY discharge coefficients against maker
 data].

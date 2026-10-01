@@ -10,6 +10,11 @@
 //!   - power is monitored and failed near the event: strong for a pump trip;
 //!   - power is monitored and did NOT fail: evidence against a pump trip;
 //!   - power is not monitored: no evidence either way.
+//!
+//! Supply returns: when water came back to a pipe that had stood empty -
+//! from the sensors' own records (`jk_detection::empty_spells`) or a
+//! utility's notice. A pipe refills for minutes after; its surges then
+//! belong to the refill.
 
 use jk_kernel::Time;
 
@@ -20,6 +25,8 @@ pub struct Context {
     pub power_monitored: bool,
     /// Times at which pump power was lost (meaningful only if monitored).
     pub power_losses: Vec<Time>,
+    /// Times at which supply returned to a pipe that had stood empty.
+    pub supply_returns: Vec<Time>,
 }
 
 impl Context {
@@ -35,6 +42,7 @@ impl Context {
         Self {
             power_monitored: true,
             power_losses: times.to_vec(),
+            supply_returns: Vec::new(),
         }
     }
 
@@ -44,7 +52,25 @@ impl Context {
         Self {
             power_monitored: true,
             power_losses: Vec::new(),
+            supply_returns: Vec::new(),
         }
+    }
+
+    /// The same, knowing also that supply returned at `times`.
+    #[must_use]
+    pub fn with_supply_returns(mut self, times: &[Time]) -> Self {
+        self.supply_returns.extend_from_slice(times);
+        self
+    }
+
+    /// How long before `time` supply last returned, if within `window`.
+    #[must_use]
+    pub fn supply_returned_before(&self, time: Time, window: Time) -> Option<Time> {
+        self.supply_returns
+            .iter()
+            .map(|&back| time - back)
+            .filter(|lag| (0.0..=window.value()).contains(&lag.value()))
+            .min_by(|a, b| a.value().total_cmp(&b.value()))
     }
 
     /// Some(true) if power was lost within `tolerance` before `time` (a
@@ -83,5 +109,17 @@ mod tests {
             Some(false),
             "a loss long before is a different event"
         );
+    }
+
+    #[test]
+    fn the_latest_supply_return_within_the_window_counts() {
+        let c = Context::unknown().with_supply_returns(&[Time::new(10.0), Time::new(100.0)]);
+        let window = Time::new(60.0);
+        assert_eq!(
+            c.supply_returned_before(Time::new(130.0), window),
+            Some(Time::new(30.0))
+        );
+        assert_eq!(c.supply_returned_before(Time::new(90.0), window), None);
+        assert_eq!(c.supply_returned_before(Time::new(5.0), window), None);
     }
 }

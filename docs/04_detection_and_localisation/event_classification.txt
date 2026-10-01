@@ -66,6 +66,25 @@ Stated blind spot: a sensor DOWNSTREAM of a closing valve sees a drop;
 multi-sensor sign/arrival patterns (localisation) must resolve it.
 Persistence is measured but not used yet (depends on nearby reservoirs;
 Stage B learns its meaning per network). Next classes: column separation
-and refilling (need cavitation, S7), pump start and valve opening (need
-those simulator events), sensor fault (needs the health layer).
+(needs cavitation, S7), pump start and valve opening (need those
+simulator events), sensor fault (needs the health layer).
+
+REFILL CLASS (2026-10-01, V-S6). Signature from the table above: a rise
+from ~0 pressure after a supply interruption. Rules: pressure at or below
+2 m before the front = an EMPTY pipe (+5 refill, -3 each other class: in
+a drained pipe nothing flows to be stopped or let out); otherwise, a
+supply return within 15 min before (from the supply watch,
+event_detection.txt section 6, or a utility notice) = still filling (+5
+refill, and a drop no longer counts against it: the column bounces on its
+air cushion); otherwise UNDER PRESSURE (-5 refill). Checked on refills of
+a 500 m main simulated with the rigid-column model (refill.rs): a slam
+from an empty pipe -> refill 100%; trapped air with 5 mm and 20 mm air
+valves, whose first fronts come once the pipe is already at 3-32 m ->
+refill 98-99% only thanks to the supply watch; the same slam on a pipe
+under pressure -> valve closure 98%. Stated blind spots (evidence.rs): a
+sensor right behind a valve discharging to air also reads ~0; a vapour
+cavity collapsing also rises from the vapour floor; a burst DURING a
+refill is weighed against the refill. Alert level for a refill: Warning.
+Also fixed: a front already curving when the window opened was measured
+as 0 ms (SHARP); it now counts from the window's start.
 

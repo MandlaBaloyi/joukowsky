@@ -22,6 +22,8 @@
 //!   (Layer 3).
 //! - [`detector`]: the whole chain - live ([`DetectorStream`], pieces of
 //!   any size) or over a whole record ([`Detector::run`]), identically.
+//! - [`supply`]: when a sensor's pipe stood empty and when the supply came
+//!   back - the slow state changes the front detector lets pass.
 //!
 //! Network-level fusion across sensors (Layer 4) belongs to localisation.
 
@@ -31,9 +33,11 @@ pub mod detector;
 mod error;
 pub mod noise;
 pub mod onset;
+pub mod supply;
 
 pub use detector::{
     Detection, Detector, DetectorConfig, DetectorStream, Direction, Event, Impairment, Series,
     Span, StreamOutput,
 };
 pub use error::DetectionError;
+pub use supply::{EmptySpell, SupplyConfig, empty_spells};

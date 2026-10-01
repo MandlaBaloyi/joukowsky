@@ -167,7 +167,7 @@ pub(super) fn assess(
     let level = match class {
         _ if !corroborated => Level::Review,
         EventClass::Burst if fits && confidence >= config.alarm_confidence => Level::Alarm,
-        EventClass::PumpTrip => Level::Warning,
+        EventClass::PumpTrip | EventClass::Refill => Level::Warning,
         EventClass::ValveClosure => Level::Info,
         EventClass::Burst | EventClass::Unknown => Level::Review,
     };

@@ -7,10 +7,10 @@
 //! "why did the engine think this was a burst?"), and the classifier may
 //! ABSTAIN rather than guess (principle P3).
 //!
-//! Version 1 classes: burst, valve closure, pump trip - the events the
+//! Classes: burst, valve closure, pump trip, refill - the events the
 //! hydraulics simulator can generate, so every rule is validated. Column
-//! separation, refilling, pump start, valve opening and sensor faults join
-//! when they can be simulated or measured; Stage B (trained on synthetic
+//! separation, pump start, valve opening and sensor faults join when they
+//! can be simulated or measured; Stage B (trained on synthetic
 //! data) and Stage C (fine-tuned on field labels) follow.
 //!
 //! Pure domain code (rule R2). The folders:

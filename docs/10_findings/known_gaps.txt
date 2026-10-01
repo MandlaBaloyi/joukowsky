@@ -131,9 +131,13 @@ G-13  Wave-speed doubt in placement is a fixed 10%                OPEN
 G-14  Refilling / air-pocket transients have no class             OPEN
   2026-10-01: the physics has a first rung - one pipe refilling against
   free air, a sealed pocket or an air valve (hydraulics refill.rs, V-A16,
-  FN-032). Still open: a classification class, refilling inside the
-  network solver (mixed flow, R-5 next rung), several pockets, real
-  air-valve data.
+  FN-032). Class REFILL added the same day (V-S6): rise from an empty
+  pipe, or any front within 15 min after the supply watch (detection
+  supply.rs) saw supply return (FN-033). Still open: the live Monitor
+  does not run the supply watch yet, so in alerts a trapped-air refill's
+  later fronts are misread (a false burst is possible); refilling inside
+  the network solver (mixed flow, R-5 next rung); cavitation after the
+  slam (S7); several pockets; real air-valve data.
   Classes today: Burst, ValveClosure, PumpTrip, Unknown. Refilling after
   supply cuts is among the most violent SA transients
   (01_/the_operating_environment.txt section 2); it will come out as

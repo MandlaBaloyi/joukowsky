@@ -310,3 +310,20 @@ FN-032  2026-10-01  A half-sized air valve is worse than none
   [VERIFY which applies to field refills; the literature uses 1.2-1.4].
   Consequence: any refill advice must be simulated with the actual valve
   size and a range of exponents (P4).
+
+FN-033  2026-10-01  A refill against trapped air has no front
+  First refill scenarios through the full chain (V-S6): with a small air
+  valve the logger at the end sees the air squeezed from 0 to 32 m over
+  about 80 s. The front detector, built for waves, takes that as drift -
+  by design (DetectorConfig.memory). Its first event came 80 s later, a
+  0.3 m dip as the column bounced on its cushion, and the classifier
+  called it a BURST at 99.7%: a false burst alarm on every such refill.
+  Second, smaller find: that dip was measured as a 0 ms (SHARP) front,
+  because the curve had already moved more than 10% when the window
+  opened; the rise time now counts from the window's start (2 -> 979 ms).
+  Fix: a supply watch (detection supply.rs) that marks when a sensor's
+  pipe stood EMPTY (<= 2 m for >= 60 s) and when the supply returned;
+  the classifier treats fronts within 15 min of a return as the refill's.
+  The dip is now refill 98%. Lesson: some events are slow STATE changes,
+  not waves; the engine needs both watches. Still to do: run the supply
+  watch in the live Monitor (G-14).

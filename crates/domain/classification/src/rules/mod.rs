@@ -17,7 +17,7 @@
 
 pub mod evidence;
 
-use jk_kernel::Time;
+use jk_kernel::{Head, Time};
 
 use crate::classes::{Context, EventClass};
 use crate::features::Features;
@@ -31,6 +31,13 @@ pub struct ClassifierConfig {
     pub slow_front: Time,
     /// A power loss up to this long before the arrival counts.
     pub power_window: Time,
+    /// A pipe reading at or below this pressure head before the front was
+    /// empty or unpressurised (a drained pipe reads about 0, or below in
+    /// a vacuum).
+    pub empty_below: Head,
+    /// A front this long after supply returned to an empty pipe belongs
+    /// to the refill (a long main fills for minutes).
+    pub refill_window: Time,
     /// Below this confidence the classifier abstains.
     pub abstain_below: f64,
 }
@@ -41,6 +48,8 @@ impl Default for ClassifierConfig {
             sharp_front: Time::new(0.03),
             slow_front: Time::new(0.1),
             power_window: Time::new(3.0),
+            empty_below: Head::new(2.0),
+            refill_window: Time::new(900.0),
             abstain_below: 0.7,
         }
     }

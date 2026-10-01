@@ -11,6 +11,11 @@ pub enum EventClass {
     ValveClosure,
     /// A pump lost power and ran down: a drawn-out negative front.
     PumpTrip,
+    /// Supply returned to a drained pipe: the pressure rose from about
+    /// zero as the water came back - squeezing the air ahead, slamming
+    /// where it stopped (`docs/02_physics_of_transients/
+    /// refilling_and_air_pockets.txt`).
+    Refill,
     /// The evidence does not single out one class - the classifier
     /// abstains rather than guess (principle P3).
     Unknown,
@@ -18,7 +23,12 @@ pub enum EventClass {
 
 impl EventClass {
     /// The classes the rules choose between (everything except Unknown).
-    pub const CANDIDATES: [Self; 3] = [Self::Burst, Self::ValveClosure, Self::PumpTrip];
+    pub const CANDIDATES: [Self; 4] = [
+        Self::Burst,
+        Self::ValveClosure,
+        Self::PumpTrip,
+        Self::Refill,
+    ];
 }
 
 impl fmt::Display for EventClass {
@@ -27,6 +37,7 @@ impl fmt::Display for EventClass {
             Self::Burst => "burst",
             Self::ValveClosure => "valve closure",
             Self::PumpTrip => "pump trip",
+            Self::Refill => "refill",
             Self::Unknown => "unknown",
         })
     }

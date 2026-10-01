@@ -121,6 +121,16 @@ Rung 3  Simulation studies.
         SHORT 3.83 h, sump empty 4.17 h, in that order; canal balance and
         the water handed across exact; sump balance within 1.3% (draw read
         every 5 min).
+  V-S6  Refills classified (classification/simulation/refill.rs): supply
+        returns to a drained 500 m DN200 main (30 m supply), seen by a
+        128 S/s logger at the closed end. Large air valve: the column
+        arrives at 3.43 m/s, the open pipe's own speed (3.6e-4), and the
+        logger sees Joukowsky + line packing, 379.4 m vs 379.6 m -> refill
+        100%. Trapped air (5 mm, 20 mm valves): no front until the pipe is
+        already under pressure; the supply watch finds the return (127.6 s,
+        128.2 s; the air passes 2 m 7.6 s and 8.2 s after the water comes
+        back) -> refill 98%, 99%. Control: the same slam on a pipe under
+        pressure -> valve closure (2026-10-01).
   V-S4  Scale: synthetic towns of 10 / 50 / 100 km - time the simulator,
         live engine and advisor (10_findings/detection_range_and_scale.txt,
         gap G-10).

@@ -1,17 +1,16 @@
 joukowsky test run
-  when     2026-10-01 10:37:01
+  when     2026-10-01 10:53:30
   suite    quick
-  commit   2221a11 (with uncommitted changes)
+  commit   18fb126 (with uncommitted changes)
   rust     rustc 1.98.1 (48a229cea 2026-09-01)
   command  cargo test --workspace --no-fail-fast -- --nocapture --test-threads=1
 ==============================================================================
+   Compiling jk-classification v0.1.0 (C:\Users\HP\Desktop\joukowsky\crates\domain\classification)
+   Compiling jk-detection v0.1.0 (C:\Users\HP\Desktop\joukowsky\crates\domain\detection)
+   Compiling jk-application v0.1.0 (C:\Users\HP\Desktop\joukowsky\crates\application)
    Compiling jk-tests v0.1.0 (C:\Users\HP\Desktop\joukowsky\tests)
    Compiling jk-cli v0.1.0 (C:\Users\HP\Desktop\joukowsky\crates\interfaces\cli)
-   Compiling jk-application v0.1.0 (C:\Users\HP\Desktop\joukowsky\crates\application)
-   Compiling jk-localisation v0.1.0 (C:\Users\HP\Desktop\joukowsky\crates\domain\localisation)
-   Compiling jk-files v0.1.0 (C:\Users\HP\Desktop\joukowsky\crates\adapters\files)
-   Compiling jk-sim v0.1.0 (C:\Users\HP\Desktop\joukowsky\crates\sim)
-    Finished `test` profile [unoptimized + debuginfo] target(s) in 12.28s
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 17.76s
      Running unittests src\lib.rs (target\debug\deps\jk_application-a6f8696c1e4119f9.exe)
 
 running 3 tests
@@ -43,13 +42,15 @@ test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; fini
 
      Running unittests src\lib.rs (target\debug\deps\jk_classification-ac838da961a672cc.exe)
 
-running 4 tests
+running 6 tests
+test classes::context::tests::the_latest_supply_return_within_the_window_counts ... ok
 test classes::context::tests::three_states_of_knowledge ... ok
 test features::after::tests::staying_down_is_one_and_symmetric_ringing_is_zero ... ok
+test features::front::tests::a_curve_already_on_its_way_is_not_sharp ... ok
 test features::front::tests::a_linear_ramp_rises_over_eighty_percent_of_its_length ... ok
 test features::front::tests::an_integrated_step_rises_in_one_point_six_samples ... ok
 
-test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
 
      Running unittests src\main.rs (target\debug\deps\jk-40170446bfdb3c37.exe)
 
@@ -63,7 +64,7 @@ test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; fini
 
      Running unittests src\lib.rs (target\debug\deps\jk_detection-ab885d9bb867d09a.exe)
 
-running 14 tests
+running 18 tests
 test baseline::brown::tests::follows_a_steady_trend_without_lag ... ok
 test baseline::brown::tests::shifting_keeps_the_trend ... ok
 test change::cusum::tests::a_clean_step_is_caught_and_its_start_found ... ok
@@ -78,8 +79,12 @@ test noise::robust::tests::median_of_odd_and_even_counts ... ok
 test onset::step_area::tests::a_ramp_front_is_placed_at_its_centre ... ok
 test onset::step_area::tests::declines_when_the_windows_do_not_fit ... ok
 test onset::step_area::tests::exact_for_a_sharp_step_at_any_phase ... ok
+test supply::tests::a_brief_touch_of_zero_is_a_transient_not_an_empty_pipe ... ok
+test supply::tests::a_cut_and_a_return_are_found ... ok
+test supply::tests::a_short_wander_above_does_not_end_the_spell ... ok
+test supply::tests::still_empty_at_the_end_is_said ... ok
 
-test result: ok. 14 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.03s
+test result: ok. 18 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.03s
 
      Running unittests src\lib.rs (target\debug\deps\jk_files-ec39beec6edb1da0.exe)
 
@@ -107,7 +112,7 @@ test logger::time::tests::the_usual_logger_formats ... ok
 test logger::units::tests::one_bar_is_about_ten_metres ... ok
 test logger::units::tests::units_from_headers ... ok
 
-test result: ok. 22 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+test result: ok. 22 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
 
      Running unittests src\lib.rs (target\debug\deps\jk_hydraulics-c42e47dfc771fa13.exe)
 
@@ -170,7 +175,7 @@ test steady::controls::tests::daily_times_repeat_and_land_exactly ... ok
 test steady::controls::tests::once_is_once ... ok
 test steady::rules::tests::or_binds_tighter_than_and_as_in_epanet ... ok
 
-test result: ok. 57 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.04s
+test result: ok. 57 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.03s
 
      Running unittests src\lib.rs (target\debug\deps\jk_kernel-eccabcc9e10cd5d2.exe)
 
@@ -489,8 +494,9 @@ test simulation::logger_files::a_burst_recorded_in_logger_files_raises_one_alarm
     T-S3 south branch    100.0%
   size: about 1.56 l/s (+/- 0.16 l/s), from 3 logger(s)
   seen by: S3 south block, S1 gatehouse, S2 north block
-  because: pressure DROPPED by 9.02 m: a burst or a pump trip, not a closing valve (seen upstream)
+  because: pressure DROPPED by 9.02 m: a burst or a pump trip, not a closing valve (seen upstream) or a refill
   because: SHARP front (7 ms, 10-90%): a sudden change - a pipe splitting, a valve slamming - not a pump running down
+  because: the pipe was under pressure before (60.0 m): not refilling
   because: pump power is not monitored: no outside evidence
   exactly one alert                            yes
   an ALARM for a burst                         yes
@@ -499,7 +505,7 @@ test simulation::logger_files::a_burst_recorded_in_logger_files_raises_one_alarm
   at 10:15:03 - seconds past 10:15:00          got       2.998747   expected       3.000000   rel.err 4.2e-4
 ok
 
-test result: ok. 16 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.63s
+test result: ok. 16 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.56s
 
      Running balance\main.rs (target\debug\deps\balance-728b54a33b8a3084.exe)
 
@@ -524,7 +530,7 @@ test simulation::night_watch::the_detection_curve_matches_the_cusum_arithmetic .
   at the arithmetic's size: caught at least a third of the time yes
 ok
 
-test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.27s
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.18s
 
      Running channels\main.rs (target\debug\deps\channels-c97e6a381f8a602a.exe)
 
@@ -613,103 +619,189 @@ test simulation::feed::when_the_canal_stops_the_sump_runs_down_and_the_town_runs
     the sump's change = in - drawn, within 1.27% of the water drawn (draw read every 5 min) yes
 ok
 
-test result: ok. 11 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 13.39s
+test result: ok. 11 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 11.32s
 
      Running classification\main.rs (target\debug\deps\classification-7090793340b9d59f.exe)
 
-running 8 tests
+running 11 tests
+test simulation::refill::vs6_a_refill_against_trapped_air_is_called_a_refill ... Supply returns to the drained pipe; a 5 mm air valve keeps most of the air in, so the logger at the end sees it squeezed over a minute - too slow for a front:
+  supply watch: the pipe stood empty, supply returned at t = 127.57 s
+  first front: DROP at t = 209.40 s, from 32.19 m
+  verdict: refill (98% confident)
+    refill          97.8%
+    burst            1.1%
+    pump trip        1.1%
+    valve closure    0.0%
+    because: pressure DROPPED by 0.29 m: a burst or a pump trip, not a closing valve (seen upstream) - or, in a refilling pipe, its column bouncing back off the air ahead
+    because: DRAWN-OUT front (979 ms, 10-90%): a gradual change - a pump running down, a valve closing slowly, or a burst opening slowly
+    because: SHALLOW drop: 1% of the pressure - a hole lets out a little water
+    because: supply RETURNED 82 s before to a pipe that had stood empty: it is still filling - the air ahead squeezed, the column bouncing on it or slamming into a closed end
+    because: pump power is not monitored: no outside evidence
+    the first front comes once the pipe is already under pressure yes
+    yet with the supply watch it is called a refill yes
+Supply returns to the drained pipe; a 20 mm air valve keeps most of the air in, so the logger at the end sees it squeezed over a minute - too slow for a front:
+  supply watch: the pipe stood empty, supply returned at t = 128.15 s
+  first front: RISE at t = 131.04 s, from 2.73 m
+  verdict: refill (99% confident)
+    refill          99.3%
+    valve closure    0.7%
+    pump trip        0.0%
+    burst            0.0%
+    because: pressure ROSE by 0.36 m: a closing valve raises pressure upstream of it, returning water fills a pipe; bursts and pump trips lower it
+    because: DRAWN-OUT front (941 ms, 10-90%): a gradual change - a pump running down, a valve closing slowly, or a burst opening slowly
+    because: supply RETURNED 3 s before to a pipe that had stood empty: it is still filling - the air ahead squeezed, the column bouncing on it or slamming into a closed end
+    because: pump power is not monitored: no outside evidence
+    the first front comes once the pipe is already under pressure yes
+    yet with the supply watch it is called a refill yes
+ok
+test simulation::refill::vs6_a_refill_through_a_large_air_valve_slams_and_is_called_a_refill ... Supply returns to a drained 500 m pipe; a 100 mm air valve at the far end
+lets the air out, so the logger there reads ~0 until the water slams in:
+  the column arrives after 95.5 s at 3.43 m/s
+    it arrives at the speed the open pipe would carry [m/s] got       3.428564   expected       3.429785   rel.err 3.6e-4
+    the slam the logger sees: Joukowsky a v / g + the supply head regained (line packing) [m] got     379.422793   expected     379.616217   rel.err 5.1e-4
+  first front: RISE at t = 215.54 s, from 0.03 m
+  verdict: refill (100% confident)
+    refill         100.0%
+    valve closure    0.0%
+    burst            0.0%
+    pump trip        0.0%
+    because: pressure ROSE by 379.14 m: a closing valve raises pressure upstream of it, returning water fills a pipe; bursts and pump trips lower it
+    because: SHARP front (14 ms, 10-90%): a sudden change - a pipe splitting, a valve slamming - not a pump running down
+    because: the pipe was EMPTY before: 0.03 m of pressure - supply returning to a drained pipe; with nothing flowing there was nothing to stop or let out
+    because: pump power is not monitored: no outside evidence
+  refill                                       yes
+  at least 99% confident                       yes
+ok
+test simulation::refill::vs6_the_same_slam_on_a_pipe_under_pressure_is_not_a_refill ... Control: the same valve slamming shut, but the pipe was full and under
+pressure before (sensor halfway along it, ~15 m) - not a refill:
+  first front: RISE at t = 3.25 s, from 15.01 m
+  verdict: valve closure (98% confident)
+    valve closure   97.5%
+    burst            1.8%
+    refill           0.7%
+    pump trip        0.0%
+    because: pressure ROSE by 356.86 m: a closing valve raises pressure upstream of it, returning water fills a pipe; bursts and pump trips lower it
+    because: SHARP front (13 ms, 10-90%): a sudden change - a pipe splitting, a valve slamming - not a pump running down
+    because: the pipe was under pressure before (15.0 m): not refilling
+    because: pump power is not monitored: no outside evidence
+  valve closure                                yes
+ok
 test simulation::scenarios::a_pump_trip_is_recognised_from_its_shape_alone ... Pump losing power, sensor at its discharge, power NOT monitored:
+  first front: DROP at t = 3.02 s, from 73.39 m
   verdict: pump trip (99% confident)
     pump trip       98.9%
     burst            1.1%
     valve closure    0.0%
-    because: pressure DROPPED by 59.32 m: a burst or a pump trip, not a closing valve (seen upstream)
+    refill           0.0%
+    because: pressure DROPPED by 59.32 m: a burst or a pump trip, not a closing valve (seen upstream) or a refill
     because: DRAWN-OUT front (684 ms, 10-90%): a gradual change - a pump running down, a valve closing slowly, or a burst opening slowly
     because: DEEP drop: 81% of the pressure - a stopping pump collapses the head
+    because: the pipe was under pressure before (73.4 m): not refilling
     because: pump power is not monitored: no outside evidence
   pump trip                                    yes
 ok
 test simulation::scenarios::a_recorded_power_loss_makes_a_pump_trip_certain ... Pump losing power, sensor at its discharge, power loss RECORDED:
+  first front: DROP at t = 3.02 s, from 73.39 m
   verdict: pump trip (100% confident)
     pump trip      100.0%
     burst            0.0%
     valve closure    0.0%
-    because: pressure DROPPED by 59.35 m: a burst or a pump trip, not a closing valve (seen upstream)
+    refill           0.0%
+    because: pressure DROPPED by 59.35 m: a burst or a pump trip, not a closing valve (seen upstream) or a refill
     because: DRAWN-OUT front (683 ms, 10-90%): a gradual change - a pump running down, a valve closing slowly, or a burst opening slowly
     because: DEEP drop: 81% of the pressure - a stopping pump collapses the head
+    because: the pipe was under pressure before (73.4 m): not refilling
     because: pump power was LOST just before the front arrived
   pump trip                                    yes
   at least 99% confident                       yes
 ok
 test simulation::scenarios::a_sharp_burst_is_called_a_burst ... 10 mm hole opening instantly, 700 m from the sensor, power not monitored:
+  first front: DROP at t = 3.70 s, from 60.00 m
   verdict: burst (100% confident)
     burst           99.7%
     pump trip        0.2%
     valve closure    0.0%
-    because: pressure DROPPED by 4.53 m: a burst or a pump trip, not a closing valve (seen upstream)
+    refill           0.0%
+    because: pressure DROPPED by 4.53 m: a burst or a pump trip, not a closing valve (seen upstream) or a refill
     because: SHARP front (7 ms, 10-90%): a sudden change - a pipe splitting, a valve slamming - not a pump running down
     because: SHALLOW drop: 8% of the pressure - a hole lets out a little water
+    because: the pipe was under pressure before (60.0 m): not refilling
     because: pump power is not monitored: no outside evidence
   burst                                        yes
 ok
 test simulation::scenarios::a_sharp_burst_with_stable_power_is_a_confident_burst ... Instant burst, power monitored and stable:
+  first front: DROP at t = 3.70 s, from 60.00 m
   verdict: burst (100% confident)
     burst          100.0%
     valve closure    0.0%
     pump trip        0.0%
-    because: pressure DROPPED by 4.53 m: a burst or a pump trip, not a closing valve (seen upstream)
+    refill           0.0%
+    because: pressure DROPPED by 4.53 m: a burst or a pump trip, not a closing valve (seen upstream) or a refill
     because: SHARP front (9 ms, 10-90%): a sudden change - a pipe splitting, a valve slamming - not a pump running down
     because: SHALLOW drop: 8% of the pressure - a hole lets out a little water
+    because: the pipe was under pressure before (60.0 m): not refilling
     because: pump power is monitored and did NOT fail: not a pump trip
   burst                                        yes
   at least 99% confident                       yes
 ok
 test simulation::scenarios::a_slow_burst_without_power_data_is_honestly_unknown ... Hole opening over 0.5 s, power NOT monitored - shape alone cannot
 tell a slowly opening burst from a pump running down:
+  first front: DROP at t = 3.72 s, from 60.00 m
   verdict: unknown (50% confident) - ABSTAINS
     burst           50.0%
     pump trip       50.0%
     valve closure    0.1%
-    because: pressure DROPPED by 4.53 m: a burst or a pump trip, not a closing valve (seen upstream)
+    refill           0.0%
+    because: pressure DROPPED by 4.53 m: a burst or a pump trip, not a closing valve (seen upstream) or a refill
     because: DRAWN-OUT front (402 ms, 10-90%): a gradual change - a pump running down, a valve closing slowly, or a burst opening slowly
     because: SHALLOW drop: 8% of the pressure - a hole lets out a little water
+    because: the pipe was under pressure before (60.0 m): not refilling
     because: pump power is not monitored: no outside evidence
   the classifier abstains                      yes
   and burst is among its top two candidates    yes
 ok
 test simulation::scenarios::a_slow_valve_closure_is_still_a_valve_closure ... Valve shutting over 3 s, sensor mid-pipe upstream of it:
-  verdict: valve closure (99% confident)
-    valve closure   98.8%
+  first front: RISE at t = 3.51 s, from 97.92 m
+  verdict: valve closure (98% confident)
+    valve closure   98.1%
     pump trip        1.1%
+    refill           0.7%
     burst            0.1%
-    because: pressure ROSE by 27.44 m: a closing valve raises pressure upstream of it; bursts and pump trips lower it
+    because: pressure ROSE by 27.44 m: a closing valve raises pressure upstream of it, returning water fills a pipe; bursts and pump trips lower it
     because: DRAWN-OUT front (799 ms, 10-90%): a gradual change - a pump running down, a valve closing slowly, or a burst opening slowly
+    because: the pipe was under pressure before (97.9 m): not refilling
     because: pump power is not monitored: no outside evidence
   valve closure                                yes
 ok
 test simulation::scenarios::an_instant_valve_closure_is_called_a_valve_closure ... Valve shutting instantly, sensor mid-pipe upstream of it:
+  first front: RISE at t = 3.50 s, from 97.92 m
   verdict: valve closure (98% confident)
-    valve closure   98.2%
+    valve closure   97.5%
     burst            1.8%
+    refill           0.7%
     pump trip        0.0%
-    because: pressure ROSE by 114.00 m: a closing valve raises pressure upstream of it; bursts and pump trips lower it
+    because: pressure ROSE by 114.00 m: a closing valve raises pressure upstream of it, returning water fills a pipe; bursts and pump trips lower it
     because: SHARP front (12 ms, 10-90%): a sudden change - a pipe splitting, a valve slamming - not a pump running down
+    because: the pipe was under pressure before (97.9 m): not refilling
     because: pump power is not monitored: no outside evidence
   valve closure                                yes
 ok
 test simulation::scenarios::power_data_settles_the_slow_burst ... The same slow burst, power monitored and STABLE:
+  first front: DROP at t = 3.72 s, from 60.00 m
   verdict: burst (98% confident)
     burst           98.1%
     pump trip        1.8%
     valve closure    0.1%
-    because: pressure DROPPED by 4.55 m: a burst or a pump trip, not a closing valve (seen upstream)
+    refill           0.0%
+    because: pressure DROPPED by 4.55 m: a burst or a pump trip, not a closing valve (seen upstream) or a refill
     because: DRAWN-OUT front (406 ms, 10-90%): a gradual change - a pump running down, a valve closing slowly, or a burst opening slowly
     because: SHALLOW drop: 8% of the pressure - a hole lets out a little water
+    because: the pipe was under pressure before (60.0 m): not refilling
     because: pump power is monitored and did NOT fail: not a pump trip
   burst                                        yes
 ok
 
-test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.99s
+test result: ok. 11 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.18s
 
      Running detection\main.rs (target\debug\deps\detection-e23fac69caef8598.exe)
 
@@ -772,7 +864,7 @@ Loggers: 128 S/s, integrating, random clock phase, 2 cm noise:
 ok
 test simulation::burst_location::vs1_location_error_versus_sampling_rate_and_noise ... ignored, full suite: 150 recorded sensor pairs across rates and noise levels
 
-test result: ok. 8 passed; 0 failed; 2 ignored; 0 measured; 0 filtered out; finished in 1.27s
+test result: ok. 8 passed; 0 failed; 2 ignored; 0 measured; 0 filtered out; finished in 1.21s
 
      Running hydraulics\main.rs (target\debug\deps\hydraulics-2a8e28d011452c5f.exe)
 
@@ -1256,7 +1348,7 @@ test invariants::steady_state::an_undisturbed_pipe_stays_steady ... Steady state
   valve holds steady                           yes
 ok
 
-test result: ok. 59 passed; 0 failed; 1 ignored; 0 measured; 0 filtered out; finished in 7.02s
+test result: ok. 59 passed; 0 failed; 1 ignored; 0 measured; 0 filtered out; finished in 6.55s
 
      Running kernel\main.rs (target\debug\deps\kernel-8eea161e1918dc58.exe)
 
@@ -1574,7 +1666,7 @@ test simulation::valve_fronts::a_shut_prv_passes_no_wave_and_no_route ... A seco
     and no route from S1 reaches the zone: the locator cannot place a burst there from S1 yes
 ok
 
-test result: ok. 29 passed; 0 failed; 3 ignored; 0 measured; 0 filtered out; finished in 38.58s
+test result: ok. 29 passed; 0 failed; 3 ignored; 0 measured; 0 filtered out; finished in 31.93s
 
      Running pipeline\main.rs (target\debug\deps\pipeline-0a591d8df4220b73.exe)
 
@@ -1588,8 +1680,9 @@ it comes back the network is still ringing:
     T-S3 south branch    100.0%
   size: about 1.56 l/s (+/- 0.16 l/s), from 2 logger(s)
   seen by: S3 south block, S1 gatehouse
-  because: pressure DROPPED by 9.01 m: a burst or a pump trip, not a closing valve (seen upstream)
+  because: pressure DROPPED by 9.01 m: a burst or a pump trip, not a closing valve (seen upstream) or a refill
   because: SHARP front (12 ms, 10-90%): a sudden change - a pipe splitting, a valve slamming - not a pump running down
+  because: the pipe was under pressure before (60.0 m): not refilling
   because: pump power is not monitored: no outside evidence
   because: S2 north block was not watching at full sensitivity when this wave passed (a gap in its data, calibrating, or ringing after an earlier event): its silence says nothing
   -> sent when the data had reached t = 7.00 s
@@ -1607,8 +1700,9 @@ decides without it - and revises when S2's data turns up:
     T-S3 south branch    100.0%
   size: about 1.55 l/s (+/- 0.16 l/s), from 2 logger(s)
   seen by: S3 south block, S1 gatehouse
-  because: pressure DROPPED by 9.02 m: a burst or a pump trip, not a closing valve (seen upstream)
+  because: pressure DROPPED by 9.02 m: a burst or a pump trip, not a closing valve (seen upstream) or a refill
   because: SHARP front (12 ms, 10-90%): a sudden change - a pipe splitting, a valve slamming - not a pump running down
+  because: the pipe was under pressure before (60.0 m): not refilling
   because: pump power is not monitored: no outside evidence
   because: S2 north block: no data at all - it could not confirm or help locate this event
   -> sent when the data had reached t = 15.00 s
@@ -1617,8 +1711,9 @@ decides without it - and revises when S2's data turns up:
     T-S3 south branch    100.0%
   size: about 1.55 l/s (+/- 0.16 l/s), from 3 logger(s)
   seen by: S3 south block, S1 gatehouse, S2 north block
-  because: pressure DROPPED by 9.02 m: a burst or a pump trip, not a closing valve (seen upstream)
+  because: pressure DROPPED by 9.02 m: a burst or a pump trip, not a closing valve (seen upstream) or a refill
   because: SHARP front (12 ms, 10-90%): a sudden change - a pipe splitting, a valve slamming - not a pump running down
+  because: the pipe was under pressure before (60.0 m): not refilling
   because: pump power is not monitored: no outside evidence
   -> sent when the data had reached t = 20.00 s
   two alerts: the first issue and one revision yes
@@ -1639,8 +1734,9 @@ Whole records, for comparison:
     T-S3 south branch    100.0%
   size: about 1.30 l/s (+/- 0.13 l/s), from 3 logger(s)
   seen by: S3 south block, S1 gatehouse, S2 north block
-  because: pressure DROPPED by 7.78 m: a burst or a pump trip, not a closing valve (seen upstream)
+  because: pressure DROPPED by 7.78 m: a burst or a pump trip, not a closing valve (seen upstream) or a refill
   because: SHARP front (7 ms, 10-90%): a sudden change - a pipe splitting, a valve slamming - not a pump running down
+  because: the pipe was under pressure before (43.3 m): not refilling
   because: pump power is not monitored: no outside evidence
   because: the loggers' drops disagree on the size (misfit 3.0): an echo or a second event in the window - size uncertain
 [Alarm] #2 BURST (98% confident) at t = 29.999 s
@@ -1648,8 +1744,9 @@ Whole records, for comparison:
     T-S2 north branch    100.0%
   size: about 1.31 l/s (+/- 0.13 l/s), from 3 logger(s)
   seen by: S2 north block, S1 gatehouse, S3 south block
-  because: pressure DROPPED by 7.96 m: a burst or a pump trip, not a closing valve (seen upstream)
+  because: pressure DROPPED by 7.96 m: a burst or a pump trip, not a closing valve (seen upstream) or a refill
   because: SHARP front (8 ms, 10-90%): a sudden change - a pipe splitting, a valve slamming - not a pump running down
+  because: the pipe was under pressure before (42.7 m): not refilling
   because: pump power is not monitored: no outside evidence
   because: the loggers' drops disagree on the size (misfit 17.8): an echo or a second event in the window - size uncertain
 
@@ -1660,8 +1757,9 @@ Live: each sensor sends a 1 s chunk in turn:
     T-S3 south branch    100.0%
   size: about 1.30 l/s (+/- 0.13 l/s), from 3 logger(s)
   seen by: S3 south block, S1 gatehouse, S2 north block
-  because: pressure DROPPED by 7.78 m: a burst or a pump trip, not a closing valve (seen upstream)
+  because: pressure DROPPED by 7.78 m: a burst or a pump trip, not a closing valve (seen upstream) or a refill
   because: SHARP front (7 ms, 10-90%): a sudden change - a pipe splitting, a valve slamming - not a pump running down
+  because: the pipe was under pressure before (43.3 m): not refilling
   because: pump power is not monitored: no outside evidence
   because: the loggers' drops disagree on the size (misfit 3.0): an echo or a second event in the window - size uncertain
   -> sent when the data had reached t = 7.00 s
@@ -1670,8 +1768,9 @@ Live: each sensor sends a 1 s chunk in turn:
     T-S2 north branch    100.0%
   size: about 1.31 l/s (+/- 0.13 l/s), from 3 logger(s)
   seen by: S2 north block, S1 gatehouse, S3 south block
-  because: pressure DROPPED by 7.96 m: a burst or a pump trip, not a closing valve (seen upstream)
+  because: pressure DROPPED by 7.96 m: a burst or a pump trip, not a closing valve (seen upstream) or a refill
   because: SHARP front (8 ms, 10-90%): a sudden change - a pipe splitting, a valve slamming - not a pump running down
+  because: the pipe was under pressure before (42.7 m): not refilling
   because: pump power is not monitored: no outside evidence
   because: the loggers' drops disagree on the size (misfit 17.8): an echo or a second event in the window - size uncertain
   -> sent when the data had reached t = 34.00 s
@@ -1686,8 +1785,9 @@ test simulation::scenarios::a_faulty_sensor_is_sent_for_review_not_raised_as_an_
 [Review] #1 VALVE CLOSURE (98% confident) at t = 5.999 s
   where: not located (fewer than two sensors saw it)
   seen by: S2 north block
-  because: pressure ROSE by 3.05 m: a closing valve raises pressure upstream of it; bursts and pump trips lower it
+  because: pressure ROSE by 3.05 m: a closing valve raises pressure upstream of it, returning water fills a pipe; bursts and pump trips lower it
   because: SHARP front (12 ms, 10-90%): a sudden change - a pipe splitting, a valve slamming - not a pump running down
+  because: the pipe was under pressure before (60.0 m): not refilling
   because: pump power is not monitored: no outside evidence
   because: seen by ONE sensor only: S1 gatehouse, S3 south block watched and felt nothing, though a pressure wave from anywhere in the network would have reached them - a fault in S2 north block, or an event too small or too local to travel
   one alert                                    yes
@@ -1706,8 +1806,9 @@ test simulation::scenarios::one_burst_gives_exactly_one_alarm_on_the_right_pipe 
     T-S3 south branch    100.0%
   size: about 1.55 l/s (+/- 0.16 l/s), from 3 logger(s)
   seen by: S3 south block, S1 gatehouse, S2 north block
-  because: pressure DROPPED by 9.01 m: a burst or a pump trip, not a closing valve (seen upstream)
+  because: pressure DROPPED by 9.01 m: a burst or a pump trip, not a closing valve (seen upstream) or a refill
   because: SHARP front (11 ms, 10-90%): a sudden change - a pipe splitting, a valve slamming - not a pump running down
+  because: the pipe was under pressure before (60.0 m): not refilling
   because: pump power is not monitored: no outside evidence
   exactly one alert - no echo alerts           yes
   it is an ALARM                               yes
@@ -1727,8 +1828,9 @@ another on the north branch at t = 30 s:
     T-S3 south branch    100.0%
   size: about 1.30 l/s (+/- 0.13 l/s), from 3 logger(s)
   seen by: S3 south block, S1 gatehouse, S2 north block
-  because: pressure DROPPED by 7.78 m: a burst or a pump trip, not a closing valve (seen upstream)
+  because: pressure DROPPED by 7.78 m: a burst or a pump trip, not a closing valve (seen upstream) or a refill
   because: SHARP front (7 ms, 10-90%): a sudden change - a pipe splitting, a valve slamming - not a pump running down
+  because: the pipe was under pressure before (43.3 m): not refilling
   because: pump power is not monitored: no outside evidence
   because: the loggers' drops disagree on the size (misfit 3.0): an echo or a second event in the window - size uncertain
 [Alarm] #2 BURST (98% confident) at t = 29.999 s
@@ -1736,8 +1838,9 @@ another on the north branch at t = 30 s:
     T-S2 north branch    100.0%
   size: about 1.31 l/s (+/- 0.13 l/s), from 3 logger(s)
   seen by: S2 north block, S1 gatehouse, S3 south block
-  because: pressure DROPPED by 7.96 m: a burst or a pump trip, not a closing valve (seen upstream)
+  because: pressure DROPPED by 7.96 m: a burst or a pump trip, not a closing valve (seen upstream) or a refill
   because: SHARP front (8 ms, 10-90%): a sudden change - a pipe splitting, a valve slamming - not a pump running down
+  because: the pipe was under pressure before (42.7 m): not refilling
   because: pump power is not monitored: no outside evidence
   because: the loggers' drops disagree on the size (misfit 17.8): an echo or a second event in the window - size uncertain
   two alerts, both alarms - no echo alerts     yes
@@ -1751,9 +1854,10 @@ test simulation::valves_by_hour::a_night_burst_behind_a_shut_valve_is_not_blamed
 [Review] #1 UNKNOWN (50% confident) at t = 4.199 s
   where: not located (fewer than two sensors saw it)
   seen by: S2 in the zone
-  because: pressure DROPPED by 6.31 m: a burst or a pump trip, not a closing valve (seen upstream)
+  because: pressure DROPPED by 6.31 m: a burst or a pump trip, not a closing valve (seen upstream) or a refill
   because: DRAWN-OUT front (605 ms, 10-90%): a gradual change - a pump running down, a valve closing slowly, or a burst opening slowly
   because: SHALLOW drop: 12% of the pressure - a hole lets out a little water
+  because: the pipe was under pressure before (53.5 m): not refilling
   because: pump power is not monitored: no outside evidence
   because: seen by ONE sensor only: S1 above the valve watched and felt nothing, though a pressure wave from anywhere in the network would have reached them - a fault in S2 in the zone, or an event too small or too local to travel
     S1's silence is read as evidence against S2 yes
@@ -1764,9 +1868,10 @@ test simulation::valves_by_hour::a_night_burst_behind_a_shut_valve_is_not_blamed
   where: not located (fewer than two sensors saw it)
   seen by: S2 in the zone
   because: located with pumps and valves as the site's schedule has them at 02:00 (1 shut: no wave passes it)
-  because: pressure DROPPED by 6.31 m: a burst or a pump trip, not a closing valve (seen upstream)
+  because: pressure DROPPED by 6.31 m: a burst or a pump trip, not a closing valve (seen upstream) or a refill
   because: DRAWN-OUT front (605 ms, 10-90%): a gradual change - a pump running down, a valve closing slowly, or a burst opening slowly
   because: SHALLOW drop: 12% of the pressure - a hole lets out a little water
+  because: the pipe was under pressure before (53.5 m): not refilling
   because: pump power is not monitored: no outside evidence
   because: seen by ONE sensor only, and no other sensor that its wave could reach was watching: not located, not corroborated
     one alert                                  yes
@@ -1782,9 +1887,10 @@ test simulation::valves_by_hour::at_noon_the_valve_is_active_and_both_loggers_lo
     PRV-S2                 0.0%
   seen by: S2 in the zone, S1 above the valve
   because: located with pumps and valves as the site's schedule has them at 12:00
-  because: pressure DROPPED by 4.92 m: a burst or a pump trip, not a closing valve (seen upstream)
+  because: pressure DROPPED by 4.92 m: a burst or a pump trip, not a closing valve (seen upstream) or a refill
   because: DRAWN-OUT front (605 ms, 10-90%): a gradual change - a pump running down, a valve closing slowly, or a burst opening slowly
   because: SHALLOW drop: 10% of the pressure - a hole lets out a little water
+  because: the pipe was under pressure before (49.9 m): not refilling
   because: pump power is not monitored: no outside evidence
     one alert                                  yes
     heard by both loggers                      yes
@@ -1795,7 +1901,7 @@ test simulation::valves_by_hour::at_noon_the_valve_is_active_and_both_loggers_lo
     and it is not dismissed                    yes
 ok
 
-test result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 4.97s
+test result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 4.76s
 
    Doc-tests jk_application
 
@@ -1870,9 +1976,9 @@ running 0 tests
 test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
 
 ==============================================================================
-  passed   289
+  passed   298
   failed   0
   skipped  6 slow test(s) not in this suite (run -Suite full)
   filtered 0 test(s) outside -Only/-Filter
-  time     87.0 s (including compile)
+  time     80.9 s (including compile)
   result   ALL PASSED

@@ -150,3 +150,20 @@ whole test suite was unchanged by the rewrite.
     reduced sensitivity, exactly as after an event of its own. Found by a
     test: without this, a sensor back from a 3.5 s power cut would take
     every echo for an event.
+
+6. Supply states: empty pipes and returning supply (2026-10-01)
+---------------------------------------------------------------
+The front detector looks for waves and lets slow ramps pass as drift
+(DetectorConfig.memory). A pipe refilling against trapped air is such a
+ramp - the air squeezed over a minute or more - so its start is never a
+front (FN-033). What marks it is the state before: a drained pipe reads
+about 0 (air at atmospheric pressure; below 0 in a vacuum) for minutes
+to hours. The supply watch (crates/domain/detection/src/supply.rs,
+empty_spells) finds spells at or below 2 m lasting >= 60 s - a pump
+trip's down-surge touches the vapour floor for seconds, which is a
+transient - bridging wanders above 2 m shorter than 2 s, and reports when
+each spell ended: the supply returned. A spell running into the start or
+end of the record says so (began before / not yet ended, P6). The
+classifier takes the returns as context: fronts within 15 min after one
+belong to the refill. [VERIFY the 2 m / 60 s / 15 min on field records
+of supply cuts.] Not yet run by the live Monitor (G-14).

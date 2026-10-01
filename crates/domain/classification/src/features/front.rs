@@ -23,6 +23,9 @@ pub fn rise_samples(window: &[f64], level: f64, swing: f64) -> f64 {
     }
     let progress = |x: f64| (x - level) / swing; // 0 at rest, 1 at the extreme
     let crossing = |target: f64| -> f64 {
+        if progress(window[0]) >= target {
+            return 0.0; // already past it: a front that began curving earlier
+        }
         for i in 1..window.len() {
             let (a, b) = (progress(window[i - 1]), progress(window[i]));
             if a < target && b >= target {
@@ -50,6 +53,17 @@ mod tests {
         let s = swing(&x, 60.0, -1.0);
         assert!((s + 10.0).abs() < 1e-12);
         assert!((rise_samples(&x, 60.0, s) - 80.0).abs() < 1e-9);
+    }
+
+    #[test]
+    fn a_curve_already_on_its_way_is_not_sharp() {
+        // A smooth turn already under way: 30% down at once, then on down
+        // over 50 samples.
+        let x: Vec<f64> = (0..=50)
+            .map(|i: i32| 57.0 - 7.0 * f64::from(i) / 50.0)
+            .collect();
+        let r = rise_samples(&x, 60.0, swing(&x, 60.0, -1.0));
+        assert!(r > 30.0, "{r}");
     }
 
     #[test]
