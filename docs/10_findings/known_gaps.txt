@@ -58,7 +58,8 @@ G-04  Never run on real data                                      OPEN
     into data/ (quarantine, manifest, verify) -> datasets/ tests.
   NOTE            The readers are ready (EPANET .inp, logger CSV) and
     were tested on realistic hand-made files; FN-010 shows why this
-    matters.
+    matters. 2026-10-01: a whole site can now be given as a site file
+    and replayed (`jk replay`, V-S11) - the path real data will take.
 
 G-05  No scorecard over many events                               OPEN
   Tests check single cases. The metrics in 07_ (detection rate vs size,

@@ -528,6 +528,19 @@ impl Network {
         &self.pipes
     }
 
+    /// Gives pipe `pipe` a pressure rating ([`Pipe::with_rating`]) - files
+    /// carry none, so a site's records set them afterwards.
+    ///
+    /// # Errors
+    /// An unknown pipe or a rating that is not finite and positive.
+    pub fn set_pipe_rating(&mut self, pipe: PipeId, rating: Head) -> Result<(), HydraulicsError> {
+        let slot = self.pipes.get_mut(pipe.0).ok_or_else(|| {
+            HydraulicsError::InvalidNetwork(format!("pipe {} does not exist", pipe.0))
+        })?;
+        slot.pipe = slot.pipe.with_rating(rating)?;
+        Ok(())
+    }
+
     /// The id of the pipe at `index` in [`Self::pipes`], if it exists.
     #[must_use]
     pub fn pipe_id(&self, index: usize) -> Option<PipeId> {

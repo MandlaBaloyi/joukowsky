@@ -30,5 +30,7 @@ pub mod ports;
 pub use alert::{Alert, Level};
 pub use error::ApplicationError;
 pub use jk_telemetry::Chunk;
-pub use pipeline::{Monitor, PipelineConfig, Record, Schedule, SensorSite, Site, process};
+pub use pipeline::{
+    Feed, Monitor, PipelineConfig, Record, Replay, Schedule, SensorSite, Site, process, replay,
+};
 pub use ports::{AlertSink, CollectingSink};

@@ -11,9 +11,11 @@
 mod assess;
 pub mod fusion;
 mod monitor;
+mod replay;
 mod run;
 
 pub use monitor::Monitor;
+pub use replay::{Feed, Replay, replay};
 pub use run::process;
 
 use jk_classification::{ClassifierConfig, Context, FeatureConfig};

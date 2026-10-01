@@ -12,12 +12,17 @@
 //! - [`logger`]: pressure recordings exported by loggers (CSV and similar
 //!   delimited text).
 //!
+//! - [`site`]: a site file - the network, the loggers (where, which file,
+//!   range, clock), ratings, zone, altitude, power losses - read with all
+//!   it names into what the live engine needs.
+//!
 //! Later: SCADA extracts, binary logger formats.
 
 pub mod epanet;
 mod error;
 pub mod logger;
 mod note;
+pub mod site;
 
 pub use error::ReadError;
 pub use note::Note;

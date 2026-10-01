@@ -93,6 +93,9 @@ pub struct Recording {
     pub runs: Vec<Run>,
     /// Data rows read.
     pub rows: usize,
+    /// Whether the timestamps named a time zone (then times are UTC);
+    /// false: times are as written - the site's local clock.
+    pub zoned: bool,
     /// Everything decided or repaired.
     pub notes: Vec<Note>,
 }
@@ -338,6 +341,7 @@ pub fn parse(text: &str, options: &CsvOptions) -> Result<Recording, ReadError> {
         first_stamp: t.rows[0].fields[..t.time_columns.min(t.rows[0].fields.len())].join(" "),
         runs,
         rows: t.rows.len(),
+        zoned: zoned == Some(true),
         notes,
     })
 }

@@ -65,6 +65,8 @@ dependencies = [
 name = "jk-files"
 version = "0.1.0"
 dependencies = [
+ "jk-application",
+ "jk-classification",
  "jk-hydraulics",
  "jk-kernel",
 ]

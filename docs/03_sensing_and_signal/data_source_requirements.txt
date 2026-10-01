@@ -62,3 +62,40 @@ Where the installer is free to choose, the engine's placement advisor
 (04_detection_and_localisation/burst_localisation.txt, section 4)
 recommends locations that maximise detection coverage and location
 accuracy for a given number of sensors.
+
+SITE FILES AND REPLAY (2026-10-01)
+-------------------------------------------------------------------------
+How a real site is given to the engine: one plain-text SITE FILE naming
+its network (EPANET .inp) and its loggers, read by jk_files::site and
+replayed by `jk replay SITE` (jk_application::replay - the live monitor,
+fed in time order as the site would have sent the data). `jk replay
+--example` prints a template. What it holds, and why each is needed:
+
+  [site]    network   the pipes (EPANET .inp, as utilities already have)
+            zone      local time minus UTC: logger stamps without a zone
+                      are local; alerts are written on the local clock
+            altitude  where water boils (vapour floor: -10.1 m at the
+                      coast, -8.45 m at 1450 m)
+            rating    the pipes' pressure class (PN10 ...), and per pipe
+                      under [ratings]: peaks above it are flagged
+            dates     day-first (South African exports) or month-first
+  [logger NAME]  node   the network node it sits on (by EPANET ID)
+                 file   its export (CSV; units never guessed: header or
+                        unit = ...)
+                 range  its measuring range: a reading held at an end is
+                        "may be clipped", never "no negative pressure"
+                 clock  gnss / ntp / seconds: how far its clock may be off
+                        (sets how well a burst can be located)
+  [power]   monitored, lost = ...: pump power losses on record (the
+            strongest clue to a pump trip)
+Strict: an unknown section or key, a logger on a node the network lacks,
+a rating without a unit - refused, with the line. Everything assumed
+(a clock not stated, stamps without a zone, wave speeds the .inp does not
+carry) is listed in the report's NOTES.
+Checked end to end (V-S11): a simulated burst written as three South
+African logger exports (local time, bar, one header without a unit), a
+network file and a site file -> one ALARM on P4 at 200.1 m, at
+"2026-09-29 12:15:03.0 UTC+02:00", sized 1.55 l/s.
+What a real site must also tell us that no file carries: real wave
+speeds by pipe material [the .inp gives none; 1000 m/s assumed and
+noted], and each logger's exact node.
