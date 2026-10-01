@@ -78,6 +78,7 @@ fn vs8_the_monitor_counts_each_sensors_fatigue_loading_live() {
         pipe_names: vec!["suction".into(), "main 1".into(), "main 2".into()],
         context: Context::power_lost_at(&[Time::new(3.0)]),
         schedule: None,
+        utc_offset: None,
     };
     let recorded = record(&truths, dt, 41);
     let config = PipelineConfig::default();
@@ -163,6 +164,7 @@ fn vs7_a_peak_over_the_rating_late_in_the_ringing_comes_by_one_revision() {
         pipe_names: vec!["suction".into(), "main 1".into(), "main 2".into()],
         context: Context::power_lost_at(&[Time::new(3.0)]),
         schedule: None,
+        utc_offset: None,
     };
     println!(
         "The flat main's pump trip, its pipes PN10 ({:.1} m); the pressure at the pump peaks          at {truth_peak:.1} m, about 20 s after the front - long after the alert:",

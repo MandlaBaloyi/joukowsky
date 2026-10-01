@@ -72,6 +72,7 @@ fn scenario_rated(
         pipe_names: vec!["suction".into(), "main up".into(), "main on".into()],
         context: Context::power_lost_at(&[Time::new(3.0)]),
         schedule: None,
+        utc_offset: None,
     };
     (site, vec![at_pump, at_knee], dt, highest)
 }

@@ -277,7 +277,7 @@ pub(super) fn assess(
             Some(t) => format!(
                 "{name}: no data after {} - not waited for longer; it could not confirm or help \
                  locate this event",
-                stamp(t.value(), site.utc_offset())
+                stamp(t.value(), site.zone())
             ),
             None => {
                 format!("{name}: no data at all - it could not confirm or help locate this event")
@@ -354,6 +354,6 @@ pub(super) fn assess(
             .map(|m| site.sensors[m.sensor].name.clone())
             .collect(),
         reasons,
-        utc_offset: site.schedule.as_ref().map(|s| s.utc_offset),
+        utc_offset: site.utc_offset,
     }
 }

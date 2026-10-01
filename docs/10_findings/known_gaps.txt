@@ -137,9 +137,7 @@ G-14  Refilling / air-pocket transients have no class             OPEN
   at every sensor, and refills come out as REFILL warnings, none as
   bursts (V-S6). Supply cuts are alerts of their own since the same day
   (V-S9, FN-041). Still open: a burst DURING a refill is weighed against
-  the refill (only sharpness and size speak for it); the weak front at
-  the start of a drain is a separate "unknown" alert, not tied to the cut
-  that follows; refilling
+  the refill (only sharpness and size speak for it); refilling
   inside the network solver (mixed flow, R-5 next rung); several pockets;
   real air-valve data. (Cavitation after the slam: done, V-A17.)
   Classes today: Burst, ValveClosure, PumpTrip, Unknown. Refilling after

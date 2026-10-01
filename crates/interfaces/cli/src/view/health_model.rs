@@ -162,6 +162,7 @@ impl HealthModel {
             ],
             context: Context::power_lost_at(&[Time::new(3.0)]),
             schedule: None,
+            utc_offset: None,
         };
         let mut monitor =
             Monitor::new(site, PipelineConfig::default()).map_err(|e| e.to_string())?;

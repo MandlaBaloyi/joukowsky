@@ -55,26 +55,29 @@ pub struct Site {
     /// How the site runs over a day, if known: then each event is located
     /// with the pumps and valves as they stand at its hour.
     pub schedule: Option<Schedule>,
+    /// The site's local time minus UTC, if known (South Africa: +2 h, no
+    /// daylight saving): alerts write times on the local clock, and a
+    /// schedule's hours are local hours. Event times are UTC.
+    pub utc_offset: Option<Time>,
 }
 
 impl Site {
-    /// Local time minus UTC [s], if the site's schedule gives it.
+    /// Local time minus UTC [s], if known.
     #[must_use]
-    pub fn utc_offset(&self) -> Option<f64> {
-        self.schedule.as_ref().map(|s| s.utc_offset.value())
+    pub fn zone(&self) -> Option<f64> {
+        self.utc_offset.map(Time::value)
     }
 }
 
 /// How a site runs over a day: which pumps and valves stand where at each
-/// hour follows from it (gap G-19).
+/// hour follows from it (gap G-19). Its hours are the site's local hours
+/// ([`Site::utc_offset`]; UTC if that is not known).
 #[derive(Debug, Clone, PartialEq)]
 pub struct Schedule {
     /// The day's operation - demand patterns, controls, power cuts - for
     /// [`Network::extended`], its t = 0 at local midnight. Its duration is
     /// not used: the monitor runs two days and takes the second.
     pub period: PeriodOptions,
-    /// Local time minus UTC (South Africa: +2 h). Event times are UTC.
-    pub utc_offset: Time,
 }
 
 /// One sensor's record for the window being processed.

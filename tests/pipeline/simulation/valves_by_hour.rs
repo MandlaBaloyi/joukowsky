@@ -100,8 +100,8 @@ fn site(schedule: bool) -> Site {
                 pattern,
                 ..PeriodOptions::default()
             },
-            utc_offset: Time::new(2.0 * HOUR),
         }),
+        utc_offset: Some(Time::new(2.0 * HOUR)),
     }
 }
 

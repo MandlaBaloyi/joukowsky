@@ -48,6 +48,7 @@ pub fn estate_site(context: Context) -> Site {
         ],
         context,
         schedule: None,
+        utc_offset: None,
     }
 }
 

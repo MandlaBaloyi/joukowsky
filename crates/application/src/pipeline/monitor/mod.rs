@@ -24,9 +24,11 @@ mod hours;
 mod sensor;
 mod supply;
 
+use jk_classification::EventClass;
 use jk_classification::extract;
-use jk_detection::{Detector, Event, StreamOutput, SupplyChange, SupplyWatch};
+use jk_detection::{Detector, Direction, Event, StreamOutput, SupplyChange, SupplyWatch};
 use jk_health::{Counter, Spectrum};
+use jk_kernel::clock::stamp;
 use jk_kernel::{Head, Time};
 use jk_localisation::ClockEstimate;
 use jk_localisation::clocks::correct;
@@ -39,13 +41,18 @@ use self::supply::{Incident, Member};
 use super::assess::{Found, Unheard, assess};
 use super::fusion::{self, Candidate};
 use super::{PipelineConfig, Site};
-use crate::alert::Alert;
+use crate::alert::{Alert, Level};
 use crate::error::ApplicationError;
 use crate::ports::AlertSink;
 
 /// Events are kept for revision, and impaired stretches for corroboration,
 /// this long beyond `max_wait` [s].
 const KEEP_BEYOND_WAIT: f64 = 60.0;
+
+/// A drop up to this long before a pipe stood empty may be the drain that
+/// began a supply cut [s]; issued alerts are kept at least this long, so a
+/// cut can be tied to it.
+const DRAIN: f64 = 600.0;
 
 /// An event already reported.
 #[derive(Debug, Clone)]
@@ -57,6 +64,10 @@ struct Issued {
     stale: bool,
     /// A follow-up peak was measured: revise once all are in.
     followed: bool,
+    /// Notes from other alerts (a supply cut it led into).
+    links: Vec<String>,
+    /// Explained by a supply cut: an unknown drop is then Info.
+    explained: bool,
 }
 
 /// Watches one site live.
@@ -410,6 +421,65 @@ impl Monitor {
         }
     }
 
+    /// Ties a supply cut (incident `i`) to the drop that began it at
+    /// `sensor`, whose pipe stood empty from `start` [s]: an alert already
+    /// out for a drop there up to `DRAIN` before. Both say so; an UNKNOWN
+    /// drop is explained (Info) - a BURST is never relabelled, as a burst
+    /// can itself drain the pipes.
+    fn link_drain(&mut self, i: usize, sensor: usize, start: f64) {
+        let zone = self.site.zone();
+        let name = self.site.sensors[sensor].name.clone();
+        let cut_id = self.supply_cuts[i].id;
+        for g in 0..self.issued.len() {
+            let Some(arrival) = self.issued[g]
+                .members
+                .iter()
+                .find(|m| {
+                    let t = m.event.arrival.value();
+                    m.sensor == sensor
+                        && m.event.direction == Direction::Drop
+                        && (start - DRAIN..=start + 1.0).contains(&t)
+                })
+                .map(|m| m.event.arrival.value())
+            else {
+                continue;
+            };
+            let id = self.issued[g].id;
+            if self.supply_cuts[i].linked.contains(&id) {
+                continue;
+            }
+            let class = self
+                .alert(&self.issued[g].members, id, self.issued[g].revision)
+                .class;
+            let ahead = start - arrival;
+            self.supply_cuts[i].linked.push(id);
+            self.supply_cuts[i].links.push(format!(
+                "{name}: the pressure began falling at {} (alert #{id}, {class}), {ahead:.0} s before \
+                 the pipe stood empty{}",
+                stamp(arrival, zone),
+                if class == EventClass::Burst {
+                    " - the burst may have drained the pipes"
+                } else {
+                    ""
+                }
+            ));
+            let issued = &mut self.issued[g];
+            issued.links.push(format!(
+                "followed by a SUPPLY CUT (alert #{cut_id}): the pipe at {name} stood empty from {}",
+                stamp(start, zone)
+            ));
+            if class == EventClass::Unknown {
+                issued.explained = true;
+                issued.links.push(
+                    "this drop was most likely the pressure draining at the start of that cut, \
+                     not a burst"
+                        .into(),
+                );
+            }
+            issued.stale = true;
+        }
+    }
+
     /// Sends the supply cuts that changed: raised when confirmed, revised
     /// as they change. Closed ones are forgotten after a day.
     fn send_supply_cuts(
@@ -418,7 +488,7 @@ impl Monitor {
         all_final: bool,
     ) -> Result<Vec<Alert>, ApplicationError> {
         let names: Vec<String> = self.site.sensors.iter().map(|s| s.name.clone()).collect();
-        let offset = self.site.utc_offset();
+        let offset = self.site.zone();
         let lead = self.lead().map_or(f64::NEG_INFINITY, Time::value);
         let reached: Vec<f64> = self
             .sensors
@@ -470,11 +540,13 @@ impl Monitor {
                         .iter()
                         .position(|i| i.takes(member.confirmed));
                     let at = member.confirmed;
-                    if let Some(i) = home {
+                    let start = member.from;
+                    let i = if let Some(i) = home {
                         let incident = &mut self.supply_cuts[i];
                         incident.members.push(member);
                         incident.stale = true;
                         incident.changed_at = incident.changed_at.max(at);
+                        i
                     } else {
                         self.supply_cuts.push(Incident {
                             id: self.next_id,
@@ -482,8 +554,14 @@ impl Monitor {
                             members: vec![member],
                             stale: true,
                             changed_at: at,
+                            links: Vec::new(),
+                            linked: Vec::new(),
                         });
                         self.next_id += 1;
+                        self.supply_cuts.len() - 1
+                    };
+                    if let Some(start) = start {
+                        self.link_drain(i, sensor, start);
                     }
                 }
                 SupplyChange::Returned(spell) => {
@@ -654,8 +732,7 @@ impl Monitor {
                 self.issued[g].stale = false;
                 self.issued[g].followed = false;
                 self.issued[g].revision += 1;
-                let (id, revision) = (self.issued[g].id, self.issued[g].revision);
-                let alert = self.alert(&self.issued[g].members, id, revision);
+                let alert = self.alert_of(g);
                 sink.send(&alert).map_err(ApplicationError::Delivery)?;
                 alerts.push(alert);
             }
@@ -681,8 +758,7 @@ impl Monitor {
             issued.members.push(found);
             sort_by_arrival(&mut issued.members);
             issued.revision += 1;
-            let (id, revision) = (issued.id, issued.revision);
-            let alert = self.alert(&self.issued[g].members, id, revision);
+            let alert = self.alert_of(g);
             sink.send(&alert).map_err(ApplicationError::Delivery)?;
             alerts.push(alert);
         }
@@ -725,6 +801,8 @@ impl Monitor {
                 members,
                 stale: false,
                 followed: false,
+                links: Vec::new(),
+                explained: false,
             });
         }
 
@@ -733,15 +811,28 @@ impl Monitor {
     }
 
     /// The alert for an event, as the data stands.
+    /// The alert for issued event `g`, with what other alerts said of it.
+    fn alert_of(&self, g: usize) -> Alert {
+        let issued = &self.issued[g];
+        let mut alert = self.alert(&issued.members, issued.id, issued.revision);
+        alert.reasons.extend(issued.links.iter().cloned());
+        if issued.explained && alert.class == EventClass::Unknown {
+            alert.level = Level::Info;
+        }
+        alert
+    }
+
     fn alert(&self, members: &[Found], id: u32, revision: u32) -> Alert {
         let unheard: Vec<Unheard> = self
             .missing(members)
             .iter()
             .map(|&(j, _)| (j, self.sensors[j].received_until().map(Time::new)))
             .collect();
-        let (set, words) = self
-            .hours
-            .at(self.site.schedule.as_ref(), members[0].arrival.time.value());
+        let (set, words) = self.hours.at(
+            self.site.schedule.as_ref(),
+            self.site.zone(),
+            members[0].arrival.time.value(),
+        );
         assess(
             &self.site,
             &self.config,
@@ -808,8 +899,13 @@ impl Monitor {
         if !horizon.is_finite() {
             return;
         }
-        self.issued
-            .retain(|g| g.members.iter().any(|m| m.arrival.time.value() >= horizon));
+        // Issued alerts also wait for a supply cut their drop may begin.
+        let keep_issued = horizon.min(lead.value() - DRAIN - self.config.supply.min_empty.value());
+        self.issued.retain(|g| {
+            g.members
+                .iter()
+                .any(|m| m.arrival.time.value() >= keep_issued)
+        });
         let refill_window = self.config.classifier.refill_window.value();
         for s in &mut self.sensors {
             s.forget_impaired_before(horizon);

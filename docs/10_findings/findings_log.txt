@@ -454,3 +454,14 @@ FN-041  2026-10-01  Loggers that change together must give one alert
   the first sign, and honest about its doubt - but tying it to the cut
   that follows is open (G-14). And "-0.00 m" in a refill reason: a
   reading a hair below 0 is now rounded as shown.
+
+FN-042  2026-10-01  A cut is confirmed minutes after its first sign
+  Tying the weak drop at the start of a drain to the supply cut that
+  follows (V-S9) did nothing at first: the monitor forgets issued alerts
+  70 s past the newest data (enough for late sensors and the 30 s
+  follow-up), but a pipe is called empty only after a minute at ~0, and
+  the drain before that takes another minute or more - the drop was gone
+  when the cut came. Issued alerts are now kept at least 10 min plus the
+  minute; other bookkeeping keeps its 70 s. Rule written down with it: a
+  BURST before a cut is never explained away (a burst can drain pipes);
+  only an UNKNOWN drop is lowered to Info.

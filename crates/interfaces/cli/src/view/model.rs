@@ -107,6 +107,7 @@ impl EventModel {
             pipe_names: demo.site.drawing.pipe_names.clone(),
             context: Context::unknown(),
             schedule: None,
+            utc_offset: None,
         };
         let mut monitor =
             Monitor::new(site, PipelineConfig::default()).map_err(|e| e.to_string())?;

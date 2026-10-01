@@ -191,3 +191,13 @@ the logger reader makes them; alerts now write such a time as a date and
 clock time, in the site's zone when its schedule gives one ("2026-10-01
 14:02:36.0 UTC+02:00"), else marked UTC; simulations (time from 0) keep
 "t = 156.0 s" (kernel clock.rs; V-S9 on dated records).
+
+Drains tied to cuts (2026-10-01, V-S9). Where a supply fails, the start
+of the drain often shows as a weak drop alert minutes before the pipe
+stands empty. When a cut is confirmed, a drop alert at the same sensor
+up to 10 min before the pipe emptied is tied to it: both alerts say so;
+an UNKNOWN drop is explained ("most likely the pressure draining at the
+start of that cut, not a burst") and lowered to Info; a BURST is never
+relabelled - a burst can itself drain the pipes, and the cut says so.
+Issued alerts are kept at least that long (FN-042). The site's time
+zone is its own setting now (Site.utc_offset), not the schedule's.

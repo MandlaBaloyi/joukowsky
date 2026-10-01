@@ -50,6 +50,10 @@ pub(super) struct Incident {
     /// ... last at this time [s]: sent once every sensor's data is past it
     /// (one alert for sensors changing together, not one each).
     pub changed_at: f64,
+    /// What led up to it: drops at its sensors just before (other alerts).
+    pub links: Vec<String>,
+    /// Ids of the alerts linked so.
+    pub linked: Vec<u32>,
 }
 
 impl Incident {
@@ -103,6 +107,7 @@ impl Incident {
                     .into(),
             );
         }
+        reasons.extend(self.links.iter().cloned());
         if self.members.iter().all(|m| m.until.is_some()) {
             reasons.push("supply back everywhere it was lost".into());
         }

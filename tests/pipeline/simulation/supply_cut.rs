@@ -84,6 +84,62 @@ fn vs9_a_supply_cut_is_raised_once_and_revised_when_the_water_returns() {
         "  the slow drain raised no burst alarm",
         !all.iter().any(|a| a.class == EventClass::Burst),
     );
+    check(
+        "  the weak drop at the drain's start is tied to the cut and explained (Info)",
+        all.iter().any(|a| {
+            a.class == EventClass::Unknown
+                && a.level == Level::Info
+                && a.reasons
+                    .iter()
+                    .any(|r| r.contains("draining at the start of that cut"))
+        }) && cut
+            .iter()
+            .any(|a| a.reasons.iter().any(|r| r.contains("began falling"))),
+    );
+}
+
+#[test]
+fn vs9_a_burst_before_a_cut_is_not_explained_away() {
+    // S1 and S2: a sudden drop to 6 m at 100 s (a pipe splitting), then the
+    // pipes drain to empty by 130 s; back at 460 s. S3 supplied.
+    let burst_then_drain = |cut: bool| -> Vec<f64> {
+        (0..60_000)
+            .map(|k| {
+                let t = f64::from(k) * DT;
+                if !cut || t < 100.0 || t >= 470.0 {
+                    30.0
+                } else if t < 130.0 {
+                    6.0 * (1.0 - (t - 100.0) / 30.0)
+                } else if t < 460.0 {
+                    0.0
+                } else {
+                    30.0 * (t - 460.0) / 10.0
+                }
+            })
+            .collect()
+    };
+    let site = estate_site(Context::unknown());
+    println!("A sudden drop to 6 m at S1 and S2, then their pipes drain empty:");
+    let truths = vec![
+        burst_then_drain(true),
+        burst_then_drain(true),
+        burst_then_drain(false),
+    ];
+    let issued = live(&site, &record(&truths, DT, 55), 1.0, &[], None);
+    let all: Vec<&Alert> = issued.iter().map(|i| &i.alert).collect();
+    check(
+        "  the burst stays a burst - a burst can itself drain the pipes",
+        all.iter()
+            .any(|a| a.class == EventClass::Burst && a.level != Level::Info),
+    );
+    check(
+        "  and the cut says the burst may have drained them",
+        cuts(&all).iter().any(|a| {
+            a.reasons
+                .iter()
+                .any(|r| r.contains("the burst may have drained the pipes"))
+        }),
+    );
 }
 
 #[test]
@@ -155,5 +211,19 @@ fn vs9_on_real_records_the_alert_reads_in_clock_time() {
     check(
         "  no zone known for the site: said to be UTC",
         text.contains(" UTC"),
+    );
+    println!("The same site with its zone set (South Africa, UTC+2):");
+    let mut sa = site.clone();
+    sa.utc_offset = Some(jk_kernel::Time::new(7200.0));
+    let issued = live(&sa, &recorded, 1.0, &[], None);
+    let text = issued
+        .iter()
+        .rev()
+        .find(|i| i.alert.class == EventClass::SupplyCut)
+        .map(|i| i.alert.render(&sa.pipe_names))
+        .unwrap_or_default();
+    check(
+        "  the cut began at 14:02:36 local time",
+        text.contains("at 2026-10-01 14:02:36.0 UTC+02:00"),
     );
 }

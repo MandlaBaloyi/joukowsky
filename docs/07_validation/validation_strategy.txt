@@ -180,7 +180,11 @@ Rung 3  Simulation studies.
         it was lost"); S3 not in it; no burst alarm. One logger alone ->
         Review, naming the sensor-fault possibility. S2's data stopping
         while empty -> said. The drained main of V-S6 -> a supply cut
-        too, revised at its return (2026-10-01).
+        too, revised at its return. On dated records: "2026-10-01
+        12:02:36.0 UTC", or 14:02:36.0 UTC+02:00 with the site's zone set.
+        The weak drop at the drain's start is tied to the cut and lowered
+        to Info; a sudden drop (BURST) before a cut stays a burst and the
+        cut says it may have drained the pipes (FN-042) (2026-10-01).
   V-S4  Scale: synthetic towns of 10 / 50 / 100 km - time the simulator,
         live engine and advisor (10_findings/detection_range_and_scale.txt,
         gap G-10).

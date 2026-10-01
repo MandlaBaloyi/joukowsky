@@ -32,6 +32,7 @@ fn site() -> Site {
         pipe_names: vec!["main".into()],
         context: Context::unknown(),
         schedule: None,
+        utc_offset: None,
     }
 }
 

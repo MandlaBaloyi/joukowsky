@@ -103,19 +103,30 @@ impl Hours {
         })
     }
 
-    /// The set in force at UTC time `t` [s], and words for the alert (None
-    /// without a schedule).
-    pub fn at(&self, schedule: Option<&Schedule>, t: f64) -> (usize, Option<String>) {
-        let Some(s) = schedule else {
+    /// The set in force at UTC time `t` [s] on a site `utc_offset` [s] from
+    /// UTC (unknown: hours taken as UTC, and the words say so), and words
+    /// for the alert (None without a schedule).
+    pub fn at(
+        &self,
+        schedule: Option<&Schedule>,
+        utc_offset: Option<f64>,
+        t: f64,
+    ) -> (usize, Option<String>) {
+        if schedule.is_none() {
             return (0, None);
-        };
-        let local = (t + s.utc_offset.value()).rem_euclid(DAY);
+        }
+        let local = (t + utc_offset.unwrap_or(0.0)).rem_euclid(DAY);
         #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)] // 0..24
         let hour = ((local / 3600.0) as usize).min(23);
         let k = self.by_hour[hour];
         let shut = self.sets[k].shut_count();
         let mut words = format!(
-            "located with pumps and valves as the site's schedule has them at {hour:02}:00{}",
+            "located with pumps and valves as the site's schedule has them at {hour:02}:00{}{}",
+            if utc_offset.is_none() {
+                " (taken as UTC: the site's time zone is not set)"
+            } else {
+                ""
+            },
             match shut {
                 0 => String::new(),
                 1 => " (1 shut: no wave passes it)".into(),
