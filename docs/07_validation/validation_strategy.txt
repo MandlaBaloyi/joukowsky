@@ -200,6 +200,15 @@ Rung 3  Simulation studies.
         amplitude and phase at 7 frequencies (0.11-0.83 Hz); frequencies
         within reach of a natural one (response > 3x) skipped and said
         (FN-043) (2026-10-01).
+  V-S12 The scorecard (pipeline/simulation/scorecard.rs; G-05): bursts of
+        3/5/8/12 mm at random points on the estate, 3 loggers, the whole
+        engine. Quick: 6 per size. Full (release): 40 per size, three
+        wave-speed cases (FN-044) - detection 100%, classed burst 95-100%,
+        location error 0.1-0.4 m (speeds exact) or 5-7 m (3% off,
+        declared), the 90% region holding the truth 88-95% when the
+        doubt is declared (10-30% when not), sizes within 1-7%; 3 hours
+        of quiet with slow wander: 0 false alerts in 0.375 sensor-days
+        (fewer than 8 a day, 95%) (2026-10-01).
   V-S4  Scale: synthetic towns of 10 / 50 / 100 km - time the simulator,
         live engine and advisor (10_findings/detection_range_and_scale.txt,
         gap G-10).

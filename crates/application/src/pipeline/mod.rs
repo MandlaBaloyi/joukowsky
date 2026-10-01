@@ -103,7 +103,8 @@ pub struct PipelineConfig {
     pub features: FeatureConfig,
     /// Classification rules.
     pub classifier: ClassifierConfig,
-    /// Localisation.
+    /// Localisation. Its wave-speed doubt defaults to 5%: speeds on a real
+    /// network are never exact.
     pub localise: LocaliseOptions,
     /// Fusion: extra allowance on travel times between sensors for wave
     /// speeds being wrong (0.1 = 10%).
@@ -136,7 +137,14 @@ impl Default for PipelineConfig {
             supply: SupplyConfig::default(),
             features: FeatureConfig::default(),
             classifier: ClassifierConfig::default(),
-            localise: LocaliseOptions::default(),
+            // Real wave speeds are never known exactly (network files carry
+            // none): declared doubt keeps the 90% region honest - told
+            // "exact" when they are 3% off, it held the truth 10-30% of the
+            // time (scorecard, FN-044). [VERIFY 5% on field wave speeds]
+            localise: LocaliseOptions {
+                wave_speed_uncertainty: 0.05,
+                ..LocaliseOptions::default()
+            },
             speed_margin: 0.1,
             gate_sigmas: 4.0,
             alarm_confidence: 0.9,

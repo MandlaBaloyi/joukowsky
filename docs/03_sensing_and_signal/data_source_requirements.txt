@@ -99,3 +99,12 @@ network file and a site file -> one ALARM on P4 at 200.1 m, at
 What a real site must also tell us that no file carries: real wave
 speeds by pipe material [the .inp gives none; 1000 m/s assumed and
 noted], and each logger's exact node.
+
+Wave speeds in the site file (2026-10-01): wave_speed (m/s, every pipe -
+EPANET files carry none) and wave_speed_doubt (e.g. 5%: how far off the
+speeds may be). The doubt sets how wide the 90% location regions are;
+without it the engine assumes 5% [VERIFY] - told "exact" when speeds were
+3% off, its 90% regions held the truth only 10-30% of the time (FN-044).
+A site whose wave speeds have been measured (a known valve closure, a
+hydrant opened at a known time - clock calibration) can declare less and
+get tighter, still honest, regions.

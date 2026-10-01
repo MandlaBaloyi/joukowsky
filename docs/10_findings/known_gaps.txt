@@ -68,12 +68,19 @@ G-04  Never run on real data                                      OPEN
     matters. 2026-10-01: a whole site can now be given as a site file
     and replayed (`jk replay`, V-S11) - the path real data will take.
 
-G-05  No scorecard over many events                               OPEN
+G-05  No scorecard over many events                        IN PROGRESS
   Tests check single cases. The metrics in 07_ (detection rate vs size,
   false alarms per sensor-day, location error in m, credible-region
   coverage) need a harness that runs many events and reports them.
   A score needs ground truth: lab data with known burst positions, or a
   partner opening a hydrant at a known place and time.
+  2026-10-01: the scorecard runs on simulation (V-S12): detection by
+    size, class, location error, coverage of the 90% region, size error,
+    false alerts per sensor-day. It found the engine overclaiming when
+    told wave speeds are exact (FN-044) - fixed. Open: other networks
+    (bigger, looped, plastic pipes), events other than bursts, slower
+    loggers, false alerts from real disturbances (pumps, valves, users)
+    - and the same ruler on real data.
 
 B. Not yet BUILT
 ------------------------------------------------------------------------

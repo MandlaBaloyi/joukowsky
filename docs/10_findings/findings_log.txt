@@ -480,3 +480,23 @@ FN-043  2026-10-01  An undamped network remembers how a test began
   skipped and said so. Lesson for real data too: on a quiet network,
   any oscillation seen may be an old event still ringing, not a new
   one.
+
+FN-044  2026-10-01  Told the wave speeds are exact, the engine overclaims
+  The first scorecard (G-05; pipeline/simulation/scorecard.rs) put 40
+  bursts of each size (3-12 mm) at random points on the estate through
+  the whole engine. Detection 100%, location error under 1.5 m, sizes
+  within 1-7% - but the "90% region" held the truth only 65-88% of the
+  time, worse for bigger holes. Cause: the simulator nudges wave speeds
+  by up to 1% to fit its grid, and the localiser was told the speeds are
+  exact (wave_speed_uncertainty 0, the default). Separated (40 per size
+  each):
+    A  speeds exact, told exact:      error 0.1-0.4 m, region holds 92-95%
+    B  speeds off 3%, told 3%:        error 5-7 m,     region holds 88-95%
+    C  speeds off 3%, told exact:     error 6-12 m,    region holds 10-30%
+  So the timing uncertainty is honest (A), and declared wave-speed doubt
+  keeps the region honest (B); the default was case C - on a real
+  network, where no file carries wave speeds, it would claim 90% and be
+  right one time in five. Fix: the pipeline's default doubt is 5%
+  [VERIFY on field wave speeds]; a site file can state its own
+  (wave_speed_doubt) and its wave speed (wave_speed). P3: an engine that
+  overclaims is worse than one that says "somewhere in these 30 m".

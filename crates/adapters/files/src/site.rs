@@ -13,6 +13,8 @@
 //! altitude = 1450                 # m above sea level: where water boils
 //! rating   = PN10                 # every pipe, unless listed under [ratings]
 //! dates    = day-first            # 01/02/2026 is 1 February (or month-first)
+//! wave_speed       = 1100         # m/s, every pipe (EPANET files carry none)
+//! wave_speed_doubt = 5%           # how far off they may be (sets the 90% regions)
 //!
 //! [logger S1 gatehouse]           # the name used in alerts
 //! node   = J-12                   # the network node it sits on
@@ -104,6 +106,7 @@ pub fn load(path: &Path) -> Result<LoadedSite, ReadError> {
     let (mut name, mut network_file, mut zone, mut altitude, mut default_rating) =
         (String::from("site"), None, None, None, None);
     let mut day_first = true;
+    let (mut wave_speed, mut doubt) = (None, None);
     for e in &site_section.entries {
         match e.key.as_str() {
             "name" => name.clone_from(&e.value),
@@ -124,6 +127,29 @@ pub fn load(path: &Path) -> Result<LoadedSite, ReadError> {
                         .ok_or_else(|| bad(e, "a rating like PN10, 16 bar or 160 m"))?,
                 );
             }
+            "wave_speed" => {
+                wave_speed = Some(
+                    e.value
+                        .trim_end_matches("m/s")
+                        .trim()
+                        .parse::<f64>()
+                        .ok()
+                        .filter(|a| *a > 0.0)
+                        .ok_or_else(|| bad(e, "metres a second, e.g. 1100"))?,
+                );
+            }
+            "wave_speed_doubt" => {
+                let v = e.value.trim();
+                let fraction = match v.strip_suffix('%') {
+                    Some(p) => p.trim().parse::<f64>().ok().map(|p| p / 100.0),
+                    None => v.parse::<f64>().ok(),
+                };
+                doubt = Some(
+                    fraction
+                        .filter(|f| (0.0..1.0).contains(f))
+                        .ok_or_else(|| bad(e, "a share like 5% or 0.05"))?,
+                );
+            }
             "dates" => {
                 day_first = match e.value.as_str() {
                     "day-first" => true,
@@ -138,7 +164,11 @@ pub fn load(path: &Path) -> Result<LoadedSite, ReadError> {
         .ok_or_else(|| ReadError::at(site_section.line, "[site] needs network = FILE.inp"))?;
 
     // The network.
-    let inp = epanet::read(&network_file, &InpOptions::default())
+    let mut inp_options = InpOptions::default();
+    if let Some(a) = wave_speed {
+        inp_options.wave_speed = jk_kernel::WaveSpeed::new(a);
+    }
+    let inp = epanet::read(&network_file, &inp_options)
         .map_err(|e| ReadError::general(format!("{}: {e}", network_file.display())))?;
     let mut network = inp.network.clone();
     notes.extend(prefixed(&network_file, &inp.notes));
@@ -339,6 +369,14 @@ pub fn load(path: &Path) -> Result<LoadedSite, ReadError> {
     }
 
     let mut config = PipelineConfig::default();
+    match doubt {
+        Some(d) => config.localise.wave_speed_uncertainty = d,
+        None => notes.push(format!(
+            "no wave_speed_doubt: the wave speeds are taken to be within {:.0}% - locations and \
+             their 90% regions allow for that",
+            config.localise.wave_speed_uncertainty * 100.0
+        )),
+    }
     match altitude {
         Some(z) => {
             config.features.vapour_floor =

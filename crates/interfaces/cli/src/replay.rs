@@ -34,6 +34,8 @@ zone     = +02:00               # local time minus UTC (South Africa: +02:00)
 altitude = 1450                 # m above sea level: where water boils
 rating   = PN10                 # every pipe, unless listed under [ratings]
 dates    = day-first            # 01/02/2026 is 1 February (or month-first)
+wave_speed       = 1100         # m/s, every pipe (EPANET files carry none)
+wave_speed_doubt = 5%           # how far off they may be (sets the 90% regions)
 
 [logger S1 gatehouse]           # the name used in alerts
 node   = J-12                   # the network node it sits on

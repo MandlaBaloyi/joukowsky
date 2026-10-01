@@ -60,6 +60,7 @@ network  = estate.inp
 zone     = +02:00
 altitude = 1450
 rating   = PN16
+wave_speed_doubt = 2%
 
 [logger S1 gatehouse]
 node  = S1
@@ -186,6 +187,12 @@ fn vs11_a_site_file_and_its_recordings_replay_through_the_live_engine() {
         -8.452,
         0.001,
     );
+    check_close(
+        "  the declared wave-speed doubt (2%) is the localiser's",
+        loaded.config.localise.wave_speed_uncertainty,
+        0.02,
+        1e-12,
+    );
     let rating = |k: usize| {
         loaded.site.network.pipes()[k]
             .pipe
@@ -260,6 +267,11 @@ fn vs11_a_site_file_with_a_mistake_is_refused_with_its_line() {
             "rating   = 160",
         ),
         ("an unknown section", "[power]", "[pumps]"),
+        (
+            "a doubt that is not a share",
+            "wave_speed_doubt = 2%",
+            "wave_speed_doubt = lots",
+        ),
     ] {
         std::fs::write(dir.join("site.txt"), SITE.replace(from, to)).unwrap();
         let e = jk_files::site::load(&dir.join("site.txt"));
