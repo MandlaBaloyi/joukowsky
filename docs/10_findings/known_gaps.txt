@@ -156,9 +156,12 @@ G-18  Sources are fixed heads; dams, rivers, canals not modelled  IN PROGRESS
   02_physics_of_transients/sources_dams_rivers_canals.txt (raised by the
   owner, 2026-09-29).
 
-G-19  Valves: PRV response over seconds; states by time of day     OPEN
-  2026-09-30: pressure-reducing valves are real devices (V-A10), but in a
-  transient a PRV is frozen at its steady opening. A real pilot-operated
+G-19  Valves: response times unknown; PBV/GPV                    OPEN
+  2026-10-01: valves may now MOVE in a transient (response time tau,
+  V-A13); without tau they stay frozen. Still open: tau for real valves
+  (files never give it; maker data or a recorded pressure step), and pilot
+  dead time. 2026-09-30: pressure-reducing valves are real devices
+  (V-A10), but in a transient a PRV is frozen at its steady opening. A real pilot-operated
   PRV opens over seconds to feed a burst below it [VERIFY response times
   from maker data]; frozen, it under-feeds the burst after the first
   seconds, and a PRV shut at the start stays shut.

@@ -14,10 +14,22 @@
 //!   purchase limit);
 //! - TCV is a fixed partial opening: always OPEN, a loss R Q|Q| both ways.
 //!
-//! PRV, PSV and FCV pass water one way only. In a transient every valve is
-//! FROZEN at its steady opening: a pilot-operated valve needs seconds to
-//! move, a wave crosses a site in well under one. Frozen, it is an orifice
-//! between its two pipes (one-way unless a TCV).
+//! PRV, PSV and FCV pass water one way only. In a transient a valve is an
+//! orifice between its two pipes (one-way unless a TCV) - FROZEN at its
+//! steady opening by default: a pilot-operated valve needs seconds to
+//! move, a wave crosses a site in well under one. Given a response time
+//! tau it MOVES: each step its conductance c (Q = c sqrt(dH)) relaxes
+//! towards the conductance that would restore its setting right now,
+//!
+//! ```text
+//!   c <- c + (1 - exp(-dt / tau)) (c_req - c),    0 <= c <= c_open
+//! ```
+//!
+//! a one-parameter behavioural model in the spirit of Prescott & Ulanicki's
+//! (J. Hydraul. Eng. 2003): the valve settles within a few tau. Published
+//! pilot-operated PRVs settle in seconds to tens of seconds (one test: 7 to
+//! 16 s); tau for a given valve is [VERIFY] from maker data or a recorded
+//! pressure step.
 
 use jk_kernel::{Flow, Head};
 
@@ -71,6 +83,59 @@ pub enum ValveState {
     Open,
     /// Shut: no flow.
     Closed,
+}
+
+/// Largest conductance of a valve fully open with no loss of its own
+/// [m^2.5/s]: the head lost at 1 m^3/s is then 1 um.
+const NO_LOSS_CONDUCTANCE: f64 = 1000.0;
+
+/// Fully open conductance c = 1 / sqrt(R) of a valve whose open loss is
+/// `open_resistance` Q|Q|.
+#[must_use]
+pub fn open_conductance(open_resistance: f64) -> f64 {
+    if open_resistance > 0.0 {
+        (1.0 / open_resistance.sqrt()).min(NO_LOSS_CONDUCTANCE)
+    } else {
+        NO_LOSS_CONDUCTANCE
+    }
+}
+
+/// The conductance (Q = c sqrt(dH)) that would let the valve do its job
+/// right now, between the upstream C+ (`H = cp - bu Q`) and the downstream
+/// C- (`H = cm + bd Q`): the PRV's head below at its setting, the PSV's
+/// head above, the FCV's flow. 0 if its job needs it shut; `c_open` if it
+/// cannot do its job even fully open (a TCV is always fully open).
+#[must_use]
+pub fn regulating_conductance(
+    mode: ValveMode,
+    cp: f64,
+    bu: f64,
+    cm: f64,
+    bd: f64,
+    c_open: f64,
+) -> f64 {
+    let (q, dh) = match mode {
+        ValveMode::Prv { setting } => {
+            let q = (setting.value() - cm) / bd;
+            (q, cp - bu * q - setting.value())
+        }
+        ValveMode::Psv { setting } => {
+            let q = (cp - setting.value()) / bu;
+            (q, setting.value() - (cm + bd * q))
+        }
+        ValveMode::Fcv { flow } => {
+            let q = flow.value();
+            (q, (cp - bu * q) - (cm + bd * q))
+        }
+        ValveMode::Tcv => return c_open,
+    };
+    if q <= 0.0 {
+        0.0
+    } else if dh <= 0.0 {
+        c_open
+    } else {
+        (q / dh.sqrt()).min(c_open)
+    }
 }
 
 /// Heads on both sides of the valve and the flow through it.
@@ -136,6 +201,23 @@ mod tests {
         assert_eq!((back.head_upstream, back.head_downstream), (40.0, 90.0));
         let shut = step(None, true, 90.0, 1400.0, 40.0, 1500.0);
         assert_eq!(shut.flow, 0.0);
+    }
+
+    #[test]
+    fn the_regulating_opening_puts_a_prv_on_its_setting() {
+        let (cp, bu, cm, bd) = (90.0, 1400.0, 40.0, 1500.0);
+        let mode = ValveMode::Prv {
+            setting: Head::new(50.0),
+        };
+        let c = regulating_conductance(mode, cp, bu, cm, bd, 1.0);
+        let s = step(Some(1.0 / (c * c)), true, cp, bu, cm, bd);
+        assert!((s.head_downstream - 50.0).abs() < 1e-9);
+        // Nothing to hold back: shut. Not enough head: fully open.
+        assert!(regulating_conductance(mode, cp, bu, 60.0, bd, 1.0) <= 0.0);
+        let low = ValveMode::Prv {
+            setting: Head::new(95.0),
+        };
+        assert!((regulating_conductance(low, cp, bu, cm, bd, 0.7) - 0.7).abs() < 1e-15);
     }
 
     #[test]

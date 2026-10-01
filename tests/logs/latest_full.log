@@ -1,7 +1,7 @@
 joukowsky test run
-  when     2026-09-30 13:53:03
+  when     2026-10-01 08:56:09
   suite    full
-  commit   532f880 (with uncommitted changes)
+  commit   ff6cfaf (with uncommitted changes)
   rust     rustc 1.98.1 (48a229cea 2026-09-01)
   command  cargo test --workspace --no-fail-fast -- --nocapture --test-threads=1 --include-ignored
 ==============================================================================
@@ -11,7 +11,7 @@ joukowsky test run
    Compiling jk-files v0.1.0 (C:\Users\HP\Desktop\joukowsky\crates\adapters\files)
    Compiling jk-sim v0.1.0 (C:\Users\HP\Desktop\joukowsky\crates\sim)
    Compiling jk-localisation v0.1.0 (C:\Users\HP\Desktop\joukowsky\crates\domain\localisation)
-    Finished `test` profile [unoptimized + debuginfo] target(s) in 14.12s
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 21.26s
      Running unittests src\lib.rs (target\debug\deps\jk_application-31ec11ad23313301.exe)
 
 running 3 tests
@@ -71,7 +71,7 @@ test onset::step_area::tests::a_ramp_front_is_placed_at_its_centre ... ok
 test onset::step_area::tests::declines_when_the_windows_do_not_fit ... ok
 test onset::step_area::tests::exact_for_a_sharp_step_at_any_phase ... ok
 
-test result: ok. 14 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.03s
+test result: ok. 14 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.04s
 
      Running unittests src\lib.rs (target\debug\deps\jk_files-ec39beec6edb1da0.exe)
 
@@ -103,7 +103,7 @@ test result: ok. 22 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; fin
 
      Running unittests src\lib.rs (target\debug\deps\jk_hydraulics-c42e47dfc771fa13.exe)
 
-running 54 tests
+running 55 tests
 test boundary::check_valve::tests::open_valve_passes_forward_flow_like_a_plain_joint ... ok
 test boundary::check_valve::tests::reversing_flow_shuts_it_and_each_side_becomes_a_dead_end ... ok
 test boundary::check_valve::tests::stays_shut_until_upstream_pushes_harder_then_reopens ... ok
@@ -112,6 +112,7 @@ test boundary::closure::tests::rejects_bad_power_closures ... ok
 test boundary::control_valve::tests::a_throttle_passes_both_ways ... ok
 test boundary::control_valve::tests::one_way_never_backwards_and_shut_is_shut ... ok
 test boundary::control_valve::tests::orifice_balances_both_characteristics ... ok
+test boundary::control_valve::tests::the_regulating_opening_puts_a_prv_on_its_setting ... ok
 test boundary::dead_end::tests::no_flow_and_head_from_the_characteristic ... ok
 test boundary::junction::tests::a_single_pipe_without_outflow_is_a_dead_end ... ok
 test boundary::junction::tests::flows_balance_and_every_pipe_satisfies_its_characteristic ... ok
@@ -159,7 +160,7 @@ test steady::controls::tests::daily_times_repeat_and_land_exactly ... ok
 test steady::controls::tests::once_is_once ... ok
 test steady::rules::tests::or_binds_tighter_than_and_as_in_epanet ... ok
 
-test result: ok. 54 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s
+test result: ok. 55 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.04s
 
      Running unittests src\lib.rs (target\debug\deps\jk_kernel-eccabcc9e10cd5d2.exe)
 
@@ -178,7 +179,7 @@ test units::tests::same_type_arithmetic ... ok
 test units::tests::velocity_flow_area ... ok
 test units::tests::wave_travel_time_and_distance_round_trip ... ok
 
-test result: ok. 13 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+test result: ok. 13 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s
 
      Running unittests src\lib.rs (target\debug\deps\jk_localisation-b57d917c3efe0d09.exe)
 
@@ -191,7 +192,7 @@ test posterior::score::tests::a_wrong_candidate_is_penalised ... ok
 test posterior::score::tests::with_independent_errors_the_correlated_score_matches_the_simple_one ... ok
 test size::tests::exact_fronts_give_back_the_flow ... ok
 
-test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
 
      Running unittests src\lib.rs (target\debug\deps\jk_sim-cdf9363ef8ace4d0.exe)
 
@@ -201,7 +202,7 @@ test town::tests::every_junction_is_reachable_and_the_town_has_loops_and_dead_en
 test town::tests::the_length_is_exactly_the_target ... ok
 test town::tests::the_same_seed_gives_the_same_town ... ok
 
-test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
 
      Running unittests src\lib.rs (target\debug\deps\jk_telemetry-c8a96417b1d674bc.exe)
 
@@ -478,7 +479,7 @@ test simulation::logger_files::a_burst_recorded_in_logger_files_raises_one_alarm
   at 10:15:03 - seconds past 10:15:00          got       2.998747   expected       3.000000   rel.err 4.2e-4
 ok
 
-test result: ok. 15 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.55s
+test result: ok. 15 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.75s
 
      Running balance\main.rs (target\debug\deps\balance-f50430771254bd71.exe)
 
@@ -503,7 +504,7 @@ test simulation::night_watch::the_detection_curve_matches_the_cusum_arithmetic .
   at the arithmetic's size: caught at least a third of the time yes
 ok
 
-test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.17s
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.27s
 
      Running classification\main.rs (target\debug\deps\classification-31daad1fdce9861c.exe)
 
@@ -599,7 +600,7 @@ test simulation::scenarios::power_data_settles_the_slow_burst ... The same slow 
   burst                                        yes
 ok
 
-test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.82s
+test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.94s
 
      Running detection\main.rs (target\debug\deps\detection-f716915457d43300.exe)
 
@@ -675,11 +676,11 @@ test simulation::burst_location::vs1_location_error_versus_sampling_rate_and_noi
   128 S/s with 2 cm noise locates to under 1 m RMS yes
 ok
 
-test result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 2.71s
+test result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 3.41s
 
      Running hydraulics\main.rs (target\debug\deps\hydraulics-8605ea72ea8561e1.exe)
 
-running 53 tests
+running 54 tests
 test analytical::boundaries::burst::a_10mm_hole_at_60m_head ... DN150 AC main at 60 m head, 0.5 m/s; a 10 mm hole opens (Cd 0.6):
   water lost              1.555 l/s  (134 m^3 per day)
   head step at the burst  -4.486 m
@@ -774,6 +775,16 @@ test analytical::control_valves::va11_an_fcv_passes_its_setting_and_no_more ... 
     head above it: 80 - (R1 + R2) q^2 [m]      got      77.387691   expected      77.387691   rel.err 9.2e-16
     set to 100 l/s: fully open                 yes
     passes what it can [l/s]                   got      42.697009   expected      42.697009   rel.err 5.8e-15
+ok
+test analytical::control_valves::va13_a_prv_that_moves_restores_its_setting_after_a_burst_below_it ... A 25 mm burst opens at 1 s, 500 m below a PRV holding 50 m:
+  frozen  : head just below the valve, mean over 9-13 s  14.17 m, over 70-78 s  14.18 m
+  tau 3 s : head just below the valve, mean over 9-13 s  54.80 m, over 70-78 s  50.00 m
+  tau 10 s: head just below the valve, mean over 9-13 s  64.69 m, over 70-78 s  50.00 m
+    tau = 1e13 s is the frozen valve (largest difference 1.3e-8 m) yes
+    frozen, the valve under-feeds the burst: the head below stays down yes
+    moving (tau 3 s), it opens and brings the head below back to its setting [m] got      49.999452   expected      50.000000   rel.err 1.1e-5
+    ... and so does a slower valve (tau 10 s), given time [m] got      50.000004   expected      50.000000   rel.err 8.9e-8
+    the quicker valve is nearer its setting soon after the burst (9-13 s) yes
 ok
 test analytical::controls::va12_a_higher_priority_rule_holds_the_pump_off_until_its_window_ends ... Pump switches: [(3600.0, false, Rule(0)), (14400.0, true, Rule(1))]
     01:00: the peak rule stops the pump        yes
@@ -1099,7 +1110,7 @@ test invariants::steady_state::an_undisturbed_pipe_stays_steady ... Steady state
   valve holds steady                           yes
 ok
 
-test result: ok. 53 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 13.92s
+test result: ok. 54 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 34.08s
 
      Running kernel\main.rs (target\debug\deps\kernel-d5a37fe190909055.exe)
 
@@ -1124,7 +1135,7 @@ test conversions::wave_travel_time ... Pressure wave crossing 1000 m of steel ma
   distance back from a * t [m]                 got    1000.000000   expected    1000.000000   rel.err 0.0e0
 ok
 
-test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
 
      Running localisation\main.rs (target\debug\deps\localisation-b8347a4918b09d81.exe)
 
@@ -1461,7 +1472,7 @@ test simulation::valve_fronts::a_shut_prv_passes_no_wave_and_no_route ... A seco
     and no route from S1 reaches the zone: the locator cannot place a burst there from S1 yes
 ok
 
-test result: ok. 32 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 90.95s
+test result: ok. 32 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 228.02s
 
      Running pipeline\main.rs (target\debug\deps\pipeline-d11d8b6223a66c52.exe)
 
@@ -1682,7 +1693,7 @@ test simulation::valves_by_hour::at_noon_the_valve_is_active_and_both_loggers_lo
     and it is not dismissed                    yes
 ok
 
-test result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 4.79s
+test result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 10.20s
 
    Doc-tests jk_application
 
@@ -1751,9 +1762,9 @@ running 0 tests
 test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
 
 ==============================================================================
-  passed   271
+  passed   273
   failed   0
   skipped  0 slow test(s) not in this suite
   filtered 0 test(s) outside -Only/-Filter
-  time     133.5 s (including compile)
+  time     312.8 s (including compile)
   result   ALL PASSED

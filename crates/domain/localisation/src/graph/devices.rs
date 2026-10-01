@@ -90,6 +90,7 @@ impl Devices {
                 Node::ControlValve {
                     mode,
                     open_resistance,
+                    ..
                 } => {
                     let state = s.valves.iter().find(|(v, _)| v.index() == i).map(|p| p.1);
                     let q = through(i);

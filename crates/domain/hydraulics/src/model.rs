@@ -89,6 +89,11 @@ pub enum Node {
         /// Fully open: head loss = `open_resistance` Q|Q| [s^2/m^5] (a
         /// throttle valve's loss at its setting).
         open_resistance: f64,
+        /// How fast it moves in a transient: the time constant with which
+        /// its opening follows the one that would restore its setting
+        /// ([`crate::boundary::control_valve::regulating_conductance`]).
+        /// `None`: frozen at its steady opening.
+        response: Option<Time>,
     },
 }
 
@@ -505,7 +510,11 @@ impl Network {
                 Node::ControlValve {
                     mode,
                     open_resistance,
+                    response,
                 } => {
+                    if let Some(tau) = response {
+                        positive("valve response time", tau.value())?;
+                    }
                     match mode {
                         ValveMode::Prv { setting } | ValveMode::Psv { setting } => {
                             finite("valve setting", setting.value())?;

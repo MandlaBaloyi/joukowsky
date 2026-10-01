@@ -784,6 +784,7 @@ fn valve_devices(
                 node: Node::ControlValve {
                     mode,
                     open_resistance,
+                    response: None,
                 },
                 diameter: Some(d),
                 ends: ("in", "out"),

@@ -134,3 +134,14 @@ one node kind with four modes; V-A11):
   TCV (throttle) is a fixed loss R Q|Q| both ways (K from the file).
 PRV, PSV and FCV are one-way. All are frozen orifices in transients (a TCV
 at its own R). PBV and GPV (rare) stay plain connections.
+
+Valves that move (2026-10-01, V-A13): a valve may be given a response time
+tau. Each step its conductance c (Q = c sqrt(dH)) relaxes towards the
+conductance that would restore its setting at that moment (from the two
+characteristics: the PRV's head below on its setting, the PSV's head above,
+the FCV's flow), c <- c + (1 - exp(-dt/tau)) (c_req - c), within 0..fully
+open. A one-parameter behavioural model in the spirit of Prescott &
+Ulanicki (J. Hydraul. Eng. 129(10), 2003); published pilot-operated PRVs
+settle in seconds to tens of seconds (one reported test 7-16 s) [VERIFY
+tau per valve: maker data or a recorded pressure step]. No pilot dead time
+is modelled. Unknown tau (files never give it): frozen, as before.

@@ -188,6 +188,28 @@ impl Network {
             })
             .collect();
         let mut check_states = steady.check_valves.clone();
+        // Control valves: the conductance c (Q = c sqrt(dH)) each starts at.
+        let mut valve_c: Vec<f64> = self
+            .nodes()
+            .iter()
+            .enumerate()
+            .map(|(n, node)| match node {
+                Node::ControlValve {
+                    open_resistance, ..
+                } => {
+                    let (q0, drop) = steady.valve_steady[n];
+                    let c_open = control_valve::open_conductance(*open_resistance);
+                    if q0 <= 0.0 {
+                        0.0
+                    } else if drop > 0.0 {
+                        (q0 / drop.sqrt()).min(c_open)
+                    } else {
+                        c_open
+                    }
+                }
+                _ => 0.0,
+            })
+            .collect();
 
         // Pumps: speed ratio, flow, and the recorded speed history. A pump
         // node reports its discharge head.
@@ -335,6 +357,7 @@ impl Network {
                     Node::ControlValve {
                         mode,
                         open_resistance,
+                        response,
                     } => {
                         // Frozen at its steady opening (boundary/control_valve.rs).
                         let pos = |e: PipeEnd| {
@@ -346,10 +369,26 @@ impl Network {
                         let (i_in, i_out) = (pos(PipeEnd::Downstream), pos(PipeEnd::Upstream));
                         let (a_in, a_out) = (arrivals[i_in], arrivals[i_out]);
                         let (q0, drop) = steady.valve_steady[n];
-                        let r = if mode.one_way() {
-                            (q0 > 0.0).then(|| drop / (q0 * q0))
-                        } else {
-                            Some(open_resistance)
+                        let r = match response {
+                            // Moving: its opening relaxes towards the one
+                            // that would restore its setting.
+                            Some(tau) => {
+                                let c_open = control_valve::open_conductance(open_resistance);
+                                let wanted = control_valve::regulating_conductance(
+                                    mode,
+                                    a_in.characteristic,
+                                    a_in.impedance,
+                                    a_out.characteristic,
+                                    a_out.impedance,
+                                    c_open,
+                                );
+                                let c = &mut valve_c[n];
+                                *c += (1.0 - (-dt_si / tau.value()).exp()) * (wanted - *c);
+                                *c = c.clamp(0.0, c_open);
+                                (*c > 0.0).then(|| 1.0 / (*c * *c))
+                            }
+                            None if mode.one_way() => (q0 > 0.0).then(|| drop / (q0 * q0)),
+                            None => Some(open_resistance),
                         };
                         let s = control_valve::step(
                             r,

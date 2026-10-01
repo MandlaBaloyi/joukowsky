@@ -46,6 +46,7 @@ fn zone(demand: f64, split: bool) -> (Network, [NodeId; 2], Option<NodeId>) {
             setting: Head::new(50.0),
         },
         open_resistance: 0.0,
+        response: None,
     });
     let s2 = net.add_node(j0());
     let j = net.add_node(Node::Junction {

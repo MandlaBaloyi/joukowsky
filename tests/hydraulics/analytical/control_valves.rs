@@ -54,6 +54,7 @@ fn zone(source: f64, demand: f64, second: Option<f64>) -> (Network, NodeId, Node
             setting: Head::new(SETTING),
         },
         open_resistance: open_resistance(),
+        response: None,
     });
     let j = net.add_node(Node::Junction {
         demand: Flow::new(demand),
@@ -170,6 +171,7 @@ fn va10_a_wave_passes_a_prv_in_the_share_the_orifice_law_gives() {
             setting: Head::new(SETTING),
         },
         open_resistance: 0.0,
+        response: None,
     });
     let j = net.add_node(Node::Junction {
         demand: Flow::new(q0),
@@ -243,6 +245,7 @@ fn high_zone(mode: ValveMode, draw: f64, low: f64) -> (Network, NodeId, NodeId, 
     let v = net.add_node(Node::ControlValve {
         mode,
         open_resistance: open_resistance(),
+        response: None,
     });
     let l = net.add_node(Node::Reservoir {
         head: Head::new(low),
@@ -412,6 +415,7 @@ fn va11_a_tcv_is_a_fixed_loss_both_ways() {
     let v = back.add_node(Node::ControlValve {
         mode: ValveMode::Tcv,
         open_resistance: rv,
+        response: None,
     });
     let l = back.add_node(Node::Reservoir {
         head: Head::new(80.0),
@@ -428,5 +432,117 @@ fn va11_a_tcv_is_a_fixed_loss_both_ways() {
         s.pipe_flows[2].value() * 1000.0,
         -q * 1000.0,
         1e-8,
+    );
+}
+
+/// V-A13: a valve that moves (`response`), after a burst below it.
+/// Source 80 m -> 1 km DN200 -> PRV (50 m) -> 500 m -> hole -> 500 m ->
+/// J (10 l/s); a 25 mm hole opens at 1 s. Returns the head just below
+/// the valve over 80 s, and the time step.
+fn burst_below_valve(response: Option<f64>) -> (Vec<f64>, f64) {
+    use jk_hydraulics::boundary::leak;
+    use jk_hydraulics::{Burst, BurstOpening};
+    use jk_kernel::{Area, Length};
+    let mut net = Network::new(STANDARD_GRAVITY);
+    let r = net.add_node(Node::Reservoir {
+        head: Head::new(80.0),
+    });
+    let v = net.add_node(Node::ControlValve {
+        mode: ValveMode::Prv {
+            setting: Head::new(SETTING),
+        },
+        open_resistance: open_resistance(),
+        response: response.map(Time::new),
+    });
+    let h = net.add_node(Node::Junction { demand: Flow::ZERO });
+    let j = net.add_node(Node::Junction {
+        demand: Flow::new(0.01),
+    });
+    net.add_pipe(r, v, pipe(1000.0, 0.2, 1000.0, 0.02)).unwrap();
+    let below = net.add_pipe(v, h, pipe(500.0, 0.2, 1000.0, 0.02)).unwrap();
+    net.add_pipe(h, j, pipe(500.0, 0.2, 1000.0, 0.02)).unwrap();
+    net.add_burst(Burst {
+        node: h,
+        coefficient: leak::coefficient(0.6, Area::of_circle(Length::new(0.025)), STANDARD_GRAVITY),
+        outside_head: Head::ZERO,
+        start: Time::new(1.0),
+        opening: BurstOpening::Instantaneous,
+    })
+    .unwrap();
+    let run = net
+        .simulate(
+            &InitialCondition::Steady(SteadyOptions::default()),
+            Time::new(80.0),
+            &[Probe::Pipe {
+                pipe: below,
+                fraction: 0.0,
+            }],
+            &GridOptions {
+                max_wave_speed_adjustment: 0.01,
+                min_reaches: 10,
+            },
+        )
+        .unwrap();
+    (
+        run.trace.head(0).iter().map(|x| x.value()).collect(),
+        run.trace.time_step().value(),
+    )
+}
+
+#[test]
+fn va13_a_prv_that_moves_restores_its_setting_after_a_burst_below_it() {
+    let (frozen, dt) = burst_below_valve(None);
+    let (quick, _) = burst_below_valve(Some(3.0));
+    let (slow, _) = burst_below_valve(Some(10.0));
+    let (still, _) = burst_below_valve(Some(1e13));
+    #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)] // positive
+    let at = |t: f64| (t / dt).round() as usize;
+    // Mean over one or two periods of the 4L/a = 4 s ringing.
+    let mean = |h: &[f64], from: f64, to: f64| {
+        let part = &h[at(from)..at(to)];
+        #[allow(clippy::cast_precision_loss)] // a few thousand samples
+        let n = part.len() as f64;
+        part.iter().sum::<f64>() / n
+    };
+    println!("A 25 mm burst opens at 1 s, 500 m below a PRV holding 50 m:");
+    for (name, h) in [
+        ("frozen", &frozen),
+        ("tau 3 s", &quick),
+        ("tau 10 s", &slow),
+    ] {
+        println!(
+            "  {name:8}: head just below the valve, mean over 9-13 s {:6.2} m, over 70-78 s {:6.2} m",
+            mean(h, 9.0, 13.0),
+            mean(h, 70.0, 78.0)
+        );
+    }
+    let worst = frozen
+        .iter()
+        .zip(&still)
+        .map(|(a, b)| (a - b).abs())
+        .fold(0.0, f64::max);
+    check(
+        &format!("  tau = 1e13 s is the frozen valve (largest difference {worst:.1e} m)"),
+        worst < 1e-6,
+    );
+    check(
+        "  frozen, the valve under-feeds the burst: the head below stays down",
+        SETTING - mean(&frozen, 70.0, 78.0) > 1.0,
+    );
+    check_close(
+        "  moving (tau 3 s), it opens and brings the head below back to its setting [m]",
+        mean(&quick, 70.0, 78.0),
+        SETTING,
+        0.005,
+    );
+    check_close(
+        "  ... and so does a slower valve (tau 10 s), given time [m]",
+        mean(&slow, 70.0, 78.0),
+        SETTING,
+        0.005,
+    );
+    check(
+        "  the quicker valve is nearer its setting soon after the burst (9-13 s)",
+        (SETTING - mean(&quick, 9.0, 13.0)).abs() < (SETTING - mean(&slow, 9.0, 13.0)).abs(),
     );
 }

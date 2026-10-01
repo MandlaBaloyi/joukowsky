@@ -394,6 +394,7 @@ Headloss D-W
             Node::ControlValve {
                 mode,
                 open_resistance,
+                ..
             } => (mode, open_resistance),
             _ => panic!("{id} is a valve"),
         }

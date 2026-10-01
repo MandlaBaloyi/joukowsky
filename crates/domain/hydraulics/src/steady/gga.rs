@@ -274,6 +274,7 @@ impl Graph {
             if let Node::ControlValve {
                 mode,
                 open_resistance,
+                ..
             } = node
             {
                 let (up, down) = (graph.up_side[n], graph.down_side[n]);
