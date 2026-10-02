@@ -1,8 +1,23 @@
 THE ENGINE IN PLAIN WORDS
 STATUS: DRAFT v0.1 (2026-10-01)
 
-1. The problem
+1. The problem, and what we do about it (the owner's statement, 2026-10-02)
 ------------------------------------------------------------------------
+South Africa loses close to half its treated water before it is billed,
+much of it through leaks and burst pipes [VERIFY: about 47% non-revenue
+water, No Drop report - 01_problem_definition/the_scale_of_nrw.txt].
+Today a burst is usually found hours or days later, often only when
+someone reports it, and by then a lot of water is gone and the damage is
+done. Joukowsky is software that changes that. It takes a site's pipe
+network, advises where to place pressure loggers, and listens to them 128
+times a second. When a pipe bursts or a pressure shock hits, the wave
+reaches the loggers in under a second. Within seconds the engine says
+what happened, where it is to within metres, how big it is, and how sure
+it is, straight into the site's own control room. That saves water,
+repair costs and downtime, and it shows which pipes are being worn out by
+the shocks before they fail.
+
+The detail behind it:
 Water pipes break, and nobody knows for hours or days. Water is lost,
 streets flood, sites run dry, and the bills come later. Worse, pipes are
 damaged all the time by things nobody sees: sudden pressure shocks
@@ -99,3 +114,11 @@ should be placed, tanks and supply, night flows, pipe fatigue.
 It has not yet run on real recordings - that starts next (06_honest_
 limits.txt). It does not control anything: it watches and warns. It
 does not yet learn per network (the learning loops come with real data).
+It does not catch theft: theft and illegal connections send no wave; at
+most the slow water balance shows a loss it cannot tell from a leak. Its
+alert takes about 3-7 s, not under one second: the wave arrives at once,
+but the engine looks at the 3 s after it and waits for the other
+loggers. A burst makes the pressure DROP; a rise is a valve shutting or
+supply returning. It does not yet plug into a site's own control room -
+that is the integration plan (11_business/integration.txt), built after
+the real-data tests.

@@ -1,16 +1,24 @@
 JOUKOWSKY - RESEARCH & DESIGN DOCUMENTATION
 STATUS: DRAFT v0.1 - for review
 
-The problem we are solving
+The problem we are solving (the owner's statement, 2026-10-02)
 --------------------------
-Water pipes burst and nobody knows until days later. Water is lost, and the
-pipes keep getting damaged by sudden pressure shocks ("water hammer") that
-nobody can see, because the pipes are not being watched closely enough.
+South Africa loses close to half its treated water before it is billed,
+much of it through leaks and burst pipes [VERIFY: about 47% non-revenue
+water, No Drop report - 01_problem_definition/the_scale_of_nrw.txt].
+Today a burst is usually found hours or days later, often only when
+someone reports it, and by then a lot of water is gone and the damage is
+done. Joukowsky is software that changes that. It takes a site's pipe
+network, advises where to place pressure loggers, and listens to them 128
+times a second. When a pipe bursts or a pressure shock hits, the wave
+reaches the loggers in under a second. Within seconds the engine says
+what happened, where it is to within metres, how big it is, and how sure
+it is, straight into the site's own control room. That saves water,
+repair costs and downtime, and it shows which pipes are being worn out by
+the shocks before they fail.
 
-joukowsky watches the pressure in the pipes, very fast and all the time.
-When a pipe bursts, or a pressure shock hits, it notices within seconds,
-tells you where it happened, and warns you before more damage is done.
-Over time it learns how each network behaves, so it keeps getting better.
+Over time it will learn how each network behaves, so it keeps getting
+better.
 
 Reading order
 -------------
