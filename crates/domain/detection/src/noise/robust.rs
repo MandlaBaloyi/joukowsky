@@ -49,9 +49,87 @@ pub fn sigma_from_differences(samples: &[f64]) -> f64 {
     MAD_TO_SIGMA * median(&mut deviations) / std::f64::consts::SQRT_2
 }
 
+/// Robust standard deviation of `samples` about their straight-line trend
+/// (least squares): 1.4826 x MAD of what the line leaves. Noise that
+/// WANDERS - pump pulsation, a rig sloshing, swings of a second or so -
+/// barely shows in neighbouring differences but counts in full here
+/// (FN-047); a steady ramp (a pipe refilling, demand drifting) is taken
+/// out by the line and counts not at all.
+///
+/// # Panics
+/// If fewer than 3 samples are given.
+#[must_use]
+pub fn sigma_about_trend(samples: &[f64]) -> f64 {
+    assert!(samples.len() >= 3, "need at least 3 samples");
+    #[allow(clippy::cast_precision_loss)] // window lengths are small
+    let n = samples.len() as f64;
+    let mid = (n - 1.0) / 2.0;
+    let mean = samples.iter().sum::<f64>() / n;
+    let (mut sxy, mut sxx) = (0.0, 0.0);
+    for (k, v) in (0_u32..).zip(samples) {
+        let x = f64::from(k) - mid;
+        sxy += x * (v - mean);
+        sxx += x * x;
+    }
+    let slope = sxy / sxx;
+    let mut left: Vec<f64> = (0_u32..)
+        .zip(samples)
+        .map(|(k, v)| v - mean - slope * (f64::from(k) - mid))
+        .collect();
+    let centre = median(&mut left);
+    let mut deviations: Vec<f64> = left.iter().map(|r| (r - centre).abs()).collect();
+    MAD_TO_SIGMA * median(&mut deviations)
+}
+
+/// How much larger than the jitter the spread about the trend must be to
+/// count as wander. For white noise the two estimates agree within their
+/// sampling spread (about 7% each over 2 s at 128 S/s), so 1.5 is never
+/// reached by chance; the real rig's wander was 3-7 times its jitter
+/// (FN-047).
+pub const WANDER_RATIO: f64 = 1.5;
+
+/// The sensor's noise unit over a quiet window: the jitter (neighbouring
+/// differences) - unless the spread about the window's trend is more than
+/// [`WANDER_RATIO`] times it: then the noise WANDERS and that spread is the
+/// honest unit (FN-047). Taking simply the larger of the two would raise
+/// the unit of white noise by its sampling spread, a few percent, and
+/// lose events at the edge of detection (a refill's first rise, V-S6).
+///
+/// # Panics
+/// If fewer than 3 samples are given.
+#[must_use]
+pub fn noise_unit(samples: &[f64]) -> f64 {
+    let jitter = sigma_from_differences(samples);
+    let spread = sigma_about_trend(samples);
+    if spread > WANDER_RATIO * jitter {
+        spread
+    } else {
+        jitter
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn wander_hides_from_differences_but_not_from_the_trend() {
+        // A slow swing of 1 cm amplitude (period 1 s at 128 S/s) on a
+        // steady ramp of 1 m in 2 s, no jitter at all: neighbouring
+        // differences see almost nothing; the spread about the trend sees
+        // the swing (RMS 0.71 cm, MAD-based about 1 cm) and not the ramp.
+        let swing: Vec<f64> = (0..256)
+            .map(|k| {
+                let t = f64::from(k) / 128.0;
+                0.5 * t + 0.01 * (2.0 * std::f64::consts::PI * t).sin()
+            })
+            .collect();
+        assert!(sigma_from_differences(&swing) < 0.001);
+        let s = sigma_about_trend(&swing);
+        assert!((0.006..0.012).contains(&s), "{s}");
+        let ramp: Vec<f64> = (0..256).map(|k| 0.5 * f64::from(k) / 128.0).collect();
+        assert!(noise_unit(&ramp) < 1e-9);
+    }
 
     #[test]
     fn median_of_odd_and_even_counts() {

@@ -271,3 +271,17 @@ G-22  Fatigue loading: counted per sensor, not yet per pipe        OPEN
   monthly windows and storage; a report page; a model for simulated
   vaporous cavitation zones before simulated cycle counts there are used
   (FN-038).
+
+G-23  A surge with no lasting step is not reported as an event   OPEN
+  (2026-10-05, FN-050) The front picker needs a lasting step; a refill
+  slam or a valve slammed and reopened is a spike and is declined as
+  "ringing". V-S6's refill alert rests on a small first rise at the edge
+  of detection. CLOSE BY: a spike detector beside the step picker (peak
+  over the floor, duration), its own class reasons, a test where only the
+  slam can raise the alert.
+
+G-24  Holidays look like leaks to the night watch                 OPEN
+  (2026-10-05, FN-048) On L-Town several false alarms fell on public
+  holidays. CLOSE BY: a holiday calendar per site as context (like the
+  pump schedule): those nights judged against weekend levels, or not
+  judged.

@@ -21,15 +21,22 @@
 //! real model; the watch is given only what a utility would have - the
 //! meters and the tank level.
 //!
-//! Stage: FEED AND LOOK - it prints the score and judges nothing yet.
-//! What it showed (FN-048) is being fixed; the checks come with the fix.
+//! The first run (FN-048) caught 3 of 33 leaks within a week and went
+//! blind for 341 days after an alarm and a repair. The watch now learns a
+//! weekly profile, follows the seasons, steps its level after a change and
+//! refines it for two weeks, sees falls (repairs), and caps how much one
+//! night counts. The checks below lock in what that gave on 2026-10-05
+//! (25 of 33 within a month, 3 false alarms, longest silence 102 days):
+//! a change that makes it worse fails. Still missed: holidays look like
+//! leaks (Orthodox Easter, Pentecost Monday) - a holiday calendar as
+//! context is the next step.
 
 use jk_balance::{Direction, LeakOptions, Meter, NightWindow, balance, night_flows, watch};
+use jk_files::scada::{ScadaOptions, ScadaTable, ScadaUnit, read};
 use jk_kernel::Time;
 use jk_kernel::clock::days_from_civil;
-use jk_tests::dataset;
+use jk_tests::{check, dataset};
 
-const READING: f64 = 300.0;
 const DAY: f64 = 86_400.0;
 /// Tank T1's floor area [m^2]: 16 m across (L-TOWN.inp [TANKS]).
 const TANK_AREA: f64 = std::f64::consts::PI * 8.0 * 8.0;
@@ -50,33 +57,18 @@ fn seconds(stamp: &str) -> f64 {
     day_seconds + t[0] * 3600.0 + t[1] * 60.0 + t.get(2).copied().unwrap_or(0.0)
 }
 
-/// A semicolon file with decimal commas: the header and the rows (without
-/// the timestamp column, which is checked to be every 5 minutes from
-/// `from`).
-fn table(text: &str, from: f64) -> (Vec<String>, Vec<Vec<f64>>) {
-    let mut lines = text.lines();
-    let header: Vec<String> = lines
-        .next()
-        .unwrap()
-        .split(';')
-        .skip(1)
-        .map(str::to_string)
-        .collect();
-    let rows: Vec<Vec<f64>> = lines
-        .enumerate()
-        .map(|(k, line)| {
-            let mut f = line.split(';');
-            let t = seconds(f.next().unwrap());
-            #[allow(clippy::cast_precision_loss)] // small
-            let expected = from + k as f64 * READING;
-            assert!(
-                (t - expected).abs() < 1.0,
-                "row {k}: a reading missing or out of order"
-            );
-            f.map(|v| v.replace(',', ".").parse().unwrap()).collect()
-        })
-        .collect();
-    (header, rows)
+/// One column of two consecutive years, end to end (checked to join).
+fn both_years(years: &[ScadaTable; 2], name: &str) -> Vec<f64> {
+    let first = years[0].column(name).unwrap();
+    #[allow(clippy::cast_precision_loss)] // a year of readings
+    let joins = years[0].start.value() + years[0].interval.value() * first.values.len() as f64;
+    assert!(
+        (joins - years[1].start.value()).abs() < 1.0,
+        "the two years must follow on"
+    );
+    let mut v = first.values.clone();
+    v.extend_from_slice(&years[1].column(name).unwrap().values);
+    v
 }
 
 /// One true leak.
@@ -89,20 +81,19 @@ struct Leak {
     peak: f64,
 }
 
-fn leaks(yaml: &str, leak_tables: &[(Vec<String>, Vec<Vec<f64>>)]) -> Vec<Leak> {
+fn leaks(yaml: &str, flows: &[ScadaTable; 2]) -> Vec<Leak> {
     yaml.lines()
         .map(str::trim)
         .filter(|l| l.starts_with("- p") && l.contains(',')) // not the meters ("- p227")
         .map(|l| {
             let f: Vec<&str> = l[2..].split(',').map(str::trim).collect();
             let pipe = f[0].to_string();
-            let peak = leak_tables
+            let peak = flows
                 .iter()
-                .filter_map(|(h, rows)| {
-                    let col = h.iter().position(|p| *p == pipe)?;
-                    Some(rows.iter().map(|r| r[col]).fold(0.0, f64::max))
-                })
-                .fold(0.0, f64::max);
+                .filter_map(|t| t.column(&pipe))
+                .flat_map(|c| c.values.iter().copied())
+                .fold(0.0, f64::max)
+                / M3H;
             Leak {
                 pipe,
                 start: seconds(f[1]),
@@ -141,35 +132,49 @@ fn d2_ltown_two_years_of_night_flows_against_the_true_leaks() {
     let Some(paths) = files.iter().map(|f| dataset(f)).collect::<Option<Vec<_>>>() else {
         return;
     };
-    let read = |k: usize| std::fs::read_to_string(&paths[k]).unwrap();
-    let y2019 = seconds("2019-01-01 00:00");
-    let flows: Vec<_> = [table(&read(0), 0.0), table(&read(1), y2019)].into();
-    let levels: Vec<_> = [table(&read(2), 0.0), table(&read(3), y2019)].into();
-    let truth = leaks(&read(6), &[table(&read(4), 0.0), table(&read(5), y2019)]);
+    // L-Town's files name no units; its README gives them.
+    let unit = |u| ScadaOptions {
+        unit: Some(u),
+        ..ScadaOptions::default()
+    };
+    let table = |k: usize, u| read(&paths[k], &unit(u)).unwrap();
+    let flows = [
+        table(0, ScadaUnit::CubicMetresPerHour),
+        table(1, ScadaUnit::CubicMetresPerHour),
+    ];
+    let levels = [table(2, ScadaUnit::Metres), table(3, ScadaUnit::Metres)];
+    let leak_flows = [
+        table(4, ScadaUnit::CubicMetresPerHour),
+        table(5, ScadaUnit::CubicMetresPerHour),
+    ];
+    let truth = leaks(&std::fs::read_to_string(&paths[6]).unwrap(), &leak_flows);
 
     // The zone: two inflows, and the tank's volume, both years end to end.
-    let column = |t: &[(Vec<String>, Vec<Vec<f64>>)], name: &str, scale: f64| -> Vec<f64> {
-        t.iter()
-            .flat_map(|(h, rows)| {
-                let c = h.iter().position(|x| x == name).unwrap();
-                rows.iter().map(move |r| r[c] * scale)
-            })
-            .collect()
-    };
     let meters = [
         Meter {
             name: "p227 (from R1)".into(),
             direction: Direction::In,
-            flows: column(&flows, "p227", M3H),
+            flows: both_years(&flows, "p227"),
         },
         Meter {
             name: "p235 (from R2)".into(),
             direction: Direction::In,
-            flows: column(&flows, "p235", M3H),
+            flows: both_years(&flows, "p235"),
         },
     ];
-    let volume = column(&levels, "T1", TANK_AREA);
-    let used = balance(Time::ZERO, Time::new(READING), &meters, Some(&volume)).unwrap();
+    let volume: Vec<f64> = both_years(&levels, "T1")
+        .iter()
+        .map(|h| h * TANK_AREA)
+        .collect();
+    // The files' times are the town's own clock, read as seconds since 1970
+    // (so the watch knows each night's weekday); times below are counted
+    // from 2018-01-01 00:00.
+    let e0 = flows[0].start.value();
+    check(
+        "the readings start at 2018-01-01 00:00",
+        (e0 - seconds_to_epoch()).abs() < 1.0,
+    );
+    let used = balance(flows[0].start, flows[0].interval, &meters, Some(&volume)).unwrap();
     let window = NightWindow {
         utc_offset: Time::ZERO, // the readings are in the town's clock time
         ..NightWindow::default()
@@ -184,6 +189,16 @@ fn d2_ltown_two_years_of_night_flows_against_the_true_leaks() {
         w.baseline.value() / M3H,
         w.spread.value() / M3H
     );
+    match w.weekly {
+        Some(p) => println!(
+            "  weekly profile found (m3/h from the baseline, Mon..Sun): {}",
+            p.iter()
+                .map(|o| format!("{:+.1}", o / M3H))
+                .collect::<Vec<_>>()
+                .join(" ")
+        ),
+        None => println!("  no weekly profile: the baseline weeks show none"),
+    }
     println!(
         "  the smallest leak this spread lets the watch catch within a week: {:.1} m3/h",
         w.smallest_in_a_week.value() / M3H
@@ -200,8 +215,8 @@ fn d2_ltown_two_years_of_night_flows_against_the_true_leaks() {
     let mut false_alarms = 0;
     let mut previous = f64::NEG_INFINITY;
     for (k, a) in w.alarms.iter().enumerate() {
-        let from = a.first_night.value();
-        let raised = a.raised.value();
+        let from = a.first_night.value() - e0;
+        let raised = a.raised.value() - e0;
         let matched: Vec<usize> = (0..truth.len())
             .filter(|&i| {
                 let l = &truth[i];
@@ -230,6 +245,29 @@ fn d2_ltown_two_years_of_night_flows_against_the_true_leaks() {
                     .map(|&i| format!("{} ({:.0} m3/h)", truth[i].pipe, truth[i].peak))
                     .collect::<Vec<_>>()
                     .join(", ")
+            }
+        );
+    }
+    println!(
+        "  the watch saw {} lasting fall(s) - a repair, or less use:",
+        w.falls.len()
+    );
+    for f in &w.falls {
+        let at = f.first_night.value() - e0;
+        let ended: Vec<String> = truth
+            .iter()
+            .filter(|l| (l.end - at).abs() <= 7.0 * DAY)
+            .map(|l| format!("{} repaired {}", l.pipe, date(l.end)))
+            .collect();
+        println!(
+            "    from {}  raised {}  {:+5.1} m3/h   {}",
+            date(at),
+            date(f.raised.value() - e0),
+            f.size.value() / M3H,
+            if ended.is_empty() {
+                "no repair within 7 days".to_string()
+            } else {
+                ended.join(", ")
             }
         );
     }
@@ -276,7 +314,7 @@ fn d2_ltown_two_years_of_night_flows_against_the_true_leaks() {
 
     // The longest stretch without an alarm while a big leak ran unseen.
     let mut marks: Vec<f64> = vec![0.0];
-    marks.extend(w.alarms.iter().map(|a| a.raised.value()));
+    marks.extend(w.alarms.iter().map(|a| a.raised.value() - e0));
     marks.push(seconds("2020-01-01 00:00"));
     let (mut longest, mut at, mut missed) = (0.0, 0.0, 0);
     for pair in marks.windows(2) {
@@ -293,4 +331,14 @@ fn d2_ltown_two_years_of_night_flows_against_the_true_leaks() {
         longest / DAY,
         date(at)
     );
+    check(
+        "20 or more of the 33 leaks caught within a month",
+        within(30.0, &all) >= 20,
+    );
+    check("5 false alarms or fewer in two years", false_alarms <= 5);
+    check(
+        "no silence over 120 days while a big leak comes and goes",
+        missed == 0 || longest <= 120.0 * DAY,
+    );
+    check("repairs are seen: 5 or more falls", w.falls.len() >= 5);
 }

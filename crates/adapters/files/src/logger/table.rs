@@ -158,9 +158,11 @@ pub fn split(text: &str, day_first: bool) -> Result<Table, ReadError> {
         (1..=width).map(|i| format!("column {i}")).collect()
     };
     let preamble = if has_header { first - 1 } else { first };
-    // Decimal comma: only if a data field actually looks like "4,52".
+    // Decimal comma: only if a data field actually looks like "4,52" -
+    // anywhere in the file: a file can start with thousands of plain
+    // zeros (L-Town's leak flows, FN-049).
     let decimal_comma = decimal_comma
-        && split[first..].iter().take(50).any(|(_, f)| {
+        && split[first..].iter().any(|(_, f)| {
             f[time_columns.min(f.len())..].iter().any(|x| {
                 let t = x.trim();
                 t.contains(',') && t.replace(',', ".").parse::<f64>().is_ok()
@@ -201,6 +203,24 @@ mod tests {
         assert_eq!(t.rows.len(), 2);
         assert_eq!(t.rows[0].line, 4);
         assert!(!t.decimal_comma);
+    }
+
+    #[test]
+    fn a_decimal_comma_far_down_the_file_is_seen() {
+        use std::fmt::Write as _;
+        let mut text = String::from(
+            "Timestamp;flow
+",
+        );
+        for k in 0..100 {
+            let _ = writeln!(text, "2018-01-01 00:{:02}:00;0", k % 60);
+        }
+        text.push_str(
+            "2018-01-01 01:40:00;28,4
+",
+        );
+        let t = split(&text, false).unwrap();
+        assert!(t.decimal_comma);
     }
 
     #[test]

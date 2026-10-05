@@ -1,26 +1,59 @@
 //! A leak alarm: a lasting rise in night flow beyond how much nights vary.
 //!
 //! The baseline is the first `baseline_nights` present nights: their mean
-//! mu and night-to-night spread s. From then on each night gives
-//! z = (flow - mu) / s, and a one-sided CUSUM (Page 1954)
+//! mu and night-to-night spread s - and, when those weeks show one, a
+//! WEEKLY PROFILE: each weekday's own offset from mu (weekend nights can
+//! use far more than weeknights - L-Town's 10-25 m3/h, FN-048). From then
+//! on each night is judged against what is expected of it, by a two-sided
+//! CUSUM (Page 1954):
 //!
 //! ```text
-//!   S_k = max(0, S_{k-1} + z_k - drift)      alarm when S_k > threshold
+//!   expected e_k = mu + w_d (d: the night's weekday);  z_k = (flow - e_k) / s
+//!   S+_k = max(0, S+_{k-1} + z_k - drift)    a LEAK when S+ > threshold
+//!   S-_k = max(0, S-_{k-1} - z_k - drift)    a FALL when S- > threshold
 //! ```
 //!
-//! rises only when nights sit above the baseline night after night. The
-//! alarm dates the leak to the night after S last stood at zero and sizes
-//! it as the mean rise since then, with its standard error (P3). Missing
-//! nights are skipped - they neither raise nor lower S (P6).
+//! Each night counts at most `cap` spreads either way (a robust CUSUM): a
+//! leak shows itself night after night, while one wild night - L-Town's
+//! odd Sunday ran 20-30 m3/h over even its own weekday's level - must not
+//! sound an alarm almost alone (31 of 59 alarms were false without it,
+//! nearly all raised on a Monday, FN-048).
 //!
-//! A meter's calibration error shifts every night alike: it cancels here
-//! and only blurs the ABSOLUTE size (reported as the size's uncertainty
-//! from `meter_bias`).
+//! A leak alarm dates the leak to the night after S+ last stood at zero and
+//! sizes it as the mean excess since then, with its standard error (P3). A
+//! fall is the same downwards: a leak repaired, or less use. Either way
+//! the expected level then STEPS by the size found, and for
+//! `settle_nights` it is refined as the plain mean of every night since
+//! the change began: a size measured BECAUSE it crossed the alarm line is
+//! biased high, and stepping by it alone made the watch ping-pong between
+//! alarms and falls (one false alarm per 250 nights in simulation, FN-048).
+//! Then the watch goes on - it does not stop four weeks to learn a new
+//! baseline (that baseline held the leak, its repair and the season, and
+//! went blind for 341 days on L-Town, FN-048). While nothing builds up (both sums at zero) what is
+//! expected follows slow change - the seasons - over `follow_nights`; with
+//! a weekly profile each weekday follows its own nights (over
+//! `follow_nights` / 7 of them: four weeks by default), so the profile
+//! keeps learning - four winter weeks are not the whole year (L-Town's
+//! Sunday nights looked ordinary in January and run 15 m3/h higher over
+//! the year).
+//!
+//! Missing nights are skipped - they neither raise nor lower anything
+//! (P6). A meter's calibration error shifts every night alike: it cancels
+//! here and only blurs the ABSOLUTE size (reported as the size's
+//! uncertainty from `meter_bias`).
 
 use jk_kernel::{Flow, Time};
 
 use crate::BalanceError;
 use crate::night::Night;
+
+/// F at the 1% level for 6 and 21 degrees of freedom (seven weekdays, 28
+/// nights): the weekday means of a baseline differ by more than chance
+/// when the between-weekday variance exceeds the within-weekday variance
+/// by this factor (F tables; 3.81).
+const F_WEEKLY_1PCT: f64 = 3.81;
+/// Fewest baseline nights for a weekly profile: four of each weekday.
+const WEEKLY_NIGHTS: usize = 28;
 
 /// How the watch runs.
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -39,6 +72,23 @@ pub struct LeakOptions {
     /// Possible calibration error of the balance as a whole, relative to
     /// the night flow (e.g. 0.02 for meters good to 2%). Default 0.02.
     pub meter_bias: f64,
+    /// Learn a weekly profile when the baseline shows one (an F test at the
+    /// 1% level, at least 28 baseline nights). Default true.
+    pub weekly: bool,
+    /// The most one night counts in the CUSUM, in spreads (z is clipped
+    /// to +/- cap). Default 3 [VERIFY on more zones]: below it nothing
+    /// changes; a leak of more than 3.5 spreads is caught a night or two
+    /// later than without the cap.
+    pub cap: f64,
+    /// Nights after an alarm or a fall during which the new level is
+    /// refined (the mean of the nights since the change began) and no new
+    /// alarm is raised. Default 14.
+    pub settle_nights: usize,
+    /// Nights over which the expected level follows slow change (the
+    /// seasons) while nothing builds up; 0: it never moves on its own.
+    /// Default 28 [VERIFY on more zones]: L-Town's night flow climbs about
+    /// 19 m3/h from January to July (FN-048), far slower than a leak.
+    pub follow_nights: f64,
 }
 
 impl Default for LeakOptions {
@@ -48,19 +98,23 @@ impl Default for LeakOptions {
             drift: 0.5,
             threshold: 6.0,
             meter_bias: 0.02,
+            cap: 3.0,
+            settle_nights: 14,
+            weekly: true,
+            follow_nights: 28.0,
         }
     }
 }
 
-/// A leak found.
+/// A leak found (or a fall: the same, downwards).
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct LeakAlarm {
-    /// The first night of the rise (as dated by the CUSUM).
+    /// The first night of the change (as dated by the CUSUM).
     pub first_night: Time,
     /// The night the alarm was raised.
     pub raised: Time,
-    /// Estimated leak: mean night flow since the first night minus the
-    /// baseline.
+    /// Estimated change: mean night flow since the first night minus what
+    /// was expected (negative for a fall).
     pub size: Flow,
     /// One-sigma uncertainty of the size: the spread over the nights
     /// averaged, the baseline's own uncertainty, and the meters' possible
@@ -71,17 +125,23 @@ pub struct LeakAlarm {
 /// What the watch found over the nights given.
 #[derive(Debug, Clone, PartialEq)]
 pub struct Watch {
-    /// Baseline night flow mu [m^3/s].
+    /// Baseline night flow mu [m^3/s] (the mean of the baseline nights).
     pub baseline: Flow,
-    /// Night-to-night spread s [m^3/s].
+    /// Night-to-night spread s [m^3/s], once the weekly profile is taken
+    /// out.
     pub spread: Flow,
+    /// Each weekday's offset from the baseline [m^3/s], Monday first, when
+    /// the baseline showed a weekly profile.
+    pub weekly: Option<[f64; 7]>,
     /// The smallest leak caught within a week, with this spread
     /// ([`smallest_detectable`]).
     pub smallest_in_a_week: Flow,
-    /// Leak alarms, in order (after an alarm the watch restarts on a new
-    /// baseline: the leak may be repaired, or a second one may come).
+    /// Leak alarms, in order.
     pub alarms: Vec<LeakAlarm>,
-    /// The CUSUM after each night (NaN for missing or baseline nights).
+    /// Lasting falls - a leak repaired, or less use - in order.
+    pub falls: Vec<LeakAlarm>,
+    /// The upward CUSUM after each night (NaN for missing or baseline
+    /// nights).
     pub cusum: Vec<f64>,
 }
 
@@ -96,21 +156,63 @@ pub fn smallest_detectable(spread: Flow, nights: usize, options: &LeakOptions) -
     spread * (options.drift + options.threshold / n)
 }
 
-/// Watches `nights` for leaks.
+/// The baseline: mean, spread, and the weekly profile if the nights show
+/// one.
+fn learn(base: &[Night], options: &LeakOptions) -> (f64, f64, Option<[f64; 7]>) {
+    let (mu, s) = mean_and_spread(base.iter().map(|n| n.flow));
+    if !options.weekly || base.len() < WEEKLY_NIGHTS {
+        return (mu, s, None);
+    }
+    let mut sum = [0.0; 7];
+    let mut count = [0usize; 7];
+    for n in base {
+        let d = usize::from(n.weekday % 7);
+        sum[d] += n.flow;
+        count[d] += 1;
+    }
+    if count.iter().any(|&c| c < 2) {
+        return (mu, s, None);
+    }
+    #[allow(clippy::cast_precision_loss)] // small counts
+    let means: Vec<f64> = (0..7).map(|d| sum[d] / count[d] as f64).collect();
+    #[allow(clippy::cast_precision_loss)] // small counts
+    let between: f64 = (0..7)
+        .map(|d| count[d] as f64 * (means[d] - mu).powi(2))
+        .sum();
+    let within: f64 = base
+        .iter()
+        .map(|n| (n.flow - means[usize::from(n.weekday % 7)]).powi(2))
+        .sum();
+    #[allow(clippy::cast_precision_loss)] // small counts
+    let dof = (base.len() - 7) as f64;
+    let f = (between / 6.0) / (within / dof);
+    if f.is_nan() || f <= F_WEEKLY_1PCT {
+        return (mu, s, None);
+    }
+    let mut offsets = [0.0; 7];
+    for d in 0..7 {
+        offsets[d] = means[d] - mu;
+    }
+    (mu, (within / dof).sqrt(), Some(offsets))
+}
+
+/// Watches `nights` for leaks (and falls).
+#[allow(clippy::too_many_lines)] // one pass over the nights, read top to bottom
 ///
 /// # Errors
 /// Fewer than `baseline_nights` + 1 present nights, fewer than 3 baseline
 /// nights, options out of range, or no spread at all in the baseline.
-///
-/// # Panics
-/// Only if an internal invariant is broken (no baseline formed although
-/// enough nights were checked for) - that would be a bug.
 pub fn watch(nights: &[Night], options: &LeakOptions) -> Result<Watch, BalanceError> {
     if options.baseline_nights < 3
-        || !(options.drift >= 0.0 && options.threshold > 0.0 && options.meter_bias >= 0.0)
+        || !(options.drift >= 0.0
+            && options.threshold > 0.0
+            && options.meter_bias >= 0.0
+            && options.cap > options.drift
+            && options.follow_nights >= 0.0)
     {
         return Err(BalanceError::InvalidInput(
-            "at least 3 baseline nights, drift >= 0, threshold > 0, bias >= 0".into(),
+            "at least 3 baseline nights, drift >= 0, threshold > 0, bias >= 0, cap > drift,              follow >= 0"
+                .into(),
         ));
     }
     let present: Vec<usize> = (0..nights.len())
@@ -123,64 +225,119 @@ pub fn watch(nights: &[Night], options: &LeakOptions) -> Result<Watch, BalanceEr
             options.baseline_nights
         )));
     }
-    let mut cusum = vec![f64::NAN; nights.len()];
-    let mut alarms = Vec::new();
-    let mut from = 0; // index into `present` where the current baseline starts
-    let mut first_stats = None;
-    while from + options.baseline_nights < present.len() {
-        let base = &present[from..from + options.baseline_nights];
-        let (mu, s) = mean_and_spread(base.iter().map(|&k| nights[k].flow));
-        if s.is_nan() || s <= 0.0 {
-            return Err(BalanceError::InvalidInput(
-                "the baseline nights do not vary at all: no spread to judge by".into(),
-            ));
-        }
-        first_stats.get_or_insert((mu, s));
-        let mut sum: f64 = 0.0;
-        let mut left_zero = from + options.baseline_nights; // index into `present`
-        let mut raised = None;
-        for (j, &k) in present
-            .iter()
-            .enumerate()
-            .skip(from + options.baseline_nights)
-        {
-            let z = (nights[k].flow - mu) / s;
-            let next = (sum + z - options.drift).max(0.0);
-            if sum <= 0.0 && next > 0.0 {
-                left_zero = j;
-            }
-            sum = next;
-            cusum[k] = sum;
-            if sum > options.threshold {
-                raised = Some(j);
-                break;
-            }
-        }
-        let Some(j) = raised else { break };
-        let risen: Vec<f64> = present[left_zero..=j]
-            .iter()
-            .map(|&k| nights[k].flow)
-            .collect();
-        #[allow(clippy::cast_precision_loss)] // small counts
-        let (m, b) = (risen.len() as f64, options.baseline_nights as f64);
-        let rise = risen.iter().sum::<f64>() / m - mu;
-        let random = s * (1.0 / m + 1.0 / b).sqrt();
-        let bias = options.meter_bias * rise.abs();
-        alarms.push(LeakAlarm {
-            first_night: nights[present[left_zero]].start,
-            raised: nights[present[j]].start,
-            size: Flow::new(rise),
-            uncertainty: Flow::new(random.hypot(bias)),
-        });
-        // Watch on from the alarm with a fresh baseline.
-        from = j + 1;
+    let base: Vec<Night> = present[..options.baseline_nights]
+        .iter()
+        .map(|&k| nights[k])
+        .collect();
+    let (mu0, s, weekly) = learn(&base, options);
+    if s.is_nan() || s <= 0.0 {
+        return Err(BalanceError::InvalidInput(
+            "the baseline nights do not vary at all: no spread to judge by".into(),
+        ));
     }
-    let (mu, s) = first_stats.expect("at least one baseline was formed");
+    // What is expected of each weekday's night.
+    let mut expected = [mu0; 7];
+    if let Some(w) = weekly {
+        for (e, o) in expected.iter_mut().zip(w) {
+            *e += o;
+        }
+    }
+    let follow = if weekly.is_some() {
+        options.follow_nights / 7.0
+    } else {
+        options.follow_nights
+    }
+    .max(1.0);
+    #[allow(clippy::cast_precision_loss)] // small counts
+    let b = options.baseline_nights as f64;
+    let mut cusum = vec![f64::NAN; nights.len()];
+    let (mut alarms, mut falls) = (Vec::new(), Vec::new());
+    let (mut up, mut down) = (0.0_f64, 0.0_f64);
+    // Excess of each watched night over what was expected of it, and where
+    // each sum last left zero (indices into `excess`).
+    let mut excess: Vec<(usize, f64)> = Vec::new();
+    let (mut up_from, mut down_from) = (0, 0);
+    // After a change: what was expected before it, the summed excess over
+    // that since the change began, how many nights, and nights left.
+    let mut settling: Option<([f64; 7], f64, f64, usize)> = None;
+    for &k in &present[options.baseline_nights..] {
+        let night = nights[k];
+        let d = usize::from(night.weekday % 7);
+        if let Some((before, sum, n, left)) = settling.as_mut() {
+            *sum += night.flow - before[d];
+            *n += 1.0;
+            *left -= 1;
+            let shift = *sum / *n;
+            for (x, b) in expected.iter_mut().zip(before.iter()) {
+                *x = b + shift;
+            }
+            cusum[k] = 0.0;
+            if *left == 0 {
+                settling = None;
+            }
+            continue;
+        }
+        let e = night.flow - expected[d];
+        let z = (e / s).clamp(-options.cap, options.cap);
+        let j = excess.len();
+        excess.push((k, e));
+        let next_up = (up + z - options.drift).max(0.0);
+        let next_down = (down - z - options.drift).max(0.0);
+        if up <= 0.0 && next_up > 0.0 {
+            up_from = j;
+        }
+        if down <= 0.0 && next_down > 0.0 {
+            down_from = j;
+        }
+        (up, down) = (next_up, next_down);
+        cusum[k] = up;
+        let changed = if up > options.threshold {
+            Some((up_from, &mut alarms))
+        } else if down > options.threshold {
+            Some((down_from, &mut falls))
+        } else {
+            None
+        };
+        if let Some((from, list)) = changed {
+            let since = &excess[from..=j];
+            #[allow(clippy::cast_precision_loss)] // small counts
+            let m = since.len() as f64;
+            let size = since.iter().map(|(_, e)| e).sum::<f64>() / m;
+            let random = s * (1.0 / m + 1.0 / b).sqrt();
+            let bias = options.meter_bias * size.abs();
+            list.push(LeakAlarm {
+                first_night: nights[since[0].0].start,
+                raised: night.start,
+                size: Flow::new(size),
+                uncertainty: Flow::new(random.hypot(bias)),
+            });
+            // The change is now part of what is expected; refine it, then
+            // watch on.
+            let before = expected;
+            for x in &mut expected {
+                *x += size;
+            }
+            if options.settle_nights > 0 {
+                settling = Some((before, size * m, m, options.settle_nights));
+            }
+            (up, down) = (0.0, 0.0);
+        } else if up <= 0.0 && down <= 0.0 && options.follow_nights > 0.0 {
+            if weekly.is_some() {
+                expected[d] += e / follow;
+            } else {
+                for x in &mut expected {
+                    *x += e / follow;
+                }
+            }
+        }
+    }
     Ok(Watch {
-        baseline: Flow::new(mu),
+        baseline: Flow::new(mu0),
         spread: Flow::new(s),
+        weekly,
         smallest_in_a_week: smallest_detectable(Flow::new(s), 7, options),
         alarms,
+        falls,
         cusum,
     })
 }
@@ -208,6 +365,8 @@ mod tests {
                 start: Time::new(86_400.0 * k as f64),
                 flow,
                 readings: 8,
+                #[allow(clippy::cast_possible_truncation)] // 0..7
+                weekday: (k % 7) as u8,
             })
             .collect()
     }

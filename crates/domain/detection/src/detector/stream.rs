@@ -12,6 +12,15 @@
 //!
 //! Memory is bounded: only the recent record that later steps can still
 //! need is kept - at most `memory` (60 s by default) plus a settle window.
+//!
+//! The noise unit is learned at calibration and LEARNED AGAIN after every
+//! [`RELEARN`] calibration windows of quiet watching (10 s by default),
+//! from all of them: noise changes over a day (pumps on and off), and a
+//! stretch that began while the network rang must not keep the ringing as
+//! its noise. Real wander comes and goes, so the unit is the MEDIAN of the
+//! units of the five windows, not the last one's, and it falls by at most
+//! half at a time; each window is short enough that a slow curve (a pipe
+//! refilling) is nearly straight in it and does not count (FN-047).
 
 use jk_kernel::{Head, Time};
 
@@ -20,8 +29,19 @@ use super::{DetectorConfig, Event, Impairment, Span, to_f64};
 use crate::baseline::Baseline;
 use crate::change::{Alarm, Cusum};
 use crate::error::{DetectionError, positive};
-use crate::noise::{median, sigma_from_differences};
+use crate::noise::{median, noise_unit};
 use crate::onset;
+
+/// Calibration windows of quiet watching between two learnings of the
+/// noise.
+const RELEARN: usize = 5;
+/// A noise unit learned again is adopted only when it differs from the one
+/// in use by more than this fraction. Estimates of the same noise scatter
+/// by about 5% (the median of five 2 s estimates); a real change - wander
+/// setting in, pumps switching - is a factor of 2 or more (FN-047). Without
+/// it, white noise's own scatter moved the unit and decided events at the
+/// edge of detection.
+const RELEARN_BAND: f64 = 0.25;
 
 /// What a piece of samples (or the end of the stream) brought.
 #[derive(Debug, Clone, Default, PartialEq)]
@@ -71,6 +91,11 @@ pub struct DetectorStream {
     cusum: Cusum,
     /// An impaired stretch still going on: its first sample, and why.
     open: Option<(usize, Impairment)>,
+    /// The next sample at which to learn the noise again.
+    relearn: usize,
+    /// Watching at full sensitivity since this sample (no impaired stretch
+    /// in between).
+    quiet_since: usize,
 }
 
 impl DetectorStream {
@@ -106,6 +131,8 @@ impl DetectorStream {
             watch: None,
             cusum: Cusum::new(config.cusum, calibration)?,
             open: Some((0, Impairment::Calibrating)),
+            relearn: calibration * (RELEARN + 1),
+            quiet_since: usize::MAX,
         })
     }
 
@@ -228,14 +255,19 @@ impl DetectorStream {
     /// Learns noise and level from the opening samples (base is still 0).
     /// Returns whether they were quiet, and the noise unit to start with.
     ///
-    /// The noise comes from sample-to-sample differences, which ringing
-    /// barely touches. But a stretch can begin while the network rings (a
-    /// sensor back after a power cut, just after a burst): then watching
-    /// starts at reduced sensitivity, exactly as after an event of its own
-    /// - otherwise every echo would be taken for an event.
+    /// The noise unit ([`noise_unit`]) is the larger of the jitter
+    /// (sample-to-sample differences) and the spread about the window's
+    /// trend, which also sees noise that WANDERS slowly (pump pulsation,
+    /// sloshing): on a real rig 2-5 times the jitter, and judged in jitter
+    /// units it raised a false front every few seconds (FN-047). For white
+    /// noise the two agree; a steady ramp counts in neither.
+    ///
+    /// A stretch can begin while the network rings (a sensor back after a
+    /// power cut, just after a burst): then watching starts at reduced
+    /// sensitivity, exactly as after an event of its own - otherwise every
+    /// echo would be taken for an event.
     fn calibrate(&mut self) -> (bool, f64) {
         let x = &self.buf[..self.calibration];
-        let sigma = sigma_from_differences(x).max(self.config.min_noise.value());
         let alpha = (self.dt / self.config.baseline_time_constant.value()).min(1.0);
         // Warm the baseline up over the calibration window, so it has
         // already learned the drift trend when watching starts.
@@ -243,6 +275,7 @@ impl DetectorStream {
         for &v in x {
             baseline.update(v);
         }
+        let sigma = noise_unit(x).max(self.config.min_noise.value());
         let mut floor = Floor::new(sigma, self.settle, &self.config);
         let recent = &x[x.len() - self.settle.min(x.len())..];
         let (centre, quiet) = floor.measure(recent, self.calibration, true);
@@ -259,8 +292,39 @@ impl DetectorStream {
         (quiet, scale)
     }
 
+    /// Learns the noise again from the [`RELEARN`] calibration windows
+    /// before sample `k`, if the sensor has watched them all at full
+    /// sensitivity and no change is building up: the median of their
+    /// units, adopted only when it differs by more than [`RELEARN_BAND`].
+    /// It falls by at most half at a time: one calm stretch does not mean
+    /// the wander has gone.
+    fn relearn(&mut self, k: usize) {
+        let window = self.calibration * RELEARN;
+        let quiet = self.open.is_none()
+            && self.cusum.pending_start() >= k
+            && self.quiet_since != usize::MAX
+            && k >= window + self.quiet_since.max(self.base);
+        if !quiet {
+            return; // try again at the next sample
+        }
+        let x = &self.buf[k - window - self.base..k - self.base];
+        let mut units: Vec<f64> = x.chunks(self.calibration).map(noise_unit).collect();
+        let learned = median(&mut units).max(self.config.min_noise.value());
+        if let Some(w) = self.watch.as_mut() {
+            let sigma = learned.max(0.5 * w.sigma);
+            if (sigma / w.sigma - 1.0).abs() > RELEARN_BAND {
+                w.sigma = sigma;
+                w.floor.set_sigma(sigma);
+            }
+        }
+        self.relearn = k + window;
+    }
+
     /// Judges sample `k` while watching.
     fn judge(&mut self, k: usize, out: &mut StreamOutput) {
+        if k >= self.relearn {
+            self.relearn(k);
+        }
         let settle = self.settle;
         let base = self.base;
         let Some(w) = self.watch.as_mut() else { return };
@@ -373,8 +437,10 @@ impl DetectorStream {
         }
     }
 
-    /// Ends the impaired stretch going on, if any, at sample `at`.
+    /// Ends the impaired stretch going on, if any, at sample `at`: from
+    /// there the sensor watches at full sensitivity.
     fn close(&mut self, at: usize, out: &mut StreamOutput) {
+        self.quiet_since = at;
         if let Some((from, why)) = self.open.take() {
             out.impaired.push(Span {
                 from: self.time_at(to_f64(from)),
@@ -390,7 +456,7 @@ impl DetectorStream {
         let keep_from = match self.state {
             State::Calibrating => 0,
             State::Watching(k) => k
-                .saturating_sub(self.settle)
+                .saturating_sub(self.settle.max(self.calibration * RELEARN))
                 .min(self.cusum.pending_start().saturating_sub(reach))
                 .max(k.saturating_sub(self.memory)),
             State::Picking(alarm) => alarm

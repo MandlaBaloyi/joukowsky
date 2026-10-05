@@ -42,6 +42,40 @@ Method
    left zero) and the leak's size: the mean night flow since then minus
    mu, with its uncertainty.
 
+Revised on real data (2026-10-05, FN-048; crates/domain/balance/src/
+leak.rs). L-Town's two years (BattLeDIM, 33 true leaks) broke the method
+above: 3 leaks caught within a week, and blind for 341 days after an
+alarm, because the new 28-night baseline held the leak, its repair and
+the season. Now:
+  a. WEEKLY PROFILE: if the baseline's weekday means differ by more than
+     chance (F test, 1%, needs 28 nights), each weekday gets its own
+     expected level (L-Town: weekend nights 10-25 m3/h above weeknights;
+     the spread fell from 11.3 to 6.0 m3/h).
+  b. SEASONS: while nothing builds up, each weekday's expected level
+     follows its own nights over four occurrences (follow_nights 28 / 7).
+  c. TWO-SIDED: a lasting FALL - a repair, or less use - is reported too
+     and steps the level down; on L-Town the falls match the true repair
+     dates within 1-3 days.
+  d. STEP AND SETTLE: after an alarm or a fall the level steps by the
+     size found and is refined for 14 nights as the plain mean of the
+     nights since the change began (a size measured because it crossed
+     the alarm line is biased high; stepping by it alone ping-ponged
+     between alarms and falls - one false alarm per 250 nights in
+     simulation). No new alarm in those 14 nights.
+  e. ROBUST: one night counts at most 3 spreads (z clipped): leak-free
+     nights are heavy-tailed (typical spread 2-3 m3/h about their own
+     weekday, but the odd night - often a holiday - 20-30 m3/h off).
+Result, L-Town 2018-2019 (tests/balance/datasets/ltown_leaks.rs): 18
+alarms, 3 false; 7 of 33 leaks caught within a week, 25 within a month,
+29 at all; 11 repairs seen; longest silence while a big leak came and
+went 102 days (was 341). Simulation unchanged: one false alarm per ~560
+nights, a leak at the d_min arithmetic caught within a week 75% of the
+time.
+Still missed: holidays look like leaks (Orthodox Easter, Pentecost
+Monday) - a holiday calendar fed in as context, like the pump schedule,
+is the next step (G-24); one town-wide balance cannot see leaks under
+about 8 m3/h within a week - smaller zones (district metered areas) can.
+
 What meters can and cannot see (P2, P3)
 ---------------------------------------
 A meter's CALIBRATION error is a constant bias: it shifts every night

@@ -16,12 +16,16 @@
 //!   range, clock), ratings, zone, altitude, power losses - read with all
 //!   it names into what the live engine needs.
 //!
-//! Later: SCADA extracts, binary logger formats.
+//! - [`scada`]: SCADA and meter exports - flows and tank levels every
+//!   few minutes (Tier 0), units named or given, gaps kept.
+//!
+//! Later: binary logger formats.
 
 pub mod epanet;
 mod error;
 pub mod logger;
 mod note;
+pub mod scada;
 pub mod site;
 
 pub use error::ReadError;

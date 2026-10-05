@@ -1,468 +1,54 @@
 joukowsky test run
-  when     2026-10-05 21:50:40
-  suite    quick, only adapters
-  commit   5070e65 (with uncommitted changes)
+  when     2026-10-05 22:21:20
+  suite    quick, only balance
+  commit   4dbb685 (with uncommitted changes)
   rust     rustc 1.98.1 (48a229cea 2026-09-01)
-  command  cargo test -p jk-tests --test adapters --no-fail-fast -- --nocapture --test-threads=1
+  command  cargo test -p jk-tests --test balance --no-fail-fast -- --nocapture --test-threads=1
 ==============================================================================
    Compiling jk-tests v0.1.0 (C:\Users\HP\Desktop\joukowsky\tests)
-    Finished `test` profile [unoptimized + debuginfo] target(s) in 5.93s
-     Running adapters\main.rs (target\debug\deps\adapters-3e16df753ae73996.exe)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 3.90s
+     Running balance\main.rs (target\debug\deps\balance-a2825c7f967d1b14.exe)
 
-running 23 tests
-test analytical::epanet::broken_files_are_refused_with_the_line_number ...   refused: line 4: link 'P1' joins unknown node 'B'
-  line 4: 'unknown node 'B''                   yes
-  refused: line 3: node ID 'A' is used twice
-  line 3: 'used twice'                         yes
-  refused: line 2: elevation 'one' is not a number
-  line 2: 'not a number'                       yes
-  refused: line 3: [PIPEZ] is not an EPANET section - is this an .inp file?
-  line 3: 'not an EPANET section'              yes
-  refused: line 5: pipe 'P1': invalid length = -3.048: must be finite and > 0
-  line 5: 'length'                             yes
+running 4 tests
+test datasets::ltown_leaks::d2_ltown_two_years_of_night_flows_against_the_true_leaks ... ignored, full suite: two years of 5-minute readings, about a minute in a debug build
+test simulation::night_watch::a_one_litre_per_second_leak_is_caught_dated_and_sized ... Night flow baseline 2.54 l/s, nights vary by 0.29 l/s; a week catches leaks over 0.40 l/s
+  leak from mid-day 45: first night 46 (the night of day 46), alarm night 48, size 0.99 +/- 0.18 l/s
+  dated to the first night after it began (day 46) yes
+  raised within 3 nights                       yes
+  size within 2 uncertainties of 1 l/s         yes
+  one alarm, no echoes                         yes
 ok
-test analytical::epanet::everything_approximated_is_reported_never_dropped ...   reader's notes (12):
-    - [OPTIONS] not used by the engine: Quality None
-    - [DEMANDS] gives 1 junction(s) several demand categories: their sum is used
-    - line 30: pump 'PU1': one-point curve, taken exactly (EPANET's own form); efficiency 75%, 1450 rpm and inertia (Thorley) assumed - they matter only for pump trips [VERIFY]
-    - line 34: PRV valve 'V1' is closed: J4 and J5 are not connected through it
-    - 1 tank(s) with storage: fixed heads in transients, their level simulated in extended-period runs (cylinders of the given diameter)
-    - 1 pump(s) modelled with their curves, each between two 10.0 m lengths of station pipework (pipes 'ID/suction' and 'ID/discharge')
-    - .inp files carry no wave speeds: every pipe is given 1000 m/s [VERIFY - real wave speeds, by material, are needed to locate bursts well]
-    - Darcy-Weisbach roughness turned into one Darcy friction factor per pipe, equal head loss at 1.0 m/s: f from 0.0212 to 0.0253
-    - 1 closed pipe(s) left out: A4
-    - 1 check-valve pipe(s) kept as plain pipes (the check valve is not modelled): A3
-    - 1 pipe(s) have minor-loss coefficients: not used
-    - 1 control(s) switch pumps and pipes in extended-period runs (by tank level or clock)
-  pump PU1, one-point curve 10 l/s at 40 m: shut-off head 4/3 x 40 [m] got      53.333333   expected      53.333333   rel.err 1.3e-16
-    ... and 40 m at 10 l/s [m]                 got      40.000000   expected      40.000000   rel.err 1.8e-16
-    J1 and J2 stay apart, joined by the pump and its station pipework yes
-    ... and says what was assumed              yes
-  the closed valve does not connect J4 and J5  yes
-  the closed pipe is left out                  yes
-  the check-valve pipe is kept, and flagged    yes
-  the tank is a fixed head at 30 + 4 = 34 m (in transients) yes
-    ... with storage: floor 30 + 1, ceiling 30 + 6, 10 m across yes
-    ... and says so                            yes
-  [DEMANDS] replaces J4's demand: 0.5 + 0.7 = 1.2 l/s yes
-  [TIMES] duration 24:00 [h]                   got      24.000000   expected      24.000000   rel.err 0.0e0
-  [PATTERNS] J1 follows its own pattern 'daily' (1.0 1.2 0.8) yes
-    ... the others have no pattern (no option PATTERN, no pattern '1') yes
-  [CONTROLS] A2 closes when tank TK is above 5 m of water: head 30 + 5 = 35 m yes
-  the unused option is listed                  yes
-  the minor loss is listed                     yes
-  pipe A5 keeps its bend at (400, 120)         yes
-ok
-test analytical::epanet::the_engine_works_on_a_network_read_from_a_file ...   average 90% search stretch [m]: file vs code got     153.888889   expected     153.888889   rel.err 0.0e0
-ok
-test analytical::epanet::the_estate_in_si_units_reads_exactly ... Test estate (SI units) - written by hand for joukowsky tests
-  5 nodes, 4 pipes                             yes
-  lengths 400, 300, 500, 600 m                 yes
-  every diameter 150 mm                        yes
-  R is a 60 m reservoir                        yes
-  S2 draws 15 l/s                              yes
-  S3 is drawn at (700, -600)                   yes
-  elevation of S2: 12 m                        yes
-  reader's notes (3):
-    - .inp files carry no wave speeds: every pipe is given 1000 m/s [VERIFY - real wave speeds, by material, are needed to locate bursts well]
-    - Darcy-Weisbach roughness turned into one Darcy friction factor per pipe, equal head loss at 1.0 m/s: f from 0.0203 to 0.0203
-    - DURATION 0 (a single steady state in EPANET): extended-period runs default to 24 h
-  it says wave speeds were assumed             yes
-ok
-test analytical::epanet::us_units_give_the_same_network_as_si_units ...   pipe length [m]                              got     400.000000   expected     400.000000   rel.err 4.0e-12
-  pipe diameter [m]                            got       0.150000   expected       0.150000   rel.err 3.2e-8
-  pipe length [m]                              got     300.000000   expected     300.000000   rel.err 5.0e-10
-  pipe diameter [m]                            got       0.150000   expected       0.150000   rel.err 3.2e-8
-  pipe length [m]                              got     500.000000   expected     500.000000   rel.err 3.0e-10
-  pipe diameter [m]                            got       0.150000   expected       0.150000   rel.err 3.2e-8
-  pipe length [m]                              got     600.000000   expected     600.000000   rel.err 4.0e-12
-  pipe diameter [m]                            got       0.150000   expected       0.150000   rel.err 3.2e-8
-  demand [m3/s]                                got       0.000000   expected       0.000000   rel.err 0.0e0
-  demand [m3/s]                                got       0.000000   expected       0.000000   rel.err 0.0e0
-  demand [m3/s]                                got       0.015000   expected       0.015000   rel.err 5.1e-10
-  demand [m3/s]                                got       0.015000   expected       0.015000   rel.err 5.1e-10
-  reservoir head [m]                           got      60.000000   expected      60.000000   rel.err 1.5e-9
-  friction factor: D-W 0.1 mm gives 0.0203; H-W C = 130 gives 0.0223
-  both friction factors plausible (0.015 - 0.025) yes
-ok
-test analytical::epanet_operations::a_pda_file_gives_demands_that_fall_with_pressure ...   reader's notes (4):
-    - .inp files carry no wave speeds: every pipe is given 1000 m/s [VERIFY - real wave speeds, by material, are needed to locate bursts well]
-    - Darcy-Weisbach roughness turned into one Darcy friction factor per pipe, equal head loss at 1.0 m/s: f from 0.0203 to 0.0203
-    - DEMAND MODEL PDA: demands fall with pressure - nothing at or below 0.00 m, all of it from 15.00 m, exponent 0.5 (on each node's ground elevation)
-    - DURATION 0 (a single steady state in EPANET): extended-period runs default to 24 h
-    C's ground elevation from the file [m]     got      30.000000   expected      30.000000   rel.err 0.0e0
-    minimum 0 m, required 15 m, exponent 0.5   yes
-  the source 15 m above C's ground: C gets 15.87 of its 20 l/s at 9.45 m of pressure
-    delivered = 20 l/s x sqrt(p / 15) [l/s]    got      15.871690   expected      15.871690   rel.err 1.1e-16
-ok
-test analytical::epanet_operations::a_prv_in_a_file_holds_elevation_plus_setting_in_either_units ... SI (m) units:
-  reader's notes (5):
-    - line 12: PRV 'V': holds 50.00 m downstream (elevation of J + setting); frozen at its steady opening in transients (its response over seconds is not modelled)
-    - 1 control valve(s) modelled, each between two 10.0 m lengths of pipe of its own diameter (pipes 'ID/in' and 'ID/out')
-    - .inp files carry no wave speeds: every pipe is given 1000 m/s [VERIFY - real wave speeds, by material, are needed to locate bursts well]
-    - Darcy-Weisbach roughness turned into one Darcy friction factor per pipe, equal head loss at 1.0 m/s: f from 0.0189 to 0.0189
-    - DURATION 0 (a single steady state in EPANET): extended-period runs default to 24 h
-    setting as a head: 20 + 30 [m]             got      50.000000   expected      50.000000   rel.err 0.0e0
-    it is active in the steady state           yes
-    it passes the 20 + 5 l/s drawn below it [l/s] got      25.000000   expected      25.000000   rel.err 3.3e-13
-    5 s with nothing happening: head at J stays within a micrometre (spread 3.6e-11 m) yes
-US (ft, psi) units:
-    setting as a head: 20 + 30 [m]             got      50.000000   expected      50.000000   rel.err 0.0e0
-    it is active in the steady state           yes
-    it passes the 20 + 5 l/s drawn below it [l/s] got      25.000000   expected      25.000000   rel.err 1.2e-14
-ok
-test analytical::epanet_operations::a_pump_and_its_controls_read_from_a_file_switch_on_time ...   reader's notes (6):
-    - line 24: pump 'PU': three-point curve: a quadratic through the points (EPANET's power law H = A - B Q^2.09 differs by up to 0.21 m between them); efficiency 75%, 1450 rpm and inertia (Thorley) assumed - they matter only for pump trips [VERIFY]
-    - 1 tank(s) with storage: fixed heads in transients, their level simulated in extended-period runs (cylinders of the given diameter)
-    - 1 pump(s) modelled with their curves, each between two 10.0 m lengths of station pipework (pipes 'ID/suction' and 'ID/discharge')
-    - .inp files carry no wave speeds: every pipe is given 1000 m/s [VERIFY - real wave speeds, by material, are needed to locate bursts well]
-    - Darcy-Weisbach roughness turned into one Darcy friction factor per pipe, equal head loss at 1.0 m/s: f from 0.0160 to 0.0160
-    - 2 control(s) switch pumps and pipes in extended-period runs (by tank level or clock)
-The file's run: 48 h in 5-minute steps, 2 controls
-    tank level 50 + 7 in the file = switch-on head [m] got      57.000000   expected      57.000000   rel.err 0.0e0
-  pump delivers 112.3 l/s at 57 m, 100.0 l/s at 64 m
-    pump stops at [h]                          got       5.100005   expected       5.099979   rel.err 5.1e-6
-      ... that way round                       yes
-    pump starts at [h]                         got      11.581486   expected      11.581460   rel.err 2.3e-6
-      ... that way round                       yes
-    pump stops at [h]                          got      20.032128   expected      20.032062   rel.err 3.3e-6
-      ... that way round                       yes
-    pump starts at [h]                         got      26.513609   expected      26.513544   rel.err 2.5e-6
-      ... that way round                       yes
-    at least four switches in 48 h             yes
-ok
-test analytical::epanet_operations::psv_fcv_and_tcv_in_a_file_become_valves_with_their_settings ...   reader's notes (9):
-    - 1 curve(s) not used (efficiency, volume, valve or unmodelled pump curves): 1
-    - line 17: PSV 'S': holds 72.00 m upstream (elevation of A + setting); frozen at its steady opening in transients (its response over seconds is not modelled)
-    - line 18: FCV 'F': passes at most 8.00 l/s; frozen at its steady opening in transients (its response over seconds is not modelled)
-    - line 19: TCV 'T': a fixed throttle, loss coefficient 5; frozen at its steady opening in transients (its response over seconds is not modelled)
-    - line 20: GPV valve 'G' between A and L: modelled as a plain connection (the two nodes are joined); its own hydraulics are not
-    - 3 control valve(s) modelled, each between two 10.0 m lengths of pipe of its own diameter (pipes 'ID/in' and 'ID/out')
-    - .inp files carry no wave speeds: every pipe is given 1000 m/s [VERIFY - real wave speeds, by material, are needed to locate bursts well]
-    - Darcy-Weisbach roughness turned into one Darcy friction factor per pipe, equal head loss at 1.0 m/s: f from 0.0203 to 0.0203
-    - DURATION 0 (a single steady state in EPANET): extended-period runs default to 24 h
-    PSV S keeps elevation of A (60) + 12 = 72 m upstream yes
-    FCV F passes at most 8 l/s                 yes
-    TCV T: loss coefficient 5 on DN150 -> R = K / (2 g A^2) [s^2/m^5] got     816.346498   expected     816.346498   rel.err 0.0e0
-    the GPV stays a plain connection, and says so yes
-ok
-test analytical::epanet_operations::rules_in_a_file_run_the_pump_as_its_controls_did ... The V-A9 file with [RULES] instead of [CONTROLS]:
-  reader's notes (6):
-    - line 24: pump 'PU': three-point curve: a quadratic through the points (EPANET's power law H = A - B Q^2.09 differs by up to 0.21 m between them); efficiency 75%, 1450 rpm and inertia (Thorley) assumed - they matter only for pump trips [VERIFY]
-    - 1 tank(s) with storage: fixed heads in transients, their level simulated in extended-period runs (cylinders of the given diameter)
-    - 1 pump(s) modelled with their curves, each between two 10.0 m lengths of station pipework (pipes 'ID/suction' and 'ID/discharge')
-    - .inp files carry no wave speeds: every pipe is given 1000 m/s [VERIFY - real wave speeds, by material, are needed to locate bursts well]
-    - Darcy-Weisbach roughness turned into one Darcy friction factor per pipe, equal head loss at 1.0 m/s: f from 0.0160 to 0.0160
-    - 2 rule(s) switch pumps and pipes in extended-period runs (IF / AND / OR / THEN / ELSE / PRIORITY, read as EPANET does: OR binds tighter than AND)
-    the same switches at the same moments      yes
-ok
-test analytical::epanet_operations::rules_the_engine_cannot_read_are_reported_never_dropped ...   reader's notes (14):
-    - line 12: pump 'PU': one-point curve, taken exactly (EPANET's own form); efficiency 75%, 1450 rpm and inertia (Thorley) assumed - they matter only for pump trips [VERIFY]
-    - line 16: TCV 'V': a fixed throttle, loss coefficient 3; frozen at its steady opening in transients (its response over seconds is not modelled)
-    - 1 tank(s) with storage: fixed heads in transients, their level simulated in extended-period runs (cylinders of the given diameter)
-    - 1 control valve(s) modelled, each between two 10.0 m lengths of pipe of its own diameter (pipes 'ID/in' and 'ID/out')
-    - 1 pump(s) modelled with their curves, each between two 10.0 m lengths of station pipework (pipes 'ID/suction' and 'ID/discharge')
-    - .inp files carry no wave speeds: every pipe is given 1000 m/s [VERIFY - real wave speeds, by material, are needed to locate bursts well]
-    - Darcy-Weisbach roughness turned into one Darcy friction factor per pipe, equal head loss at 1.0 m/s: f from 0.0175 to 0.0175
-    - DURATION 0 (a single steady state in EPANET): extended-period runs default to 24 h
-    - the run's t = 0 is the file's start clock time 06:00; clock-time controls are shifted to match
-    - line 24: rule night: action not taken: PUMP SETTING is not taken (only STATUS)
-    - line 27: rule demand not modelled: SYSTEM DEMAND is not read
-    - line 33: rule valve: action not taken: link 'V' is a TCV (switching valves by controls is not modelled)
-    - line 31: rule valve not modelled: none of its actions can be taken
-    - 2 rule(s) switch pumps and pipes in extended-period runs (IF / AND / OR / THEN / ELSE / PRIORITY, read as EPANET does: OR binds tighter than AND)
-    'night' is read: three premises (OR, AND), THEN and ELSE, priority 3 yes
-    10 PM with the run starting at 6 AM is 16:00 into the day yes
-    a tank level of 12 m of water is 50 + 12 = 62 m of head yes
-    the pump SETTING action is dropped, and said yes
-    'demand' is left out: SYSTEM DEMAND is not read yes
-    'valve' is left out: the TCV cannot be switched yes
-    'pressure' is read: junction pressure 20 m on elevation 0 = 20 m of head yes
-    and the whole thing runs                   yes
-ok
-test analytical::epanet_operations::times_patterns_and_controls_in_every_form_are_mapped_or_noted ...   reader's notes (14):
-    - line 17: pump 'PU1': one-point curve, taken exactly (EPANET's own form); efficiency 75%, 1450 rpm and inertia (Thorley) assumed - they matter only for pump trips [VERIFY]
-    - line 18: pump 'PU2' is given as constant power, not a head curve: modelled as a plain connection
-    - line 25: PRV 'V1': holds 30.00 m downstream (elevation of D + setting); frozen at its steady opening in transients (its response over seconds is not modelled)
-    - line 18: pump 'PU2' between S3 and B: modelled as a plain connection (the two nodes are joined); its own hydraulics are not
-    - 1 tank(s) with storage: fixed heads in transients, their level simulated in extended-period runs (cylinders of the given diameter)
-    - 1 control valve(s) modelled, each between two 10.0 m lengths of pipe of its own diameter (pipes 'ID/in' and 'ID/out')
-    - 1 pump(s) modelled with their curves, each between two 10.0 m lengths of station pipework (pipes 'ID/suction' and 'ID/discharge')
-    - .inp files carry no wave speeds: every pipe is given 1000 m/s [VERIFY - real wave speeds, by material, are needed to locate bursts well]
-    - Darcy-Weisbach roughness turned into one Darcy friction factor per pipe, equal head loss at 1.0 m/s: f from 0.0189 to 0.0203
-    - the run's t = 0 is the file's start clock time 06:00; clock-time controls are shifted to match
-    - line 35: control not modelled: condition on node 'C', which is not a storage tank (junction pressures and reservoir heads are not modelled as conditions)
-    - line 36: control not modelled: link 'V1' is a PRV (switching valves by controls is not modelled)
-    - line 37: control not modelled: link 'PU1' set to 0.8: settings (speeds, valve settings) are not modelled
-    - 3 control(s) switch pumps and pipes in extended-period runs (by tank level or clock)
-[TIMES]
-    2 days [h]                                 got      48.000000   expected      48.000000   rel.err 0.0e0
-    15 min steps [s]                           got     900.000000   expected     900.000000   rel.err 0.0e0
-[PATTERNS] (pattern start 2:00 = two hourly steps in)
-    option PATTERN homes is the default, rotated: 3 4 1 2 yes
-    C follows 'plant'; B, whose own pattern is the default, is not listed yes
-[STATUS] and [CONTROLS]
-    PU1 starts closed: shut at the start, switched off at t = 0 yes
-    PU1 on below 2 m of water in TK: head 40 + 2 = 42 m yes
-    PU1 off at 1:30 into the run               yes
-    P2 closed at 8 AM = 2 h after the 6 AM start, every day yes
-    a junction-pressure condition is noted, not modelled yes
-    a control on a valve is noted              yes
-    a pump speed setting is noted              yes
-    the constant-power pump PU2 is a connection, and says so yes
-    the start clock time is noted              yes
-    and the whole thing runs                   yes
-ok
-test analytical::logger::a_column_without_a_unit_is_refused_unless_the_unit_is_given ...   refused: no unit for column(s) Pressure: the header must name it (e.g. 'P1 (bar)') or it must be given - units are never guessed
-  refused: units are never guessed             yes
-  reader's notes (4):
-    - column 'Pressure' names no unit: bar as instructed
-    - 2 sample(s) a second
-    - timestamps carry no time zone: times are as written (only differences matter within one file; across loggers their clocks must agree)
-    - 'Pressure': bar -> metres of head (x 10.2121); ground elevation not added
-  read when the unit is given, and noted       yes
-  2 samples a second                           got       0.500000   expected       0.500000   rel.err 0.0e0
-ok
-test analytical::logger::a_european_export_semicolons_decimal_commas_date_and_time_columns ...   reader's notes (5):
-    - numbers use a decimal comma
-    - 1 sample(s) a second
-    - timestamps carry no time zone: times are as written (only differences matter within one file; across loggers their clocks must agree)
-    - line 7: 1 row(s) repeat an earlier time or go back in time: left out
-    - 'Druck [kPa]': kPa -> metres of head (x 0.1021); ground elevation not added
-  1 sample a second                            got       1.000000   expected       1.000000   rel.err 0.0e0
-  one continuous run across midnight           yes
-  the repeated row is dropped and noted        yes
-  451.2 kPa in metres of head                  got      46.076822   expected      46.076822   rel.err 1.5e-16
-  decimal comma noted                          yes
-  no time zone: noted                          yes
-ok
-test analytical::logger::a_typical_export_with_a_gap_an_empty_cell_and_a_step ...   reader's notes (8):
-    - 2 line(s) of metadata above the table skipped
-    - column 'Temperature (C)' looks like temperature, not a pressure: not used
-    - 128 sample(s) a second
-    - timestamps carry a time zone: times are UTC
-    - timestamps sit up to 0.50 ms off the logger's regular clock (rounding): samples are placed on the regular clock
-    - 1 gap(s) in the rows - 64 sample(s), 0.500 s in all, never arrived: the recording is split there, nothing is filled in
-    - 'P1 (bar)': bar -> metres of head (x 10.2121); ground elevation not added
-    - 'P1 (bar)': 1 empty and 0 unreadable value(s) - kept as gaps, not filled
-  sampling interval [s]                        got       0.007812   expected       0.007812   rel.err 0.0e0
-  one pressure channel (temperature left out)  yes
-  two runs: the lost half second splits it     yes
-  second run starts at 10:15:02.500 (s after the first) got       2.500000   expected       2.500000   rel.err 0.0e0
-  4.5 bar in metres of head                    got      45.954277   expected      45.954277   rel.err 0.0e0
-  the empty cell is a gap (NaN), not filled    yes
-  the 0.5 bar drop, in metres                  got      -5.106031   expected      -5.106031   rel.err 5.2e-16
-  rounded timestamps noted                     yes
-  time zone noted: UTC                         yes
-  metadata lines skipped                       yes
-ok
-test datasets::epanet_examples::d1_net1_reads_whole_and_runs_its_day ...   dataset file: data/incoming/epanet-examples/Net1.inp
-  reader's notes (17):
-    - [OPTIONS] not used by the engine: Trials 40, Accuracy 0.001, CHECKFREQ 2, MAXCHECK 10, DAMPLIMIT 0 and 5 more
-    - line 43: pump '9': one-point curve, taken exactly (EPANET's own form); efficiency 75%, 1450 rpm and inertia (Thorley) assumed - they matter only for pump trips [VERIFY]
-    - [ENERGY]: 3 record(s) not used - energy prices and pump efficiency
-    - [QUALITY]: 11 record(s) not used - water quality
-    - [REACTIONS]: 7 record(s) not used - water quality
-    - [REPORT]: 3 record(s) not used - reporting
-    - [LABELS]: 3 record(s) not used - map labels and backdrop
-    - [BACKDROP]: 4 record(s) not used - map labels and backdrop
-    - 1 tank(s) with storage: fixed heads in transients, their level simulated in extended-period runs (cylinders of the given diameter)
-    - 1 pump(s) modelled with their curves, each between two 10.0 m lengths of station pipework (pipes 'ID/suction' and 'ID/discharge')
-    - .inp files carry no wave speeds: every pipe is given 1000 m/s [VERIFY - real wave speeds, by material, are needed to locate bursts well]
-    - Hazen-Williams roughness turned into one Darcy friction factor per pipe, equal head loss at 1.0 m/s: f from 0.0301 to 0.0362
-    - line 118: [TIMES] Quality Timestep 0:05 not used
-    - line 121: [TIMES] Report Timestep 1:00 not used
-    - line 122: [TIMES] Report Start 0:00 not used
-    - line 124: [TIMES] Statistic None not used
-    - 2 control(s) switch pumps and pipes in extended-period runs (by tank level or clock)
-  nodes: the file declares 11, the engine has all but []
-  every node the file declares is in the engine yes
-  pipes: the file declares 12, the engine has all but [] (expected: [])
-  only the expected pipes are left out         yes
-  pumps modelled with their curves: 1 (file: 1); tanks with storage: 1 (file: 1)
-  every pump is modelled                       yes
-  every tank stores water                      yes
-  its own schedule: 24 h in 60-minute steps, 2 event(s)
-ok
-test datasets::epanet_examples::d1_net2_reads_whole_and_runs_its_55_hours ...   dataset file: data/incoming/epanet-examples/Net2.inp
-  reader's notes (16):
-    - [OPTIONS] not used by the engine: Trials 40, Accuracy 0.001, CHECKFREQ 2, MAXCHECK 10, DAMPLIMIT 0 and 5 more
-    - [ENERGY]: 3 record(s) not used - energy prices and pump efficiency
-    - [QUALITY]: 36 record(s) not used - water quality
-    - [SOURCES]: 1 record(s) not used - water quality
-    - [REACTIONS]: 7 record(s) not used - water quality
-    - [REPORT]: 3 record(s) not used - reporting
-    - [LABELS]: 3 record(s) not used - map labels and backdrop
-    - [BACKDROP]: 4 record(s) not used - map labels and backdrop
-    - 1 tank(s) with storage: fixed heads in transients, their level simulated in extended-period runs (cylinders of the given diameter)
-    - .inp files carry no wave speeds: every pipe is given 1000 m/s [VERIFY - real wave speeds, by material, are needed to locate bursts well]
-    - Hazen-Williams roughness turned into one Darcy friction factor per pipe, equal head loss at 1.0 m/s: f from 0.0173 to 0.0345
-    - line 224: [TIMES] Quality Timestep 0:05 not used
-    - line 227: [TIMES] Report Timestep 1:00 not used
-    - line 228: [TIMES] Report Start 0:00 not used
-    - line 230: [TIMES] Statistic None not used
-    - the run's t = 0 is the file's start clock time 08:00; clock-time controls are shifted to match
-  nodes: the file declares 36, the engine has all but []
-  every node the file declares is in the engine yes
-  pipes: the file declares 40, the engine has all but [] (expected: [])
-  only the expected pipes are left out         yes
-  pumps modelled with their curves: 0 (file: 0); tanks with storage: 1 (file: 1)
-  every pump is modelled                       yes
-  every tank stores water                      yes
-  its own schedule: 55 h in 60-minute steps, 0 event(s)
-ok
-test datasets::epanet_examples::d1_net3_reads_whole_and_runs_its_day ...   dataset file: data/incoming/epanet-examples/Net3.inp
-  reader's notes (20):
-    - [OPTIONS] not used by the engine: Trials 40, Accuracy 0.001, CHECKFREQ 2, MAXCHECK 10, DAMPLIMIT 0 and 5 more
-    - line 234: pump '10': three-point curve: a quadratic through the points (EPANET's power law H = A - B Q^1.77 differs by up to 0.12 m between them); efficiency 75%, 1450 rpm and inertia (Thorley) assumed - they matter only for pump trips [VERIFY]
-    - line 235: pump '335': three-point curve: a quadratic through the points (EPANET's power law H = A - B Q^1.09 differs by up to 0.31 m between them); efficiency 75%, 1450 rpm and inertia (Thorley) assumed - they matter only for pump trips [VERIFY]
-    - [ENERGY]: 3 record(s) not used - energy prices and pump efficiency
-    - [REACTIONS]: 7 record(s) not used - water quality
-    - [REPORT]: 3 record(s) not used - reporting
-    - [LABELS]: 2 record(s) not used - map labels and backdrop
-    - [BACKDROP]: 4 record(s) not used - map labels and backdrop
-    - 3 tank(s) with storage: fixed heads in transients, their level simulated in extended-period runs (cylinders of the given diameter)
-    - 2 pump(s) modelled with their curves, each between two 0.3 m lengths of station pipework (pipes 'ID/suction' and 'ID/discharge')
-    - .inp files carry no wave speeds: every pipe is given 1000 m/s [VERIFY - real wave speeds, by material, are needed to locate bursts well]
-    - Hazen-Williams roughness turned into one Darcy friction factor per pipe, equal head loss at 1.0 m/s: f from 0.0063 to 0.0253
-    - 1 closed pipe(s) left out: 330
-    - line 336: [TIMES] Quality Timestep 0:05 not used
-    - line 339: [TIMES] Report Timestep 1:00 not used
-    - line 340: [TIMES] Report Start 0:00 not used
-    - line 342: [TIMES] Statistic None not used
-    - line 297: control not modelled: link '330' is closed in the file and left out of the network
-    - line 298: control not modelled: link '330' is closed in the file and left out of the network
-    - 4 control(s) switch pumps and pipes in extended-period runs (by tank level or clock)
-  nodes: the file declares 97, the engine has all but []
-  every node the file declares is in the engine yes
-  pipes: the file declares 117, the engine has all but ["330"] (expected: ["330"])
-  only the expected pipes are left out         yes
-  a note says why pipe 330 is left out         yes
-  pumps modelled with their curves: 2 (file: 2); tanks with storage: 3 (file: 3)
-  every pump is modelled                       yes
-  every tank stores water                      yes
-  its own schedule: 24 h in 60-minute steps, 15 event(s)
-ok
-test datasets::ltown::d2_ltown_first_week_pump_switches_like_the_published_data ... ignored, full suite: a week of the town, about a minute in a debug build
-test datasets::ltown::d2_ltown_reads_whole_with_its_pump_and_tank ...   dataset file: data/incoming/ltown/L-TOWN.inp
-  reader's notes (22):
-    - [OPTIONS] not used by the engine: Trials 50, Accuracy 0.01000000, CHECKFREQ 2, MAXCHECK 10, DAMPLIMIT 0.00000000 and 5 more
-    - [DEMANDS] gives 782 junction(s) several demand categories: their sum is used
-    - line 1709: pump 'PUMP_1': three-point curve: a quadratic through the points (EPANET's power law H = A - B Q^2.00 differs by up to 0.00 m between them); efficiency 75%, 1450 rpm and inertia (Thorley) assumed - they matter only for pump trips [VERIFY]
-    - [ENERGY]: 3 record(s) not used - energy prices and pump efficiency
-    - [REACTIONS]: 7 record(s) not used - water quality
-    - [REPORT]: 3 record(s) not used - reporting
-    - [BACKDROP]: 4 record(s) not used - map labels and backdrop
-    - line 1713: PRV 'PRV-1': holds 75.00 m downstream (elevation of n300 + setting); frozen at its steady opening in transients (its response over seconds is not modelled)
-    - line 1714: PRV 'PRV-2': holds 75.00 m downstream (elevation of n111 + setting); frozen at its steady opening in transients (its response over seconds is not modelled)
-    - line 1715: PRV 'PRV-3': holds 41.11 m downstream (elevation of n226 + setting); frozen at its steady opening in transients (its response over seconds is not modelled)
-    - 1 tank(s) with storage: fixed heads in transients, their level simulated in extended-period runs (cylinders of the given diameter)
-    - 3 control valve(s) modelled, each between two 4.5 m lengths of pipe of its own diameter (pipes 'ID/in' and 'ID/out')
-    - 1 pump(s) modelled with their curves, each between two 4.5 m lengths of station pipework (pipes 'ID/suction' and 'ID/discharge')
-    - .inp files carry no wave speeds: every pipe is given 1000 m/s [VERIFY - real wave speeds, by material, are needed to locate bursts well]
-    - Hazen-Williams roughness turned into one Darcy friction factor per pipe, equal head loss at 1.0 m/s: f from 0.0182 to 0.0299
-    - line 4800: [TIMES] Quality Timestep 0:05 not used
-    - line 4803: [TIMES] Report Timestep 0:05 not used
-    - line 4804: [TIMES] Report Start 0:00 not used
-    - line 4806: [TIMES] Statistic NONE not used
-    - default pattern '1' (option PATTERN) is not defined: junctions without a pattern of their own keep a constant demand, as in EPANET
-    - 561 engine junction(s) combine demands that follow different patterns (demand categories, or junctions joined through a valve): each pattern drives its share of the demand, as in EPANET
-    - 2 control(s) switch pumps and pipes in extended-period runs (by tank level or clock)
-  the file declares 785 nodes and 905 pipes; missing in the engine: 0 nodes, 0 pipes
-  782 junctions + 2 reservoirs + 1 tank declared yes
-  905 pipes declared                           yes
-  every node and pipe is in the engine         yes
-  the pump is modelled with its curve (FN-045: it ends at zero head) yes
-  the tank stores water                        yes
-  both controls act on the pump                yes
-  the three PRVs are modelled                  yes
-ok
-test simulation::logger_files::a_burst_recorded_in_logger_files_raises_one_alarm_in_the_right_place ... Wrote 3 logger exports to C:\Users\HP\Desktop\joukowsky\target\tmp\logger_files
-  S1 gatehouse: 1280 samples at 128 S/s from 2026-09-29T10:15:00.000Z, 1 run(s)
-  S2 north block: 1280 samples at 128 S/s from 2026-09-29T10:15:00.004Z, 1 run(s)
-  S3 south block: 1280 samples at 128 S/s from 2026-09-29T10:15:00.000Z, 1 run(s)
-[Alarm] #1 BURST (98% confident) at 2026-09-29 10:15:03.0 UTC
-  where: T-S3 south branch at 200.1 m from its start; 90% within 28 m of pipe
-    T-S3 south branch    100.0%
-  size: about 1.56 l/s (+/- 0.16 l/s), from 3 logger(s)
-  seen by: S3 south block, S1 gatehouse, S2 north block
-  because: pressure DROPPED by 9.02 m: a burst or a pump trip, not a closing valve (seen upstream) or a refill
-  because: SHARP front (7 ms, 10-90%): a sudden change - a pipe splitting, a valve slamming - not a pump running down
-  because: the pipe was under pressure before (60.0 m): not refilling
-  because: pump power is not monitored: no outside evidence
-  exactly one alert                            yes
-  an ALARM for a burst                         yes
-  on T-S3                                      yes
-  at 200 m (within 2 m: the ms-rounded clocks cost a little) got     200.121542   expected     200.000000   rel.err 6.1e-4
-  at 10:15:03 - seconds past 10:15:00          got       2.998641   expected       3.000000   rel.err 4.5e-4
-ok
-test simulation::site_file::vs11_a_site_file_and_its_recordings_replay_through_the_live_engine ... Wrote a site file, a network and three logger exports to C:\Users\HP\Desktop\joukowsky\target\tmp\site_file
-Read 'Test estate': 3 loggers. The readers' notes:
-  - estate.inp: .inp files carry no wave speeds: every pipe is given 1000 m/s [VERIFY - real wave speeds, by material, are needed to locate bursts well]
-  - estate.inp: Darcy-Weisbach roughness turned into one Darcy friction factor per pipe, equal head loss at 1.0 m/s: f from 0.0203 to 0.0203
-  - estate.inp: DURATION 0 (a single steady state in EPANET): extended-period runs default to 24 h
-  - s1.csv: 2 line(s) of metadata above the table skipped
-  - s1.csv: 128 sample(s) a second
-  - s1.csv: timestamps carry no time zone: times are as written (only differences matter within one file; across loggers their clocks must agree)
-  - s1.csv: timestamps sit up to 0.50 ms off the logger's regular clock (rounding): samples are placed on the regular clock
-  - s1.csv: 'Pressure (bar)': bar -> metres of head (x 10.2121); ground elevation not added
-  - logger S1 gatehouse: timestamps without a zone - read as the site's local time
-  - s2.csv: 2 line(s) of metadata above the table skipped
-  - s2.csv: column 'Pressure' names no unit: bar as instructed
-  - s2.csv: 128 sample(s) a second
-  - s2.csv: timestamps carry no time zone: times are as written (only differences matter within one file; across loggers their clocks must agree)
-  - s2.csv: timestamps sit up to 0.87 ms off the logger's regular clock (rounding): samples are placed on the regular clock
-  - s2.csv: 'Pressure': bar -> metres of head (x 10.2121); ground elevation not added
-  - logger S2 north block: timestamps without a zone - read as the site's local time
-  - s3.csv: 2 line(s) of metadata above the table skipped
-  - s3.csv: 128 sample(s) a second
-  - s3.csv: timestamps carry no time zone: times are as written (only differences matter within one file; across loggers their clocks must agree)
-  - s3.csv: timestamps sit up to 0.87 ms off the logger's regular clock (rounding): samples are placed on the regular clock
-  - s3.csv: 'Pressure (bar)': bar -> metres of head (x 10.2121); ground elevation not added
-  - logger S3 south block: timestamps without a zone - read as the site's local time
-    local stamps without a zone are read as the site's time yes
-    the vapour floor from 1450 m [m]           got      -8.452018   expected      -8.452000   rel.err 2.1e-6
-    the declared wave-speed doubt (2%) is the localiser's got       0.020000   expected       0.020000   rel.err 0.0e0
-    ratings: P1-P3 PN16, P4 PN10               yes
-    S3's range 0-16 bar                        yes
-[Alarm] #1 (revision 1) BURST (100% confident) at 2026-09-29 12:15:03.0 UTC+02:00
-  where: P4 at 200.3 m from its start; 90% within 12 m of pipe
-    P4                   100.0%
-  size: about 1.55 l/s (+/- 0.16 l/s), from 3 logger(s)
-  seen by: S3 south block, S1 gatehouse, S2 north block
-  because: pressure DROPPED by 9.02 m: a burst or a pump trip, not a closing valve (seen upstream) or a refill
-  because: SHARP front (13 ms, 10-90%): a sudden change - a pipe splitting, a valve slamming - not a pump running down
-  because: the pipe was under pressure before (60.0 m): not refilling
-  because: pump power is monitored and did NOT fail: not a pump trip
-  because: S3 south block: in the 7 s after the front the pressure peaked at 68.6 m - 1.1 times the 60.0 m before it
-  because: S1 gatehouse: in the 6 s after the front the pressure peaked at 64.1 m - 1.1 times the 60.0 m before it
-  because: S2 north block: in the 6 s after the front the pressure peaked at 69.3 m - 1.2 times the 60.0 m before it
-  one event                                    yes
-    an ALARM for a burst                       yes
-    on P4 (named from the network file)        yes
-    at 200 m along it                          got     200.267031   expected     200.000000   rel.err 1.3e-3
-    at 12:15:03 local time, written so         yes
-    each logger's fatigue loading counted      yes
-ok
-test simulation::site_file::vs11_a_site_file_with_a_mistake_is_refused_with_its_line ... Site files with mistakes (each refused, saying where):
-  a typo in a key: line 6: unknown key 'altitud' in [site]
-    a typo in a key: refused, with its line    yes
-  a logger on a node the network lacks: line 22: no node 'S9' in the network
-    a logger on a node the network lacks: refused, with its line yes
-  a rating without a unit: line 7: rating = '160': expected a rating like PN10, 16 bar or 160 m
-    a rating without a unit: refused, with its line yes
-  an unknown section: line 30: unknown section [pumps]
-    an unknown section: refused, with its line yes
-  a doubt that is not a share: line 8: wave_speed_doubt = 'lots': expected a share like 5% or 0.05
-    a doubt that is not a share: refused, with its line yes
+test simulation::night_watch::false_alarms_are_rare_on_a_zone_without_leaks ... 200 zones x 90 days, no leak: 50 false alarm(s) in 12400 watched nights - one every 248 nights
+  fewer than one false alarm a year per zone   NO
+
+thread 'simulation::night_watch::false_alarms_are_rare_on_a_zone_without_leaks' (11436) panicked at tests\common\lib.rs:59:5:
+fewer than one false alarm a year per zone: not true
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+FAILED
+test simulation::night_watch::the_detection_curve_matches_the_cusum_arithmetic ... Night spread 0.386 l/s: the arithmetic says leaks over 0.523 l/s show within a week.
+  leak 0.26 l/s (0.5 x the arithmetic): caught within a week in 27 of 100 zones
+  leak 0.52 l/s (1 x the arithmetic): caught within a week in 79 of 100 zones
+  leak 0.79 l/s (1.5 x the arithmetic): caught within a week in 97 of 100 zones
+  leak 1.05 l/s (2 x the arithmetic): caught within a week in 100 of 100 zones
+  more leak, more often caught                 yes
+  twice the arithmetic's size: caught 90%+ of the time yes
+  at the arithmetic's size: caught at least a third of the time yes
 ok
 
-test result: ok. 22 passed; 0 failed; 1 ignored; 0 measured; 0 filtered out; finished in 1.27s
+failures:
 
+failures:
+    simulation::night_watch::false_alarms_are_rare_on_a_zone_without_leaks
+
+test result: FAILED. 2 passed; 1 failed; 1 ignored; 0 measured; 0 filtered out; finished in 1.20s
+
+error: test failed, to rerun pass `-p jk-tests --test balance`
+error: 1 target failed:
+    `-p jk-tests --test balance`
 ==============================================================================
-  passed   22
-  failed   0
+  passed   2
+  failed   1
   skipped  1 slow test(s) not in this suite (run -Suite full)
   filtered 0 test(s) outside -Only/-Filter
-  time     7.6 s (including compile)
-  result   ALL PASSED
+  time     5.5 s (including compile)
+  result   FAILURES - search this log for "FAILED" or "panicked"

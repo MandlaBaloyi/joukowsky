@@ -14,14 +14,23 @@
 //! 200 - what such a logger would have recorded - and the engine's
 //! detector, with its default settings, watches that.
 //!
-//! Stage: FEED AND LOOK - it prints what the detector saw and judges
-//! nothing yet. What it showed (FN-047) is being fixed; the checks come
-//! with the fix.
+//! What the first run showed (FN-047): real noise WANDERS, and the
+//! detector, learning only the jitter, saw 7-17 false fronts a run on the
+//! looped rig and twice missed the closure. Fixed by learning the noise
+//! about the trend and again every 10 s; now checked:
+//!   - the far sensor P2 sees the closure as a RISE of at least 0.2 m
+//!     between 16 and 23 s ("about second 20"), in every run;
+//!   - before 16 s, while nothing happens, no sensor reports any front.
+//!
+//! The inlet sensor P1 is printed, not checked: on the looped rig its
+//! recordings show almost nothing of the closure. Locating is NOT tested:
+//! each file was started on its own (their lengths differ by up to 3.6 s),
+//! so P1 and P2 share no clock.
 
 use jk_detection::{Detector, DetectorConfig, Direction, Series};
 use jk_files::logger::{CsvOptions, PressureUnit, read};
 use jk_kernel::Time;
-use jk_tests::dataset;
+use jk_tests::{check, dataset};
 
 /// Readings averaged into one logger sample (25 600 / 128).
 const BLOCK: usize = 200;
@@ -40,6 +49,7 @@ fn d3_a_real_valve_closure_seen_by_128_per_second_loggers() {
     };
     let detector = Detector::new(DetectorConfig::default()).unwrap();
     println!("  run     sensor  noise [m]  events: arrival [s] (step [m], rise/drop)");
+    let (mut seen, mut early) = (0, Vec::new());
     for run in RUNS {
         for sensor in ["P1", "P2"] {
             let Some(path) = dataset(&format!(
@@ -63,6 +73,20 @@ fn d3_a_real_valve_closure_seen_by_128_per_second_loggers() {
                 interval: Time::new(block),
             };
             let d = detector.run(&series).unwrap();
+            let closure = d.events.iter().any(|e| {
+                e.direction == Direction::Rise
+                    && e.step.value() >= 0.2
+                    && (16.0..23.0).contains(&e.arrival.value())
+            });
+            if sensor == "P2" && closure {
+                seen += 1;
+            }
+            early.extend(
+                d.events
+                    .iter()
+                    .filter(|e| e.arrival.value() < 16.0)
+                    .map(|e| format!("{run} {sensor} at {:.2} s", e.arrival.value())),
+            );
             let events: Vec<String> = d
                 .events
                 .iter()
@@ -90,6 +114,19 @@ fn d3_a_real_valve_closure_seen_by_128_per_second_loggers() {
             );
         }
     }
+    println!(
+        "  the far sensor saw the closure in {seen} of {} runs",
+        RUNS.len()
+    );
+    check(
+        "P2 sees the valve closure as a rise near 20 s in every run",
+        seen == RUNS.len(),
+    );
+    println!("  fronts reported before 16 s (nothing happens then): {early:?}");
+    check(
+        "no false front in the quiet first 16 s of any recording",
+        early.is_empty(),
+    );
 }
 
 #[allow(clippy::cast_precision_loss)] // small counts

@@ -89,3 +89,11 @@ when,suite,only,filter,commit,uncommitted,passed,failed,skipped,seconds,result,l
 2026-10-05 21:50:27,quick,balance,,5070e65,yes,3,0,1,7.0,pass,runs/2026-10/2026-10-05/21-50-27_quick_balance.log
 2026-10-05 21:50:35,quick,detection,,5070e65,yes,8,0,3,5.4,pass,runs/2026-10/2026-10-05/21-50-35_quick_detection.log
 2026-10-05 21:50:40,quick,adapters,,5070e65,yes,22,0,1,7.6,pass,runs/2026-10/2026-10-05/21-50-40_quick_adapters.log
+2026-10-05 21:57:53,quick,detection,,4dbb685,yes,8,0,3,11.3,pass,runs/2026-10/2026-10-05/21-57-53_quick_detection.log
+2026-10-05 21:58:05,quick,pipeline,,4dbb685,yes,20,1,1,27.6,FAIL,runs/2026-10/2026-10-05/21-58-05_quick_pipeline.log
+2026-10-05 22:00:22,quick,detection,,4dbb685,yes,8,0,3,12.8,pass,runs/2026-10/2026-10-05/22-00-22_quick_detection.log
+2026-10-05 22:00:35,quick,pipeline,,4dbb685,yes,21,0,1,26.8,pass,runs/2026-10/2026-10-05/22-00-35_quick_pipeline.log
+2026-10-05 22:01:03,quick,localisation,,4dbb685,yes,29,0,3,36.3,pass,runs/2026-10/2026-10-05/22-01-03_quick_localisation.log
+2026-10-05 22:03:02,full,,,4dbb685,yes,365,1,0,499.9,FAIL,runs/2026-10/2026-10-05/22-03-02_full.log
+2026-10-05 22:21:20,quick,balance,,4dbb685,yes,2,1,1,5.5,FAIL,runs/2026-10/2026-10-05/22-21-20_quick_balance.log
+2026-10-05 22:25:08,full,,,4dbb685,yes,369,0,0,474.7,pass,runs/2026-10/2026-10-05/22-25-08_full.log

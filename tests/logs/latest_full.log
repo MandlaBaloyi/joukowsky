@@ -1,16 +1,17 @@
 joukowsky test run
-  when     2026-10-02 12:30:32
+  when     2026-10-05 22:25:08
   suite    full
-  commit   669a6c2
+  commit   4dbb685 (with uncommitted changes)
   rust     rustc 1.98.1 (48a229cea 2026-09-01)
   command  cargo test --workspace --no-fail-fast -- --nocapture --test-threads=1 --include-ignored
 ==============================================================================
-   Compiling jk-health v0.1.0 (C:\Users\HP\Desktop\joukowsky\crates\domain\health)
-   Compiling jk-application v0.1.0 (C:\Users\HP\Desktop\joukowsky\crates\application)
    Compiling jk-files v0.1.0 (C:\Users\HP\Desktop\joukowsky\crates\adapters\files)
+   Compiling jk-balance v0.1.0 (C:\Users\HP\Desktop\joukowsky\crates\domain\balance)
+   Compiling jk-application v0.1.0 (C:\Users\HP\Desktop\joukowsky\crates\application)
+   Compiling jk-classification v0.1.0 (C:\Users\HP\Desktop\joukowsky\crates\domain\classification)
    Compiling jk-tests v0.1.0 (C:\Users\HP\Desktop\joukowsky\tests)
    Compiling jk-cli v0.1.0 (C:\Users\HP\Desktop\joukowsky\crates\interfaces\cli)
-    Finished `test` profile [unoptimized + debuginfo] target(s) in 18.22s
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 19.54s
      Running unittests src\lib.rs (target\debug\deps\jk_application-6f0d1c56f055322e.exe)
 
 running 3 tests
@@ -66,7 +67,7 @@ test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; fini
 
      Running unittests src\lib.rs (target\debug\deps\jk_detection-ab885d9bb867d09a.exe)
 
-running 21 tests
+running 23 tests
 test baseline::brown::tests::follows_a_steady_trend_without_lag ... ok
 test baseline::brown::tests::shifting_keeps_the_trend ... ok
 test change::cusum::tests::a_clean_step_is_caught_and_its_start_found ... ok
@@ -75,9 +76,11 @@ test change::cusum::tests::shifts_below_the_drift_never_alarm ... ok
 test detector::tests::finds_one_clean_drop_and_times_it ... ok
 test detector::tests::listens_through_ringing_and_catches_a_second_event ... ok
 test detector::tests::live_and_whole_record_runs_agree_for_any_chunk_sizes ... ok
+test detector::tests::refuses_data_too_slow_to_see_a_wave ... ok
 test detector::tests::refuses_gaps_and_short_series ... ok
 test noise::robust::tests::a_straight_ramp_has_no_noise ... ok
 test noise::robust::tests::median_of_odd_and_even_counts ... ok
+test noise::robust::tests::wander_hides_from_differences_but_not_from_the_trend ... ok
 test onset::step_area::tests::a_ramp_front_is_placed_at_its_centre ... ok
 test onset::step_area::tests::declines_when_the_windows_do_not_fit ... ok
 test onset::step_area::tests::exact_for_a_sharp_step_at_any_phase ... ok
@@ -89,15 +92,16 @@ test supply::tests::a_slam_swinging_back_to_the_floor_still_marks_the_return ...
 test supply::tests::live_in_pieces_gives_the_same_spells ... ok
 test supply::tests::still_empty_at_the_end_is_said ... ok
 
-test result: ok. 21 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.03s
+test result: ok. 23 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.03s
 
      Running unittests src\lib.rs (target\debug\deps\jk_files-abe3646623636d2b.exe)
 
-running 23 tests
+running 28 tests
 test epanet::friction::tests::darcy_weisbach_matches_the_moody_chart ... ok
 test epanet::friction::tests::hazen_williams_gives_the_same_head_loss_at_the_reference_velocity ... ok
 test epanet::friction::tests::manning_gives_the_same_head_loss_at_the_reference_velocity ... ok
 test epanet::operations::tests::times_in_every_epanet_form ... ok
+test epanet::pumps::tests::a_run_out_at_zero_head_is_a_pump ... ok
 test epanet::pumps::tests::many_points_least_squares_recovers_a_quadratic ... ok
 test epanet::pumps::tests::one_point_curve_is_epanets_own ... ok
 test epanet::pumps::tests::rising_heads_are_not_a_pump ... ok
@@ -108,6 +112,8 @@ test epanet::sections::tests::splits_sections_drops_comments_stops_at_end ... ok
 test epanet::units::tests::conversions_match_the_definitions ... ok
 test logger::grid::tests::a_missing_second_splits_the_run_and_repeats_are_dropped ... ok
 test logger::grid::tests::millisecond_timestamps_at_128_per_second_snap_to_128 ... ok
+test logger::grid::tests::scada_every_five_minutes_is_a_regular_clock ... ok
+test logger::table::tests::a_decimal_comma_far_down_the_file_is_seen ... ok
 test logger::table::tests::a_plain_csv_with_a_preamble ... ok
 test logger::table::tests::semicolons_decimal_commas_and_split_date_time ... ok
 test logger::table::tests::values_missing_and_bad ... ok
@@ -116,9 +122,11 @@ test logger::time::tests::the_calendar_is_exact ... ok
 test logger::time::tests::the_usual_logger_formats ... ok
 test logger::units::tests::one_bar_is_about_ten_metres ... ok
 test logger::units::tests::units_from_headers ... ok
+test scada::tests::a_unit_is_never_guessed ... ok
+test scada::tests::l_town_style_flows_with_a_gap ... ok
 test site::tests::zones_ratings_and_ranges ... ok
 
-test result: ok. 23 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+test result: ok. 28 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
 
      Running unittests src\lib.rs (target\debug\deps\jk_health-0684ebb074877a31.exe)
 
@@ -202,7 +210,7 @@ test steady::controls::tests::once_is_once ... ok
 test steady::rules::tests::or_binds_tighter_than_and_as_in_epanet ... ok
 test vapour::tests::the_coast_boils_lower_than_the_highveld ... ok
 
-test result: ok. 68 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.04s
+test result: ok. 68 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.03s
 
      Running unittests src\lib.rs (target\debug\deps\jk_kernel-eccabcc9e10cd5d2.exe)
 
@@ -267,7 +275,7 @@ test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; fini
 
      Running adapters\main.rs (target\debug\deps\adapters-3e16df753ae73996.exe)
 
-running 18 tests
+running 23 tests
 test analytical::epanet::broken_files_are_refused_with_the_line_number ...   refused: line 4: link 'P1' joins unknown node 'B'
   line 4: 'unknown node 'B''                   yes
   refused: line 3: node ID 'A' is used twice
@@ -514,6 +522,150 @@ test analytical::logger::a_typical_export_with_a_gap_an_empty_cell_and_a_step ..
   time zone noted: UTC                         yes
   metadata lines skipped                       yes
 ok
+test datasets::epanet_examples::d1_net1_reads_whole_and_runs_its_day ...   dataset file: data/incoming/epanet-examples/Net1.inp
+  reader's notes (17):
+    - [OPTIONS] not used by the engine: Trials 40, Accuracy 0.001, CHECKFREQ 2, MAXCHECK 10, DAMPLIMIT 0 and 5 more
+    - line 43: pump '9': one-point curve, taken exactly (EPANET's own form); efficiency 75%, 1450 rpm and inertia (Thorley) assumed - they matter only for pump trips [VERIFY]
+    - [ENERGY]: 3 record(s) not used - energy prices and pump efficiency
+    - [QUALITY]: 11 record(s) not used - water quality
+    - [REACTIONS]: 7 record(s) not used - water quality
+    - [REPORT]: 3 record(s) not used - reporting
+    - [LABELS]: 3 record(s) not used - map labels and backdrop
+    - [BACKDROP]: 4 record(s) not used - map labels and backdrop
+    - 1 tank(s) with storage: fixed heads in transients, their level simulated in extended-period runs (cylinders of the given diameter)
+    - 1 pump(s) modelled with their curves, each between two 10.0 m lengths of station pipework (pipes 'ID/suction' and 'ID/discharge')
+    - .inp files carry no wave speeds: every pipe is given 1000 m/s [VERIFY - real wave speeds, by material, are needed to locate bursts well]
+    - Hazen-Williams roughness turned into one Darcy friction factor per pipe, equal head loss at 1.0 m/s: f from 0.0301 to 0.0362
+    - line 118: [TIMES] Quality Timestep 0:05 not used
+    - line 121: [TIMES] Report Timestep 1:00 not used
+    - line 122: [TIMES] Report Start 0:00 not used
+    - line 124: [TIMES] Statistic None not used
+    - 2 control(s) switch pumps and pipes in extended-period runs (by tank level or clock)
+  nodes: the file declares 11, the engine has all but []
+  every node the file declares is in the engine yes
+  pipes: the file declares 12, the engine has all but [] (expected: [])
+  only the expected pipes are left out         yes
+  pumps modelled with their curves: 1 (file: 1); tanks with storage: 1 (file: 1)
+  every pump is modelled                       yes
+  every tank stores water                      yes
+  its own schedule: 24 h in 60-minute steps, 2 event(s)
+ok
+test datasets::epanet_examples::d1_net2_reads_whole_and_runs_its_55_hours ...   dataset file: data/incoming/epanet-examples/Net2.inp
+  reader's notes (16):
+    - [OPTIONS] not used by the engine: Trials 40, Accuracy 0.001, CHECKFREQ 2, MAXCHECK 10, DAMPLIMIT 0 and 5 more
+    - [ENERGY]: 3 record(s) not used - energy prices and pump efficiency
+    - [QUALITY]: 36 record(s) not used - water quality
+    - [SOURCES]: 1 record(s) not used - water quality
+    - [REACTIONS]: 7 record(s) not used - water quality
+    - [REPORT]: 3 record(s) not used - reporting
+    - [LABELS]: 3 record(s) not used - map labels and backdrop
+    - [BACKDROP]: 4 record(s) not used - map labels and backdrop
+    - 1 tank(s) with storage: fixed heads in transients, their level simulated in extended-period runs (cylinders of the given diameter)
+    - .inp files carry no wave speeds: every pipe is given 1000 m/s [VERIFY - real wave speeds, by material, are needed to locate bursts well]
+    - Hazen-Williams roughness turned into one Darcy friction factor per pipe, equal head loss at 1.0 m/s: f from 0.0173 to 0.0345
+    - line 224: [TIMES] Quality Timestep 0:05 not used
+    - line 227: [TIMES] Report Timestep 1:00 not used
+    - line 228: [TIMES] Report Start 0:00 not used
+    - line 230: [TIMES] Statistic None not used
+    - the run's t = 0 is the file's start clock time 08:00; clock-time controls are shifted to match
+  nodes: the file declares 36, the engine has all but []
+  every node the file declares is in the engine yes
+  pipes: the file declares 40, the engine has all but [] (expected: [])
+  only the expected pipes are left out         yes
+  pumps modelled with their curves: 0 (file: 0); tanks with storage: 1 (file: 1)
+  every pump is modelled                       yes
+  every tank stores water                      yes
+  its own schedule: 55 h in 60-minute steps, 0 event(s)
+ok
+test datasets::epanet_examples::d1_net3_reads_whole_and_runs_its_day ...   dataset file: data/incoming/epanet-examples/Net3.inp
+  reader's notes (20):
+    - [OPTIONS] not used by the engine: Trials 40, Accuracy 0.001, CHECKFREQ 2, MAXCHECK 10, DAMPLIMIT 0 and 5 more
+    - line 234: pump '10': three-point curve: a quadratic through the points (EPANET's power law H = A - B Q^1.77 differs by up to 0.12 m between them); efficiency 75%, 1450 rpm and inertia (Thorley) assumed - they matter only for pump trips [VERIFY]
+    - line 235: pump '335': three-point curve: a quadratic through the points (EPANET's power law H = A - B Q^1.09 differs by up to 0.31 m between them); efficiency 75%, 1450 rpm and inertia (Thorley) assumed - they matter only for pump trips [VERIFY]
+    - [ENERGY]: 3 record(s) not used - energy prices and pump efficiency
+    - [REACTIONS]: 7 record(s) not used - water quality
+    - [REPORT]: 3 record(s) not used - reporting
+    - [LABELS]: 2 record(s) not used - map labels and backdrop
+    - [BACKDROP]: 4 record(s) not used - map labels and backdrop
+    - 3 tank(s) with storage: fixed heads in transients, their level simulated in extended-period runs (cylinders of the given diameter)
+    - 2 pump(s) modelled with their curves, each between two 0.3 m lengths of station pipework (pipes 'ID/suction' and 'ID/discharge')
+    - .inp files carry no wave speeds: every pipe is given 1000 m/s [VERIFY - real wave speeds, by material, are needed to locate bursts well]
+    - Hazen-Williams roughness turned into one Darcy friction factor per pipe, equal head loss at 1.0 m/s: f from 0.0063 to 0.0253
+    - 1 closed pipe(s) left out: 330
+    - line 336: [TIMES] Quality Timestep 0:05 not used
+    - line 339: [TIMES] Report Timestep 1:00 not used
+    - line 340: [TIMES] Report Start 0:00 not used
+    - line 342: [TIMES] Statistic None not used
+    - line 297: control not modelled: link '330' is closed in the file and left out of the network
+    - line 298: control not modelled: link '330' is closed in the file and left out of the network
+    - 4 control(s) switch pumps and pipes in extended-period runs (by tank level or clock)
+  nodes: the file declares 97, the engine has all but []
+  every node the file declares is in the engine yes
+  pipes: the file declares 117, the engine has all but ["330"] (expected: ["330"])
+  only the expected pipes are left out         yes
+  a note says why pipe 330 is left out         yes
+  pumps modelled with their curves: 2 (file: 2); tanks with storage: 3 (file: 3)
+  every pump is modelled                       yes
+  every tank stores water                      yes
+  its own schedule: 24 h in 60-minute steps, 15 event(s)
+ok
+test datasets::ltown::d2_ltown_first_week_pump_switches_like_the_published_data ...   dataset file: data/incoming/ltown/L-TOWN.inp
+  dataset file: data/incoming/ltown/2018_SCADA_Flows.csv
+  the first 168 h of 2018 (the model's own run length):
+    switch    engine [h]   published [h]   difference [h]
+     1 off         2.49         2.12         +0.37
+     2 on         17.40        16.21         +1.20
+     3 off        28.63        26.54         +2.08
+     4 on         41.91        39.12         +2.79
+     5 off        52.92        50.04         +2.88
+     6 on         66.10        66.29         -0.19
+     7 off        77.03        75.38         +1.66
+     8 on         90.06        89.29         +0.77
+     9 off       101.10        98.79         +2.31
+    10 on        115.15       115.88         -0.72
+    11 off       125.63       125.04         +0.59
+    12 on        140.51       144.46         -3.95
+    13 off       150.41       152.96         -2.55
+    (only in the engine: on at 163.18 h, near the end of the week)
+  switches: engine 14, readings 13; average difference 1.70 h, largest 3.95 h
+  as many switches, give or take one at the end of the week yes
+  every switch is the same kind (on/off) in the same order yes
+  no switch more than 5 h from the readings    yes
+  2.5 h or less apart on average               yes
+ok
+test datasets::ltown::d2_ltown_reads_whole_with_its_pump_and_tank ...   dataset file: data/incoming/ltown/L-TOWN.inp
+  reader's notes (22):
+    - [OPTIONS] not used by the engine: Trials 50, Accuracy 0.01000000, CHECKFREQ 2, MAXCHECK 10, DAMPLIMIT 0.00000000 and 5 more
+    - [DEMANDS] gives 782 junction(s) several demand categories: their sum is used
+    - line 1709: pump 'PUMP_1': three-point curve: a quadratic through the points (EPANET's power law H = A - B Q^2.00 differs by up to 0.00 m between them); efficiency 75%, 1450 rpm and inertia (Thorley) assumed - they matter only for pump trips [VERIFY]
+    - [ENERGY]: 3 record(s) not used - energy prices and pump efficiency
+    - [REACTIONS]: 7 record(s) not used - water quality
+    - [REPORT]: 3 record(s) not used - reporting
+    - [BACKDROP]: 4 record(s) not used - map labels and backdrop
+    - line 1713: PRV 'PRV-1': holds 75.00 m downstream (elevation of n300 + setting); frozen at its steady opening in transients (its response over seconds is not modelled)
+    - line 1714: PRV 'PRV-2': holds 75.00 m downstream (elevation of n111 + setting); frozen at its steady opening in transients (its response over seconds is not modelled)
+    - line 1715: PRV 'PRV-3': holds 41.11 m downstream (elevation of n226 + setting); frozen at its steady opening in transients (its response over seconds is not modelled)
+    - 1 tank(s) with storage: fixed heads in transients, their level simulated in extended-period runs (cylinders of the given diameter)
+    - 3 control valve(s) modelled, each between two 4.5 m lengths of pipe of its own diameter (pipes 'ID/in' and 'ID/out')
+    - 1 pump(s) modelled with their curves, each between two 4.5 m lengths of station pipework (pipes 'ID/suction' and 'ID/discharge')
+    - .inp files carry no wave speeds: every pipe is given 1000 m/s [VERIFY - real wave speeds, by material, are needed to locate bursts well]
+    - Hazen-Williams roughness turned into one Darcy friction factor per pipe, equal head loss at 1.0 m/s: f from 0.0182 to 0.0299
+    - line 4800: [TIMES] Quality Timestep 0:05 not used
+    - line 4803: [TIMES] Report Timestep 0:05 not used
+    - line 4804: [TIMES] Report Start 0:00 not used
+    - line 4806: [TIMES] Statistic NONE not used
+    - default pattern '1' (option PATTERN) is not defined: junctions without a pattern of their own keep a constant demand, as in EPANET
+    - 561 engine junction(s) combine demands that follow different patterns (demand categories, or junctions joined through a valve): each pattern drives its share of the demand, as in EPANET
+    - 2 control(s) switch pumps and pipes in extended-period runs (by tank level or clock)
+  the file declares 785 nodes and 905 pipes; missing in the engine: 0 nodes, 0 pipes
+  782 junctions + 2 reservoirs + 1 tank declared yes
+  905 pipes declared                           yes
+  every node and pipe is in the engine         yes
+  the pump is modelled with its curve (FN-045: it ends at zero head) yes
+  the tank stores water                        yes
+  both controls act on the pump                yes
+  the three PRVs are modelled                  yes
+ok
 test simulation::logger_files::a_burst_recorded_in_logger_files_raises_one_alarm_in_the_right_place ... Wrote 3 logger exports to C:\Users\HP\Desktop\joukowsky\target\tmp\logger_files
   S1 gatehouse: 1280 samples at 128 S/s from 2026-09-29T10:15:00.000Z, 1 run(s)
   S2 north block: 1280 samples at 128 S/s from 2026-09-29T10:15:00.004Z, 1 run(s)
@@ -594,11 +746,100 @@ test simulation::site_file::vs11_a_site_file_with_a_mistake_is_refused_with_its_
     a doubt that is not a share: refused, with its line yes
 ok
 
-test result: ok. 18 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.36s
+test result: ok. 23 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 69.21s
 
      Running balance\main.rs (target\debug\deps\balance-a2825c7f967d1b14.exe)
 
-running 3 tests
+running 4 tests
+test datasets::ltown_leaks::d2_ltown_two_years_of_night_flows_against_the_true_leaks ...   dataset file: data/incoming/ltown/2018_SCADA_Flows.csv
+  dataset file: data/incoming/ltown/2019_SCADA_Flows.csv
+  dataset file: data/incoming/ltown/2018_SCADA_Levels.csv
+  dataset file: data/incoming/ltown/2019_SCADA_Levels.csv
+  dataset file: data/incoming/ltown/2018_Leakages.csv
+  dataset file: data/incoming/ltown/2019_Leakages.csv
+  dataset file: data/incoming/ltown/dataset_configuration.yaml
+  the readings start at 2018-01-01 00:00       yes
+  730 nights (2018-2019), night flow 02:00-04:00; baseline 66.0 m3/h, night-to-night spread 6.02 m3/h
+  weekly profile found (m3/h from the baseline, Mon..Sun): -10.4 -6.8 -5.0 -6.5 +11.1 +17.9 -0.2
+  the smallest leak this spread lets the watch catch within a week: 8.2 m3/h
+  the watch raised 18 alarm(s):
+    #  rise from   raised on   size [m3/h]      true leak(s) begun since the last alarm, running at the rise
+    1  2018-02-01  2018-02-04   18.1 +/-  3.2   p257 (7 m3/h), p461 (31 m3/h), p232 (26 m3/h)
+    2  2018-03-06  2018-03-08   34.4 +/-  3.7   p427 (5 m3/h), p673 (28 m3/h)
+    3  2018-04-30  2018-05-10    7.3 +/-  2.1   p628 (35 m3/h)
+    4  2018-05-25  2018-05-27   47.9 +/-  3.8   p538 (33 m3/h)
+    5  2018-07-05  2018-07-16    7.6 +/-  2.1   p31 (16 m3/h), p654 (5 m3/h)
+    6  2018-07-31  2018-08-07   10.4 +/-  2.4   p810 (7 m3/h)
+    7  2018-10-05  2018-10-08   15.1 +/-  3.2   p158 (25 m3/h)
+    8  2019-01-13  2019-01-18   11.8 +/-  2.7   p523 (28 m3/h)
+    9  2019-03-17  2019-03-21   14.1 +/-  2.9   p280 (5 m3/h), p653 (18 m3/h)
+   10  2019-04-06  2019-04-08   28.8 +/-  3.7   p710 (6 m3/h), p514 (16 m3/h)
+   11  2019-04-23  2019-04-29   14.6 +/-  2.6   p331 (11 m3/h)
+   12  2019-06-13  2019-06-16   24.6 +/-  3.3   p193 (10 m3/h), p277 (7 m3/h), p142 (27 m3/h)
+   13  2019-07-07  2019-07-09   23.1 +/-  3.7   none - a FALSE alarm
+   14  2019-08-17  2019-08-21   16.6 +/-  2.9   p680 (5 m3/h), p586 (21 m3/h), p721 (13 m3/h), p800 (22 m3/h)
+   15  2019-09-05  2019-09-09   23.8 +/-  3.0   none - a FALSE alarm
+   16  2019-11-02  2019-11-05   20.0 +/-  3.2   p123 (9 m3/h), p455 (11 m3/h), p762 (16 m3/h), p426 (14 m3/h)
+   17  2019-11-24  2019-12-01   13.7 +/-  2.4   p879 (11 m3/h)
+   18  2019-12-22  2019-12-30    7.8 +/-  2.3   none - a FALSE alarm
+  the watch saw 11 lasting fall(s) - a repair, or less use:
+    from 2018-03-24  raised 2018-03-26  -20.4 m3/h   p673 repaired 2018-03-23
+    from 2018-04-10  raised 2018-04-13  -14.2 m3/h   no repair within 7 days
+    from 2018-06-11  raised 2018-06-13  -26.1 m3/h   p866 repaired 2018-06-12
+    from 2018-08-23  raised 2018-09-04   -7.8 m3/h   no repair within 7 days
+    from 2018-11-08  raised 2018-11-11  -18.3 m3/h   p369 repaired 2018-11-08
+    from 2018-11-26  raised 2018-12-11   -5.5 m3/h   no repair within 7 days
+    from 2019-02-04  raised 2019-02-08  -16.6 m3/h   p523 repaired 2019-02-01, p827 repaired 2019-02-07
+    from 2019-05-14  raised 2019-05-18  -15.2 m3/h   no repair within 7 days
+    from 2019-07-24  raised 2019-07-26  -26.4 m3/h   p142 repaired 2019-07-17
+    from 2019-09-25  raised 2019-09-27  -20.3 m3/h   p800 repaired 2019-10-01
+    from 2019-10-14  raised 2019-10-18  -11.4 m3/h   no repair within 7 days
+  the true leaks:
+    pipe   starts       kind       peak [m3/h]   caught after [days]
+    p257   2018-01-08  growing       6.9        27
+    p461   2018-01-23  growing      30.5        12
+    p232   2018-01-31  growing      26.1        4
+    p427   2018-02-13  growing       5.1        23
+    p673   2018-03-05  abrupt       28.4        2
+    p810   2018-07-28  growing       6.9        10
+    p628   2018-05-02  growing      35.4        7
+    p538   2018-05-18  abrupt       32.8        9
+    p866   2018-06-01  abrupt       20.6        not caught
+    p31    2018-06-28  growing      16.2        18
+    p654   2018-07-05  growing       5.5        11
+    p183   2018-08-07  abrupt       16.5        not caught
+    p158   2018-10-06  abrupt       24.8        2
+    p369   2018-10-26  abrupt       21.1        not caught
+    p523   2019-01-15  abrupt       28.4        2
+    p827   2019-01-24  abrupt       26.5        not caught
+    p280   2019-02-10  abrupt        5.3        39
+    p653   2019-03-03  growing      18.3        18
+    p710   2019-03-24  abrupt        5.6        14
+    p514   2019-04-02  abrupt       15.6        5
+    p331   2019-04-20  abrupt       10.9        9
+    p193   2019-05-19  growing      10.4        28
+    p277   2019-05-30  growing       7.4        16
+    p142   2019-06-12  abrupt       27.0        3
+    p680   2019-07-10  abrupt        5.4        42
+    p586   2019-07-26  growing      20.5        25
+    p721   2019-08-02  growing      13.2        19
+    p800   2019-08-16  growing      21.9        4
+    p123   2019-09-13  growing       9.2        52
+    p455   2019-10-03  growing      11.1        32
+    p762   2019-10-09  growing      15.7        27
+    p426   2019-10-25  abrupt       13.6        11
+    p879   2019-11-20  growing      10.9        11
+  scored (33 leaks; 18 of them reach 15 m3/h or more):
+    caught within a week    7 of all,  7 of the big ones
+    caught within a month  25 of all, 14 of the big ones
+    caught at all          29 of all, 14 of the big ones
+    false alarms    3
+  longest silence: 102 days from 2018-10-08, while 1 big leak(s) began and were repaired unseen
+  20 or more of the 33 leaks caught within a month yes
+  5 false alarms or fewer in two years         yes
+  no silence over 120 days while a big leak comes and goes yes
+  repairs are seen: 5 or more falls            yes
+ok
 test simulation::night_watch::a_one_litre_per_second_leak_is_caught_dated_and_sized ... Night flow baseline 2.54 l/s, nights vary by 0.29 l/s; a week catches leaks over 0.40 l/s
   leak from mid-day 45: first night 46 (the night of day 46), alarm night 48, size 0.99 +/- 0.18 l/s
   dated to the first night after it began (day 46) yes
@@ -606,20 +847,20 @@ test simulation::night_watch::a_one_litre_per_second_leak_is_caught_dated_and_si
   size within 2 uncertainties of 1 l/s         yes
   one alarm, no echoes                         yes
 ok
-test simulation::night_watch::false_alarms_are_rare_on_a_zone_without_leaks ... 200 zones x 90 days, no leak: 21 false alarm(s) in 12400 watched nights - one every 590 nights
+test simulation::night_watch::false_alarms_are_rare_on_a_zone_without_leaks ... 200 zones x 90 days, no leak: 22 false alarm(s) in 12400 watched nights - one every 564 nights
   fewer than one false alarm a year per zone   yes
 ok
 test simulation::night_watch::the_detection_curve_matches_the_cusum_arithmetic ... Night spread 0.386 l/s: the arithmetic says leaks over 0.523 l/s show within a week.
-  leak 0.26 l/s (0.5 x the arithmetic): caught within a week in 25 of 100 zones
+  leak 0.26 l/s (0.5 x the arithmetic): caught within a week in 24 of 100 zones
   leak 0.52 l/s (1 x the arithmetic): caught within a week in 75 of 100 zones
-  leak 0.79 l/s (1.5 x the arithmetic): caught within a week in 94 of 100 zones
-  leak 1.05 l/s (2 x the arithmetic): caught within a week in 95 of 100 zones
+  leak 0.79 l/s (1.5 x the arithmetic): caught within a week in 93 of 100 zones
+  leak 1.05 l/s (2 x the arithmetic): caught within a week in 94 of 100 zones
   more leak, more often caught                 yes
   twice the arithmetic's size: caught 90%+ of the time yes
   at the arithmetic's size: caught at least a third of the time yes
 ok
 
-test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.33s
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 14.00s
 
      Running channels\main.rs (target\debug\deps\channels-ce85841cd8c293e6.exe)
 
@@ -708,7 +949,7 @@ test simulation::feed::when_the_canal_stops_the_sump_runs_down_and_the_town_runs
     the sump's change = in - drawn, within 1.27% of the water drawn (draw read every 5 min) yes
 ok
 
-test result: ok. 11 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 12.26s
+test result: ok. 11 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 11.73s
 
      Running classification\main.rs (target\debug\deps\classification-a56e11395e341787.exe)
 
@@ -891,11 +1132,11 @@ test simulation::scenarios::power_data_settles_the_slow_burst ... The same slow 
   burst                                        yes
 ok
 
-test result: ok. 11 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.31s
+test result: ok. 11 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.27s
 
      Running detection\main.rs (target\debug\deps\detection-81d94b53f3b9f2e6.exe)
 
-running 10 tests
+running 11 tests
 test analytical::delay::delay_follows_the_cusum_formula ... Sharp drops at t = 3 s, noise-free signal with a 2 cm noise floor set:
       5 noise units (0.10 m): alarm after 6 samples (formula 6)
     delay matches floor(h / (d - k)) + 1       yes
@@ -946,6 +1187,52 @@ test analytical::sensitivity::the_smallest_step_the_detector_catches_and_times .
   5 sd: caught at least 95% of the time        yes
   6 sd and more: always caught                 yes
 ok
+test datasets::tamu_valve::d3_a_real_valve_closure_seen_by_128_per_second_loggers ...   run     sensor  noise [m]  events: arrival [s] (step [m], rise/drop)
+  dataset file: data/incoming/../datasets/tamu-testbed/BR_NL_Transient_P1.csv
+  BR_NL   P1      0.0375    22.934 (+0.476, rise)
+  dataset file: data/incoming/../datasets/tamu-testbed/BR_NL_Transient_P2.csv
+  BR_NL   P2      0.0069    20.658 (+0.397, rise)
+  dataset file: data/incoming/../datasets/tamu-testbed/BR_OL_Transient_P1.csv
+  BR_OL   P1      0.0812    22.638 (+0.581, rise)
+  dataset file: data/incoming/../datasets/tamu-testbed/BR_OL_Transient_P2.csv
+  BR_OL   P2      0.0164    19.994 (+0.557, rise)
+  dataset file: data/incoming/../datasets/tamu-testbed/BR_CC_Transient_P1.csv
+  BR_CC   P1      0.0973    22.827 (+0.603, rise)
+  dataset file: data/incoming/../datasets/tamu-testbed/BR_CC_Transient_P2.csv
+  BR_CC   P2      0.0111    20.438 (+0.419, rise)  25.218 (+0.037, rise)
+  dataset file: data/incoming/../datasets/tamu-testbed/BR_LC_Transient_P1.csv
+  BR_LC   P1      0.0928    22.866 (+0.616, rise)
+  dataset file: data/incoming/../datasets/tamu-testbed/BR_LC_Transient_P2.csv
+  BR_LC   P2      0.0150    20.493 (+0.458, rise)  22.997 (+0.048, rise)  26.882 (+0.049, rise)
+  dataset file: data/incoming/../datasets/tamu-testbed/BR_GL_Transient_P1.csv
+  BR_GL   P1      0.0793    25.024 (+0.544, rise)
+  dataset file: data/incoming/../datasets/tamu-testbed/BR_GL_Transient_P2.csv
+  BR_GL   P2      0.0148    21.196 (+0.434, rise)
+  dataset file: data/incoming/../datasets/tamu-testbed/LO_NL_Transient_P1.csv
+  LO_NL   P1      0.0171    none
+  dataset file: data/incoming/../datasets/tamu-testbed/LO_NL_Transient_P2.csv
+  LO_NL   P2      0.0110    19.265 (+0.379, rise)
+  dataset file: data/incoming/../datasets/tamu-testbed/LO_OL_Transient_P1.csv
+  LO_OL   P1      0.0952    19.970 (+0.645, rise)
+  dataset file: data/incoming/../datasets/tamu-testbed/LO_OL_Transient_P2.csv
+  LO_OL   P2      0.0116    17.522 (+0.227, rise)  19.544 (+0.037, rise)
+  dataset file: data/incoming/../datasets/tamu-testbed/LO_CC_Transient_P1.csv
+  LO_CC   P1      0.0156    23.547 (-0.096, drop)
+  dataset file: data/incoming/../datasets/tamu-testbed/LO_CC_Transient_P2.csv
+  LO_CC   P2      0.0179    20.866 (+0.302, rise)
+  dataset file: data/incoming/../datasets/tamu-testbed/LO_LC_Transient_P1.csv
+  LO_LC   P1      0.0177    none
+  dataset file: data/incoming/../datasets/tamu-testbed/LO_LC_Transient_P2.csv
+  LO_LC   P2      0.0207    19.802 (+0.490, rise)
+  dataset file: data/incoming/../datasets/tamu-testbed/LO_GL_Transient_P1.csv
+  LO_GL   P1      0.0191    none
+  dataset file: data/incoming/../datasets/tamu-testbed/LO_GL_Transient_P2.csv
+  LO_GL   P2      0.0167    17.365 (+0.386, rise)  19.019 (+0.077, rise)
+  the far sensor saw the closure in 10 of 10 runs
+  P2 sees the valve closure as a rise near 20 s in every run yes
+  fronts reported before 16 s (nothing happens then): []
+  no false front in the quiet first 16 s of any recording yes
+ok
 test simulation::burst_location::vs1_burst_located_from_128_samples_per_second_loggers ... DN150 main at rest (60 m); 10 mm hole opens at t = 2.0 s, 700 m from S1.
 Loggers: 128 S/s, integrating, random clock phase, 2 cm noise:
   S1: noise learned 0.0190 m, arrival 2.69958 s (+/- 0.16 ms), step -4.483 m, alarm 8.0 ms later
@@ -967,7 +1254,7 @@ test simulation::burst_location::vs1_location_error_versus_sampling_rate_and_noi
   128 S/s with 2 cm noise locates to under 1 m RMS yes
 ok
 
-test result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 2.91s
+test result: ok. 11 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 89.67s
 
      Running health\main.rs (target\debug\deps\health-c1dfc12b2c8dfb16.exe)
 
@@ -1593,7 +1880,7 @@ test invariants::steady_state::an_undisturbed_pipe_stays_steady ... Steady state
   valve holds steady                           yes
 ok
 
-test result: ok. 68 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 21.12s
+test result: ok. 68 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 18.23s
 
      Running kernel\main.rs (target\debug\deps\kernel-84f06cfc922db1e0.exe)
 
@@ -1709,7 +1996,7 @@ Recommended 6 (after swaps): a1 block A1, c1 block C1, b1 block B1, c2 block C2,
     B-b2               90 m   typical region  155 m
     C-c1              150 m   typical region   20 m
     C-c2              220 m   typical region   25 m
-  (advice took 4 s on this machine)
+  (advice took 3 s on this machine)
 Would a sudden 1 l/s burst be felt? By at least one logger on 100% of the pipe, by two (so located) on 100%. Smallest burst locatable anywhere on each pipe (upper bound: no plastic-wall damping yet):
     R-M connection     0.09 l/s
     M-A ring           0.04 l/s
@@ -1955,7 +2242,7 @@ test simulation::valve_fronts::a_shut_prv_passes_no_wave_and_no_route ... A seco
     and no route from S1 reaches the zone: the locator cannot place a burst there from S1 yes
 ok
 
-test result: ok. 32 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 80.70s
+test result: ok. 32 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 74.49s
 
      Running pipeline\main.rs (target\debug\deps\pipeline-9c399a325a10643c.exe)
 
@@ -2615,7 +2902,7 @@ test simulation::supply_cut::vs9_a_supply_cut_is_raised_once_and_revised_when_th
   because: supply back everywhere it was lost
   -> sent when the data had reached t = 461.00 s
 [Warning] #3 REFILL (100% confident) at t = 459.6 s
-  where: T-S2 north branch at 101.0 m from its start; 90% within 36 m of pipe
+  where: T-S2 north branch at 102.8 m from its start; 90% within 38 m of pipe
     T-S2 north branch    100.0%
     T-S3 south branch      0.0%
     S1-T spine             0.0%
@@ -2917,7 +3204,7 @@ test simulation::valves_by_hour::at_noon_the_valve_is_active_and_both_loggers_lo
     and it is not dismissed                    yes
 ok
 
-test result: ok. 22 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 193.96s
+test result: ok. 22 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 171.47s
 
    Doc-tests jk_application
 
@@ -2998,9 +3285,9 @@ running 0 tests
 test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
 
 ==============================================================================
-  passed   355
+  passed   369
   failed   0
   skipped  0 slow test(s) not in this suite
   filtered 0 test(s) outside -Only/-Filter
-  time     342.9 s (including compile)
+  time     474.7 s (including compile)
   result   ALL PASSED

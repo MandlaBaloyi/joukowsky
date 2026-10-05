@@ -41,6 +41,11 @@ pub struct Night {
     pub flow: f64,
     /// Readings used.
     pub readings: usize,
+    /// Day of the week of the night's local date, Monday 0 to Sunday 6
+    /// (the series' times are seconds since 1970-01-01 UTC, a Thursday).
+    /// Nights differ by weekday: L-Town's weekend nights use 10-25 m3/h
+    /// more than its weeknights (FN-048).
+    pub weekday: u8,
 }
 
 /// The night flow of every night the series covers (whole windows only).
@@ -84,10 +89,13 @@ pub fn night_flows(series: &Series, window: NightWindow) -> Result<Vec<Night>, B
             } else {
                 f64::NAN
             };
+            #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)] // 0..7
+            let weekday = (((midnight + offset) / DAY).round() + 3.0).rem_euclid(7.0) as u8;
             out.push(Night {
                 start: Time::new(a),
                 flow,
                 readings: present.len(),
+                weekday,
             });
         }
         midnight += DAY;
@@ -115,6 +123,8 @@ mod tests {
         // 02:00-04:00: hours 2 and 3, four readings each: mean 2.5.
         assert!((nights[0].flow - 2.5).abs() < 1e-12);
         assert_eq!(nights[0].readings, 8);
+        // 1_790_632_800 s + 2 h is local midnight of 2026-09-29, a Tuesday.
+        assert_eq!((nights[0].weekday, nights[1].weekday), (1, 2));
     }
 
     #[test]

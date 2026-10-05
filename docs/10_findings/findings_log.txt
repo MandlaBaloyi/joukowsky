@@ -558,7 +558,13 @@ FN-047  2026-10-05  Real noise wanders; the detector learns only its jitter
       4 of 5 runs;
     - inlet sensor P1, beside the pump (31-97 mm noise): seen 2-5 s LATER
       than P2 on the branched rig, missed or seen as a drop on the looped
-      rig. Seconds of error would wreck a location;
+      rig. CORRECTED the same night: not the detector - P1 and P2 were
+      recorded as separate files started at different moments (each
+      run's two files differ in length by up to 3.6 s), so they share no
+      clock; the 0.25 s means show P1's pulse itself 2.25-2.5 s after
+      P2's. This dataset can test detection, not location. On the looped
+      rig P1's recordings show almost nothing of the closure (its own
+      matter, not the detector's);
     - looped rig, P2: 7-17 false "fronts" of 1-4 cm per 37 s run, and
       twice a false one just before the closure left the sensor deaf
       when the real event came (LO_NL, LO_LC).
@@ -571,7 +577,21 @@ FN-047  2026-10-05  Real noise wanders; the detector learns only its jitter
   the detector judges steps on (the spread of what the CUSUM sums, around
   the baseline forecast), and re-check on these 20 runs.
   Also: the files hold 25 600 readings a second, not the paper's
-  51.2 kHz (36-37 s per run, not 30 s) - the file wins.
+  51.2 kHz (36-37 s per run, not 30 s) - the file wins. One file
+  (LO_OL_Transient_P2) has 1 048 572 readings: Excel's row limit - it was
+  saved through Excel and cut short. And the closure is a PULSE (up
+  0.8-1.0 m within 0.5 s, then below the start, recovering over seconds),
+  not a held step - the closure itself, or the recorder's own filtering
+  of slow change [VERIFY: NI-9234 input coupling].
+  FIXED the same night (event_detection.txt section 7): the noise unit
+  is now the larger of the jitter and the spread about the window's
+  trend, learned at calibration and again over every 10 s of quiet
+  watching, falling at most by half at a time. Two wrong turns on the
+  way, both caught by tests: the spread about the BASELINE took a
+  refilling pipe's ramp for noise (V-S6 failed); learning again from
+  2 s caught a calm patch and the wander's return made false fronts.
+  Result: the closure seen by the far sensor in 10 of 10 runs, no front
+  in the quiet first 16 s of any of the 20 recordings (was 7-17 a run).
 
 FN-048  2026-10-05  The leak watch went blind for 11 months after a repair
   L-Town's two years (BattLeDIM; tests/balance/datasets/ltown_leaks.rs):
@@ -591,3 +611,42 @@ FN-048  2026-10-05  The leak watch went blind for 11 months after a repair
   smallest leak catchable in a week is about 15 m3/h - small leaks (5-10
   m3/h) need smaller zones (district metered areas) or the pressure
   sensors, not one town-wide balance.
+  FIXED the same night (slow_leaks_and_water_balance.txt, "Revised on
+  real data"): weekly profile, seasons followed, two-sided (repairs
+  seen), step-and-settle after a change, one night capped at 3 spreads.
+  On the way, each idea measured: the weekly profile alone - 59 alarms,
+  31 false, nearly all raised on a Monday after a wild weekend night;
+  the cap - 40 alarms, 17 false; stepping by the alarm's own size made
+  the watch ping-pong (simulation: one false alarm per 250 nights, the
+  test wants over 365) - settling the level over 14 nights fixed it
+  (564). Final: 18 alarms, 3 false; 25 of 33 leaks within a month (was
+  12), 7 within a week (was 3); 11 repairs seen; longest silence 102
+  days (was 341). Several false alarms on the way fell on Cyprus's
+  holidays (Orthodox Easter 2018 and 2019, Pentecost Monday 2019): a
+  holiday looks like a leak - a calendar as context is next (G-24).
+
+FN-049  2026-10-05  A decimal comma 18 000 rows down was not seen
+  The new SCADA reader (crates/adapters/files/src/scada.rs, for flow and
+  level tables) read L-Town's leak flows as 0 for five leaks. The shared
+  table reader (logger/table.rs) decided "decimal comma or not" from the
+  first 50 data rows - and L-Town's leak file begins with thousands of
+  rows of plain zeros, so "28,4" further down became unreadable (kept as
+  a gap and counted in a note, but wrong). A pressure logger export that
+  starts with whole numbers would fall into the same trap. Now the whole
+  file is looked at (the scan stops at the first comma number). Lesson:
+  never decide a file's format from its first rows alone.
+
+FN-050  2026-10-05  A refill's slam is not picked as a front
+  Found while fixing FN-047: V-S6 (a drained main refilling) failed when
+  the noise unit was learned a little better. Its refill alert came from
+  a 6.3 cm first rise at 121 s - about 3.2 noise units, at the edge -
+  and the SLAM at the end of the refill (the dangerous part) was never
+  picked as a front, before tonight either: the detector alarmed on every
+  sample and the front picker declined each as "a swing with no step
+  behind it" (onset/step_area.rs needs a lasting step between the levels
+  before and after). The noise rule now keeps white noise's unit exactly
+  as before (the wander measure is used only above 1.5 x the jitter, a
+  re-learned unit only adopted when it moves by more than 25%), so V-S6
+  passes as it did - but on luck at the edge. Open (G-23): a short, sharp
+  surge with no lasting step - a refill slam, a valve slammed and
+  reopened - must be reported as an event in its own right.

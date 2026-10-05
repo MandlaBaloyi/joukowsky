@@ -18,6 +18,7 @@ const RELEASE_PER_WINDOW: f64 = 0.5;
 #[derive(Debug, Clone, PartialEq)]
 pub(super) struct Floor {
     sigma: f64,
+    band_units: f64,
     band: f64,
     ring_units: f64,
     settle: usize,
@@ -33,6 +34,7 @@ impl Floor {
     pub(super) fn new(sigma: f64, settle: usize, config: &DetectorConfig) -> Self {
         Self {
             sigma,
+            band_units: config.settle_band,
             band: config.settle_band * sigma,
             ring_units: config.ring_units,
             settle,
@@ -41,6 +43,15 @@ impl Floor {
             scale: sigma,
             next_check: usize::MAX,
         }
+    }
+
+    /// A newly learned sensor noise. While quiet the floor is the noise;
+    /// while ringing it stays at least the noise.
+    pub(super) fn set_sigma(&mut self, sigma: f64) {
+        let quiet = self.next_check == usize::MAX;
+        self.sigma = sigma;
+        self.band = self.band_units * sigma;
+        self.scale = if quiet { sigma } else { self.scale.max(sigma) };
     }
 
     /// Re-measures on `window`, the settle window ending before sample
