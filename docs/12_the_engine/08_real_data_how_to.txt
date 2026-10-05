@@ -25,13 +25,30 @@ on GitHub.)
 
 2. In the viewer: pictures
 ------------------------------------------------------------------------
-    .\target\release\jk view --network data\incoming\ltown\L-TOWN.inp --recording data\incoming\ltown\2018_SCADA_Levels.csv --unit m
+    .\target\release\jk view --real --network data\incoming\ltown\L-TOWN.inp
     start jk-view.html
   The first command WRITES the page; the second opens it in the browser.
   (Opened in VS Code, it shows the page's code instead.)
 
-  Two groups at the bottom of the menu are the REAL data; every other
-  page is the simulated demonstration (see "About the data" there).
+  --real (2026-10-05) adds the menu group REAL DATA: every dataset on
+  this machine run through the engine, its answers next to the truth
+  (each number is also checked by a test in tests/*/datasets/):
+    A real valve closure   the Texas A&M testbed's 20 recordings as a
+                           128-a-second logger would have them, the fronts
+                           the detector picked marked; a table per run;
+                           what the data cannot show (no shared clock).
+    L-Town: a week         the engine's week from the model alone next to
+                           the published readings: the pump's switches,
+                           the tank's level, pressures at three sensors;
+                           all 33 sensors 0.10 m apart on average.
+    L-Town: two years      the night watch against the 33 true leaks: the
+                           night flows with the alarms, the evidence with
+                           the repairs seen, every alarm and every leak.
+  A dataset not on this computer: its page says which file is missing.
+
+  Two more groups show your own files (--network, and --recording FILE
+  --unit U for a logger export); every other page is the simulated
+  demonstration (see "About the data" there).
     NETWORK FILE > Map and notes
       L-Town drawn from the file's own coordinates: the blue lines are the
       905 pipes (hover for size), R1 and R2 the reservoirs that feed it,
@@ -43,9 +60,7 @@ on GitHub.)
       town drawing it down). Drag across the chart to zoom. A card says
       the readings are too slow to see a wave, so none is looked for
       (FN-046).
-  Not there yet: nothing moves (no event is played out on L-Town in the
-  viewer); the engine's answers next to the truth (only in the test log,
-  section 3); dates on the time axis (it counts seconds).
+  (A recording file's time axis counts seconds from its first reading.)
 
 3. The engine against the published truth
 ------------------------------------------------------------------------

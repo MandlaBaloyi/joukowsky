@@ -124,7 +124,7 @@ and build once: `cargo build --release -p jk-cli`. Then:
 | Read a network map, run its day or week | `.\target\release\jk network data\incoming\ltown\L-TOWN.inp` |
 | The same for an EPANET example | `.\target\release\jk network data\incoming\epanet-examples\Net3.inp` |
 | Read a recording file | `.\target\release\jk logger data\incoming\ltown\2018_SCADA_Levels.csv --unit m` |
-| See it all in the viewer | `.\target\release\jk view --network data\incoming\ltown\L-TOWN.inp --recording data\incoming\ltown\2018_SCADA_Levels.csv --unit m`, then open `jk-view.html` |
+| See the engine next to the truth | `.\target\release\jk view --real --network data\incoming\ltown\L-TOWN.inp`, then `start jk-view.html`: the menu group **Real data** |
 
 `--unit m` is needed because L-Town's files do not name their units in
 the column headings, and the engine never guesses units. In the viewer,

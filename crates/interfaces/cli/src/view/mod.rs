@@ -17,6 +17,7 @@ mod charts;
 mod health_model;
 mod model;
 mod pages;
+mod real_model;
 mod shell;
 mod supply_model;
 mod svg;
@@ -37,6 +38,8 @@ pub const USAGE: &str = "
     --recording FILE      also show a logger export (CSV); repeat for more files
     --unit UNIT           unit for recording columns that name none (bar, kPa, psi, m)
     --month-first         read dates like 01/02/2026 as 2 January
+    --real                also show the REAL data in ./data (data/README.md):
+                          the engine next to what really happened
 ";
 
 /// What `jk view` was asked for.
@@ -47,6 +50,7 @@ pub struct Args {
     network: Option<PathBuf>,
     recordings: Vec<PathBuf>,
     csv: jk_files::logger::CsvOptions,
+    real: Option<PathBuf>,
 }
 
 /// Reads the options after `view`.
@@ -61,10 +65,12 @@ pub fn parse(mut it: impl Iterator<Item = String>) -> Result<Args, String> {
         network: None,
         recordings: Vec::new(),
         csv: jk_files::logger::CsvOptions::default(),
+        real: None,
     };
     while let Some(flag) = it.next() {
         match flag.as_str() {
             "--no-placement" => a.placement = false,
+            "--real" => a.real = Some(PathBuf::from("data")),
             "--out" => a.out = PathBuf::from(it.next().ok_or("--out needs a file name")?),
             "--recording" => a.recordings.push(PathBuf::from(
                 it.next().ok_or("--recording needs a file name")?,
@@ -200,6 +206,29 @@ pub fn run(a: &Args) -> Result<(), String> {
         items: vec![item("health", "Fatigue loading", None)],
     });
     pages.push(pages::health::page(&health));
+    let real = a.real.as_ref().map(|dir| {
+        eprintln!(
+            "jk view: running the real data in {} through the engine...",
+            dir.display()
+        );
+        real_model::RealModel::run(dir)
+    });
+    if let Some(r) = &real {
+        nav.push(NavGroup {
+            heading: "Real data",
+            site: None,
+            items: vec![
+                item("real-lab", "A real valve closure", None),
+                item("real-town", "L-Town: a week", None),
+                item(
+                    "real-leaks",
+                    "L-Town: two years of leaks",
+                    r.leaks.as_ref().ok().map(|l| l.watch.alarms.len()),
+                ),
+            ],
+        });
+        pages.extend(pages::real::pages(r));
+    }
     nav.push(NavGroup {
         heading: "Help",
         site: None,
@@ -214,6 +243,21 @@ pub fn run(a: &Args) -> Result<(), String> {
         ("pumpday", pages::supply::pump_records(&pump_day)),
         ("night", pages::leaks::records(&night)),
         ("health", pages::health::records(&health)),
+        (
+            "lab",
+            real.as_ref()
+                .map_or_else(Vec::new, pages::real::lab_records),
+        ),
+        (
+            "town",
+            real.as_ref()
+                .map_or_else(Vec::new, pages::real::town_records),
+        ),
+        (
+            "leaks",
+            real.as_ref()
+                .map_or_else(Vec::new, pages::real::leak_records),
+        ),
     ]);
     let html = shell::document(&nav, &pages, &data);
     std::fs::write(&a.out, html).map_err(|e| format!("cannot write {}: {e}", a.out.display()))?;
