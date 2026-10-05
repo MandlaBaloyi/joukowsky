@@ -40,6 +40,14 @@ use crate::change::{Cusum, CusumConfig};
 use crate::error::{DetectionError, positive};
 use crate::onset::OnsetConfig;
 
+/// The longest sampling interval the detector accepts [s]: Tier 1, one
+/// sample a second, with 1% for a drifting logger clock. Slower data (Tier
+/// 0, SCADA at 1-15 min) cannot show a wave, which crosses a site in
+/// seconds; a pump switching between two readings would look like a front
+/// (FN-046, found on L-Town's 5-minute data). Tiers:
+/// `docs/03_sensing_and_signal/data_source_requirements.txt` section 1.
+pub const SLOWEST_INTERVAL: f64 = 1.01;
+
 /// One sensor's samples. Sample k is the average over the interval ending
 /// at `start + k * interval` (how integrating loggers report).
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -277,6 +285,24 @@ mod tests {
             "{}",
             e.arrival
         );
+    }
+
+    #[test]
+    fn refuses_data_too_slow_to_see_a_wave() {
+        // SCADA every 5 minutes (L-Town, BattLeDIM 2020): no fronts looked
+        // for (P2). One a second (Tier 1) is still watched.
+        let det = Detector::new(DetectorConfig::default()).unwrap();
+        let x = vec![3.5; 600];
+        let slow = Series {
+            samples: &x,
+            start: Time::ZERO,
+            interval: Time::new(300.0),
+        };
+        assert!(matches!(
+            det.run(&slow),
+            Err(DetectionError::TooSlow { interval, .. }) if (interval - 300.0).abs() < 1e-12
+        ));
+        assert!(det.stream(Time::ZERO, Time::new(1.0)).is_ok());
     }
 
     #[test]

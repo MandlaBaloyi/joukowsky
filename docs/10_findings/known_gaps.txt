@@ -116,6 +116,10 @@ G-10  Large networks                                       IN PROGRESS
   (zones); the MOC on one core with its time step set by the shortest pipe
   (dt 0.36 ms at 100 km; 4.8 s per simulated second at 150 km on four
   cores since FN-027).
+  2026-10-05: first REAL town file - L-Town (BattLeDIM, 782 junctions,
+  43 km, data/README.md D2): read in 0.25 s after three reader fixes
+  (FN-045), a week of operation in 5 s, pump switching within 0.2-3 h of
+  the published data.
 
 G-16  Lazy greedy assumes diminishing returns                    OPEN
   The advisor re-checks only candidates whose last gain could still win
@@ -139,6 +143,10 @@ G-12  Slow leaks are invisible to the transient method     IN PROGRESS
   A leak that grows over weeks sends no sharp wave. P2: we must not claim
   to see it from fronts. Needs Tier 0 methods (night flow, mass balance,
   pressure trends; V-B2 BattLeDIM; 08_ Q-P3).
+  2026-10-05: L-Town's two years of 5-minute SCADA and its leak list are
+  on this machine (data/, D2). Next: the night watch on them, scored
+  against the true leak start times. The live monitor refuses Tier 0
+  loggers for now (FN-046): they need a slow path of their own.
 
 G-13  Wave-speed doubt in placement is a fixed 10%                OPEN
   F10 proper: robust placement over a posterior of wave speeds.

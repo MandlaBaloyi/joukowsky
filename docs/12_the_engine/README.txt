@@ -23,7 +23,7 @@ Reading order
                                    and a suggested path through the code.
 06_honest_limits.txt               What is proven, what is not, and what
                                    real data must still show.
-07_running_the_tests.txt           Running the 355 tests step by step,
+07_running_the_tests.txt           Running the 363 tests step by step,
                                    what each test program proves, how to
                                    read the results, what to do if one
                                    fails.

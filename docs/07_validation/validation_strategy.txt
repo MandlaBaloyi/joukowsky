@@ -117,6 +117,15 @@ Rung 2  Published benchmarks and experiments.
   V-B2  BattLeDIM (L-Town) for network-scale leak detection at SCADA
         rates - useful for slow-leak methods and the digital twin, NOT for
         transient methods (its data is not high-frequency).
+        2026-10-05: on this machine (data/README.md D2). The model reads
+        whole after three reader fixes (FN-045); its first week's pump
+        switches match the published readings within 4 h, 1.7 h on
+        average (tests/adapters/datasets/ltown.rs). Next: the night watch
+        against the true leak start times.
+  V-B0  EPANET example networks Net1-3 (data/README.md D1): every node,
+        pipe, pump and tank the files declare is in the engine, and each
+        file's own schedule runs (2026-10-05, tests/adapters/datasets/
+        epanet_examples.rs).
   V-B3  Search for open high-frequency network transient datasets
         (research backlog R-3). If none exist, ours becomes a contribution.
 Rung 3  Simulation studies.

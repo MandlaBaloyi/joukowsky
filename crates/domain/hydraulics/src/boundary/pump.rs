@@ -54,8 +54,9 @@ impl PumpCurve {
     /// (zero flow), the rated point and a run-out point at higher flow.
     ///
     /// # Errors
-    /// Non-physical points: flows must rise and heads fall, and the curve
-    /// must droop (a2 < 0) so the pump has a stable operating point.
+    /// Non-physical points: flows must rise and heads fall (the run-out
+    /// head may be zero: the flow at which the pump stops adding head), and
+    /// the curve must droop (a2 < 0) so the pump has a stable operating point.
     pub fn from_points(
         shutoff: Head,
         rated: (Flow, Head),
@@ -67,11 +68,11 @@ impl PumpCurve {
             (runout.0.value(), runout.1.value()),
         );
         positive("rated flow", q1)?;
-        if !(q2 > q1 && h0 > h1 && h1 > h2 && h2 > 0.0 && h0.is_finite() && q2.is_finite()) {
+        if !(q2 > q1 && h0 > h1 && h1 > h2 && h2 >= 0.0 && h0.is_finite() && q2.is_finite()) {
             return Err(HydraulicsError::invalid(
                 "pump curve",
                 h0,
-                "0 < Q_rated < Q_runout with shut-off head > rated head > run-out head > 0",
+                "0 < Q_rated < Q_runout with shut-off head > rated head > run-out head >= 0",
             ));
         }
         // Solve a1 q + a2 q^2 = h - h0 at the two points.

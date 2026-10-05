@@ -36,9 +36,11 @@ In plain words:
 
 ## The datasets
 
-Status on 2026-10-05: **all three found and checked, all free (open
-licence), awaiting the owner's go-ahead to download.** Nothing is on
-this machine yet.
+Status on 2026-10-05: all three approved by the owner.
+- **D1 and D2 are on this machine**, fingerprinted in `manifest.csv`. Every
+  L-Town file also matches the checksum its publisher lists.
+- **D3 is not yet here:** Mendeley's download server answered "502 Bad
+  Gateway" all evening. Retry later.
 
 ### D1 - EPANET example networks (`epanet-examples`)
 
@@ -57,7 +59,8 @@ this machine yet.
 
 - **What:** a town of 782 junctions and 905 pipes, laid out on a real
   town in Cyprus. It has two years (2018, 2019) of readings every
-  5 minutes: pressures at 33 points [VERIFY 905 / 33 on arrival], flows, tank levels, and demands. It
+  5 minutes: pressures at 33 points (both counts checked in the files),
+  flows, tank levels, and demands. It
   also has the truth: when each of its leaks started and how big it
   was.
 - **Honest note:** the readings are *simulated* on that real layout (with
@@ -106,6 +109,39 @@ this machine yet.
 - **What it proves:** on real recordings, the engine notices the surge,
   times its start, and calls a pressure *rise* a valve closing - not a
   burst. It also shows how the detector copes with real noise.
+
+## Feeding the engine yourself
+
+Open a terminal in the project folder (`C:\Users\HP\Desktop\joukowsky`)
+and build once: `cargo build --release -p jk-cli`. Then:
+
+| What | Command |
+|---|---|
+| Check every file is unchanged | `.\data\verify.ps1` |
+| Read a network map, run its day or week | `.\target\release\jk network data\incoming\ltown\L-TOWN.inp` |
+| The same for an EPANET example | `.\target\release\jk network data\incoming\epanet-examples\Net3.inp` |
+| Read a recording file | `.\target\release\jk logger data\incoming\ltown\2018_SCADA_Levels.csv --unit m` |
+| See it all in the viewer | `.\target\release\jk view --network data\incoming\ltown\L-TOWN.inp --recording data\incoming\ltown\2018_SCADA_Levels.csv --unit m`, then open `jk-view.html` |
+
+`--unit m` is needed because L-Town's files do not name their units in
+the column headings, and the engine never guesses units. In the viewer,
+the menu gets two new groups: **Network file** (the map and every
+assumption the reader made) and **Logger files** (the recording,
+zoomable). L-Town's readings come every 5 minutes, so the viewer says
+they are too slow to see a wave and looks for none (principle P2,
+FN-046).
+
+## What the real data has taught us so far
+
+- **FN-045:** L-Town's model was refused, then read half right, in three
+  ways where our reader was stricter or simpler than EPANET: a default
+  pattern named but never defined, a pump curve ending at zero head, and
+  homes with several types of demand. All fixed. After the fixes, the
+  engine's pump switches within 0.2-3 h of the published data over a
+  week, with no tuning.
+- **FN-046:** the wave detector, given 5-minute data, marked 178
+  "fronts" (the pump switching between readings). It now refuses
+  anything slower than one reading a second.
 
 ## How a real-data test works
 

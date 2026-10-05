@@ -53,9 +53,13 @@ pub fn run(a: &Args) -> Result<(), String> {
     let seconds = r.samples() as f64 * dt;
     println!("{}", a.file.display());
     println!("  first sample {}", r.first_stamp);
+    let every = if dt > 1.0 {
+        format!("one sample every {dt:.0} s")
+    } else {
+        format!("{:.2} samples a second", 1.0 / dt)
+    };
     println!(
-        "  sampling     {:.2} samples a second, {} samples ({seconds:.1} s) in {} continuous run(s)",
-        1.0 / dt,
+        "  sampling     {every}, {} samples ({seconds:.1} s) in {} continuous run(s)",
         r.samples(),
         r.runs.len()
     );

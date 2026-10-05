@@ -149,6 +149,15 @@ impl Default for PeriodOptions {
 }
 
 /// A demand pattern followed by some junctions.
+///
+/// A junction can follow several patterns, each for a share of its demand
+/// (EPANET's demand categories: homes and shops behind one junction): its
+/// multiplier is then the sum of share x pattern multiplier:
+///
+/// ```text
+///   demands d_i following patterns m_i(t), D = sum d_i:
+///   demand at t = sum d_i m_i(t) = D x sum (d_i / D) m_i(t)
+/// ```
 #[derive(Debug, Clone, PartialEq)]
 pub struct NodePattern {
     /// Demand multipliers, one per `pattern_step`, repeating. Empty: the
@@ -156,6 +165,17 @@ pub struct NodePattern {
     pub multipliers: Vec<f64>,
     /// The junctions that follow it.
     pub nodes: Vec<NodeId>,
+    /// The share of each junction's demand that follows it, one per entry
+    /// of `nodes`. Empty: all of it. A junction's shares over all the
+    /// patterns it is in must add up to 1.
+    pub shares: Vec<f64>,
+}
+
+impl NodePattern {
+    /// The share of the demand of `nodes[k]` that follows this pattern.
+    fn share(&self, k: usize) -> f64 {
+        self.shares.get(k).copied().unwrap_or(1.0)
+    }
 }
 
 /// Something that happened to the supply.
@@ -412,13 +432,31 @@ impl Network {
                 ));
             }
         }
-        for n in options.node_patterns.iter().flat_map(|p| &p.nodes) {
-            if !matches!(self.nodes().get(n.index()), Some(Node::Junction { .. })) {
-                return Err(HydraulicsError::InvalidNetwork(format!(
-                    "node {} given a demand pattern is not a junction",
-                    n.index()
-                )));
+        let mut shared = vec![0.0; self.nodes().len()];
+        for p in &options.node_patterns {
+            if !(p.shares.is_empty() || p.shares.len() == p.nodes.len()) {
+                return Err(HydraulicsError::InvalidNetwork(
+                    "a demand pattern's shares must be one per junction, or none".into(),
+                ));
             }
+            for (k, n) in p.nodes.iter().enumerate() {
+                if !matches!(self.nodes().get(n.index()), Some(Node::Junction { .. })) {
+                    return Err(HydraulicsError::InvalidNetwork(format!(
+                        "node {} given a demand pattern is not a junction",
+                        n.index()
+                    )));
+                }
+                shared[n.index()] += p.share(k);
+            }
+        }
+        if let Some((n, total)) = shared
+            .iter()
+            .enumerate()
+            .find(|(_, t)| **t != 0.0 && (**t - 1.0).abs() > 1e-9)
+        {
+            return Err(HydraulicsError::InvalidNetwork(format!(
+                "junction {n}'s demand pattern shares add up to {total}, not 1"
+            )));
         }
         controls::check(self, &options.controls, &options.power_cuts)?;
         rules::check(self, &options.rules)?;
@@ -748,10 +786,13 @@ impl Network {
     ) -> Result<SteadySolution, HydraulicsError> {
         let mut net = self.clone();
         let mut m = vec![multiplier(&options.pattern, options, pattern_time); self.nodes().len()];
+        for n in options.node_patterns.iter().flat_map(|p| &p.nodes) {
+            m[n.index()] = 0.0;
+        }
         for p in &options.node_patterns {
             let own = multiplier(&p.multipliers, options, pattern_time);
-            for n in &p.nodes {
-                m[n.index()] = own;
+            for (k, n) in p.nodes.iter().enumerate() {
+                m[n.index()] += p.share(k) * own;
             }
         }
         for (n, node) in self.nodes().iter().enumerate() {

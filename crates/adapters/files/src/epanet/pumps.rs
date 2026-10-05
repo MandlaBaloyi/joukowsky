@@ -50,9 +50,9 @@ pub fn fit(points: &[(f64, f64)], speed: f64) -> Result<Fitted, String> {
     if points
         .windows(2)
         .any(|w| !(w[1].0 > w[0].0 && w[1].1 < w[0].1))
-        || points.iter().any(|p| !(p.0 >= 0.0 && p.1 > 0.0))
+        || points.iter().any(|p| !(p.0 >= 0.0 && p.1 >= 0.0))
     {
-        return Err("its curve's flows must rise and heads fall, all positive".into());
+        return Err("its curve's flows must rise and heads fall, none negative".into());
     }
     let (a0, a1, a2, rated, how) = match points {
         [(q1, h1)] => {
@@ -219,6 +219,22 @@ mod tests {
     fn speed_scales_by_the_affinity_laws() {
         let c = fit(&[(0.1, 60.0)], 0.5).unwrap().pump.curve;
         assert!((c.head(0.0, 1.0) - 20.0).abs() < 1e-12); // 80 x 0.25
+    }
+
+    #[test]
+    fn a_run_out_at_zero_head_is_a_pump() {
+        // L-Town's PUMP_1 (BattLeDIM 2020, CMH): 0/126.67, 27.39/88.67,
+        // 50.00/0 - the last point is where the pump stops adding head
+        // (FN-045).
+        let pts = [
+            (0.0, 126.67),
+            (27.3856 / 3600.0, 88.669),
+            (49.999 / 3600.0, 0.0),
+        ];
+        let c = fit(&pts, 1.0).unwrap().pump.curve;
+        for (q, h) in pts {
+            assert!((c.head(q, 1.0) - h).abs() < 1e-9);
+        }
     }
 
     #[test]

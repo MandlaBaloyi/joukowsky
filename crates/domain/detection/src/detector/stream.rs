@@ -82,6 +82,12 @@ impl DetectorStream {
     ) -> Result<Self, DetectionError> {
         let dt = interval.value();
         positive("sampling interval", dt)?;
+        if dt > super::SLOWEST_INTERVAL {
+            return Err(DetectionError::TooSlow {
+                interval: dt,
+                slowest: super::SLOWEST_INTERVAL,
+            });
+        }
         let samples = |t: Time| (t.value() / dt).ceil() as usize;
         let calibration = samples(config.calibration).max(16);
         let settle = samples(config.settle_window).max(4);

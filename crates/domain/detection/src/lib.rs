@@ -36,8 +36,8 @@ pub mod onset;
 pub mod supply;
 
 pub use detector::{
-    Detection, Detector, DetectorConfig, DetectorStream, Direction, Event, Impairment, Series,
-    Span, StreamOutput,
+    Detection, Detector, DetectorConfig, DetectorStream, Direction, Event, Impairment,
+    SLOWEST_INTERVAL, Series, Span, StreamOutput,
 };
 pub use error::DetectionError;
 pub use supply::{EmptySpell, SupplyChange, SupplyConfig, SupplyWatch, empty_spells};

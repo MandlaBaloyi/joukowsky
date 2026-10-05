@@ -34,7 +34,8 @@ pub struct Span {
 pub struct Grid {
     /// Seconds between samples.
     pub interval: f64,
-    /// Whether the interval is a whole number of samples per second.
+    /// Whether the clock is regular: a whole number of samples a second
+    /// (transient loggers) or of seconds a sample (SCADA, 1 s loggers).
     pub whole_rate: bool,
     /// The continuous runs, in time order.
     pub spans: Vec<Span>,
@@ -89,9 +90,12 @@ pub fn regularise(times: &[f64]) -> Option<Grid> {
     };
     let rate = 1.0 / raw;
     let whole = rate.round();
+    let seconds = raw.round();
     let (interval, whole_rate) =
         if whole >= 1.0 && ((rate - whole) / rate).abs() < 2e-3 && worst(1.0 / whole) < 0.3 {
             (1.0 / whole, true)
+        } else if seconds >= 1.0 && ((raw - seconds) / raw).abs() < 2e-3 && worst(seconds) < 0.3 {
+            (seconds, true)
         } else if worst(raw) < 0.3 {
             (raw, false)
         } else {
@@ -141,6 +145,14 @@ pub fn regularise(times: &[f64]) -> Option<Grid> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn scada_every_five_minutes_is_a_regular_clock() {
+        // L-Town's SCADA (BattLeDIM 2020): one row every 300 s.
+        let times: Vec<f64> = (0..100).map(|k| f64::from(k) * 300.0).collect();
+        let g = regularise(&times).unwrap();
+        assert!(g.whole_rate && (g.interval - 300.0).abs() < 1e-12);
+    }
 
     #[test]
     fn millisecond_timestamps_at_128_per_second_snap_to_128() {

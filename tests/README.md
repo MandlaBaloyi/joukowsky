@@ -22,7 +22,10 @@ to thousands of tests (and hundreds of thousands of generated cases):
      synthetic loggers with noise and clock errors; the scorecard)
    - `cross_code/` - the simulator against an independent method (the
      transfer-matrix model); later TSNet
-   - `datasets/`, `golden/` - real recorded events (from the real-data tests)
+   - `datasets/` - real files published by others (`data/README.md`),
+     checked against the truth that comes with them; each says SKIPPED
+     and passes when its data is not on this machine
+   - `golden/` - later: real recorded events kept as reference answers
 3. **Topic** - a file or folder per subject: `single_pipe/`, `pumps/`,
    `cavitation.rs`, `scorecard.rs`, ...
 
@@ -38,7 +41,7 @@ tests/
 ├── localisation/           locating: analytical/, invariants/, simulation/
 ├── classification/         naming events: simulation/
 ├── pipeline/               the whole engine, live: simulation/ (incl. scorecard.rs)
-├── adapters/               reading files: analytical/, simulation/, fixtures/
+├── adapters/               reading files: analytical/, simulation/, datasets/ (real data), fixtures/
 ├── balance/                slow leaks: simulation/
 ├── channels/               canals and rivers: analytical/, invariants/, simulation/
 ├── health/                 fatigue counting: analytical/

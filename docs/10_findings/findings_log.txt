@@ -500,3 +500,49 @@ FN-044  2026-10-01  Told the wave speeds are exact, the engine overclaims
   [VERIFY on field wave speeds]; a site file can state its own
   (wave_speed_doubt) and its wave speed (wave_speed). P3: an engine that
   overclaims is worse than one that says "somewhere in these 30 m".
+
+FN-045  2026-10-05  The first real network file was refused three ways
+  The first real-data run (data/README.md, D2): L-Town's model, written
+  by the BattLeDIM organisers in EPANET, not by us. All three EPANET
+  examples (Net1-3) loaded; L-Town did not, and then loaded only half
+  right. Three gaps in our reader, each where we were stricter or
+  simpler than EPANET:
+    1. "default pattern '1' is not defined": the file names a default
+       pattern (option PATTERN 1) it never defines. EPANET takes that as
+       no pattern; we refused the whole file. Now: constant demand for
+       junctions with no pattern of their own, with a note.
+    2. The pump's curve ends at zero head (0/126.67, 27.39/88.67,
+       50.00/0 m3/h - m). We required every head above zero, so the pump
+       became a plain pipe - and with it the tank stopped filling and
+       draining, and both controls were lost. A run-out point at zero
+       head is an ordinary datasheet point; now accepted (pumps.rs and
+       PumpCurve::from_points, run-out head >= 0).
+    3. 782 junctions carry demand categories (homes, shops, industry -
+       each with its own day). We kept one pattern per junction, the
+       largest. Now each pattern drives its share of the demand, as
+       EPANET sums the categories (NodePattern.shares).
+  Then compared with the truth: the engine's week of L-Town switches the
+  pump within 0.2-3 h of the published 2018 data (off 2.5 h vs 2.2 h, on
+  17.4 h vs 16.3 h, ..., on 66.1 h vs 66.3 h), with no tuning. Fix 3
+  moved the times by under a minute: the rest is the competition's
+  deliberate difference between the model it hands out and the "real"
+  town (demands and pipe data up to 10% off - its README), about 1.4 h
+  on a 14 h drain. Lesson: files written by other tools break readers in
+  ways our own test files never will - read every real file we can get.
+
+FN-046  2026-10-05  The detector saw 178 "fronts" in 5-minute data
+  `jk view --recording` on L-Town's tank level (one reading every 300 s)
+  ran the wave detector over it, and it marked 178 fronts: the pump
+  starting and stopping between two readings. A wave crosses a site in
+  seconds; at 5 minutes it is invisible, and claiming fronts there breaks
+  P2. The detector had no idea of the rate it was given. Now it refuses
+  any record slower than one sample a second (SLOWEST_INTERVAL 1.01 s,
+  Tier 1; docs/03_sensing_and_signal/data_source_requirements.txt) with
+  DetectionError::TooSlow, everywhere - viewer, replay, live monitor. The
+  viewer shows such files as "too slow to see a wave", shaded as not
+  watched. Also: the logger reader called 300 s "0.0033 samples a second
+  (not a whole rate: the clock may drift)"; whole seconds per sample are
+  now a regular clock ("one sample every 300 s").
+  Open: the live monitor now stops at a Tier 0 logger instead of
+  watching it for the slow things (supply, tank levels) - Tier 0 sites
+  need their own path (G-12).

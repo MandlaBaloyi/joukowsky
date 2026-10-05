@@ -225,7 +225,9 @@ pub fn parse(text: &str, options: &CsvOptions) -> Result<Recording, ReadError> {
     note(
         &mut notes,
         None,
-        if g.whole_rate {
+        if g.whole_rate && g.interval > 1.0 {
+            format!("one sample every {:.0} s", g.interval)
+        } else if g.whole_rate {
             format!("{rate:.0} sample(s) a second")
         } else {
             format!("{rate:.4} samples a second (not a whole rate: the logger's clock may drift)")

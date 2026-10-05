@@ -37,6 +37,10 @@ use jk_kernel::{Flow, Head, Time};
 use super::sections::{Line, Section};
 use crate::error::ReadError;
 
+/// The junctions that follow one demand pattern, and the share of each
+/// one's demand that follows it.
+type Followers = (Vec<NodeId>, Vec<f64>);
+
 /// How the file runs the network over time.
 #[derive(Debug, Clone, Default, PartialEq)]
 pub struct Operations {
@@ -265,56 +269,114 @@ pub(super) fn build(
     }
 
     // Demand patterns. EPANET's default: option PATTERN, else pattern "1".
-    let default = ctx
+    // A default the file names but never defines is not an error to EPANET:
+    // junctions without a pattern of their own then keep a constant demand
+    // (FN-045, found on L-Town).
+    let mut default = ctx
         .default_pattern
         .or_else(|| patterns.contains_key("1").then_some("1"));
     if let Some(d) = default {
-        period.pattern =
-            rotated(patterns.get(d).ok_or_else(|| {
-                ReadError::general(format!("default pattern '{d}' is not defined"))
-            })?);
+        if let Some(p) = patterns.get(d) {
+            period.pattern = rotated(p);
+        } else {
+            notes.push((
+                None,
+                format!(
+                    "default pattern '{d}' (option PATTERN) is not defined: junctions without a \
+                     pattern of their own keep a constant demand, as in EPANET"
+                ),
+            ));
+            default = None;
+        }
     }
-    let mut own: HashMap<&str, Vec<NodeId>> = HashMap::new();
-    let (mut mixed, mut ids): (usize, Vec<&NodeId>) = (0, ctx.demands.keys().collect());
+    // Each junction's demands, by the pattern they follow (None: constant).
+    // One pattern: the junction follows it whole. Several (demand
+    // categories, or file junctions joined through a valve): each pattern
+    // for its share of the demand, as EPANET sums the categories (FN-045,
+    // found on L-Town). Shares need demands of one sign; otherwise the
+    // pattern of the largest demand is used, with a note.
+    let mut own: HashMap<Option<&str>, Followers> = HashMap::new();
+    let (mut shared, mut largest, mut ids): (usize, usize, Vec<&NodeId>) =
+        (0, 0, ctx.demands.keys().collect());
     ids.sort();
     for node in ids {
-        let members = &ctx.demands[node];
-        let chosen = members
-            .iter()
-            .filter(|(d, _)| *d != 0.0)
-            .max_by(|a, b| a.0.abs().total_cmp(&b.0.abs()))
-            .and_then(|(_, p)| p.as_deref());
-        let differs = members
-            .iter()
-            .filter(|(d, _)| *d != 0.0)
-            .any(|(_, p)| p.as_deref() != chosen);
-        mixed += usize::from(differs);
-        if let Some(p) = chosen
-            && Some(p) != default
-        {
-            if !patterns.contains_key(p) {
+        let mut parts: Vec<(Option<&str>, f64)> = Vec::new();
+        for (d, p) in &ctx.demands[node] {
+            if *d == 0.0 {
+                continue;
+            }
+            let p = p.as_deref().or(default);
+            if let Some(p) = p
+                && !patterns.contains_key(p)
+            {
                 return Err(ReadError::general(format!(
                     "pattern '{p}' is used but not defined"
                 )));
             }
-            own.entry(p).or_default().push(*node);
+            match parts.iter_mut().find(|(q, _)| *q == p) {
+                Some(part) => part.1 += d,
+                None => parts.push((p, *d)),
+            }
+        }
+        let total: f64 = parts.iter().map(|(_, d)| d).sum();
+        let one_sign = parts.iter().all(|(_, d)| d.signum() == total.signum());
+        match parts.as_slice() {
+            [] => {}
+            [(p, _)] => {
+                if *p != default {
+                    let group = own.entry(*p).or_default();
+                    group.0.push(*node);
+                    group.1.push(1.0);
+                }
+            }
+            _ if total != 0.0 && one_sign => {
+                shared += 1;
+                for (p, d) in &parts {
+                    let group = own.entry(*p).or_default();
+                    group.0.push(*node);
+                    group.1.push(d / total);
+                }
+            }
+            _ => {
+                largest += 1;
+                let p = parts
+                    .iter()
+                    .max_by(|a, b| a.1.abs().total_cmp(&b.1.abs()))
+                    .map_or(default, |(p, _)| *p);
+                if p != default {
+                    let group = own.entry(p).or_default();
+                    group.0.push(*node);
+                    group.1.push(1.0);
+                }
+            }
         }
     }
-    let mut own: Vec<(&str, Vec<NodeId>)> = own.into_iter().collect();
-    own.sort_by(|a, b| a.0.cmp(b.0));
-    for (p, nodes) in own {
+    let mut own: Vec<(Option<&str>, Followers)> = own.into_iter().collect();
+    own.sort_by(|a, b| a.0.cmp(&b.0));
+    for (p, (nodes, shares)) in own {
+        let whole = shares.iter().all(|s| (s - 1.0).abs() < 1e-12);
         period.node_patterns.push(NodePattern {
-            multipliers: rotated(&patterns[p]),
+            multipliers: p.map(|p| rotated(&patterns[p])).unwrap_or_default(),
             nodes,
+            shares: if whole { Vec::new() } else { shares },
         });
     }
-    if mixed > 0 {
+    if shared > 0 {
         notes.push((
             None,
             format!(
-                "{mixed} engine junction(s) combine demands with different patterns (demand \
-                 categories, or junctions joined through a valve): the pattern of the largest \
-                 demand is used"
+                "{shared} engine junction(s) combine demands that follow different patterns \
+                 (demand categories, or junctions joined through a valve): each pattern drives \
+                 its share of the demand, as in EPANET"
+            ),
+        ));
+    }
+    if largest > 0 {
+        notes.push((
+            None,
+            format!(
+                "{largest} engine junction(s) combine inflows and outflows that follow \
+                 different patterns: the pattern of the largest is used for the whole"
             ),
         ));
     }

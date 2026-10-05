@@ -32,7 +32,10 @@ Not proven - what real data must still show
     regions are tens of metres long on long mains (FN-044).
   Real logger files will differ from ours (formats, time zones, gaps,
     clocks) - every reader assumption is reported, but some files will
-    need new handling.
+    need new handling. 2026-10-05: the first real files (EPANET's own
+    examples and L-Town, data/README.md) found three gaps in the network
+    reader and two in the detector and logger reader on the first day
+    (FN-045, FN-046) - all fixed; more will come.
   Events not yet simulated cannot be classified: pump STARTS and valve
     OPENINGS (a valve opening looks like a burst), sensor faults.
   Big real networks: the solvers run 1 000 km in seconds, but placement
@@ -56,7 +59,9 @@ Not built yet (10_findings/known_gaps.txt)
 
 The next step
 ------------------------------------------------------------------------
-Real data, chosen with the owner (10_findings/real_data_candidates.txt):
-EPANET example networks, published laboratory experiments, L-Town, and
-the real prize - a South African partner site with transient loggers and
-a hydrant opened at a known place and time.
+Real data, chosen with the owner (10_findings/real_data_candidates.txt,
+data/README.md): EPANET example networks and L-Town are in (2026-10-05);
+the Texas A&M lab rig - a real valve-closure surge at 51 200 samples a
+second - is approved and waiting for its download; then the real prize, a
+South African partner site with transient loggers and a hydrant opened at
+a known place and time.

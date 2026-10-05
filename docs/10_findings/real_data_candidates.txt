@@ -1,6 +1,23 @@
 REAL DATA CANDIDATES
-STATUS: DRAFT v0.1 (2026-09-29) - for discussion with the owner; NOTHING
-here has been downloaded, searched for or checked online yet
+STATUS: DRAFT v0.2 (2026-10-05) - written 2026-09-29 from memory; checked
+online and approved by the owner on 2026-10-05
+
+2026-10-05: what was checked, approved and done (details, licences,
+sizes and fingerprints: data/README.md and data/manifest.csv)
+  C1  EPANET Net1-3: MIT licence (not public domain, as guessed below).
+      Downloaded; all three load.
+  C2  L-Town: CC BY 4.0, Zenodo 4017659. Took the model, the 5-minute
+      SCADA (pressures, flows, tank) and the leak truth for 2018 and 2019,
+      about 70 MB; every file matches the publisher's checksum. The SCADA
+      is SIMULATED on a real town's layout. Loads after FN-045.
+  C3  Lab transients: found an open one - Texas A&M leak testbed
+      (Aghashahi, Sela, Banks 2023; Mendeley 10.17632/tbrnp6vrnj.1, CC BY
+      4.0): 47 m of 152 mm PVC, two pressure sensors at 51.2 kHz, 40 runs
+      with a valve shut at about 20 s. Approved (563 MB zip); Mendeley's
+      download server failed (502) on 2026-10-05 - to retry.
+  C4  TSNet: not needed for now - the transfer-matrix model (V-X1) is the
+      independent check.
+  C5  Open FIELD high-rate transient data: none found yet.
 
 Rule: no download, extraction or install without the owner's explicit
 approval (CLAUDE.md, TD-020). Approved files go only into data/incoming,

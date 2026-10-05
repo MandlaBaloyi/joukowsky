@@ -6,11 +6,14 @@
 //! from the earliest sample of all files). The detector runs on each
 //! continuous stretch and its fronts are marked. No network is known for
 //! these files, so nothing is located and the detector uses its default
-//! settings - the charts show what the engine SEES, not an alert.
+//! settings - the charts show what the engine SEES, not an alert. A file
+//! sampled slower than once a second (Tier 0, SCADA) is shown, but no
+//! fronts are looked for in it: a wave cannot be seen at that rate (P2,
+//! FN-046).
 
 use std::fmt::Write as _;
 
-use jk_detection::{Detector, DetectorConfig, Series};
+use jk_detection::{Detector, DetectorConfig, SLOWEST_INTERVAL, Series};
 use jk_files::logger::Recording;
 use jk_kernel::Time;
 
@@ -103,6 +106,11 @@ pub fn page(files: &[FileRecording]) -> Page {
         })
         .fold(zero, f64::max);
     let channels: usize = files.iter().map(|f| f.recording.channels.len()).sum();
+    let slow: Vec<&str> = files
+        .iter()
+        .filter(|f| f.recording.interval.value() > SLOWEST_INTERVAL)
+        .map(|f| f.name.as_str())
+        .collect();
     let first = files
         .iter()
         .min_by(|a, b| {
@@ -131,6 +139,13 @@ pub fn page(files: &[FileRecording]) -> Page {
             .map(|r| r.fronts.len())
             .sum::<usize>()
     );
+    if !slow.is_empty() {
+        let _ = write!(
+            s,
+            r#"<div class="card"><h2>Too slow to see a wave</h2><p class="note">{} sampled less often than once a second (Tier 0, like SCADA). A pressure wave crosses a site in seconds, so it cannot be seen at that rate: no fronts are looked for in these files, and they are shaded as not watched. They still show slow changes - tank levels, daily pressure, supply cuts.</p></div>"#,
+            esc(&slow.join(", "))
+        );
+    }
     s.push_str(r#"<div class="card"><h2>Pressure</h2><p class="note">Every channel on one time axis, in seconds from the first sample. Breaks in a line are gaps in the data - never joined up. Lines mark the fronts the detector picked; shaded: not watching at full sensitivity. Hover to read every channel at once; drag across a chart to zoom.</p><p class="note">The detector first learns each sensor's noise from 2 s of data, so a stretch shorter than that is shaded as not watched. With no network given it cannot know how long echoes take to die away, so an echo may be marked as a front; the live engine, which knows the network, waits them out.</p>"#);
     let _ = write!(
         s,
@@ -143,10 +158,14 @@ pub fn page(files: &[FileRecording]) -> Page {
         let r = &f.recording;
         let _ = write!(
             s,
-            r#"<div class="card"><h2>{}</h2><div class="facts"><div><div class="k">First sample</div><div class="v">{}</div></div><div><div class="k">Rate</div><div class="v">{:.2} S/s</div></div><div><div class="k">Samples</div><div class="v">{}</div></div><div><div class="k">Continuous runs</div><div class="v">{}</div></div></div><h3 style="margin-top:12px">What the reader decided ({})</h3><ul class="reasons">"#,
+            r#"<div class="card"><h2>{}</h2><div class="facts"><div><div class="k">First sample</div><div class="v">{}</div></div><div><div class="k">Rate</div><div class="v">{}</div></div><div><div class="k">Samples</div><div class="v">{}</div></div><div><div class="k">Continuous runs</div><div class="v">{}</div></div></div><h3 style="margin-top:12px">What the reader decided ({})</h3><ul class="reasons">"#,
             esc(&f.name),
             esc(&r.first_stamp),
-            1.0 / r.interval.value(),
+            if r.interval.value() > 1.0 {
+                format!("one every {:.0} s", r.interval.value())
+            } else {
+                format!("{:.2} S/s", 1.0 / r.interval.value())
+            },
             r.samples(),
             r.runs.len(),
             r.notes.len()

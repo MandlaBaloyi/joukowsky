@@ -25,6 +25,15 @@ pub enum DetectionError {
         /// Index of the bad sample.
         index: usize,
     },
+    /// Samples too far apart to see a pressure wave (Tier 0 data: SCADA
+    /// every few minutes). Fronts are not looked for at all, so nothing is
+    /// claimed that the sampling rate makes invisible (principle P2).
+    TooSlow {
+        /// The series' sampling interval [s].
+        interval: f64,
+        /// The longest interval the detector accepts [s].
+        slowest: f64,
+    },
 }
 
 impl DetectionError {
@@ -52,6 +61,11 @@ impl fmt::Display for DetectionError {
             Self::NonFiniteSample { index } => write!(
                 f,
                 "sample {index} is not a number; gaps must be reported, not filled"
+            ),
+            Self::TooSlow { interval, slowest } => write!(
+                f,
+                "one sample every {interval} s is too slow to see a pressure wave (Tier 0 data): \
+                 wave fronts need a sample at least every {slowest} s"
             ),
         }
     }

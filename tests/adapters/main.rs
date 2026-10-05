@@ -5,10 +5,14 @@
 //! number known. `simulation/`: a simulated burst written as logger files,
 //! read back and fed to the live engine. The files in `fixtures/` are written by hand for these tests -
 //! nothing is downloaded - so every expected number is known exactly.
+//! `datasets/`: real files published by others (data/README.md), checked
+//! against the truth that comes with them; skipped when not on this
+//! machine.
 //!
 //! Run only these:  `.\tests\run-tests.ps1 -Only adapters`
 
 mod analytical;
+mod datasets;
 mod simulation;
 
 use std::path::PathBuf;
