@@ -27,6 +27,10 @@ Reading order
                                    what each test program proves, how to
                                    read the results, what to do if one
                                    fails.
+08_real_data_how_to.txt            Feeding the engine real data: the
+                                   commands, what the viewer shows, the
+                                   engine against the published truth,
+                                   checking the files are untouched.
 
 Numbers on 2026-10-01
 ---------------------

@@ -1,0 +1,67 @@
+REAL DATA: HOW TO FEED IT, SEE IT AND CHECK IT
+STATUS: DRAFT v0.1 (2026-10-05)
+
+The real data lives in data/incoming/ (on this computer only; what each
+dataset is, its licence and what it proves: data/README.md). Commands
+are typed in a terminal opened in the project folder. Build the program
+once, and again after code changes:
+    cargo build --release -p jk-cli
+(The owner's ready-made scripts for these are in admin/, which is not
+on GitHub.)
+
+1. In the terminal: quick summaries
+------------------------------------------------------------------------
+    .\target\release\jk network data\incoming\ltown\L-TOWN.inp
+    .\target\release\jk network data\incoming\epanet-examples\Net3.inp
+  How many nodes, pipes and km; pumps, tanks and controls; the file's own
+  schedule played out (L-Town: a week, every pump start and stop, in
+  about 5 s); every assumption the reader made.
+
+    .\target\release\jk logger data\incoming\ltown\2018_SCADA_Levels.csv --unit m
+  First reading, how often it reads, how many readings, the channels,
+  and what the reader decided (decimal commas, units, gaps). --unit m is
+  needed because L-Town's files do not name their units, and the engine
+  never guesses units.
+
+2. In the viewer: pictures
+------------------------------------------------------------------------
+    .\target\release\jk view --network data\incoming\ltown\L-TOWN.inp --recording data\incoming\ltown\2018_SCADA_Levels.csv --unit m
+    start jk-view.html
+  The first command WRITES the page; the second opens it in the browser.
+  (Opened in VS Code, it shows the page's code instead.)
+
+  Two groups at the bottom of the menu are the REAL data; every other
+  page is the simulated demonstration (see "About the data" there).
+    NETWORK FILE > Map and notes
+      L-Town drawn from the file's own coordinates: the blue lines are the
+      905 pipes (hover for size), R1 and R2 the reservoirs that feed it,
+      T1 the tank the pump fills. Around the map: counts, the town's
+      total demand, every assumption made, tables of pipes and nodes.
+    RECORDINGS > Logger files
+      Tank T1's level through 2018, every 5 minutes: a sawtooth between
+      about 2.4 and 3.9 m (each rise the pump filling it, each fall the
+      town drawing it down). Drag across the chart to zoom. A card says
+      the readings are too slow to see a wave, so none is looked for
+      (FN-046).
+  Not there yet: nothing moves (no event is played out on L-Town in the
+  viewer); the engine's answers next to the truth (only in the test log,
+  section 3); dates on the time axis (it counts seconds).
+
+3. The engine against the published truth
+------------------------------------------------------------------------
+    .\tests\run-tests.ps1 -Filter datasets               the quick ones
+    .\tests\run-tests.ps1 -Suite full -Filter d2         adds L-Town's week
+    notepad tests\logs\latest.log                        then search d2_ltown
+  The table lists each pump switch: the engine's time, the published
+  time, the difference. On 2026-10-05: 13 switches matched in order,
+  1.7 h apart on average, 4 h at most, untuned - most of the gap is the
+  competition's deliberate 10% difference between the model it hands out
+  and its "real" town. A dataset not on this computer: SKIPPED, passes.
+
+4. Checking the data files are untouched
+------------------------------------------------------------------------
+    .\data\verify.ps1
+  Works out each file's fingerprint (SHA-256) again and compares it with
+  the one recorded on arrival (data/manifest.csv). OK: exactly what was
+  approved. CHANGED: damaged or altered - do not trust it. MISSING: not
+  on this computer. Data files are only ever READ, never run.
