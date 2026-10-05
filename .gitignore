@@ -16,3 +16,6 @@ jk-view.html
 # only the README, manifest and verify script are tracked.
 data/incoming/
 data/datasets/
+
+# The owner's own folder: notes and commands, this machine only (owner, 2026-10-05)
+admin/
