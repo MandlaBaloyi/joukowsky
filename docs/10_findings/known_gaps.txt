@@ -69,6 +69,9 @@ G-04  Never run on real data                                      OPEN
     and replayed (`jk replay`, V-S11) - the path real data will take.
 
 G-05  No scorecard over many events                        IN PROGRESS
+  2026-10-05, REAL noise (FN-047): on a real rig the detector saw the
+  valve closure, but also 7-17 false fronts a run on the looped layout -
+  real noise wanders slowly, ours was white. To fix before any field use.
   Tests check single cases. The metrics in 07_ (detection rate vs size,
   false alarms per sensor-day, location error in m, credible-region
   coverage) need a harness that runs many events and reports them.
@@ -147,6 +150,10 @@ G-12  Slow leaks are invisible to the transient method     IN PROGRESS
   on this machine (data/, D2). Next: the night watch on them, scored
   against the true leak start times. The live monitor refuses Tier 0
   loggers for now (FN-046): they need a slow path of their own.
+  2026-10-05: fed through the watch (FN-048): no false alarms, but only 3
+  of 33 leaks caught within a week, and blind for 341 days after an
+  alarm and a repair. The watch must step its baseline, see repairs and
+  follow the seasons.
 
 G-13  Wave-speed doubt in placement is a fixed 10%                OPEN
   F10 proper: robust placement over a posterior of wave speeds.

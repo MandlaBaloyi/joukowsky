@@ -546,3 +546,48 @@ FN-046  2026-10-05  The detector saw 178 "fronts" in 5-minute data
   Open: the live monitor now stops at a Tier 0 logger instead of
   watching it for the slow things (supply, tank levels) - Tier 0 sites
   need their own path (G-12).
+
+FN-047  2026-10-05  Real noise wanders; the detector learns only its jitter
+  The first REAL surge (data/README.md D3: Texas A&M testbed, 20 runs, a
+  valve shut by hand at about 20 s; tests/detection/datasets/
+  tamu_valve.rs), averaged to 128 S/s as a logger would, through the
+  default detector:
+    - the closure is a RISE of 0.43-0.65 m, as physics says (flow 0.47
+      l/s stopped);
+    - branched rig, far sensor P2 (2 mm noise): seen at 20.0-21.2 s in
+      4 of 5 runs;
+    - inlet sensor P1, beside the pump (31-97 mm noise): seen 2-5 s LATER
+      than P2 on the branched rig, missed or seen as a drop on the looped
+      rig. Seconds of error would wreck a location;
+    - looped rig, P2: 7-17 false "fronts" of 1-4 cm per 37 s run, and
+      twice a false one just before the closure left the sensor deaf
+      when the real event came (LO_NL, LO_LC).
+  Why: before the valve, P2's reading-to-reading jitter (what the
+  detector learns as its noise, from differences) is 0.2-0.5 cm, but the
+  signal wanders slowly by 0.9-1.3 cm (1 s means) - pump pulsation or
+  the rig's own sloshing. The CUSUM, in units of the jitter, sees the
+  wander as steps of 3-5 noise units. Our simulated noise was white, so
+  355 tests could not see this. To do: learn the noise at the time scale
+  the detector judges steps on (the spread of what the CUSUM sums, around
+  the baseline forecast), and re-check on these 20 runs.
+  Also: the files hold 25 600 readings a second, not the paper's
+  51.2 kHz (36-37 s per run, not 30 s) - the file wins.
+
+FN-048  2026-10-05  The leak watch went blind for 11 months after a repair
+  L-Town's two years (BattLeDIM; tests/balance/datasets/ltown_leaks.rs):
+  the whole town as one zone (inflows p227 + p235 minus the tank's
+  storage), night flow 02:00-04:00, the default watch. 7 alarms, none
+  false; caught within a week 3 of 33 leaks (3 of the 18 reaching 15 m3/h
+  or more), within a month 12 (8 of 18). Then nothing from 2018-05-22 for
+  341 days, while 7 big leaks (16-28 m3/h) began and were repaired
+  unseen. Why: after an alarm the watch restarts on a new 28-night
+  baseline - and that baseline holds the leak, its repair a week later
+  (night flow falls by 35-68 m3/h) and the season: its mean and spread
+  are inflated, and nothing later rises above them. The watch only looks
+  UP, so it never notices a repair. To do: after an alarm keep the spread
+  and step the baseline up by the leak; watch for falls too (repairs) and
+  step it back down; follow the seasons.
+  Also: the night-to-night spread of the whole town is 11 m3/h, so the
+  smallest leak catchable in a week is about 15 m3/h - small leaks (5-10
+  m3/h) need smaller zones (district metered areas) or the pressure
+  sensors, not one town-wide balance.

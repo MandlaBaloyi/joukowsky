@@ -6,6 +6,7 @@
 //!
 //! Run only these:  `.\tests\run-tests.ps1 -Only balance`
 
+mod datasets;
 mod simulation;
 
 use jk_balance::{Direction, Meter, Night, NightWindow, balance, night_flows};

@@ -86,3 +86,6 @@ when,suite,only,filter,commit,uncommitted,passed,failed,skipped,seconds,result,l
 2026-10-05 20:58:07,quick,hydraulics,,d713e59,yes,67,0,1,20.4,pass,runs/2026-10/2026-10-05/20-58-07_quick_hydraulics.log
 2026-10-05 21:02:54,quick,,,d713e59,yes,351,0,7,129.0,pass,runs/2026-10/2026-10-05/21-02-54_quick.log
 2026-10-05 21:10:08,quick,,,d713e59,yes,355,0,8,113.4,pass,runs/2026-10/2026-10-05/21-10-08_quick.log
+2026-10-05 21:50:27,quick,balance,,5070e65,yes,3,0,1,7.0,pass,runs/2026-10/2026-10-05/21-50-27_quick_balance.log
+2026-10-05 21:50:35,quick,detection,,5070e65,yes,8,0,3,5.4,pass,runs/2026-10/2026-10-05/21-50-35_quick_detection.log
+2026-10-05 21:50:40,quick,adapters,,5070e65,yes,22,0,1,7.6,pass,runs/2026-10/2026-10-05/21-50-40_quick_adapters.log

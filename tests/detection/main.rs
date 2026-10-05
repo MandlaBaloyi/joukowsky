@@ -12,6 +12,7 @@
 //! Run only these:  `.\tests\run-tests.ps1 -Only detection`
 
 mod analytical;
+mod datasets;
 mod simulation;
 
 use jk_detection::{Detection, Detector, DetectorConfig, Series};

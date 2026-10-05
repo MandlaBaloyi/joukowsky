@@ -39,8 +39,11 @@ In plain words:
 Status on 2026-10-05: all three approved by the owner.
 - **D1 and D2 are on this machine**, fingerprinted in `manifest.csv`. Every
   L-Town file also matches the checksum its publisher lists.
-- **D3 is not yet here:** Mendeley's download server answered "502 Bad
-  Gateway" all evening. Retry later.
+- **D3 is here too** (later the same evening, once Mendeley's server
+  worked again): its fingerprint matches the one Mendeley publishes, the
+  zip holds only CSV files, and only the 20 "Transient" runs (479 MB) are
+  unpacked, into `datasets/tamu-testbed/`. The files read 25 600 times a
+  second, not the 51.2 kHz the paper says.
 
 ### D1 - EPANET example networks (`epanet-examples`)
 

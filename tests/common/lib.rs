@@ -11,6 +11,27 @@ pub mod sensor;
 use jk_hydraulics::{Pipe, ReservoirPipeValve, ValveClosure};
 use jk_kernel::{Head, Length, STANDARD_GRAVITY, Velocity, WaveSpeed};
 
+/// Path of `data/incoming/<rel>` (real data, data/README.md) if the file
+/// is on this machine; otherwise prints that the test is skipped and why.
+/// Real-data tests never fail for missing data and never fetch anything.
+#[must_use]
+pub fn dataset(rel: &str) -> Option<std::path::PathBuf> {
+    let path = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .join("..")
+        .join("data")
+        .join("incoming")
+        .join(rel);
+    if path.exists() {
+        println!("  dataset file: data/incoming/{rel}");
+        Some(path)
+    } else {
+        println!(
+            "  SKIPPED: data/incoming/{rel} is not on this machine (see data/README.md to get it)"
+        );
+        None
+    }
+}
+
 /// The gravity the docs use in their worked numbers (they round to 9.81).
 pub const G_DOCS: f64 = 9.81;
 
