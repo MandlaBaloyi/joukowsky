@@ -1,0 +1,116 @@
+RUNNING THE TESTS - STEP BY STEP
+STATUS: DRAFT v0.1 (2026-10-05)
+
+What the tests are
+------------------------------------------------------------------------
+355 tests check the engine. Each one sets up a case whose answer is
+known - from exact physics, a published standard, or the truth of a
+simulated event - runs the engine, and prints what the engine got next
+to what was expected. If any check is off by more than its tolerance,
+the test FAILS and says which check and by how much.
+
+They live in the folder tests/, one TEST PROGRAM per part of the engine.
+
+Step 1 - open a terminal in the project
+------------------------------------------------------------------------
+In VS Code: Terminal > New Terminal (it opens PowerShell in the project
+folder, C:\Users\HP\Desktop\joukowsky). Or open PowerShell and type:
+    cd C:\Users\HP\Desktop\joukowsky
+
+Step 2 - run them
+------------------------------------------------------------------------
+    .\tests\run-tests.ps1
+The QUICK suite: 348 tests, about 1.5-4 minutes on this laptop (the
+first run after a change compiles first, so it is slower).
+
+    .\tests\run-tests.ps1 -Suite full
+The FULL suite: all 355, including 7 slow ones (the long scorecard, big
+sweeps): about 5-6 minutes. Run it before trusting a change to physics.
+
+The script keeps a log of every run (step 4). While it runs, the screen
+stays quiet; at the end it prints:
+    passed   348
+    failed   0
+    skipped  7 slow test(s) not in this suite (run -Suite full)
+    result   ALL PASSED
+    log      ...\tests\logs\runs\2026-10\2026-10-05\09-12-03_quick.log
+
+Step 3 - run only a part
+------------------------------------------------------------------------
+    .\tests\run-tests.ps1 -Only <program>
+    .\tests\run-tests.ps1 -Filter <word>        (any test whose name has it)
+    .\tests\run-tests.ps1 -Only pipeline -Filter scorecard   (both)
+
+The test programs, and what each one proves:
+  kernel          units and conversions (1 bar = 10.2 m of water ...)
+  hydraulics      the solvers against exact physics: Joukowsky's jump,
+                  wave periods, friction, pumps and run-down, valves,
+                  PRVs, tanks, controls, plastic walls, refilling,
+                  cavitation (analytical/); laws every run obeys
+                  (invariants/); the independent cross-check
+                  (cross_code/transfer_matrix.rs)
+  detection       noticing events: sensitivity, delay, false alarms,
+                  onset timing, drift
+  localisation    locating: straight mains, branches, clocks, clock
+                  drift, logger placement, detectability, the 90% region
+  classification  naming: burst, valve closure, pump trip, refill,
+                  abstaining when unsure
+  pipeline        the whole engine, live: bursts on the estate, late
+                  loggers, power cuts, refills, supply cuts, column
+                  separation, fatigue, valves by the hour, the
+                  SCORECARD (simulation/scorecard.rs)
+  adapters        reading files: EPANET networks, logger exports, a
+                  whole site file through `jk replay`
+  balance         slow leaks: zone balance, the night watch
+  channels        canals and rivers: uniform flow, backwater, waves,
+                  dam break, a canal feeding a town
+  health          fatigue counting: the ASTM worked example, Miner
+
+Useful filters (a test's name starts with its validation ID where it
+has one - see 07_validation/validation_strategy.txt):
+  -Filter va1        V-A1, the first case of all (a valve shut on a pipe)
+  -Filter va17       cavitation, exact
+  -Filter vx1        the simulator against the transfer-matrix model
+  -Filter vs11       a whole site through files
+  -Filter scorecard  the quick scorecard
+
+Step 4 - read the results
+------------------------------------------------------------------------
+    notepad tests\logs\latest.log      the last run, in full
+    tests\logs\history.csv             every run ever, one line each
+                                       (opens in Excel)
+In the log, each test looks like this:
+
+  test analytical::single_pipe::square_wave::va1_... ... Grid and timing:
+    time step dt [s]        got   0.050000   expected   0.050000   rel.err 0.0e0
+  ok
+
+  - "got" is what the engine computed, "expected" what the physics says,
+    "rel.err" how far apart (0.0e0 = identical; 1.0e-3 = 0.1%).
+  - "yes" after a line is a check that passed; "NO" one that failed.
+  - "ok" - every check in the test passed.
+  - "FAILED" and "panicked at ..." - a check failed; the line names it.
+
+Step 5 - if something fails
+------------------------------------------------------------------------
+  1. Open tests\logs\latest.log and search for FAILED; read the check
+     just above "panicked": what was got, what was expected.
+  2. Rerun that one test alone: .\tests\run-tests.ps1 -Filter <its name>
+  3. Ask: was a physics file or a setting changed? (git status shows
+     what changed since the last commit.)
+  4. A failing test is information, not noise: fix the cause, or - if
+     the test's expectation was wrong - fix the test and write down why
+     in docs/10_findings/findings_log.txt. Never just loosen a tolerance
+     to make it pass.
+
+Other ways to run (for developers)
+------------------------------------------------------------------------
+  cargo test --workspace                     all quick tests, no log
+  cargo test -p jk-tests --test pipeline     one program, no log
+  cargo test --release -p jk-tests --test pipeline scorecard_full -- --ignored --nocapture
+      the full scorecard alone, fast (release build), output on screen
+  cargo clippy --workspace --all-targets     the code checker (strict)
+  cargo fmt --all                            format the code
+
+Before a commit, the rule is: the quick suite passes (the full suite for
+physics changes), the code checker shows no warnings.

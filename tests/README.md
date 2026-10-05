@@ -9,34 +9,44 @@ we already know the answer to, and prints the comparison so you can read it.
 Tests are grouped in three layers, so the folder stays navigable as it grows
 to thousands of tests (and hundreds of thousands of generated cases):
 
-1. **Bounded context** - mirrors the crates: `kernel`, `hydraulics`, later
-   `detection`, `localisation`, `twin`, ... When something breaks, you know
-   which part of the engine to look at.
+1. **Bounded context** - mirrors the crates: `kernel`, `hydraulics`,
+   `detection`, `localisation`, `classification`, `pipeline` (the whole
+   engine), `adapters` (files), `balance`, `channels`, `health`. When
+   something breaks, you know which part of the engine to look at.
 2. **Validation rung** - how strong the evidence is
    (`docs/07_validation/validation_strategy.txt`):
    - `analytical/` - answers physics gives in closed form (Joukowsky, 2L/a)
    - `invariants/` - laws that must always hold (steady state stays steady,
-     the grid does not change the answer, mass is conserved); these grow into
-     property tests over thousands of random networks
-   - `cross_code/` - our solver against TSNet (later)
-   - `datasets/`, `golden/` - real recorded events, bit-for-bit replays (later)
-3. **Topic** - `single_pipe/`, `joukowsky/`, later `boundaries/`, `network/`, ...
+     the grid does not change the answer, mass is conserved)
+   - `simulation/` - whole scenarios through the engine (a burst recorded by
+     synthetic loggers with noise and clock errors; the scorecard)
+   - `cross_code/` - the simulator against an independent method (the
+     transfer-matrix model); later TSNet
+   - `datasets/`, `golden/` - real recorded events (from the real-data tests)
+3. **Topic** - a file or folder per subject: `single_pipe/`, `pumps/`,
+   `cavitation.rs`, `scorecard.rs`, ...
 
 ```
 tests/
 ├── Cargo.toml              makes this folder a crate (jk-tests); one [[test]] per context
 ├── run-tests.ps1           runs the tests and saves a log
-├── common/lib.rs           shared helpers: check_close, check, standard_system
-├── kernel/                 physical quantities
-│   └── conversions.rs
-├── hydraulics/
-│   ├── main.rs             the context's table of contents
-│   ├── analytical/
-│   │   ├── joukowsky/      surge by material, burst sizing
-│   │   └── single_pipe/    va1 square wave, va2 slow closure, friction
-│   └── invariants/         steady state, grid independence
+├── common/                 shared helpers: check_close, check, synthetic loggers (sensor.rs),
+│                           the estate, the knee station, the drained main
+├── kernel/                 units and conversions
+├── hydraulics/             the solvers: analytical/, invariants/, cross_code/
+├── detection/              noticing events: analytical/, simulation/
+├── localisation/           locating: analytical/, invariants/, simulation/
+├── classification/         naming events: simulation/
+├── pipeline/               the whole engine, live: simulation/ (incl. scorecard.rs)
+├── adapters/               reading files: analytical/, simulation/, fixtures/
+├── balance/                slow leaks: simulation/
+├── channels/               canals and rivers: analytical/, invariants/, simulation/
+├── health/                 fatigue counting: analytical/
 └── logs/                   see "Logs" below
 ```
+
+A step-by-step guide for running and reading them, with what each program
+proves: `docs/12_the_engine/07_running_the_tests.txt`.
 
 **Why one test program per context, not per folder:** Rust compiles and
 links every test program separately, and linking is the slow part. Topics
@@ -55,8 +65,8 @@ convention. They run together with these.
 
 | Suite | What runs | When |
 |---|---|---|
-| `quick` (default) | everything except tests marked `#[ignore]` | every change; takes seconds |
-| `full` | also the slow and exhaustive tests | before committing physics changes; later nightly in the cloud |
+| `quick` (default) | everything except tests marked `#[ignore]` (348 tests) | every change; about 1.5-4 minutes |
+| `full` | also the slow and exhaustive tests (355) | before committing physics changes; about 5-6 minutes |
 
 A test joins the full suite by adding `#[ignore = "full suite: why it is slow"]`
 under its `#[test]` line.
