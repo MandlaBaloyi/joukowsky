@@ -1,18 +1,18 @@
 joukowsky test run
-  when     2026-10-06 07:54:13
+  when     2026-10-06 08:38:33
   suite    full
-  commit   3fb2f81 (with uncommitted changes)
+  commit   092cff3 (with uncommitted changes)
   rust     rustc 1.98.1 (48a229cea 2026-09-01)
   command  cargo test --workspace --no-fail-fast -- --nocapture --test-threads=1 --include-ignored
 ==============================================================================
-   Compiling jk-detection v0.1.0 (C:\Users\HP\Desktop\joukowsky\crates\domain\detection)
-   Compiling jk-balance v0.1.0 (C:\Users\HP\Desktop\joukowsky\crates\domain\balance)
-   Compiling jk-classification v0.1.0 (C:\Users\HP\Desktop\joukowsky\crates\domain\classification)
+   Compiling jk-localisation v0.1.0 (C:\Users\HP\Desktop\joukowsky\crates\domain\localisation)
+   Compiling jk-sim v0.1.0 (C:\Users\HP\Desktop\joukowsky\crates\sim)
+   Compiling jk-hydraulics v0.1.0 (C:\Users\HP\Desktop\joukowsky\crates\domain\hydraulics)
    Compiling jk-application v0.1.0 (C:\Users\HP\Desktop\joukowsky\crates\application)
    Compiling jk-files v0.1.0 (C:\Users\HP\Desktop\joukowsky\crates\adapters\files)
    Compiling jk-tests v0.1.0 (C:\Users\HP\Desktop\joukowsky\tests)
    Compiling jk-cli v0.1.0 (C:\Users\HP\Desktop\joukowsky\crates\interfaces\cli)
-    Finished `test` profile [unoptimized + debuginfo] target(s) in 40.31s
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 31.63s
      Running unittests src\lib.rs (target\debug\deps\jk_application-6f0d1c56f055322e.exe)
 
 running 3 tests
@@ -94,7 +94,7 @@ test supply::tests::a_slam_swinging_back_to_the_floor_still_marks_the_return ...
 test supply::tests::live_in_pieces_gives_the_same_spells ... ok
 test supply::tests::still_empty_at_the_end_is_said ... ok
 
-test result: ok. 24 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.10s
+test result: ok. 24 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.03s
 
      Running unittests src\lib.rs (target\debug\deps\jk_files-abe3646623636d2b.exe)
 
@@ -128,7 +128,7 @@ test scada::tests::a_unit_is_never_guessed ... ok
 test scada::tests::l_town_style_flows_with_a_gap ... ok
 test site::tests::zones_ratings_and_ranges ... ok
 
-test result: ok. 28 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s
+test result: ok. 28 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
 
      Running unittests src\lib.rs (target\debug\deps\jk_health-0684ebb074877a31.exe)
 
@@ -212,7 +212,7 @@ test steady::controls::tests::once_is_once ... ok
 test steady::rules::tests::or_binds_tighter_than_and_as_in_epanet ... ok
 test vapour::tests::the_coast_boils_lower_than_the_highveld ... ok
 
-test result: ok. 68 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.09s
+test result: ok. 68 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.04s
 
      Running unittests src\lib.rs (target\debug\deps\jk_kernel-eccabcc9e10cd5d2.exe)
 
@@ -233,20 +233,21 @@ test units::tests::same_type_arithmetic ... ok
 test units::tests::velocity_flow_area ... ok
 test units::tests::wave_travel_time_and_distance_round_trip ... ok
 
-test result: ok. 15 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.04s
+test result: ok. 15 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
 
      Running unittests src\lib.rs (target\debug\deps\jk_localisation-b57d917c3efe0d09.exe)
 
-running 7 tests
+running 8 tests
 test graph::travel_time::tests::fastest_path_and_no_passing_through_reservoirs ... ok
 test locate::tests::golden_section_finds_a_parabola_minimum ... ok
 test posterior::bound::tests::the_determinant_terms_are_largest_without_wave_speed_doubt ... ok
 test posterior::score::tests::a_perfect_candidate_scores_zero_misfit_and_recovers_t0 ... ok
 test posterior::score::tests::a_wrong_candidate_is_penalised ... ok
 test posterior::score::tests::with_independent_errors_the_correlated_score_matches_the_simple_one ... ok
+test pressure::tests::a_leak_is_found_where_it_was_played_and_sized ... ok
 test size::tests::exact_fronts_give_back_the_flow ... ok
 
-test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
 
      Running unittests src\lib.rs (target\debug\deps\jk_sim-cdf9363ef8ace4d0.exe)
 
@@ -256,7 +257,7 @@ test town::tests::every_junction_is_reachable_and_the_town_has_loops_and_dead_en
 test town::tests::the_length_is_exactly_the_target ... ok
 test town::tests::the_same_seed_gives_the_same_town ... ok
 
-test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
 
      Running unittests src\lib.rs (target\debug\deps\jk_telemetry-c8a96417b1d674bc.exe)
 
@@ -748,7 +749,7 @@ test simulation::site_file::vs11_a_site_file_with_a_mistake_is_refused_with_its_
     a doubt that is not a share: refused, with its line yes
 ok
 
-test result: ok. 23 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 216.02s
+test result: ok. 23 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 68.79s
 
      Running balance\main.rs (target\debug\deps\balance-a2825c7f967d1b14.exe)
 
@@ -761,7 +762,7 @@ test datasets::ltown_leaks::d2_ltown_two_years_of_night_flows_against_the_true_l
   dataset file: data/incoming/ltown/2019_Leakages.csv
   dataset file: data/incoming/ltown/dataset_configuration.yaml
   the readings start at 2018-01-01 00:00       yes
-  holiday calendar: 32 public holidays; 58 nights not judged
+  holiday calendar: Cyprus's public holidays; 58 nights not judged
   730 nights (2018-2019), night flow 02:00-04:00; baseline 65.3 m3/h, night-to-night spread 5.36 m3/h
   weekly profile found (m3/h from the baseline, Mon..Sun): -11.7 -5.1 -4.4 -4.0 +11.8 +17.7 +3.0
   the smallest leak this spread lets the watch catch within a week: 7.3 m3/h
@@ -881,7 +882,7 @@ test simulation::night_watch::the_detection_curve_matches_the_cusum_arithmetic .
   at the arithmetic's size: caught at least a third of the time yes
 ok
 
-test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 39.49s
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 13.15s
 
      Running channels\main.rs (target\debug\deps\channels-ce85841cd8c293e6.exe)
 
@@ -970,7 +971,7 @@ test simulation::feed::when_the_canal_stops_the_sump_runs_down_and_the_town_runs
     the sump's change = in - drawn, within 1.27% of the water drawn (draw read every 5 min) yes
 ok
 
-test result: ok. 11 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 35.70s
+test result: ok. 11 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 11.56s
 
      Running classification\main.rs (target\debug\deps\classification-a56e11395e341787.exe)
 
@@ -1153,7 +1154,7 @@ test simulation::scenarios::power_data_settles_the_slow_burst ... The same slow 
   burst                                        yes
 ok
 
-test result: ok. 11 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 4.07s
+test result: ok. 11 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.31s
 
      Running detection\main.rs (target\debug\deps\detection-81d94b53f3b9f2e6.exe)
 
@@ -1275,7 +1276,7 @@ test simulation::burst_location::vs1_location_error_versus_sampling_rate_and_noi
   128 S/s with 2 cm noise locates to under 1 m RMS yes
 ok
 
-test result: ok. 11 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 274.94s
+test result: ok. 11 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 174.06s
 
      Running health\main.rs (target\debug\deps\health-c1dfc12b2c8dfb16.exe)
 
@@ -1901,7 +1902,7 @@ test invariants::steady_state::an_undisturbed_pipe_stays_steady ... Steady state
   valve holds steady                           yes
 ok
 
-test result: ok. 68 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 62.02s
+test result: ok. 68 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 59.01s
 
      Running kernel\main.rs (target\debug\deps\kernel-84f06cfc922db1e0.exe)
 
@@ -1930,7 +1931,7 @@ test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; fini
 
      Running localisation\main.rs (target\debug\deps\localisation-310764eaa64d4174.exe)
 
-running 32 tests
+running 33 tests
 test analytical::branched::two_sensors_see_a_whole_branch_three_sensors_see_the_point ... Sensors S1 and S2 only (burst 200 m along branch T-S3):
   probability on branch T-S3: 100.0%
   90% region: 540 m of pipe
@@ -2017,7 +2018,7 @@ Recommended 6 (after swaps): a1 block A1, c1 block C1, b1 block B1, c2 block C2,
     B-b2               90 m   typical region  155 m
     C-c1              150 m   typical region   20 m
     C-c2              220 m   typical region   25 m
-  (advice took 10 s on this machine)
+  (advice took 11 s on this machine)
 Would a sudden 1 l/s burst be felt? By at least one logger on 100% of the pipe, by two (so located) on 100%. Smallest burst locatable anywhere on each pipe (upper bound: no plastic-wall damping yet):
     R-M connection     0.09 l/s
     M-A ring           0.04 l/s
@@ -2088,6 +2089,95 @@ test analytical::straight_main::a_burst_on_a_straight_main_is_found_where_the_fo
   the region contains the truth                yes
   the region is at most two grid cells         yes
   misfit of a perfect fit                      got       0.000000   expected       0.000000   rel.err 0.0e0
+ok
+test datasets::ltown_pressure::d2_ltown_leaks_located_from_pressure_sensors ...   dataset file: data/incoming/ltown/L-TOWN.inp
+  dataset file: data/incoming/ltown/2018_SCADA_Pressures.csv
+  dataset file: data/incoming/ltown/2019_SCADA_Pressures.csv
+  dataset file: data/incoming/ltown/dataset_configuration.yaml
+  dataset file: data/incoming/ltown/2018_SCADA_Flows.csv
+  dataset file: data/incoming/ltown/2019_SCADA_Flows.csv
+  dataset file: data/incoming/ltown/2018_SCADA_Levels.csv
+  dataset file: data/incoming/ltown/2019_SCADA_Levels.csv
+  dataset file: data/incoming/ltown/2018_Leakages.csv
+  dataset file: data/incoming/ltown/2019_Leakages.csv
+  782 signatures (a 10 m3/h leak at each junction, 03:00) in 37.6 s
+
+  1. Nights chosen by the TRUE start of each leak (the method's reach):
+    pipe   kind      peak [m3/h]  best junction  sized [m3/h]  distance [m]
+    p257   growing      6.9       n54               8.3          552
+    p461   growing     30.5       n479             50.4           75
+    p232   growing     26.1       n589             29.0          288
+    p427   growing      5.1       n166             71.0          618
+    p673   sudden      28.4       n231             51.8          122
+    p810   growing      6.9       n340             46.5         1229
+    p628   growing     35.4       n164            101.5          345
+    p538   sudden      32.8       n156             85.8          176
+    p866   sudden      20.6       n314             73.6           59
+    p31    growing     16.2       n388            823.6          153
+    p654   growing      5.5       n198             10.1          307
+    p183   sudden      16.5       n305             26.5           31
+    p158   sudden      24.8       n235             38.4           31
+    p369   sudden      21.1       n497             17.7          613
+    p523   sudden      28.4       n132             42.6           22
+    p827   sudden      26.5       n729             43.4           76
+    p280   sudden       5.3       n44            1468.0          241
+    p653   growing     18.3       n184             81.7          354
+    p710   sudden       5.6       n628             24.5          368
+    p514   sudden      15.6       n518             25.4           26
+    p331   sudden      10.9       n77              24.7          181
+    p193   growing     10.4       n717             34.1          326
+    p277   growing      7.4       n633             45.9         1389
+    p142   sudden      27.0       n198             64.2          260
+    p680   sudden       5.4       n222             28.0          291
+    p586   growing     20.5       n585             31.6          736
+    p721   growing     13.2       n701             68.2          722
+    p800   growing     21.9       n271             91.9          159
+    p123   growing      9.2       n236             19.4          912
+    p455   growing     11.1       n184             63.0         1019
+    p762   growing     15.7       n632             88.3          505
+    p426   sudden      13.6       n629             31.8          217
+    p879   growing     10.9       n747             39.8          201
+  of 33 located: within 300 m of the leak 18, within 500 m 23; median 288 m - a junction picked at random: 922 m
+  reference: 15 or more within 300 m           yes
+  reference: median under 350 m                yes
+
+  2. Nights chosen by the night watch's own ALARMS (as the engine runs):
+    alarm raised  matched leak (peak)  best junction  sized (alarm said)  distance [m]  to a leak that changed [m]
+    2018-02-04    p232  (26.1)        n588            26.7 ( 20.5)            184    184
+    2018-02-27    p427  ( 5.1)        n125             6.1 (  9.4)           1179    144
+    2018-03-13    p673  (28.4)        n237            52.4 ( 37.7)            177    177
+    2018-03-21    p461  (30.5)        n142            17.0 ( 11.5)            264    264
+    2018-05-04    p628  (35.4)        n781             1.4 (  6.7)            531    no leak changed by 3 m3/h
+    2018-05-18    p257  ( 6.9)        n197            37.4 ( 27.1)           1495    28
+    2018-05-21    p538  (32.8)        n156            85.6 ( 38.2)            176    176
+    2018-07-23    p654  ( 5.5)        n388           244.9 ( 12.3)           1003    153
+    2018-08-09    p183  (16.5)        n305            24.8 ( 20.5)             31    31
+    2018-10-06    p810  ( 6.9)        n629             2.2 (  5.4)           1086    no leak changed by 3 m3/h
+    2018-11-02    p369  (21.1)        n497            15.6 (  8.9)            613    613
+    2019-01-25    p827  (26.5)        n123            39.8 ( 22.3)           2332    112
+    2019-01-28    p523  (28.4)        n729            43.4 ( 31.6)           2223    76
+    2019-02-25    p280  ( 5.3)        n13             18.1 (  7.4)            131    no leak changed by 3 m3/h
+    2019-03-21    p653  (18.3)        n622             3.1 ( 13.0)            228    no leak changed by 3 m3/h
+    2019-04-08    p514  (15.6)        n517            17.6 ( 30.3)             26    26
+    2019-05-04    p331  (10.9)        n77             35.3 ( 18.5)            181    181
+    2019-06-15    p142  (27.0)        n603            19.0 ( 14.9)            236    236
+    2019-07-07    p277  ( 7.4)        n663             4.7 ( 13.1)           1711    no leak changed by 3 m3/h
+    2019-07-31    p586  (20.5)        n776             8.2 (  9.5)            882    no leak changed by 3 m3/h
+    2019-08-14    p721  (13.2)        n158             2.7 ( 18.7)           1304    no leak changed by 3 m3/h
+    2019-08-26    p800  (21.9)        n179            16.3 ( 13.3)           1792    123
+    2019-09-09    p680  ( 5.4)        n702            29.4 ( 29.7)            860    77
+    2019-10-23    p762  (15.7)        n34             28.6 ( 13.9)           1745    no leak changed by 3 m3/h
+    2019-11-08    p426  (13.6)        n629            31.8 ( 22.4)            217    217
+    2019-11-14    p455  (11.1)        n766             3.0 ( 10.4)           2667    no leak changed by 3 m3/h
+    2019-12-03    p879  (10.9)        n39             41.0 ( 14.7)           2438    1751
+    2019-12-29    p123  ( 9.2)        n740             4.4 ( 15.2)           1850    146
+  scored against the leak each alarm was matched to:
+  of 28 located: within 300 m of the leak 11, within 500 m 11; median 882 m - a junction picked at random: 915 m
+  from the alarms: 8 or more within 300 m of the matched leak yes
+  scored against the nearest leak that truly changed in the two weeks:
+  of 19 located: within 300 m of the leak 17, within 500 m 17; median 153 m - a junction picked at random: 836 m
+  from the alarms: 12 or more within 300 m of a changed leak yes
+  from the alarms: median under 400 m          yes
 ok
 test invariants::calibration::calibration_holds_over_many_trials ... 400 random bursts; wave speeds off by ~3%; timing noise 0.2 ms:
   truth inside the 90% region: 92.5% (ideal 90%)
@@ -2263,7 +2353,7 @@ test simulation::valve_fronts::a_shut_prv_passes_no_wave_and_no_route ... A seco
     and no route from S1 reaches the zone: the locator cannot place a burst there from S1 yes
 ok
 
-test result: ok. 32 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 191.51s
+test result: ok. 33 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 309.33s
 
      Running pipeline\main.rs (target\debug\deps\pipeline-9c399a325a10643c.exe)
 
@@ -3232,7 +3322,7 @@ test simulation::valves_by_hour::at_noon_the_valve_is_active_and_both_loggers_lo
     and it is not dismissed                    yes
 ok
 
-test result: ok. 22 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 295.60s
+test result: ok. 22 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 554.59s
 
    Doc-tests jk_application
 
@@ -3313,9 +3403,9 @@ running 0 tests
 test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
 
 ==============================================================================
-  passed   370
+  passed   372
   failed   0
   skipped  0 slow test(s) not in this suite
   filtered 0 test(s) outside -Only/-Filter
-  time     1,172.0 s (including compile)
+  time     1,232.8 s (including compile)
   result   ALL PASSED

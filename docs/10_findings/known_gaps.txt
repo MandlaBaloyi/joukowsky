@@ -154,6 +154,10 @@ G-12  Slow leaks are invisible to the transient method     IN PROGRESS
   of 33 leaks caught within a week, and blind for 341 days after an
   alarm and a repair. The watch must step its baseline, see repairs and
   follow the seasons.
+  2026-10-06: and now WHERE, from the 33 pressure sensors and the model
+  (FN-053): within 300 m of a leak that truly changed for 17 of 19 alarms,
+  median 153 m. Open: the alarm's timing for the other alarms; small and
+  slowly growing leaks barely move the sensors.
 
 G-13  Wave-speed doubt in placement is a fixed 10%                OPEN
   F10 proper: robust placement over a posterior of wave speeds.

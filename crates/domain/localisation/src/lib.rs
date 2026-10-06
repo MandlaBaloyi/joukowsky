@@ -21,6 +21,8 @@
 //! - [`clocks`]: sensor clock offsets, estimated from known-source events
 //!   and removed (software clock repair, frontier F9).
 //! - [`placement`]: where loggers should go - the placement advisor.
+//! - [`pressure`]: where a SLOW leak is, from pressure sensors read every
+//!   few minutes and the network model (leak signatures; FN-053).
 
 pub mod clocks;
 mod error;
@@ -28,6 +30,7 @@ pub mod graph;
 pub mod locate;
 pub mod placement;
 pub mod posterior;
+pub mod pressure;
 pub mod size;
 
 pub use clocks::{
@@ -39,4 +42,5 @@ pub use locate::{
     Arrival, Localisation, LocaliseOptions, Localiser, Point, localise, localise_with,
 };
 pub use posterior::{PipeProbability, Segment};
+pub use pressure::{PressureMatch, Signatures, locate_from_pressures};
 pub use size::{Drop, SizeEstimate, size, size_with};

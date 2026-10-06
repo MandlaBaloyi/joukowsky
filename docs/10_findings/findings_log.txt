@@ -712,3 +712,34 @@ FN-052  2026-10-06  The refill slam was never missed - the wrong case was read
   under about 12 m) could pass as ringing. Lesson: print what the sensor
   sees before diagnosing; a test that passes by luck hides what it never
   checked.
+
+FN-053  2026-10-06  The pressure sensors say WHERE: 153 m in a 2.7 km town
+  The night watch says a leak began somewhere in the zone, never where.
+  L-Town has 33 pressure sensors, read every 5 minutes. A leak draws water
+  through the pipes to it, so the pressure falls most near it: the engine
+  plays a 10 m3/h leak at each of the 782 junctions in turn (steady state
+  at 03:00 with the town's own demands; 782 solves in 1-3 s) and keeps how
+  far each sensor falls - a signature per junction
+  (localisation/src/pressure.rs). A measured change of the sensors' night
+  pressures (the week after minus the week before) is fitted to every
+  signature (size and a common shift free, sensors weighted by their own
+  night-to-night noise, at least 2 cm); the best fit is the place.
+  On L-Town (tests/localisation/datasets/ltown_pressure.rs):
+    - with the TRUE leak dates (the method's reach): within 300 m of 18 of
+      the 33 leaks, median 288 m - a junction picked at random: 922 m;
+    - from the night watch's own ALARMS (the week after the rise the alarm
+      dated): within 300 m of a leak that truly changed in those weeks in
+      17 of 19 alarms, median 153 m (random 836 m) - 26 m, 28 m, 31 m,
+      76 m, 77 m for several. In the other 9 alarms no leak changed by
+      3 m3/h in those two weeks: the alarm's timing, not the locator, is
+      what fails there. Scored against the leak each alarm was paired
+      with one to one, it looks far worse (median 882 m) - the week can
+      hold a repair, a new leak and another growing; the locator finds
+      where the pressure changed.
+  Big sudden leaks are found best; small and slowly growing ones barely
+  move the sensors. The size from the fit is a first estimate (the
+  response is not linear for big leaks: friction goes as the flow
+  squared). Missed on the way: windows for a growing leak must sit at its
+  peak, not its start (the reference dropped to 401 m median until
+  fixed). Next: the alarm's own timing (the rise night), signatures at
+  more than one hour, and the place shown on the viewer's map.

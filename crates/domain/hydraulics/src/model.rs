@@ -495,6 +495,31 @@ impl Network {
         self.nodes[n] = node;
     }
 
+    /// Sets the demand of junction `node` - e.g. demands of a given hour,
+    /// or a leak added at one junction to see what pressure sensors would
+    /// feel (leak signatures).
+    ///
+    /// # Errors
+    /// A node that is not a junction, or a demand that is not finite.
+    pub fn set_demand(&mut self, node: NodeId, demand: Flow) -> Result<(), HydraulicsError> {
+        if !demand.value().is_finite() {
+            return Err(HydraulicsError::InvalidNetwork(format!(
+                "demand at node {} is not a number",
+                node.index()
+            )));
+        }
+        match self.nodes.get(node.index()) {
+            Some(Node::Junction { .. }) => {
+                self.nodes[node.index()] = Node::Junction { demand };
+                Ok(())
+            }
+            _ => Err(HydraulicsError::InvalidNetwork(format!(
+                "node {} is not a junction: it has no demand to set",
+                node.index()
+            ))),
+        }
+    }
+
     /// Drops every level history, the heads having been written into the
     /// reservoir nodes (the extended-period run's copy).
     pub(crate) fn clear_levels(&mut self) {

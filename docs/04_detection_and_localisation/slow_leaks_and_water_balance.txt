@@ -78,6 +78,20 @@ reaching 15 m3/h), 28 at all, 9 within a week; 18 repairs seen; longest
 silence while a big leak came and went 63 days (was 341). Simulation unchanged: one false alarm per ~560
 nights, a leak at the d_min arithmetic caught within a week 75% of the
 time.
+Locating from pressure sensors (2026-10-06, FN-053; localisation/src/
+pressure.rs). The balance says a leak began in the zone, not where. With
+pressure sensors read every few minutes and the network model: play a
+small leak (10 m3/h) at each candidate junction in turn, in the network
+as it stands at night, and keep how far each sensor's pressure falls - a
+SIGNATURE per junction. A measured change of the sensors' night pressures
+(the week after the rise minus the week before) is fitted to each,
+change = c x signature + b (weighted by each sensor's noise; c > 0, b
+takes what changed everywhere); the best fits are where the leak most
+likely is, c x 10 m3/h its first size. L-Town: from the night watch's own
+alarms, within 300 m of a leak that truly changed in 17 of 19, median
+153 m, where a random junction is 836 m away; with the true dates, 18 of
+33 within 300 m, median 288 m.
+
 Still missed: one town-wide balance cannot see leaks under about 8
 m3/h within a week, nor a leak that begins as another of its size is
 repaired - smaller zones (district metered areas) can; a leak that

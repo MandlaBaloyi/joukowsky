@@ -130,6 +130,30 @@ pub struct TankInlet {
     pub coefficient: f64,
 }
 
+impl PeriodOptions {
+    /// Each node's demand multiplier at pattern time `t` (from the start of
+    /// the patterns), for a network of `nodes` nodes: the default pattern,
+    /// or a junction's own patterns each for its share - exactly what the
+    /// extended-period run applies. Lets a steady state be solved for any
+    /// moment of the day (e.g. 03:00, for leak signatures from pressure
+    /// sensors).
+    #[must_use]
+    pub fn multipliers_at(&self, nodes: usize, t: Time) -> Vec<f64> {
+        let t = t.value();
+        let mut m = vec![multiplier(&self.pattern, self, t); nodes];
+        for n in self.node_patterns.iter().flat_map(|p| &p.nodes) {
+            m[n.index()] = 0.0;
+        }
+        for p in &self.node_patterns {
+            let own = multiplier(&p.multipliers, self, t);
+            for (k, n) in p.nodes.iter().enumerate() {
+                m[n.index()] += p.share(k) * own;
+            }
+        }
+        m
+    }
+}
+
 impl Default for PeriodOptions {
     fn default() -> Self {
         Self {
@@ -785,16 +809,7 @@ impl Network {
         options: &PeriodOptions,
     ) -> Result<SteadySolution, HydraulicsError> {
         let mut net = self.clone();
-        let mut m = vec![multiplier(&options.pattern, options, pattern_time); self.nodes().len()];
-        for n in options.node_patterns.iter().flat_map(|p| &p.nodes) {
-            m[n.index()] = 0.0;
-        }
-        for p in &options.node_patterns {
-            let own = multiplier(&p.multipliers, options, pattern_time);
-            for (k, n) in p.nodes.iter().enumerate() {
-                m[n.index()] += p.share(k) * own;
-            }
-        }
+        let m = options.multipliers_at(self.nodes().len(), Time::new(pattern_time));
         for (n, node) in self.nodes().iter().enumerate() {
             match *node {
                 Node::Reservoir { head } => net.set_node(

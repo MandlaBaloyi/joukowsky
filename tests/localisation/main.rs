@@ -11,6 +11,7 @@
 //! Run only these:  `.\tests\run-tests.ps1 -Only localisation`
 
 mod analytical;
+mod datasets;
 mod invariants;
 mod simulation;
 
