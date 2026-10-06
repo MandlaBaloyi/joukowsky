@@ -17,5 +17,5 @@ mod error;
 
 pub use error::BalanceError;
 pub use leak::{LeakAlarm, LeakOptions, Watch, smallest_detectable, watch};
-pub use night::{Night, NightWindow, night_flows};
+pub use night::{Night, NightWindow, mark_holidays, night_flows};
 pub use zone::{Direction, Meter, Series, balance};

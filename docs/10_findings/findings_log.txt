@@ -650,3 +650,36 @@ FN-050  2026-10-05  A refill's slam is not picked as a front
   passes as it did - but on luck at the edge. Open (G-23): a short, sharp
   surge with no lasting step - a refill slam, a valve slammed and
   reopened - must be reported as an event in its own right.
+
+FN-051  2026-10-06  "25 of 33" was scored too kindly; three big leaks swallowed
+  The owner asked why 25 of L-Town's 33 leaks and not 33. Of the 8 not
+  caught within a month: three big sudden leaks (p866, p183, p827) began
+  within two weeks of an earlier alarm and were averaged into the level
+  the watch was re-learning; one (p369) began as another of the same size
+  was repaired - the town's night flow did not change, which no town-wide
+  balance can see; four small ones (5-11 m3/h) were caught late, being
+  under the ~8 m3/h a week can show.
+  Fixed in the watch (leak.rs): the level after a change is refined with
+  the MEDIAN, not the mean; at the end of the settling window a clear
+  split of its own nights into two levels (4 standard errors, more than
+  a week's detectable leak, 3 nights either side) is reported as a
+  second change, and the level moved to it (forgetting that made the
+  watch find the same leak again - duplicate alarms); holiday nights from
+  the site's calendar are not judged (night.rs: mark_holidays; G-24).
+  And the SCORING was wrong. It credited an alarm to every leak begun
+  since the previous alarm, so one alarm could "catch" three leaks and a
+  duplicate could look false. Four rules were tried on the same alarms
+  (one-sided growth tests against the true leak flows, oldest-first and
+  newest-first matching); they gave from 15 to 30 "within a month". Kept:
+  one to one, in time order, each alarm matched to the NEWEST leak
+  running when it is raised (a rise is most likely the latest leak),
+  each leak to one alarm at most - the way benchmarks score detection
+  [VERIFY BattLeDIM's exact rule]. Under it, before these fixes: 19 of
+  33 within a month, 24 at all. After: 21 within a month (14 of the 18
+  big), 28 at all (15 of 18 big), 9 within a week, 0 false alarms, 18
+  repairs seen, longest silence 63 days. Without the calendar: 19 and
+  24. False alarms are judged in simulation, where no leak runs: one per
+  ~560 nights (L-Town nearly always has a leak running, so one-to-one
+  matching rarely calls an alarm false). Lesson: decide how to score
+  before tuning, and write the rule down - the score moved more with the
+  rule than with the engine.

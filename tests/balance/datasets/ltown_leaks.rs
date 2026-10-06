@@ -25,13 +25,22 @@
 //! blind for 341 days after an alarm and a repair. The watch now learns a
 //! weekly profile, follows the seasons, steps its level after a change and
 //! refines it for two weeks, sees falls (repairs), and caps how much one
-//! night counts. The checks below lock in what that gave on 2026-10-05
-//! (25 of 33 within a month, 3 false alarms, longest silence 102 days):
-//! a change that makes it worse fails. Still missed: holidays look like
-//! leaks (Orthodox Easter, Pentecost Monday) - a holiday calendar as
-//! context is the next step.
+//! night counts. 2026-10-06 (FN-051): the level after a change is refined
+//! with the median, a second change inside the settling window is
+//! reported, holiday nights (Cyprus's calendar) are not judged - and the
+//! SCORING was corrected: alarms are matched one to one to the newest
+//! leak running when raised (the first rule credited any leak begun since
+//! the previous alarm and overstated: "25 of 33 within a month" was 19
+//! under this rule before these fixes). The checks lock in what this gave
+//! (21 of 33 within a month, 28 at all, 0 false, longest silence 63
+//! days): a change that makes it worse fails. False alarms are judged
+//! properly in simulation (tests/balance/simulation): L-Town nearly
+//! always has some leak running, so one-to-one matching rarely calls an
+//! alarm false.
 
-use jk_balance::{Direction, LeakOptions, Meter, NightWindow, balance, night_flows, watch};
+use jk_balance::{
+    Direction, LeakOptions, Meter, NightWindow, balance, mark_holidays, night_flows, watch,
+};
 use jk_files::scada::{ScadaOptions, ScadaTable, ScadaUnit, read};
 use jk_kernel::Time;
 use jk_kernel::clock::days_from_civil;
@@ -56,6 +65,47 @@ fn seconds(stamp: &str) -> f64 {
     let day_seconds = days as f64 * DAY;
     day_seconds + t[0] * 3600.0 + t[1] * 60.0 + t.get(2).copied().unwrap_or(0.0)
 }
+
+/// Cyprus's public holidays 2018-2019 (L-Town is laid out on a Cypriot
+/// town): New Year, Epiphany, Green Monday, 25 March, 1 April, Orthodox
+/// Good Friday, Easter Sunday and Monday, 1 May, Pentecost Monday
+/// (Kataklysmos), 15 August, 1 October, 28 October, 24-26 December.
+/// Checked 2026-10-06 against officeholidays.com (2019) and
+/// allaboutlimassol.com (2018).
+pub const CYPRUS_HOLIDAYS: [(i64, u32, u32); 32] = [
+    (2018, 1, 1),
+    (2018, 1, 6),
+    (2018, 2, 19),
+    (2018, 3, 25),
+    (2018, 4, 1),
+    (2018, 4, 6),
+    (2018, 4, 8),
+    (2018, 4, 9),
+    (2018, 5, 1),
+    (2018, 5, 28),
+    (2018, 8, 15),
+    (2018, 10, 1),
+    (2018, 10, 28),
+    (2018, 12, 24),
+    (2018, 12, 25),
+    (2018, 12, 26),
+    (2019, 1, 1),
+    (2019, 1, 6),
+    (2019, 3, 11),
+    (2019, 3, 25),
+    (2019, 4, 1),
+    (2019, 4, 26),
+    (2019, 4, 28),
+    (2019, 4, 29),
+    (2019, 5, 1),
+    (2019, 6, 17),
+    (2019, 8, 15),
+    (2019, 10, 1),
+    (2019, 10, 28),
+    (2019, 12, 24),
+    (2019, 12, 25),
+    (2019, 12, 26),
+];
 
 /// One column of two consecutive years, end to end (checked to join).
 fn both_years(years: &[ScadaTable; 2], name: &str) -> Vec<f64> {
@@ -88,12 +138,19 @@ fn leaks(yaml: &str, flows: &[ScadaTable; 2]) -> Vec<Leak> {
         .map(|l| {
             let f: Vec<&str> = l[2..].split(',').map(str::trim).collect();
             let pipe = f[0].to_string();
-            let peak = flows
+            // Its flow over both years, from 2018-01-01: a year whose file
+            // has no column for it (not leaking then) counts as zeros.
+            let flow: Vec<f64> = flows
                 .iter()
-                .filter_map(|t| t.column(&pipe))
-                .flat_map(|c| c.values.iter().copied())
-                .fold(0.0, f64::max)
-                / M3H;
+                .flat_map(|t| {
+                    let n = t.columns.first().map_or(0, |c| c.values.len());
+                    t.column(&pipe).map_or_else(
+                        || vec![0.0; n],
+                        |c| c.values.iter().map(|q| q / M3H).collect(),
+                    )
+                })
+                .collect();
+            let peak = flow.iter().copied().fold(0.0, f64::max);
             Leak {
                 pipe,
                 start: seconds(f[1]),
@@ -179,7 +236,17 @@ fn d2_ltown_two_years_of_night_flows_against_the_true_leaks() {
         utc_offset: Time::ZERO, // the readings are in the town's clock time
         ..NightWindow::default()
     };
-    let nights = night_flows(&used, window).unwrap();
+    let mut nights = night_flows(&used, window).unwrap();
+    let holidays: Vec<i64> = CYPRUS_HOLIDAYS
+        .iter()
+        .map(|&(y, m, d)| days_from_civil(y, m, d))
+        .collect();
+    mark_holidays(&mut nights, &holidays);
+    println!(
+        "  holiday calendar: {} public holidays; {} nights not judged",
+        holidays.len(),
+        nights.iter().filter(|n| n.holiday).count()
+    );
     let options = LeakOptions::default();
     let w = watch(&nights, &options).unwrap();
 
@@ -204,29 +271,40 @@ fn d2_ltown_two_years_of_night_flows_against_the_true_leaks() {
         w.smallest_in_a_week.value() / M3H
     );
     println!("  the watch raised {} alarm(s):", w.alarms.len());
-    // An alarm catches every leak that began after the previous alarm (a
-    // leak already running then was in the watch's new baseline) and was
-    // still running when the rise began. Growing leaks start weeks before
-    // they are big enough to see, so the start may be long before the rise.
-    println!(
-        "    #  rise from   raised on   size [m3/h]      true leak(s) begun since the last alarm, running at the rise"
-    );
-    let mut caught = vec![None; truth.len()];
+    // Scoring, one to one, as leak-detection benchmarks do (BattLeDIM's
+    // detection score [VERIFY the exact rule]): in time order, each alarm
+    // is matched to a leak RUNNING when it is raised (begun, not yet
+    // repaired) and not matched before - the NEWEST first (a rise is most
+    // likely the latest leak; oldest-first credited big new leaks' alarms
+    // to small leaks dripping for weeks); each
+    // leak to one alarm at most. An alarm with no leak left to match is
+    // FALSE; a leak never matched is MISSED. Nothing is double-counted, and
+    // no guess is made about which leak a rise "is about".
+    println!("    #  rise from   raised on   size [m3/h]      the leak it is matched to");
+    let mut caught: Vec<Option<f64>> = vec![None; truth.len()];
     let mut false_alarms = 0;
-    let mut previous = f64::NEG_INFINITY;
+    let mut order: Vec<usize> = (0..w.alarms.len()).collect();
+    order.sort_by(|&x, &y| {
+        w.alarms[x]
+            .raised
+            .value()
+            .total_cmp(&w.alarms[y].raised.value())
+    });
+    let mut matched_to = vec![None; w.alarms.len()];
+    for &k in &order {
+        let raised = w.alarms[k].raised.value() - e0;
+        let pick = (0..truth.len())
+            .filter(|&i| caught[i].is_none() && truth[i].start <= raised && truth[i].end >= raised)
+            .max_by(|&x, &y| truth[x].start.total_cmp(&truth[y].start));
+        if let Some(i) = pick {
+            caught[i] = Some(raised - truth[i].start);
+            matched_to[k] = Some(i);
+        }
+    }
     for (k, a) in w.alarms.iter().enumerate() {
         let from = a.first_night.value() - e0;
         let raised = a.raised.value() - e0;
-        let matched: Vec<usize> = (0..truth.len())
-            .filter(|&i| {
-                let l = &truth[i];
-                l.start > previous && l.start <= raised && l.end >= from
-            })
-            .collect();
-        previous = raised;
-        for &i in &matched {
-            caught[i].get_or_insert(raised - truth[i].start);
-        }
+        let matched: Vec<usize> = matched_to[k].into_iter().collect();
         if matched.is_empty() {
             false_alarms += 1;
         }
@@ -336,6 +414,10 @@ fn d2_ltown_two_years_of_night_flows_against_the_true_leaks() {
         within(30.0, &all) >= 20,
     );
     check("5 false alarms or fewer in two years", false_alarms <= 5);
+    check(
+        "25 or more of the 33 leaks caught at all",
+        within(f64::INFINITY, &all) >= 25,
+    );
     check(
         "no silence over 120 days while a big leak comes and goes",
         missed == 0 || longest <= 120.0 * DAY,

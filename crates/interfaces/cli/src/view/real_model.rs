@@ -17,7 +17,9 @@
 
 use std::path::{Path, PathBuf};
 
-use jk_balance::{Direction, LeakOptions, Meter, NightWindow, Watch, balance, night_flows, watch};
+use jk_balance::{
+    Direction, LeakOptions, Meter, NightWindow, Watch, balance, mark_holidays, night_flows, watch,
+};
 use jk_detection::{Detector, DetectorConfig, Event, Series};
 use jk_files::logger::{CsvOptions, PressureUnit};
 use jk_files::scada::{ScadaOptions, ScadaTable, ScadaUnit};
@@ -37,6 +39,43 @@ pub const LAB_RUNS: [&str; 10] = [
 ];
 /// L-Town's tank T1: 16 m across (L-TOWN.inp [TANKS]), floor 98.68 m.
 const TANK_AREA: f64 = std::f64::consts::PI * 8.0 * 8.0;
+/// Cyprus's public holidays 2018-2019, L-Town's calendar for the night
+/// watch (the same list as `tests/balance/datasets/ltown_leaks.rs`, with
+/// its sources).
+const CYPRUS_HOLIDAYS: [(i64, u32, u32); 32] = [
+    (2018, 1, 1),
+    (2018, 1, 6),
+    (2018, 2, 19),
+    (2018, 3, 25),
+    (2018, 4, 1),
+    (2018, 4, 6),
+    (2018, 4, 8),
+    (2018, 4, 9),
+    (2018, 5, 1),
+    (2018, 5, 28),
+    (2018, 8, 15),
+    (2018, 10, 1),
+    (2018, 10, 28),
+    (2018, 12, 24),
+    (2018, 12, 25),
+    (2018, 12, 26),
+    (2019, 1, 1),
+    (2019, 1, 6),
+    (2019, 3, 11),
+    (2019, 3, 25),
+    (2019, 4, 1),
+    (2019, 4, 26),
+    (2019, 4, 28),
+    (2019, 4, 29),
+    (2019, 5, 1),
+    (2019, 6, 17),
+    (2019, 8, 15),
+    (2019, 10, 1),
+    (2019, 10, 28),
+    (2019, 12, 24),
+    (2019, 12, 25),
+    (2019, 12, 26),
+];
 /// Pressure sensors shown on the town page (of the 33).
 const SHOWN_SENSORS: [&str; 3] = ["n1", "n105", "n288"];
 
@@ -353,6 +392,7 @@ fn days(stamp: &str) -> f64 {
     whole + (t[0] * 3600.0 + t[1] * 60.0) / DAY
 }
 
+#[allow(clippy::too_many_lines)] // read, watch, then score - one story
 fn leaks(data: &Path) -> Result<LeakModel, String> {
     let u = ScadaUnit::CubicMetresPerHour;
     let flows = [
@@ -401,7 +441,12 @@ fn leaks(data: &Path) -> Result<LeakModel, String> {
         utc_offset: Time::ZERO,
         ..NightWindow::default()
     };
-    let nights = night_flows(&used, window).map_err(|e| e.to_string())?;
+    let mut nights = night_flows(&used, window).map_err(|e| e.to_string())?;
+    let holidays: Vec<i64> = CYPRUS_HOLIDAYS
+        .iter()
+        .map(|&(y, m, d)| days_from_civil(y, m, d))
+        .collect();
+    mark_holidays(&mut nights, &holidays);
     let w = watch(&nights, &LeakOptions::default()).map_err(|e| e.to_string())?;
     let e0 = flows[0].start.value();
 
@@ -430,24 +475,30 @@ fn leaks(data: &Path) -> Result<LeakModel, String> {
             })
         })
         .collect();
-    // An alarm catches every leak begun since the previous alarm and still
-    // running when the rise began (the scoring of the tests).
-    let mut alarm_leaks = Vec::new();
-    let mut previous = f64::NEG_INFINITY;
-    for a in &w.alarms {
-        let from = (a.first_night.value() - e0) / DAY;
-        let raised = (a.raised.value() - e0) / DAY;
-        let caught: Vec<usize> = (0..truth.len())
+    // One-to-one, newest first (the scoring of the tests, FN-051): in time
+    // order each alarm takes the newest leak running when it is raised and
+    // not taken before.
+    let mut alarm_leaks = vec![Vec::new(); w.alarms.len()];
+    let mut order: Vec<usize> = (0..w.alarms.len()).collect();
+    order.sort_by(|&x, &y| {
+        w.alarms[x]
+            .raised
+            .value()
+            .total_cmp(&w.alarms[y].raised.value())
+    });
+    for k in order {
+        let raised = (w.alarms[k].raised.value() - e0) / DAY;
+        let pick = (0..truth.len())
             .filter(|&i| {
-                truth[i].start > previous && truth[i].start <= raised && truth[i].end >= from
+                truth[i].caught_after.is_none()
+                    && truth[i].start <= raised
+                    && truth[i].end >= raised
             })
-            .collect();
-        for &i in &caught {
-            let after = raised - truth[i].start;
-            truth[i].caught_after.get_or_insert(after);
+            .max_by(|&x, &y| truth[x].start.total_cmp(&truth[y].start));
+        if let Some(i) = pick {
+            truth[i].caught_after = Some(raised - truth[i].start);
+            alarm_leaks[k].push(i);
         }
-        alarm_leaks.push(caught);
-        previous = raised;
     }
     Ok(LeakModel {
         nights: nights.iter().map(|n| n.flow / M3H).collect(),

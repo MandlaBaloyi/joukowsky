@@ -57,24 +57,31 @@ the season. Now:
      and steps the level down; on L-Town the falls match the true repair
      dates within 1-3 days.
   d. STEP AND SETTLE: after an alarm or a fall the level steps by the
-     size found and is refined for 14 nights as the plain mean of the
-     nights since the change began (a size measured because it crossed
-     the alarm line is biased high; stepping by it alone ping-ponged
-     between alarms and falls - one false alarm per 250 nights in
-     simulation). No new alarm in those 14 nights.
+     size found and is refined for 14 nights as the MEDIAN of the nights
+     since the change began (a size measured because it crossed the
+     alarm line is biased high; stepping by it alone ping-ponged between
+     alarms and falls - one false alarm per 250 nights in simulation; the
+     median, not the mean, so a second leak starting inside the window is
+     not swallowed). No new alarm in those 14 nights - but at their end a
+     clear split of the window's own nights into two levels is reported
+     as a second change, and the level moved to it (FN-051).
+  f. HOLIDAYS: the site's calendar marks the night opening each holiday
+     and the night after; they are not judged (mark_holidays, G-24).
   e. ROBUST: one night counts at most 3 spreads (z clipped): leak-free
      nights are heavy-tailed (typical spread 2-3 m3/h about their own
      weekday, but the odd night - often a holiday - 20-30 m3/h off).
-Result, L-Town 2018-2019 (tests/balance/datasets/ltown_leaks.rs): 18
-alarms, 3 false; 7 of 33 leaks caught within a week, 25 within a month,
-29 at all; 11 repairs seen; longest silence while a big leak came and
-went 102 days (was 341). Simulation unchanged: one false alarm per ~560
+Result, L-Town 2018-2019 (tests/balance/datasets/ltown_leaks.rs),
+scored one to one - each alarm matched to the newest leak running when
+it is raised, each leak to one alarm (FN-051; an earlier, kinder rule
+reported "25 of 33"): 21 of 33 leaks caught within a month (14 of the 18
+reaching 15 m3/h), 28 at all, 9 within a week; 18 repairs seen; longest
+silence while a big leak came and went 63 days (was 341). Simulation unchanged: one false alarm per ~560
 nights, a leak at the d_min arithmetic caught within a week 75% of the
 time.
-Still missed: holidays look like leaks (Orthodox Easter, Pentecost
-Monday) - a holiday calendar fed in as context, like the pump schedule,
-is the next step (G-24); one town-wide balance cannot see leaks under
-about 8 m3/h within a week - smaller zones (district metered areas) can.
+Still missed: one town-wide balance cannot see leaks under about 8
+m3/h within a week, nor a leak that begins as another of its size is
+repaired - smaller zones (district metered areas) can; a leak that
+begins in the first nights after an alarm is taken into the new level.
 
 What meters can and cannot see (P2, P3)
 ---------------------------------------

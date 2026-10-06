@@ -46,6 +46,23 @@ pub struct Night {
     /// Nights differ by weekday: L-Town's weekend nights use 10-25 m3/h
     /// more than its weeknights (FN-048).
     pub weekday: u8,
+    /// The night's local date, as days since 1970-01-01.
+    pub day: i64,
+    /// A holiday night ([`mark_holidays`]): not judged by the leak watch.
+    pub holiday: bool,
+}
+
+/// Marks the nights a holiday changes: the night that opens each holiday
+/// (its 02:00-04:00, after the festive eve) and the night after it. Nights
+/// with a holiday use water like no ordinary night - on L-Town several
+/// false leak alarms fell on Orthodox Easter and Pentecost Monday
+/// (G-24) - so the leak watch does not judge them: like a missing night,
+/// they neither raise nor lower anything. `holidays` are local dates, as
+/// days since 1970-01-01 (the site's calendar, like its pump schedule).
+pub fn mark_holidays(nights: &mut [Night], holidays: &[i64]) {
+    for n in nights {
+        n.holiday = holidays.iter().any(|&d| n.day == d || n.day == d + 1);
+    }
 }
 
 /// The night flow of every night the series covers (whole windows only).
@@ -89,13 +106,17 @@ pub fn night_flows(series: &Series, window: NightWindow) -> Result<Vec<Night>, B
             } else {
                 f64::NAN
             };
+            #[allow(clippy::cast_possible_truncation)] // days since 1970
+            let day = ((midnight + offset) / DAY).round() as i64;
             #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)] // 0..7
-            let weekday = (((midnight + offset) / DAY).round() + 3.0).rem_euclid(7.0) as u8;
+            let weekday = (day + 3).rem_euclid(7) as u8;
             out.push(Night {
                 start: Time::new(a),
                 flow,
                 readings: present.len(),
                 weekday,
+                day,
+                holiday: false,
             });
         }
         midnight += DAY;
@@ -125,6 +146,12 @@ mod tests {
         assert_eq!(nights[0].readings, 8);
         // 1_790_632_800 s + 2 h is local midnight of 2026-09-29, a Tuesday.
         assert_eq!((nights[0].weekday, nights[1].weekday), (1, 2));
+        // A holiday the day before the first night: that night is the one
+        // after it, so it is marked; the next is not.
+        let mut nights = nights;
+        let eve = nights[0].day - 1;
+        mark_holidays(&mut nights, &[eve]);
+        assert!(nights[0].holiday && !nights[1].holiday);
     }
 
     #[test]

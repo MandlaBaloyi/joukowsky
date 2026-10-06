@@ -23,10 +23,13 @@
 //! sizes it as the mean excess since then, with its standard error (P3). A
 //! fall is the same downwards: a leak repaired, or less use. Either way
 //! the expected level then STEPS by the size found, and for
-//! `settle_nights` it is refined as the plain mean of every night since
-//! the change began: a size measured BECAUSE it crossed the alarm line is
+//! `settle_nights` it is refined as the MEDIAN of every night since the
+//! change began: a size measured BECAUSE it crossed the alarm line is
 //! biased high, and stepping by it alone made the watch ping-pong between
-//! alarms and falls (one false alarm per 250 nights in simulation, FN-048).
+//! alarms and falls (one false alarm per 250 nights in simulation,
+//! FN-048); the median, not the mean, so that a second leak beginning
+//! inside the window is not swallowed into the new level (the mean
+//! swallowed three of L-Town's big leaks, FN-051).
 //! Then the watch goes on - it does not stop four weeks to learn a new
 //! baseline (that baseline held the leak, its repair and the season, and
 //! went blind for 341 days on L-Town, FN-048). While nothing builds up (both sums at zero) what is
@@ -38,7 +41,8 @@
 //! the year).
 //!
 //! Missing nights are skipped - they neither raise nor lower anything
-//! (P6). A meter's calibration error shifts every night alike: it cancels
+//! (P6) - and so are holiday nights the site's calendar marks
+//! ([`crate::night::mark_holidays`], G-24). A meter's calibration error shifts every night alike: it cancels
 //! here and only blurs the ABSOLUTE size (reported as the size's
 //! uncertainty from `meter_bias`).
 
@@ -46,6 +50,15 @@ use jk_kernel::{Flow, Time};
 
 use crate::BalanceError;
 use crate::night::Night;
+
+/// The watch after a change: what was expected before it, the size the
+/// alarm stepped by, every night (index, excess over `before`) since the
+/// change began, and the nights left.
+type Settling = ([f64; 7], f64, Vec<(usize, f64)>, usize);
+
+/// How clear a second change inside a settling window must be: its size
+/// over the standard error of the difference of the means either side.
+const SPLIT_SIGMAS: f64 = 5.0;
 
 /// F at the 1% level for 6 and 21 degrees of freedom (seven weekdays, 28
 /// nights): the weekday means of a baseline differ by more than chance
@@ -215,8 +228,9 @@ pub fn watch(nights: &[Night], options: &LeakOptions) -> Result<Watch, BalanceEr
                 .into(),
         ));
     }
+    // Nights judged: with data, and not holidays.
     let present: Vec<usize> = (0..nights.len())
-        .filter(|&k| nights[k].flow.is_finite())
+        .filter(|&k| nights[k].flow.is_finite() && !nights[k].holiday)
         .collect();
     if present.len() <= options.baseline_nights {
         return Err(BalanceError::InvalidInput(format!(
@@ -257,22 +271,41 @@ pub fn watch(nights: &[Night], options: &LeakOptions) -> Result<Watch, BalanceEr
     // each sum last left zero (indices into `excess`).
     let mut excess: Vec<(usize, f64)> = Vec::new();
     let (mut up_from, mut down_from) = (0, 0);
-    // After a change: what was expected before it, the summed excess over
-    // that since the change began, how many nights, and nights left.
-    let mut settling: Option<([f64; 7], f64, f64, usize)> = None;
+    // After a change: what was expected before it, the size the alarm
+    // stepped by, every night (index, excess over `before`) since the change
+    // began, and the nights left.
+    let mut settling: Option<Settling> = None;
+    let week = smallest_detectable(Flow::new(s), 7, options).value();
     for &k in &present[options.baseline_nights..] {
         let night = nights[k];
         let d = usize::from(night.weekday % 7);
-        if let Some((before, sum, n, left)) = settling.as_mut() {
-            *sum += night.flow - before[d];
-            *n += 1.0;
+        if let Some((before, stepped, seen, left)) = settling.as_mut() {
+            seen.push((k, night.flow - before[d]));
             *left -= 1;
-            let shift = *sum / *n;
+            let values: Vec<f64> = seen.iter().map(|(_, e)| *e).collect();
+            let shift = median(&values);
             for (x, b) in expected.iter_mut().zip(before.iter()) {
                 *x = b + shift;
             }
             cusum[k] = 0.0;
             if *left == 0 {
+                // A second change inside the window - a new leak right after
+                // the first, or the first repaired at once - shows as a
+                // level clearly away from the step: report it too.
+                if let Some((change, after)) =
+                    second_change(seen, *stepped, week, s, b, nights, k, options)
+                {
+                    // The level is now what the window's last nights show
+                    // (or the new leak would be found again, FN-051).
+                    for (x, b) in expected.iter_mut().zip(before.iter()) {
+                        *x = b + after;
+                    }
+                    if change.size.value() > 0.0 {
+                        alarms.push(change);
+                    } else {
+                        falls.push(change);
+                    }
+                }
                 settling = None;
             }
             continue;
@@ -318,7 +351,7 @@ pub fn watch(nights: &[Night], options: &LeakOptions) -> Result<Watch, BalanceEr
                 *x += size;
             }
             if options.settle_nights > 0 {
-                settling = Some((before, size * m, m, options.settle_nights));
+                settling = Some((before, size, since.to_vec(), options.settle_nights));
             }
             (up, down) = (0.0, 0.0);
         } else if up <= 0.0 && down <= 0.0 && options.follow_nights > 0.0 {
@@ -340,6 +373,78 @@ pub fn watch(nights: &[Night], options: &LeakOptions) -> Result<Watch, BalanceEr
         falls,
         cusum,
     })
+}
+
+/// At the end of a settling window: a second change inside it - a new
+/// leak, or the first repaired at once - is a clear split of the window's
+/// OWN nights (those after the alarm, at least 3 either side of the split)
+/// into two levels, apart by more than a week's detectable leak and by
+/// more than [`SPLIT_SIGMAS`] standard errors. The nights before the alarm
+/// are left out: they hold the first leak's own start, and an alarm raised
+/// early in a rise underestimates it - its remainder is not a new change
+/// (FN-051). Dated at the split, sized as the difference; returned with
+/// the level after the split (over what was expected before the alarm).
+#[allow(clippy::too_many_arguments)] // the window's state, passed once
+fn second_change(
+    seen: &[(usize, f64)],
+    stepped: f64,
+    week: f64,
+    s: f64,
+    b: f64,
+    nights: &[Night],
+    raised_at: usize,
+    options: &LeakOptions,
+) -> Option<(LeakAlarm, f64)> {
+    let _ = stepped;
+    // The window's own nights: those after the alarm.
+    let own = &seen[seen.len().saturating_sub(options.settle_nights)..];
+    let values: Vec<f64> = own.iter().map(|(_, e)| *e).collect();
+    let n = values.len();
+    // The best split: before it the first change's level, after it the new.
+    let mut best = (0.0_f64, 0usize);
+    for cut in 3..n.saturating_sub(2) {
+        #[allow(clippy::cast_precision_loss)] // small counts
+        let (m1, m2) = (cut as f64, (n - cut) as f64);
+        let before = values[..cut].iter().sum::<f64>() / m1;
+        let after = values[cut..].iter().sum::<f64>() / m2;
+        if (after - before).abs() > best.0.abs() {
+            best = (after - before, cut);
+        }
+    }
+    let (size, cut) = best;
+    #[allow(clippy::cast_precision_loss)] // small counts
+    let (m1, m) = (cut as f64, (n - cut) as f64);
+    // A clear step, not the window's own scatter or a leak growing slowly:
+    // SPLIT_SIGMAS standard errors of the difference of the two means.
+    let clear = SPLIT_SIGMAS * s * (1.0 / m1 + 1.0 / m).sqrt();
+    if cut == 0 || size.abs() <= week.max(clear) {
+        return None;
+    }
+    let random = s * (1.0 / m + 1.0 / b).sqrt();
+    let after = values[cut..].iter().sum::<f64>() / m;
+    Some((
+        LeakAlarm {
+            first_night: nights[own[cut].0].start,
+            raised: nights[raised_at].start,
+            size: Flow::new(size),
+            uncertainty: Flow::new(random.hypot(options.meter_bias * size.abs())),
+        },
+        after,
+    ))
+}
+
+/// Median of `values` (NaN-free).
+fn median(values: &[f64]) -> f64 {
+    let mut v = values.to_vec();
+    v.sort_by(f64::total_cmp);
+    let n = v.len();
+    if n == 0 {
+        0.0
+    } else if n % 2 == 1 {
+        v[n / 2]
+    } else {
+        f64::midpoint(v[n / 2 - 1], v[n / 2])
+    }
 }
 
 /// Mean and sample standard deviation.
@@ -367,6 +472,9 @@ mod tests {
                 readings: 8,
                 #[allow(clippy::cast_possible_truncation)] // 0..7
                 weekday: (k % 7) as u8,
+                #[allow(clippy::cast_possible_wrap)] // small
+                day: k as i64,
+                holiday: false,
             })
             .collect()
     }

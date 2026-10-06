@@ -280,8 +280,13 @@ G-23  A surge with no lasting step is not reported as an event   OPEN
   over the floor, duration), its own class reasons, a test where only the
   slam can raise the alert.
 
-G-24  Holidays look like leaks to the night watch                 OPEN
+G-24  Holidays look like leaks to the night watch      CLOSED 2026-10-06
   (2026-10-05, FN-048) On L-Town several false alarms fell on public
   holidays. CLOSE BY: a holiday calendar per site as context (like the
   pump schedule): those nights judged against weekend levels, or not
   judged.
+  CLOSED 2026-10-06 (FN-051): balance::mark_holidays - the night opening
+  each holiday and the night after are not judged; L-Town with Cyprus's
+  32 public holidays of 2018-2019: 28 of 33 leaks caught (24 without).
+  Proven by tests/balance/datasets/ltown_leaks.rs. Still to do: a
+  holidays key in the site file, so a real site gives its calendar.
