@@ -233,3 +233,14 @@ svg a:hover .tl-dot { stroke: var(--text-primary); }
 .tip .row { display: flex; align-items: center; gap: 8px; color: #c3c2b7; }
 .tip .row b { color: #ffffff; font-weight: 600; font-variant-numeric: tabular-nums; }
 .tip .key { width: 12px; height: 2px; background: #3987e5; display: inline-block; }
+
+/* Playback: the moment line and the live feed of alerts. */
+svg .now { stroke: var(--accent); stroke-width: 2; }
+.feed { max-height: 240px; overflow-y: auto; border: 1px solid var(--border); border-radius: 8px;
+  padding: 6px 10px; margin: 0 0 12px; font-size: 13px; background: var(--surface-1); }
+.feed:empty::before { content: "Press Play: alerts appear here at the moment the engine would raise them."; color: var(--text-muted); }
+.feed-row { padding: 3px 0; border-bottom: 1px solid var(--border); color: var(--text-secondary); }
+.feed-row:last-child { border-bottom: none; }
+.feed-row.alarm { color: var(--text-primary); font-weight: 600; }
+.feed-row.truth { color: var(--text-muted); font-style: italic; }
+.feed-t { display: inline-block; min-width: 92px; color: var(--text-muted); font-variant-numeric: tabular-nums; }

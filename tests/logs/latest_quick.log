@@ -1,13 +1,12 @@
 joukowsky test run
-  when     2026-10-06 10:34:46
+  when     2026-10-06 10:43:01
   suite    quick
-  commit   0865790 (with uncommitted changes)
+  commit   a194014 (with uncommitted changes)
   rust     rustc 1.98.1 (48a229cea 2026-09-01)
   command  cargo test --workspace --no-fail-fast -- --nocapture --test-threads=1
 ==============================================================================
    Compiling jk-cli v0.1.0 (C:\Users\HP\Desktop\joukowsky\crates\interfaces\cli)
-   Compiling jk-tests v0.1.0 (C:\Users\HP\Desktop\joukowsky\tests)
-    Finished `test` profile [unoptimized + debuginfo] target(s) in 6.43s
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 1.51s
      Running unittests src\lib.rs (target\debug\deps\jk_application-6f0d1c56f055322e.exe)
 
 running 3 tests
@@ -207,7 +206,7 @@ test steady::controls::tests::once_is_once ... ok
 test steady::rules::tests::or_binds_tighter_than_and_as_in_epanet ... ok
 test vapour::tests::the_coast_boils_lower_than_the_highveld ... ok
 
-test result: ok. 68 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.03s
+test result: ok. 68 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.04s
 
      Running unittests src\lib.rs (target\debug\deps\jk_kernel-eccabcc9e10cd5d2.exe)
 
@@ -228,7 +227,7 @@ test units::tests::same_type_arithmetic ... ok
 test units::tests::velocity_flow_area ... ok
 test units::tests::wave_travel_time_and_distance_round_trip ... ok
 
-test result: ok. 15 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s
+test result: ok. 15 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
 
      Running unittests src\lib.rs (target\debug\deps\jk_localisation-b57d917c3efe0d09.exe)
 
@@ -721,7 +720,7 @@ test simulation::site_file::vs11_a_site_file_with_a_mistake_is_refused_with_its_
     a doubt that is not a share: refused, with its line yes
 ok
 
-test result: ok. 22 passed; 0 failed; 1 ignored; 0 measured; 0 filtered out; finished in 1.43s
+test result: ok. 22 passed; 0 failed; 1 ignored; 0 measured; 0 filtered out; finished in 1.49s
 
      Running balance\main.rs (target\debug\deps\balance-a2825c7f967d1b14.exe)
 
@@ -747,7 +746,7 @@ test simulation::night_watch::the_detection_curve_matches_the_cusum_arithmetic .
   at the arithmetic's size: caught at least a third of the time yes
 ok
 
-test result: ok. 3 passed; 0 failed; 1 ignored; 0 measured; 0 filtered out; finished in 1.47s
+test result: ok. 3 passed; 0 failed; 1 ignored; 0 measured; 0 filtered out; finished in 1.28s
 
      Running channels\main.rs (target\debug\deps\channels-ce85841cd8c293e6.exe)
 
@@ -836,7 +835,7 @@ test simulation::feed::when_the_canal_stops_the_sump_runs_down_and_the_town_runs
     the sump's change = in - drawn, within 1.27% of the water drawn (draw read every 5 min) yes
 ok
 
-test result: ok. 11 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 11.87s
+test result: ok. 11 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 12.45s
 
      Running classification\main.rs (target\debug\deps\classification-a56e11395e341787.exe)
 
@@ -1019,7 +1018,7 @@ test simulation::scenarios::power_data_settles_the_slow_burst ... The same slow 
   burst                                        yes
 ok
 
-test result: ok. 11 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.36s
+test result: ok. 11 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.35s
 
      Running detection\main.rs (target\debug\deps\detection-81d94b53f3b9f2e6.exe)
 
@@ -1083,7 +1082,7 @@ Loggers: 128 S/s, integrating, random clock phase, 2 cm noise:
 ok
 test simulation::burst_location::vs1_location_error_versus_sampling_rate_and_noise ... ignored, full suite: 150 recorded sensor pairs across rates and noise levels
 
-test result: ok. 8 passed; 0 failed; 3 ignored; 0 measured; 0 filtered out; finished in 1.82s
+test result: ok. 8 passed; 0 failed; 3 ignored; 0 measured; 0 filtered out; finished in 1.68s
 
      Running health\main.rs (target\debug\deps\health-c1dfc12b2c8dfb16.exe)
 
@@ -1707,7 +1706,7 @@ test invariants::steady_state::an_undisturbed_pipe_stays_steady ... Steady state
   valve holds steady                           yes
 ok
 
-test result: ok. 67 passed; 0 failed; 1 ignored; 0 measured; 0 filtered out; finished in 14.62s
+test result: ok. 67 passed; 0 failed; 1 ignored; 0 measured; 0 filtered out; finished in 12.49s
 
      Running kernel\main.rs (target\debug\deps\kernel-84f06cfc922db1e0.exe)
 
@@ -2026,7 +2025,7 @@ test simulation::valve_fronts::a_shut_prv_passes_no_wave_and_no_route ... A seco
     and no route from S1 reaches the zone: the locator cannot place a burst there from S1 yes
 ok
 
-test result: ok. 29 passed; 0 failed; 4 ignored; 0 measured; 0 filtered out; finished in 33.45s
+test result: ok. 29 passed; 0 failed; 4 ignored; 0 measured; 0 filtered out; finished in 75.93s
 
      Running pipeline\main.rs (target\debug\deps\pipeline-9c399a325a10643c.exe)
 
@@ -2972,7 +2971,7 @@ test simulation::valves_by_hour::at_noon_the_valve_is_active_and_both_loggers_lo
     and it is not dismissed                    yes
 ok
 
-test result: ok. 21 passed; 0 failed; 1 ignored; 0 measured; 0 filtered out; finished in 20.74s
+test result: ok. 21 passed; 0 failed; 1 ignored; 0 measured; 0 filtered out; finished in 47.06s
 
    Doc-tests jk_application
 
@@ -3057,5 +3056,5 @@ test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; fini
   failed   0
   skipped  11 slow test(s) not in this suite (run -Suite full)
   filtered 0 test(s) outside -Only/-Filter
-  time     105.3 s (including compile)
+  time     157.7 s (including compile)
   result   ALL PASSED

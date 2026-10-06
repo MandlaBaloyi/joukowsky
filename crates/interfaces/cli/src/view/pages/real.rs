@@ -12,7 +12,7 @@ use crate::sim::sites::Drawing;
 use crate::view::charts::{Marker, network_map};
 use crate::view::real_model::{LabModel, LeakModel, LeakPlaces, Place, RealModel, TownWeek};
 use crate::view::shell::Page;
-use crate::view::svg::esc;
+use crate::view::svg::{esc, json_str};
 
 const SOURCE: &str = "Real data";
 
@@ -123,7 +123,41 @@ fn lab_page(lab: &LabModel) -> Page {
         );
     }
     s.push_str("</tbody></table></div></div>");
-    s.push_str(r#"<div class="card"><h2>The recordings</h2><p class="note">Each recording on one time axis, seconds from its own start. Drag across a chart to zoom; hover to read.</p><div class="js-traces" id="lab-traces" data-set="lab" data-from="0" data-to="37" data-zoomable></div></div>"#);
+    // Playback: every front, at the moment the detector raised it.
+    let mut events: Vec<(f64, String)> = lab
+        .traces
+        .iter()
+        .flat_map(|t| {
+            t.events.iter().map(move |e| {
+                (
+                    e.alarm.value(),
+                    format!(
+                        "{}: pressure {} {:.2} m - the front arrived at {:.2} s",
+                        t.name,
+                        if e.direction == Direction::Rise {
+                            "ROSE"
+                        } else {
+                            "DROPPED"
+                        },
+                        e.step.value().abs(),
+                        e.arrival.value()
+                    ),
+                )
+            })
+        })
+        .collect();
+    events.sort_by(|a, b| a.0.total_cmp(&b.0));
+    let events = playback_events(
+        &events
+            .iter()
+            .map(|(t, text)| (*t, None, text.clone(), "alarm"))
+            .collect::<Vec<_>>(),
+    );
+    let _ = write!(
+        s,
+        r#"<div class="card"><h2>The recordings</h2><p class="note">Each recording on one time axis, seconds from its own start - all 20 played side by side. Press Play to watch them as they were recorded, in real time (37 s); the feed shows each front the moment the detector raised it. Drag across a chart to zoom; hover to read.</p><div class="controls" data-controls="lab-traces"><button type="button" class="chip" data-play="37">Play</button><span class="hint">in real time</span></div><div class="feed" id="lab-traces-feed"></div><div class="js-traces" id="lab-traces" data-set="lab" data-from="0" data-to="37" data-events="{}" data-zoomable></div></div>"#,
+        esc(&events)
+    );
     Page {
         id: "real-lab",
         title: "A real valve closure".into(),
@@ -270,6 +304,7 @@ fn date(t: jk_kernel::Time) -> String {
     jk_kernel::clock::stamp(t.value(), None)[..10].to_string()
 }
 
+#[allow(clippy::too_many_lines)] // the page top to bottom, with its playback events
 fn leaks_page(l: &LeakModel) -> Page {
     let n = l.truth.len();
     let within = |days: f64, big: bool| {
@@ -299,7 +334,59 @@ fn leaks_page(l: &LeakModel) -> Page {
         l.watch.spread.value() * 3600.0
     );
     s.push_str(r#"<div class="card"><h2>What this is</h2><p class="note">L-Town's two years of meter readings (2018-2019, every 5 minutes) given to the engine's night watch exactly as a utility would have them: the two inflows from the reservoirs and the tank's level. Between 02:00 and 04:00 almost nobody uses water, so the night flow is mostly leakage; the watch raises an alarm when nights stay above what is expected of them, and reports a lasting fall (a repair). The organisers published the truth: 33 leaks, when each began and was repaired, how big. The first run caught 3 within a week and went blind for 341 days after a repair (FN-048); this is the watch after the fix.</p><ul class="reasons"><li>The whole town is one zone: leaks under about 8 m3/h cannot be told from how much nights vary - smaller metered zones can.</li><li>Holidays use water like no ordinary night: the nights that open and follow Cyprus's public holidays are not judged (G-24).</li><li>Scored one to one: each alarm is matched to the newest leak running when it was raised; L-Town nearly always has a leak running, so false alarms are judged in simulation instead (one per ~560 nights).</li></ul></div>"#);
-    s.push_str(r#"<div class="card"><h2>Two years of nights</h2><p class="note">Days from 2018-01-01. The first chart marks the alarms, the second the lasting falls (repairs) the watch saw; when each true leak began is in the table below. Drag to zoom; hover to read.</p><div class="js-traces" id="leak-traces" data-set="leaks" data-unit="day" data-from="0" data-to="730" data-zoomable></div></div>"#);
+    // Playback: the true leaks beginning (from the truth file), and the
+    // watch's alarms and falls on the nights it raised them.
+    let mut events: Vec<(f64, Option<String>, String, &str)> = Vec::new();
+    for t in &l.truth {
+        events.push((
+            t.start,
+            Some(date(jk_kernel::Time::new(l.e0 + t.start * 86_400.0))),
+            format!(
+                "truth: leak {} begins ({}, up to {:.0} m3/h) - the engine is not told",
+                t.pipe,
+                if t.abrupt { "sudden" } else { "growing" },
+                t.peak
+            ),
+            "truth",
+        ));
+    }
+    for (k, (a, caught)) in l.watch.alarms.iter().zip(&l.alarm_leaks).enumerate() {
+        events.push((
+            l.day(a.raised),
+            Some(date(a.raised)),
+            format!(
+                "ALARM #{}: night flow up {:.1} m3/h since {} - {}",
+                k + 1,
+                a.size.value() * 3600.0,
+                date(a.first_night),
+                caught
+                    .first()
+                    .map_or("matched to no leak".to_string(), |&i| {
+                        format!("matched to {}", l.truth[i].pipe)
+                    })
+            ),
+            "alarm",
+        ));
+    }
+    for f in &l.watch.falls {
+        events.push((
+            l.day(f.raised),
+            Some(date(f.raised)),
+            format!(
+                "fall of {:.1} m3/h since {} - a repair?",
+                -f.size.value() * 3600.0,
+                date(f.first_night)
+            ),
+            "",
+        ));
+    }
+    events.sort_by(|a, b| a.0.total_cmp(&b.0));
+    let events = playback_events(&events);
+    let _ = write!(
+        s,
+        r#"<div class="card"><h2>Two years of nights</h2><p class="note">Days from 2018-01-01. The first chart marks the alarms, the second the lasting falls (repairs) the watch saw. Press Play to watch the two years in 30 seconds: the feed shows each true leak as it begins (grey: the truth, which the engine is not told) and each alarm and fall on the night the watch raised it. Drag to zoom; hover to read.</p><div class="controls" data-controls="leak-traces"><button type="button" class="chip" data-play="30">Play</button><span class="hint">two years in 30 s</span></div><div class="feed" id="leak-traces-feed"></div><div class="js-traces" id="leak-traces" data-set="leaks" data-unit="day" data-from="0" data-to="730" data-events="{}" data-zoomable></div></div>"#,
+        esc(&events)
+    );
     s.push_str(r#"<div class="card"><h2>The alarms</h2><div class="table-wrap"><table><thead><tr><th>#</th><th>Rise from</th><th>Raised on</th><th class="num">Size [m3/h]</th><th>The leak it is matched to</th></tr></thead><tbody>"#);
     for (k, (a, caught)) in l.watch.alarms.iter().zip(&l.alarm_leaks).enumerate() {
         let what = if caught.is_empty() {
@@ -464,4 +551,23 @@ fn where_page(l: &LeakModel, p: &LeakPlaces) -> Page {
         source: SOURCE,
         body: s,
     }
+}
+
+/// Playback events as JSON for a chart container's data-events: each
+/// (moment in the chart's time unit, the moment as people write it - or
+/// None, its text, its kind: "alarm", "truth" or "").
+fn playback_events(events: &[(f64, Option<String>, String, &str)]) -> String {
+    let items: Vec<String> = events
+        .iter()
+        .map(|(t, at, text, kind)| {
+            format!(
+                r#"{{"t":{t:.4},{}"text":{},"kind":{}}}"#,
+                at.as_ref()
+                    .map_or(String::new(), |a| format!(r#""at":{},"#, json_str(a))),
+                json_str(text),
+                json_str(kind)
+            )
+        })
+        .collect();
+    format!("[{}]", items.join(","))
 }

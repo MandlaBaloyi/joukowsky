@@ -119,8 +119,10 @@
 
   // Draws every record of `records` between range[0] and range[1] seconds,
   // stacked, sharing the time axis. onZoom(range) is called when the
-  // reader drags across a chart (if given).
-  function drawStack(container, records, range, onZoom) {
+  // reader drags across a chart (if given). With `now` (playback) only
+  // what had happened by then is drawn, and a line marks the moment.
+  function drawStack(container, records, range, onZoom, now) {
+    const upTo = (now === undefined || now === null) ? Infinity : now;
     container.replaceChildren();
     const width = Math.max(320, container.clientWidth);
     const height = 150, left = 52, right = 12, top = 20, bottom = 24;
@@ -182,6 +184,7 @@
         flush(); broken = true;
         for (let i = i0; i <= i1; i++) {
           const t = run.start + i * rec.dt, h = run.h[i], c = Math.floor(sx(t));
+          if (t > upTo) break;
           if (h === null || !isFinite(h)) { flush(); broken = true; continue; }
           const p = { i, t, h };
           if (c !== col) { flush(); col = c; cmin = p; cmax = p; }
@@ -198,7 +201,7 @@
       // line so they never overlap.
       let lastEnd = -Infinity, row = 0;
       for (const m of rec.marks || []) {
-        if (m.t < t0 || m.t > t1) continue;
+        if (m.t < t0 || m.t > t1 || m.t > upTo) continue;
         const x = sx(m.t);
         el('line', { class: 'front', x1: x, x2: x, y1: top, y2: height - bottom }, svg);
         row = x < lastEnd + 8 ? row + 1 : 0;
@@ -207,9 +210,12 @@
         lastEnd = x + 4 + 6.5 * m.label.length;
       }
       for (const f of rec.fronts) {
-        if (f < t0 || f > t1) continue;
+        if (f < t0 || f > t1 || f > upTo) continue;
         el('line', { class: 'front', x1: sx(f), x2: sx(f), y1: top, y2: height - bottom }, svg);
         el('text', { class: 'front-label', x: sx(f) + 4, y: top - 6 }, svg).textContent = 'front ' + f.toFixed(3) + ' s';
+      }
+      if (upTo < Infinity && upTo >= t0 && upTo <= t1) {
+        el('line', { class: 'now', x1: sx(upTo), x2: sx(upTo), y1: top, y2: height - bottom }, svg);
       }
       const cross = el('line', { class: 'crosshair', x1: 0, x2: 0, y1: top, y2: height - bottom, visibility: 'hidden' }, svg);
       const sel = el('rect', { class: 'selection', x: 0, y: top, width: 0, height: height - top - bottom, visibility: 'hidden' }, svg);
@@ -265,12 +271,64 @@
   // Containers: <div class="js-traces" data-set data-from data-to
   // [data-zoomable]>; data-set names the records to draw (default "event").
   const ranges = new Map();
+  const nows = new Map();
   function render(container) {
     if (!ranges.has(container)) ranges.set(container, [Number(container.dataset.from), Number(container.dataset.to)]);
     const zoomable = container.hasAttribute('data-zoomable');
     const records = data.sets[container.dataset.set || 'event'] || [];
-    drawStack(container, records, ranges.get(container), zoomable ? r => setRange(container, r, null) : null);
+    drawStack(container, records, ranges.get(container), zoomable ? r => setRange(container, r, null) : null, nows.get(container));
   }
+
+  // Playback: a [data-play=SECONDS] button in a container's controls plays
+  // its whole range in that many seconds; the container's data-events
+  // ([{t, text, kind}], in time order) appear in its feed
+  // (#<container id>-feed) as their moment passes - as the engine would
+  // have raised them.
+  function setupPlay(container) {
+    const bar = document.querySelector(`[data-controls="${container.id}"]`);
+    const btn = bar && bar.querySelector('[data-play]');
+    if (!btn) return;
+    const feed = document.getElementById(container.id + '-feed');
+    const events = JSON.parse(container.dataset.events || '[]');
+    const unit = container.dataset.unit || 's';
+    let timer = null, shown = 0;
+    const stop = () => { clearInterval(timer); timer = null; btn.textContent = 'Play again'; };
+    const add = e => {
+      if (!feed) return;
+      const row = document.createElement('div');
+      row.className = 'feed-row ' + (e.kind || '');
+      const at = document.createElement('span');
+      at.className = 'feed-t';
+      at.textContent = e.at || (e.t.toFixed(unit === 's' ? 2 : 0) + ' ' + unit);
+      row.append(at, document.createTextNode(' ' + e.text));
+      feed.prepend(row);
+    };
+    btn.addEventListener('click', () => {
+      if (timer) { clearInterval(timer); timer = null; btn.textContent = 'Play'; return; }
+      const [a, b] = [Number(container.dataset.from), Number(container.dataset.to)];
+      ranges.set(container, [a, b]);
+      let now = nows.get(container);
+      if (now === undefined || now >= b) {
+        now = a; shown = 0;
+        if (feed) feed.replaceChildren();
+      }
+      const total = Number(btn.dataset.play) || 30;
+      btn.textContent = 'Pause';
+      let last = performance.now();
+      timer = setInterval(() => {
+        const t = performance.now();
+        now = Math.min(b, now + (b - a) * (t - last) / 1000 / total);
+        last = t;
+        nows.set(container, now);
+        render(container);
+        while (shown < events.length && events[shown].t <= now) { add(events[shown]); shown++; }
+        const hint = bar.querySelector('.hint');
+        if (hint) hint.textContent = `playing: ${now.toFixed(unit === 's' ? 1 : 0)} ${unit} of ${b.toFixed(0)}`;
+        if (now >= b) stop();
+      }, 100);
+    });
+  }
+  document.querySelectorAll('.js-traces').forEach(setupPlay);
   function setRange(container, range, preset) {
     ranges.set(container, range);
     const bar = document.querySelector(`[data-controls="${container.id}"]`);

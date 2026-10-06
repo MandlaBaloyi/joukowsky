@@ -50,6 +50,11 @@ on GitHub.)
                            and the true leak (crosses), and a table of
                            the distances.
   A dataset not on this computer: its page says which file is missing.
+  PLAY (2026-10-06): the real valve closure and L-Town's two years have a
+  Play button - the recordings unfold as they happened (the lab in real
+  time, the two years in 30 s) and a feed lists each alert at the moment
+  the engine raised it, with the true leaks beginning in grey (the truth,
+  which the engine is not told).
 
   Two more groups show your own files (--network, and --recording FILE
   --unit U for a logger export); every other page is the simulated
