@@ -225,6 +225,7 @@ pub fn run(a: &Args) -> Result<(), String> {
                     "L-Town: two years of leaks",
                     r.leaks.as_ref().ok().map(|l| l.watch.alarms.len()),
                 ),
+                item("real-where", "L-Town: where the leaks are", None),
             ],
         });
         pages.extend(pages::real::pages(r));

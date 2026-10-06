@@ -44,6 +44,11 @@ on GitHub.)
     L-Town: two years      the night watch against the 33 true leaks: the
                            night flows with the alarms, the evidence with
                            the repairs seen, every alarm and every leak.
+    L-Town: where the      each alarm located from the 33 pressure
+    leaks are              sensors (2026-10-06, FN-053): a map with the
+                           sensors, where the engine pointed (rings, #n)
+                           and the true leak (crosses), and a table of
+                           the distances.
   A dataset not on this computer: its page says which file is missing.
 
   Two more groups show your own files (--network, and --recording FILE

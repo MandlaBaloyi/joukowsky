@@ -21,12 +21,16 @@ use jk_balance::{
     Direction, LeakOptions, Meter, NightWindow, Watch, balance, mark_holidays, night_flows, watch,
 };
 use jk_detection::{Detector, DetectorConfig, Event, Series};
+use jk_files::epanet::InpNetwork;
 use jk_files::logger::{CsvOptions, PressureUnit};
 use jk_files::scada::{ScadaOptions, ScadaTable, ScadaUnit};
 use jk_hydraulics::steady::controls::Target;
 use jk_hydraulics::steady::extended::SupplyEvent;
+use jk_hydraulics::{Node, NodeId, SteadyOptions};
+use jk_kernel::Flow;
 use jk_kernel::Time;
 use jk_kernel::clock::days_from_civil;
+use jk_localisation::{Signatures, locate_from_pressures};
 
 const DAY: f64 = 86_400.0;
 const M3H: f64 = 1.0 / 3600.0;
@@ -164,15 +168,47 @@ pub struct RealModel {
     pub lab: Result<LabModel, String>,
     pub town: Result<TownWeek, String>,
     pub leaks: Result<LeakModel, String>,
+    /// Where each leak alarm points, from the pressure sensors.
+    pub places: Result<LeakPlaces, String>,
+}
+
+/// Where the engine pointed for one alarm, from the pressure sensors.
+pub struct Place {
+    /// The best junction (index into the network's nodes).
+    pub node: usize,
+    /// The leak's flow the fit implies [m3/h].
+    pub flow: f64,
+    /// Distance to the leak the alarm was matched to [m].
+    pub to_matched: f64,
+    /// Distance to the nearest leak whose night flow truly changed by
+    /// 3 m3/h or more between the two weeks [m]; None: none did.
+    pub to_changed: Option<f64>,
+}
+
+/// The town drawn, its pressure sensors, and a place per alarm (None: the
+/// alarm matched no leak, or too near the data's ends).
+pub struct LeakPlaces {
+    pub inp: InpNetwork,
+    /// Pressure sensors (node indices).
+    pub sensors: Vec<usize>,
+    pub places: Vec<Option<Place>>,
+    /// Seconds to make the 782 signatures.
+    pub seconds: f64,
 }
 
 impl RealModel {
     /// Runs every dataset found under `data` (the project's `data/`).
     pub fn run(data: &Path) -> Self {
+        let leaks = leaks(data);
+        let places = match &leaks {
+            Ok(l) => places(data, l),
+            Err(e) => Err(e.clone()),
+        };
         Self {
             lab: lab(data),
             town: town(data),
-            leaks: leaks(data),
+            leaks,
+            places,
         }
     }
 }
@@ -513,4 +549,198 @@ fn to_f64(n: usize) -> f64 {
     #[allow(clippy::cast_precision_loss)] // small counts
     let x = n as f64;
     x
+}
+
+/// Mean of `v` (0 for none).
+fn mean(v: &[f64]) -> f64 {
+    v.iter().sum::<f64>() / to_f64(v.len().max(1))
+}
+
+/// Where each leak alarm points, from the 33 pressure sensors and the
+/// town's model (localisation/src/pressure.rs, FN-053; the same windows
+/// and scoring as `tests/localisation/datasets/ltown_pressure.rs`): the
+/// sensors' night pressures in the week the rise began minus the week
+/// before, fitted to a 10 m3/h leak's signature at every junction.
+#[allow(clippy::too_many_lines)] // read, make signatures, locate each alarm - one story
+fn places(data: &Path, l: &LeakModel) -> Result<LeakPlaces, String> {
+    let inp = jk_files::epanet::read(
+        &file(data, "incoming/ltown/L-TOWN.inp")?,
+        &jk_files::epanet::InpOptions::default(),
+    )
+    .map_err(|e| e.to_string())?;
+    let u = ScadaUnit::Metres;
+    let tables = [
+        scada(data, "incoming/ltown/2018_SCADA_Pressures.csv", u)?,
+        scada(data, "incoming/ltown/2019_SCADA_Pressures.csv", u)?,
+    ];
+    let leak_tables = [
+        scada(
+            data,
+            "incoming/ltown/2018_Leakages.csv",
+            ScadaUnit::CubicMetresPerHour,
+        )?,
+        scada(
+            data,
+            "incoming/ltown/2019_Leakages.csv",
+            ScadaUnit::CubicMetresPerHour,
+        )?,
+    ];
+    let sensor_ids: Vec<String> = tables[0].columns.iter().map(|c| c.name.clone()).collect();
+    let index = |id: &str| {
+        inp.node_ids
+            .iter()
+            .position(|n| n == id)
+            .ok_or_else(|| format!("no node {id}"))
+    };
+    let sensors: Vec<usize> = sensor_ids
+        .iter()
+        .map(|s| index(s))
+        .collect::<Result<_, _>>()?;
+    let id = |k: usize| inp.network.node_id(k).ok_or("bad node");
+
+    // The town at 03:00, a 10 m3/h leak's signature at every junction.
+    let mut net = inp.network.clone();
+    let m = inp
+        .operations
+        .period
+        .multipliers_at(net.nodes().len(), Time::new(3.0 * 3600.0));
+    let mut candidates = Vec::new();
+    for (k, &mk) in m.iter().enumerate() {
+        if let Node::Junction { demand } = net.nodes()[k] {
+            net.set_demand(id(k)?, demand * mk)
+                .map_err(|e| e.to_string())?;
+            if !inp.node_ids[k].contains('/') && !inp.node_ids[k].contains('=') {
+                candidates.push(id(k)?);
+            }
+        }
+    }
+    let sensor_nodes: Vec<NodeId> = sensors.iter().map(|&k| id(k)).collect::<Result<_, _>>()?;
+    let started = std::time::Instant::now();
+    let signatures = Signatures::compute(
+        &net,
+        &sensor_nodes,
+        &candidates,
+        Flow::new(10.0 * M3H),
+        &SteadyOptions::default(),
+    )
+    .map_err(|e| e.to_string())?;
+    let seconds = started.elapsed().as_secs_f64();
+
+    // Night (02:00-04:00) means: pressures per sensor, flows per true leak.
+    let night = |values: &[f64], d: usize| mean(&values[d * 288 + 24..d * 288 + 48]);
+    let mut pressures: Vec<Vec<f64>> = Vec::new();
+    for t in &tables {
+        let n = t.columns[0].values.len() / 288;
+        for d in 0..n {
+            pressures.push(
+                sensor_ids
+                    .iter()
+                    .map(|s| t.column(s).map_or(f64::NAN, |c| night(&c.values, d)))
+                    .collect(),
+            );
+        }
+    }
+    let leak_nights: Vec<Vec<f64>> = l
+        .truth
+        .iter()
+        .map(|t| {
+            leak_tables
+                .iter()
+                .flat_map(|tab| {
+                    let n = tab.columns[0].values.len() / 288;
+                    (0..n)
+                        .map(|d| {
+                            tab.column(&t.pipe)
+                                .map_or(0.0, |c| night(&c.values, d) / M3H)
+                        })
+                        .collect::<Vec<_>>()
+                })
+                .collect()
+        })
+        .collect();
+    // Each sensor's night-to-night noise (same weekday a week apart), >= 2 cm.
+    let noise: Vec<f64> = (0..sensors.len())
+        .map(|s| {
+            let mut d: Vec<f64> = (7..pressures.len())
+                .map(|k| (pressures[k][s] - pressures[k - 7][s]).abs())
+                .collect();
+            d.sort_by(f64::total_cmp);
+            (1.4826 * d[d.len() / 2] / std::f64::consts::SQRT_2).max(0.02)
+        })
+        .collect();
+    let pos = |k: usize| inp.positions[k].unwrap_or((f64::NAN, f64::NAN));
+    let pipe_at = |pipe: &str| -> (f64, f64) {
+        inp.pipe_ids
+            .iter()
+            .position(|x| x == pipe)
+            .map_or((f64::NAN, f64::NAN), |k| {
+                let p = &inp.network.pipes()[k];
+                let (a, b) = (pos(p.from.index()), pos(p.to.index()));
+                (f64::midpoint(a.0, b.0), f64::midpoint(a.1, b.1))
+            })
+    };
+    let n = pressures.len();
+    let mut places = Vec::new();
+    for (a, caught) in l.watch.alarms.iter().zip(&l.alarm_leaks) {
+        #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)] // a day count
+        let rose = l.day(a.first_night).floor().max(0.0) as usize;
+        let Some(&i) = caught.first() else {
+            places.push(None);
+            continue;
+        };
+        if rose < 8 || rose + 8 > n {
+            places.push(None);
+            continue;
+        }
+        let before: Vec<f64> = (0..sensors.len())
+            .map(|s| {
+                mean(
+                    &pressures[rose - 8..rose - 1]
+                        .iter()
+                        .map(|r| r[s])
+                        .collect::<Vec<_>>(),
+                )
+            })
+            .collect();
+        let after: Vec<f64> = (0..sensors.len())
+            .map(|s| {
+                mean(
+                    &pressures[rose..rose + 7]
+                        .iter()
+                        .map(|r| r[s])
+                        .collect::<Vec<_>>(),
+                )
+            })
+            .collect();
+        let change: Vec<f64> = after.iter().zip(&before).map(|(x, y)| x - y).collect();
+        let Some(best) = locate_from_pressures(&signatures, &change, &noise)
+            .map_err(|e| e.to_string())?
+            .first()
+            .copied()
+        else {
+            places.push(None);
+            continue;
+        };
+        let at = pos(best.node.index());
+        let dist = |p: (f64, f64)| (at.0 - p.0).hypot(at.1 - p.1);
+        let to_changed = (0..l.truth.len())
+            .filter(|&k| {
+                let f = &leak_nights[k];
+                (mean(&f[rose..rose + 7]) - mean(&f[rose - 8..rose - 1])).abs() >= 3.0
+            })
+            .map(|k| dist(pipe_at(&l.truth[k].pipe)))
+            .reduce(f64::min);
+        places.push(Some(Place {
+            node: best.node.index(),
+            flow: best.flow.value() / M3H,
+            to_matched: dist(pipe_at(&l.truth[i].pipe)),
+            to_changed,
+        }));
+    }
+    Ok(LeakPlaces {
+        inp,
+        sensors,
+        places,
+        seconds,
+    })
 }

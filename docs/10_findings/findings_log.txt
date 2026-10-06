@@ -743,3 +743,19 @@ FN-053  2026-10-06  The pressure sensors say WHERE: 153 m in a 2.7 km town
   peak, not its start (the reference dropped to 401 m median until
   fixed). Next: the alarm's own timing (the rise night), signatures at
   more than one hour, and the place shown on the viewer's map.
+
+FN-054  2026-10-06  Growing leaks: not the timing, the signal (a negative result)
+  9 of the 28 alarms could not be located (FN-053): no leak changed by
+  3 m3/h in the two weeks around the rise, and 7 of those 9 belong to
+  slowly growing leaks. Two remedies were measured on all 28 alarms,
+  scored against the matched leak (within 300 m; median):
+    - locating LATER (the week 0, 7, 14, 21, 28 nights after the rise):
+      11, 10, 7, 10, 6 within 300 m; median 882, 611, 609, 561, 634 m;
+    - the "before" week FURTHER BACK (8, 15, 22, 29 nights before): 11,
+      8, 6, 7 within 300 m - growing leaks 3, 0, 1, 1 of 16.
+  Neither helps: a growing leak of 5-20 m3/h moves the sensors little
+  next to their 2-15 cm night-to-night noise and to everything else that
+  changes over weeks. Kept as it was (the week of the rise against the
+  week before). What would help: more sensors near them, or fitting the
+  model's own predicted pressures (absolute residuals) instead of
+  week-to-week differences - larger work, logged as next.

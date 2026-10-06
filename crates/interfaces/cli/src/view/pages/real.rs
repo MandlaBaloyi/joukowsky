@@ -8,7 +8,9 @@ use std::fmt::Write as _;
 use jk_detection::Direction;
 
 use super::ChartRecord;
-use crate::view::real_model::{LabModel, LeakModel, RealModel, TownWeek};
+use crate::sim::sites::Drawing;
+use crate::view::charts::{Marker, network_map};
+use crate::view::real_model::{LabModel, LeakModel, LeakPlaces, Place, RealModel, TownWeek};
 use crate::view::shell::Page;
 use crate::view::svg::esc;
 
@@ -41,6 +43,10 @@ pub fn pages(m: &RealModel) -> Vec<Page> {
             |e| missing("real-leaks", "L-Town: two years of leaks", e),
             leaks_page,
         ),
+        match (&m.leaks, &m.places) {
+            (Ok(l), Ok(p)) => where_page(l, p),
+            (Err(e), _) | (_, Err(e)) => missing("real-where", "L-Town: where the leaks are", e),
+        },
     ]
 }
 
@@ -335,6 +341,126 @@ fn leaks_page(l: &LeakModel) -> Page {
         id: "real-leaks",
         title: "L-Town: two years of leaks".into(),
         crumb: "the night watch against the 33 true leaks (FN-048)".into(),
+        source: SOURCE,
+        body: s,
+    }
+}
+
+/// A pipe at node `n` and how far along it the node is (to draw a point
+/// at a junction).
+fn at_node(p: &LeakPlaces, n: usize) -> Option<(usize, f64)> {
+    p.inp
+        .network
+        .pipes()
+        .iter()
+        .enumerate()
+        .find_map(|(k, pipe)| {
+            if pipe.from.index() == n {
+                Some((k, 0.0))
+            } else if pipe.to.index() == n {
+                Some((k, pipe.pipe.length().value()))
+            } else {
+                None
+            }
+        })
+}
+
+#[allow(clippy::too_many_lines)] // the page top to bottom
+fn where_page(l: &LeakModel, p: &LeakPlaces) -> Page {
+    let located: Vec<(usize, &Place)> = p
+        .places
+        .iter()
+        .enumerate()
+        .filter_map(|(k, x)| x.as_ref().map(|x| (k, x)))
+        .collect();
+    let changed: Vec<f64> = located.iter().filter_map(|(_, x)| x.to_changed).collect();
+    let near = changed.iter().filter(|&&d| d <= 300.0).count();
+    let mut sorted = changed.clone();
+    sorted.sort_by(f64::total_cmp);
+    let median = sorted.get(sorted.len() / 2).copied().unwrap_or(f64::NAN);
+    let mut s = String::new();
+    let _ = write!(
+        s,
+        r#"<div class="stats">
+<div class="stat"><div class="label">Pointed within 300 m</div><div class="value">{near} of {}</div><div class="detail">of a leak that truly changed in those two weeks</div></div>
+<div class="stat"><div class="label">Typical miss</div><div class="value">{median:.0} m</div><div class="detail">median; a junction picked at random: about 840 m</div></div>
+<div class="stat"><div class="label">Town</div><div class="value">2.7 x 1.5 km</div><div class="detail">33 pressure sensors; 782 leak signatures in {:.1} s</div></div>
+</div>"#,
+        changed.len(),
+        p.seconds
+    );
+    s.push_str(r#"<div class="card"><h2>What this is</h2><p class="note">The night watch says a leak began somewhere in the town; it cannot say where. L-Town also has 33 pressure sensors, read every 5 minutes. A leak draws water through the pipes to it, so the pressure falls most near it. The engine plays "a leak here" at each of the 782 junctions in turn and notes how much each sensor would fall - every spot's fingerprint. For each alarm it compares the sensors' night pressures in the week the rise began with the week before, and the fingerprint that fits best is where it points.</p><ul class="reasons"><li>Scored against a leak whose flow truly changed in those two weeks (the truth file's flows). Some alarms come when no leak changed that much - the alarm's timing, not the locator, then has nothing to point at.</li><li>Big, sudden leaks are found best; small, slowly growing ones barely move the sensors (FN-053).</li><li>Distances are straight lines on the map, in metres.</li></ul></div>"#);
+    // The map: sensors, the true leaks matched, and where the engine pointed.
+    let inp = &p.inp;
+    let drawing = Drawing {
+        positions: inp
+            .positions
+            .iter()
+            .map(|q| q.unwrap_or((0.0, 0.0)))
+            .collect(),
+        node_names: inp.node_ids.clone(),
+        pipe_names: inp.pipe_ids.clone(),
+        bends: inp.vertices.clone(),
+        y_up: true,
+    };
+    let mut markers: Vec<Marker> = p.sensors.iter().map(|&k| Marker::Logger(k)).collect();
+    for (k, place) in &located {
+        if let Some((pipe, distance)) = at_node(p, place.node) {
+            markers.push(Marker::Point {
+                pipe,
+                distance,
+                label: format!("#{}", k + 1),
+                truth: false,
+            });
+        }
+        if let Some(&i) = l.alarm_leaks[*k].first()
+            && let Some(pipe) = inp.pipe_ids.iter().position(|x| *x == l.truth[i].pipe)
+        {
+            markers.push(Marker::Point {
+                pipe,
+                distance: inp.network.pipes()[pipe].pipe.length().value() / 2.0,
+                label: l.truth[i].pipe.clone(),
+                truth: true,
+            });
+        }
+    }
+    let tips: Vec<String> = inp.pipe_ids.iter().map(|id| format!("pipe {id}")).collect();
+    let class = vec!["q5"; inp.network.pipes().len()];
+    s.push_str(r#"<div class="card"><h2>The map</h2><p class="note">North up. Filled circles: the 33 pressure sensors. Rings (#n): where the engine pointed for alarm n. Crosses: the true leaking pipe that alarm was matched to. Hover a pipe for its name.</p>"#);
+    s.push_str(&network_map(
+        &inp.network,
+        &drawing,
+        &class,
+        &tips,
+        &markers,
+        1000.0,
+    ));
+    s.push_str("</div>");
+    s.push_str(r#"<div class="card"><h2>Alarm by alarm</h2><div class="table-wrap"><table><thead><tr><th>#</th><th>Raised on</th><th>Matched leak</th><th>Engine points to</th><th class="num">Sized [m3/h]</th><th class="num">To the matched leak [m]</th><th class="num">To a leak that changed [m]</th></tr></thead><tbody>"#);
+    for (k, place) in &located {
+        let a = &l.watch.alarms[*k];
+        let matched = l.alarm_leaks[*k].first().map_or("-".to_string(), |&i| {
+            format!("{} ({:.0} m3/h)", l.truth[i].pipe, l.truth[i].peak)
+        });
+        let _ = write!(
+            s,
+            r#"<tr><td>{}</td><td>{}</td><td>{}</td><td>{}</td><td class="num">{:.1}</td><td class="num">{:.0}</td><td class="num">{}</td></tr>"#,
+            k + 1,
+            esc(&date(a.raised)),
+            esc(&matched),
+            esc(&inp.node_ids[place.node]),
+            place.flow,
+            place.to_matched,
+            place
+                .to_changed
+                .map_or("no leak changed".to_string(), |d| format!("{d:.0}"))
+        );
+    }
+    s.push_str("</tbody></table></div></div>");
+    Page {
+        id: "real-where",
+        title: "L-Town: where the leaks are".into(),
+        crumb: "located from the 33 pressure sensors and the model (FN-053)".into(),
         source: SOURCE,
         body: s,
     }
