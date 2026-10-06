@@ -650,6 +650,9 @@ FN-050  2026-10-05  A refill's slam is not picked as a front
   passes as it did - but on luck at the edge. Open (G-23): a short, sharp
   surge with no lasting step - a refill slam, a valve slammed and
   reopened - must be reported as an event in its own right.
+  CORRECTED 2026-10-06 (FN-052): the case looked at was the 5 mm air
+  valve, which has NO slam; the slams (20 and 100 mm) were reported all
+  along.
 
 FN-051  2026-10-06  "25 of 33" was scored too kindly; three big leaks swallowed
   The owner asked why 25 of L-Town's 33 leaks and not 33. Of the 8 not
@@ -683,3 +686,29 @@ FN-051  2026-10-06  "25 of 33" was scored too kindly; three big leaks swallowed
   matching rarely calls an alarm false). Lesson: decide how to score
   before tuning, and write the rule down - the score moved more with the
   rule than with the engine.
+
+FN-052  2026-10-06  The refill slam was never missed - the wrong case was read
+  Asked to fix G-23 ("the engine misses the refill's slam"), the record
+  each air valve gives a 128 S/s logger was printed first. 5 mm: NO slam
+  - the trapped air cushions the column and the pressure rises gently to
+  32.9 m over about 80 s (supply 30 m). 20 and 100 mm: the column slams
+  into the closed end - 379.4 m for about a second, then the vapour floor.
+  FN-050 had looked only at the 5 mm run (the test's first), taken its
+  slow rise for "the slam" and the detector's correct refusal to call a
+  slow rise a front for a miss. The slams were reported all along: at
+  100 mm as a front of their own ("ROSE by 379.35 m", REFILL warning,
+  column separation, negative pressure); at 20 mm as the peak of the
+  alert on the bounce just before it ("peaked at 379.4 m", by the 30 s
+  follow-up - the slam fell in the 1 s the sensor is deaf after a front).
+  V-S6 never checked that: it now demands, for every slam, a REFILL
+  warning reporting the peak within 5% (it reports 379.4 against 379.4)
+  and the column separation after it. For the cushioned refill it no
+  longer demands a REFILL alert - nothing transient happens; the supply-
+  cut alert reports the return ("the pipes refill") - and checks that no
+  surge is invented and no burst raised. And a unit test proves a surge
+  with no lasting step is picked as a front: a 5 m pulse of 0.1 s (a 50 m
+  pipe's round trip) is a rise of 5 m, timed to a sample; only a pulse
+  shorter than the picker's 6 samples after the alarm (47 ms - a pipe
+  under about 12 m) could pass as ringing. Lesson: print what the sensor
+  sees before diagnosing; a test that passes by luck hides what it never
+  checked.

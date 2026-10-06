@@ -288,6 +288,27 @@ mod tests {
     }
 
     #[test]
+    fn a_short_surge_pulse_is_picked_as_a_front() {
+        // A surge with no lasting step (G-23): 4 s quiet at 30 m, then a
+        // 5 m pulse lasting 0.1 s (13 samples - the wave's round trip on a
+        // 50 m pipe), then back to 30 m. The front picker compares the
+        // level before with the 6 samples after the alarm, so a pulse
+        // longer than those (47 ms) is a front, not "ringing".
+        let x: Vec<f64> = (0..768)
+            .map(|k| if (512..525).contains(&k) { 35.0 } else { 30.0 })
+            .collect();
+        let d = Detector::new(DetectorConfig::default())
+            .unwrap()
+            .run(&series(&x))
+            .unwrap();
+        assert_eq!(d.events.len(), 1, "{:?}", d.events);
+        let e = d.events[0];
+        assert_eq!(e.direction, Direction::Rise);
+        assert!((e.step.value() - 5.0).abs() < 1e-9, "{}", e.step);
+        assert!((e.arrival.value() - 511.0 / 128.0).abs() < 1.0 / 128.0);
+    }
+
+    #[test]
     fn refuses_data_too_slow_to_see_a_wave() {
         // SCADA every 5 minutes (L-Town, BattLeDIM 2020): no fronts looked
         // for (P2). One a second (Tier 1) is still watched.

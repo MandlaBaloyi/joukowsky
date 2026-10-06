@@ -272,13 +272,20 @@ G-22  Fatigue loading: counted per sensor, not yet per pipe        OPEN
   vaporous cavitation zones before simulated cycle counts there are used
   (FN-038).
 
-G-23  A surge with no lasting step is not reported as an event   OPEN
+G-23  A surge with no lasting step is not reported as an event   CLOSED 2026-10-06
   (2026-10-05, FN-050) The front picker needs a lasting step; a refill
   slam or a valve slammed and reopened is a spike and is declined as
   "ringing". V-S6's refill alert rests on a small first rise at the edge
   of detection. CLOSE BY: a spike detector beside the step picker (peak
   over the floor, duration), its own class reasons, a test where only the
   slam can raise the alert.
+  CLOSED 2026-10-06 (FN-052): a misdiagnosis - the slams (379 m) are
+  reported, as a front (100 mm valve) or as the peak of the alert just
+  before (20 mm); the case read had no slam. Proven by V-S6, now checking
+  each slam's reported peak (within 5%) and the column separation, and by
+  detector::tests::a_short_surge_pulse_is_picked_as_a_front (a 0.1 s, 5 m
+  pulse is a front). Left: a pulse shorter than 47 ms (a pipe under about
+  12 m) could pass as ringing.
 
 G-24  Holidays look like leaks to the night watch      CLOSED 2026-10-06
   (2026-10-05, FN-048) On L-Town several false alarms fell on public
