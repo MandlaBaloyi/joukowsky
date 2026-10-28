@@ -36,6 +36,18 @@ loggers / SCADA --> telemetry (gaps kept, never silently filled)
                                                    a webhook / MQTT / OPC UA tomorrow)
 ```
 
+## What it looks like
+
+`jk view` writes a single self-contained web page (`jk-view.html`) that shows the engine's work next to the truth.
+
+**A simulated estate, two bursts.** Each red dot is where a burst started, and its line runs to the moment the alert went out: 4 seconds after the burst, named a burst with 98% confidence, and placed 199.7 m along the south branch and 151.0 m along the north branch, as seen by all three loggers.
+
+![The viewer's overview page: two bursts on a simulated estate, found within 4 seconds](docs/img/viewer-overview.png)
+
+**L-Town, the public benchmark: where the leaks are.** The engine only has the 33 pressure sensors (filled circles) and the pipe model. For each alarm it plays "a leak here" at all 782 junctions, compares the fingerprint with what the sensors saw, and points (rings). The crosses are the true leaks from the competition's answer file. It pointed within 300 m of a changed leak in 17 of 19 alarms (median miss 153 m, against about 840 m for a random junction). The table under the map lists every alarm, including the ones that missed.
+
+![The viewer's L-Town page: the engine's pointers against the true leaks on a 2.7 km town](docs/img/viewer-real-where.png)
+
 ## Why "Joukowsky"
 
 Nikolai Zhukovsky ("Joukowsky" in French) is remembered for aerodynamics, but in 1897-98 he also solved water hammer: after unexplained pipe failures in Moscow he ran full-scale experiments on the city's mains and derived the relation between a change in flow speed and the pressure jump it causes, `dp = rho * a * dv`. That equation is the starting point of this engine. More in [`docs/00_why_joukowsky`](docs/00_why_joukowsky/the_name.txt).
@@ -98,10 +110,6 @@ docs/                          physics, design, validation strategy, findings, a
 
 New here? Read [`docs/12_the_engine/01_the_engine_in_plain_words.txt`](docs/12_the_engine/01_the_engine_in_plain_words.txt), then [`02_how_an_alert_is_made.txt`](docs/12_the_engine/02_how_an_alert_is_made.txt).
 
-## About
-
-Built by **Mandla Baloyi** in South Africa, with [Claude Code](https://claude.com/claude-code) as a coding assistant. I set the problem, the principles and the validation rules and review every result; the code is written to be read, and I am learning Rust as I go. Contact me through my GitHub profile.
-
 ## Licence
 
-All rights reserved. The code is published for reading and review; see [`LICENSE`](LICENSE).
+[PolyForm Noncommercial 1.0.0](LICENSE). You are welcome to read, run, study and modify the code for any non-commercial purpose (learning, research, evaluation, personal projects). Commercial use needs my written permission. The public datasets named in `data/manifest.csv` are not included and keep their own licences (EPANET examples: MIT; L-Town and the Texas A&M testbed: CC BY 4.0).
