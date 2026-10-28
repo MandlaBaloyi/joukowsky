@@ -120,5 +120,4 @@ alert takes about 3-7 s, not under one second: the wave arrives at once,
 but the engine looks at the 3 s after it and waits for the other
 loggers. A burst makes the pressure DROP; a rise is a valve shutting or
 supply returning. It does not yet plug into a site's own control room -
-that is the integration plan (11_business/integration.txt), built after
-the real-data tests.
+that is planned work, to be built after the real-data tests.

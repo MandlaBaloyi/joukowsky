@@ -20,7 +20,7 @@ sizes and fingerprints: data/README.md and data/manifest.csv)
   C5  Open FIELD high-rate transient data: none found yet.
 
 Rule: no download, extraction or install without the owner's explicit
-approval (CLAUDE.md, TD-020). Approved files go only into data/incoming,
+approval (TD-020). Approved files go only into data/incoming,
 are recorded in data/manifest.csv with their SHA-256, never executed.
 Every fact below is from memory and marked [VERIFY] until checked at the
 source, with approval.

@@ -13,7 +13,7 @@ Is 2.3 km small? For the first target - a campus, mall, hospital, office
 park or estate - a few km of pipe is the right size (00_/mission: "km,
 not thousands of km"). For a municipality it is tiny: a city has
 thousands of km [VERIFY per city]. "Designed so nothing assumes small
-scale" (CLAUDE.md) means the path to city scale must stay open - below.
+scale" (a design rule of the project) means the path to city scale must stay open - below.
 
 1. How big is a burst's wave? (worked numbers)
 ------------------------------------------------------------------------

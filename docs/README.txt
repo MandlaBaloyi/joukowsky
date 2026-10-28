@@ -51,10 +51,6 @@ Reading order
                              claim), detection range and scale, external
                              factors (weather, lightning, tremors), real
                              data candidates. Living folder.
-11_business/                 How the engine meets the world: loggers and
-                             hardware partners, the pilot kit, markets
-                             (sites, mines, municipalities). Owner's
-                             decisions.
 12_the_engine/               What was actually BUILT: the engine in plain
                              words, how one alert is made, the code map
                              (where the solvers and domains live), how it

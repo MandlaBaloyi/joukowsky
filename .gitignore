@@ -19,3 +19,7 @@ data/datasets/
 
 # The owner's own folder: notes and commands, this machine only (owner, 2026-10-05)
 admin/
+
+# Kept off the public copy (the owner's working notes and business plans)
+CLAUDE.md
+docs/11_business/

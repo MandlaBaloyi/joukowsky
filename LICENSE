@@ -1,0 +1,15 @@
+Copyright (c) 2026 Mandla Baloyi. All rights reserved.
+
+This source code and its documentation are published so that they can be
+read and reviewed, for example by people evaluating the author's work.
+
+No licence is granted to copy, modify, redistribute, sublicense, or use
+this software, or any part of it, in a product, a service or a research
+project, without the author's prior written permission.
+
+The third-party datasets named in data/manifest.csv are NOT part of this
+repository and keep their own licences (EPANET examples: MIT; L-Town and
+the Texas A&M testbed: CC BY 4.0). Their files are not included here.
+
+The software is provided "as is", without warranty of any kind. It is a
+research prototype and must not be used to make safety-critical decisions.

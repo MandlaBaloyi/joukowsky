@@ -72,7 +72,6 @@ here?" (principle P6).
 
 Where decisions and lessons live
 ------------------------------------------------------------------------
-  CLAUDE.md                         the project's rules and map, in short
   docs/09_technologies/12_decision_log.txt   every technology decision
   docs/10_findings/findings_log.txt every lesson from building (FN-nnn)
   docs/10_findings/known_gaps.txt   every known weakness (G-nn)
